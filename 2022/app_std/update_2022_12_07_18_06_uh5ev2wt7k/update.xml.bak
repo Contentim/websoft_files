@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>uh5ev2wt7k</id>
+		<create_date>2022-12-07T18:06:10+00:00</create_date>
+		<server_version>2022.3.3.536 (2022-11-16)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x63773FCD6CFE7AC1</id>
+			<code>app_chat_std</code>
+			<name VALUE="##'Чат'##"/>
+			<form_name>app_chat_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_chat_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x63773FCD6CFE7AC2</id>
+			<code>app_conversation_std</code>
+			<name VALUE="##'Разговор'##"/>
+			<form_name>app_conversation_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_conversation_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x63773FCD6CFE7ACB</id>
+			<code>app_block_message_std</code>
+			<name VALUE="##'Блок сообщений'##"/>
+			<form_name>app_block_message_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_block_message_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		
+	</custom_admin_templates>
+</data>

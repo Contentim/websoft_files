@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<notification_templates>
+		<notification_template>
+			<code>websoft_after_answer_expert_question</code>
+			<name VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<subject VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ответила" : "ответил";&#10;&#10;teCollaboratorObject = OpenDoc( UrlFromDocID( OptInt( objDocSec.person_id.Value) ) ).TopElem;&#10;sCollaboratorSex = ( teCollaboratorObject.sex.HasValue &amp;&amp; teCollaboratorObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;%&gt;Уважаем&lt;%=sCollaboratorSex%&gt;, &lt;%=teCollaboratorObject.fullname%&gt;!&#10;&#10;&lt;%=objDoc.fullname %&gt; &lt;%=sExpertSex%&gt; на ваш вопрос «&lt;%=objDocSec.question%&gt;».&#10;&#10;Ответ эксперта: &lt;%=objDocSec.answer%&gt;&#10;&#10;Ответить на него можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63773FCD6CFE7AEE</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_after_create_expert_question</code>
+			<name VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<subject VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;teCollaboratorObject = OpenDoc( UrlFromDocID( OptInt( objDocSec.person_id.Value) ) ).TopElem;&#10;sCollaboratorAppeal = ( teCollaboratorObject.sex.HasValue &amp;&amp; teCollaboratorObject.sex == "w" ) ? "задала" : "задал";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;&lt;%=teCollaboratorObject.fullname %&gt; &lt;%=sCollaboratorAppeal%&gt; вам вопрос «&lt;%=objDocSec.question%&gt;».&#10;&#10;Ответить на него можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63773FCD6CFE7AEC</id>
+		</notification_template>
+	</notification_templates>
+	<notifications>
+		<notification>
+			<code>websoft_after_answer_expert_question</code>
+			<name VALUE="##'Уведомление сотрудника об ответе эксперта на ранее заданный вопрос'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x63773FCD6CFE7AEE</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+			<id>0x63773FCD6CFE7AED</id>
+		</notification>
+		<notification>
+			<code>websoft_after_create_expert_question</code>
+			<name VALUE="##'Уведомление экспертам о создании вопроса'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x63773FCD6CFE7AEC</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+			<id>0x63773FCD6CFE7AEB</id>
+		</notification>
+	</notifications>
+	<remote_actions>
+		<remote_action>
+			<id>0x602E29BC580F1666</id>
+			<code>AnswerExpertQuestion</code>
+			<name VALUE="##'Вопрос эксперту / Создание/ Ответ'##"/>
+			<type>eval</type>
+			<catalog_name>expert_question</catalog_name>
+			<link_name>expert_question</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>library/AnswerExpertQuestion.bs</code_url>
+			</exec_code>
+			<url>library/AnswerExpertQuestion.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>iExpertQuestionID</name>
+					<type>foreign_elem</type>
+					<catalog>expert_question</catalog>
+					<description VALUE="##'Вопрос эксперту'##"/>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>bNotifyExpert</name>
+					<value>1</value>
+					<type>bool</type>
+					<description VALUE="##'При включении эксперту будет отправляться уведомление о новом вопросе.'##"/>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>iNotificationExpert</name>
+					<parent_wvar_name>bNotifyExpert</parent_wvar_name>
+					<value>websoft_after_create_expert_question</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>websoft_after_create_expert_question</id>
+							<name VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+						</entry>
+					</entries>
+					<description VALUE="##'Тип, по которому будут генерироваться уведомления для экспертов'##"/>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>bNotifyCollaborator</name>
+					<value>1</value>
+					<type>bool</type>
+					<description VALUE="##'При включении, сотруднику, задавшему вопрос, будет отправляться уведомление о поступлении ответа на него.'##"/>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>iNotificationCollaborator</name>
+					<parent_wvar_name>bNotifyCollaborator</parent_wvar_name>
+					<value>websoft_after_answer_expert_question</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>websoft_after_answer_expert_question</id>
+							<name VALUE="##'Уведомление сотрудника об ответе эксперта на ранее заданный вопрос'##"/>
+						</entry>
+					</entries>
+					<description VALUE="##'Тип, по которому будут генерироваться уведомления для сотрудников.'##"/>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+			</wvars>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

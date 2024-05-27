@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>aspyfhmwb9</id>
+		<create_date>2022-11-25T20:28:07+00:00</create_date>
+		<server_version>2022.3.3.536 (2022-11-16)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x602E29BC580F1674</id>
+			<code>RedirectExpertQuestion</code>
+			<name>Вопрос эксперту / перенаправить вопрос</name>
+			<type>eval</type>
+			<cache_vars>{"iExpertQuestionID":{"name":"iExpertQuestionID","type":"foreign_elem","title":"","silent":false}}</cache_vars>
+			<catalog_name>expert_question</catalog_name>
+			<link_name>expert_question</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/RedirectExpertQuestion.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/RedirectExpertQuestion.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>iExpertQuestionID</name>
+					<type>foreign_elem</type>
+					<catalog>expert_question</catalog>
+					<description>Вопрос эксперту</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+			</wvars>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+			<changed>1</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-25T20:20:06+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-25T20:20:06+00:00</date>
+				</modification>
+			</doc_info>
+		</remote_action>
+	</remote_actions>
+</data>

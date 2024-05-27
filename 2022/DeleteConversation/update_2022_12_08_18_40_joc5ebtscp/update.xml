@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>joc5ebtscp</id>
+		<create_date>2022-12-08T18:40:06+00:00</create_date>
+		<server_version>2022.3.3.536 (2022-11-16)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x63773FCD6CFE7ADE</id>
+			<code>DeleteConversation</code>
+			<name VALUE="##'Удалить разговор / Система / Чат-боты'##"/>
+			<type>eval</type>
+			<catalog_name>conversation</catalog_name>
+			<link_name>conversation</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteConversation.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteConversation.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

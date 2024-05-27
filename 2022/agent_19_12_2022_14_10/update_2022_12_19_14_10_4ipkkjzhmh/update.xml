@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>4ipkkjzhmh</id>
+		<create_date>2022-12-19T14:10:08+00:00</create_date>
+		<server_version>2022.3.3.536 (2022-11-16)</server_version>
+	</basic>
+	<server_agents>
+		<server_agent>
+			<id>0x6396A13616611B62</id>
+			<code>websoft_expert_remind_question</code>
+			<name VALUE="##'Агент рассылает уведомления экспертам до и после планового срока ответа на заданный ему вопрос'##"/>
+			<trigger_type>never</trigger_type>
+			<period>1</period>
+			<start_time>00:00</start_time>
+			<finish_time>24:00</finish_time>
+			<all_day>1</all_day>
+			<start_day>1</start_day>
+			<start_week_day>1</start_week_day>
+			<last_run_date>2022-12-16T05:26:48+00:00</last_run_date>
+			<type>code</type>
+			<wvars>
+				<wvar>
+					<name>send_before_finish</name>
+					<value>0</value>
+					<type>bool</type>
+					<description VALUE="##'Напоминать о приближающемся сроке ответа на вопрос'##"/>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>days_before_finish</name>
+					<value>1,3</value>
+					<type>string</type>
+					<description VALUE="##'Кол-во дней до срока ответа на вопрос, когда отправлять напоминание'##"/>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>send_after_finish</name>
+					<value>0</value>
+					<type>bool</type>
+					<description VALUE="##'Напоминать о вышедшем сроке ответа на вопрос'##"/>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>days_after_finish</name>
+					<value>1,3</value>
+					<type>string</type>
+					<description VALUE="##'Кол-во дней после окончания срока ответа на вопрос, когда отправлять напоминание'##"/>
+					<silent>0</silent>
+					<position>4</position>
+				</wvar>
+				<wvar>
+					<name>before_finish_type_notification</name>
+					<value>websoft_expert_before_finish</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>websoft_expert_before_finish</id>
+							<name>websoft_expert_before_finish</name>
+						</entry>
+					</entries>
+					<description VALUE="##'Тип уведомлений, отправляемых до планового срока ответа на вопрос'##"/>
+					<silent>0</silent>
+					<position>5</position>
+				</wvar>
+				<wvar>
+					<name>after_finish_type_notification</name>
+					<value>websoft_expert_after_finish</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>websoft_expert_after_finish</id>
+							<name>websoft_expert_after_finish</name>
+						</entry>
+					</entries>
+					<description VALUE="##'Тип уведомлений, отправляемых после планового срока ответа на вопрос'##"/>
+					<silent>0</silent>
+					<position>6</position>
+				</wvar>
+			</wvars>
+			<exec_code>
+				<code_url>x-local://wtv/agents/websoft_expert_remind_question.bs</code_url>
+			</exec_code>
+			<run_code_url>x-local://wtv/agents/websoft_expert_remind_question.bs</run_code_url>
+			<is_std>1</is_std>
+		</server_agent>
+	</server_agents>
+	<notification_templates>
+		<notification_template>
+			<code>websoft_expert_before_finish</code>
+			<name VALUE="##'Уведомление экспертам о приближающемся плановом сроке ответа на вопрос'##"/>
+			<subject VALUE="##'Уведомление экспертам о приближающемся плановом сроке ответа на вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;Напоминаем, что вы должны ответить на вопрос «&lt;%=objDocSec.question%&gt;» до &lt;%=StrDate(objDocSec.normative_date, false,false)%&gt; включительно.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6396A13616611B67</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_expert_after_finish</code>
+			<name VALUE="##'Уведомление экспертам о просроченном плановом сроке ответа на вопрос'##"/>
+			<subject VALUE="##'Уведомление экспертам о просроченном плановом сроке ответа на вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;Напоминаем, что вы должны были ответить на вопрос «&lt;%=objDocSec.question%&gt;» до &lt;%=StrDate(objDocSec.normative_date, false,false)%&gt;, но не сделали этого.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6396A13616611B71</id>
+		</notification_template>
+	</notification_templates>
+	<notifications>
+		<notification>
+			<code>websoft_expert_after_finish</code>
+			<name VALUE="##'Уведомление экспертам о просроченном плановом сроке ответа на вопрос'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x6396A13616611B71</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+			<id>0x6396A13616611B72</id>
+		</notification>
+		<notification>
+			<code>websoft_expert_before_finish</code>
+			<name VALUE="##'Уведомление экспертам о приближающемся плановом сроке ответа на вопрос'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x6396A13616611B67</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+			<id>0x6396A13616611B66</id>
+		</notification>
+	</notifications>
+</data>
