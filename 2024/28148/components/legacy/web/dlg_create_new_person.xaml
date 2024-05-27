@@ -1,0 +1,186 @@
+﻿<SPXMLScreen>
+
+<%
+	sSelectData = PARAMETERS.GetOptProperty( "select_data", "" );
+	//alert("SelectData: " + sSelectData);
+    sSelectObj = StrRangePos(sSelectData,sSelectData.indexOf('{')+1,sSelectData.indexOf('}'));
+
+%>
+	<Action Name="CheckPersonAction" Source="check_new_person" Success="ACTION=CreatePersonAction;" Failure="ALERT={messageText};">
+		<Param Name="CollabLogin" Value="{dlg_person_login}"/>
+		<Param Name="CollabCode" Value="{dlg_person_code}"/>
+	</Action>
+
+	<Action Name="CreatePersonAction" Source="create_new_person" Success="ALERT={messageText};CLOSEDIALOG">
+	   <Param Name="SelectObject" Value='<%=sSelectObj%>'/>
+	   <Param Name="CollabLastname" Value="{dlg_person_lastname}"/>
+		<Param Name="CollabName" Value="{dlg_person_name}"/>
+		<Param Name="CollabMiddlename" Value="{dlg_person_middlename}"/>
+		<Param Name="CollabLogin" Value="{dlg_person_login}"/>
+		<Param Name="CollabPassword" Value="{dlg_person_password}"/>
+		<Param Name="CollabPositName" Value="{dlg_person_position}"/>
+		<Param Name="PositionCommonId" Value="{dlg_position_common_id}"/>
+		<Param Name="CollabEmail" Value="{dlg_person_email}"/>
+		<Param Name="CollabPhone" Value="{dlg_person_phone}"/>
+		<Param Name="CollabCode" Value="{dlg_person_code}"/>
+		<Param Name="CollabBirthDate" Value="{dlg_birth_date}"/>
+    </Action>
+<%
+    xarrOperation = ArrayOptFirstElem(XQuery("for $elem in operations where $elem/action='create_person' return $elem"));
+    teOperation = OpenDoc(UrlFromDocID(xarrOperation.id)).TopElem;
+
+	fldElemFam = undefined;
+	fldElemName = undefined;
+	fldElemMiddleName = undefined;
+	fldElemLogin = undefined;
+	fldElemPassword = undefined;
+	fldElemEmail = undefined;
+	fldElemPhone = undefined;
+	fldElemPositName = undefined;
+	fldElemPositCommId = undefined;
+	fldElemSNLS = undefined;
+
+   if (teOperation != undefined)
+   {
+	   if (ArrayOptFirstElem(teOperation.parameters) != undefined)
+      {
+	      fldElemFam = teOperation.parameters.GetOptChildByKey("LastName","name");
+          fldElemName = teOperation.parameters.GetOptChildByKey("FirstName","name");
+		  fldElemMiddleName = teOperation.parameters.GetOptChildByKey("MiddleName","name");
+		  fldElemLogin = teOperation.parameters.GetOptChildByKey("Login","name");
+		  fldElemPassword = teOperation.parameters.GetOptChildByKey("Password","name");
+		  fldElemEmail = teOperation.parameters.GetOptChildByKey("Email","name");
+		  fldElemPhone = teOperation.parameters.GetOptChildByKey("Phone","name");
+		  fldElemPositName = teOperation.parameters.GetOptChildByKey("PositionName","name");
+		  fldElemPositCommId = teOperation.parameters.GetOptChildByKey("PositCommonId","name");
+          fldElemCode = teOperation.parameters.GetOptChildByKey("Code","name");
+		fldElemBirthDate = teOperation.parameters.GetOptChildByKey("BirthDate","name");
+		}
+	}
+%>
+	<Grid Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="150" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+<%
+   if (fldElemCode != undefined)
+   {
+%>
+      <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "c_code", curLngWeb )%>*:</Label>
+			<Edit Name="dlg_person_code" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+   if (fldElemFam != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=XmlAttrEncode(fldElemFam.title)%>:</Label>
+			<Edit Name="dlg_person_lastname" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemName != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=XmlAttrEncode(fldElemName.title)%>:</Label>
+			<Edit Name="dlg_person_name" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemMiddleName != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=XmlAttrEncode(fldElemMiddleName.title)%>:</Label>
+			<Edit Name="dlg_person_middlename" Width="100%"></Edit>
+		</GridRow>
+<%
+    }
+	if (fldElemBirthDate != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemBirthDate.title)%>:</Label>
+			<DatePicker Name="dlg_birth_date" Width="100%"><%=StrDate(Date(),false,false)%></DatePicker>
+		</GridRow>
+<%
+   }
+	if (fldElemLogin != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemLogin.title)%> *:</Label>
+			<Edit Name="dlg_person_login" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemPassword != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemPassword.title)%>:</Label>
+			<Edit Name="dlg_person_password" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemPositName != undefined)
+   {
+%>
+        <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemPositName.title)%>:</Label>
+			<Edit Name="dlg_person_position" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemPositCommId != undefined)
+   {
+%>
+        <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemPositCommId.title)%>:</Label>
+			<ComboBox Name="dlg_position_common_id" Width="100%">
+<%
+				for ( catPositCommonElem in position_commons )
+				{
+	%>
+					<ComboBoxItem Value="<%=catPositCommonElem.id%>"><%=tools_web.get_cur_lng_name( catPositCommonElem.name, curLng.short_id )%></ComboBoxItem>
+	<%
+				}
+%>
+			</ComboBox>
+		</GridRow>
+<%
+   }
+	if (fldElemEmail != undefined)
+   {
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemEmail.title)%>:</Label>
+			<Edit Name="dlg_person_email" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+	if (fldElemPhone != undefined)
+   {
+%>
+        <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(fldElemPhone.title)%>:</Label>
+			<Edit Name="dlg_person_phone" Width="100%"></Edit>
+		</GridRow>
+<%
+   }
+%>
+	</Grid>
+<%
+	sCreateAction = "ACTION=CheckPersonAction;";
+%>
+	<Label/>
+	<Toolbar Width="">
+			<Button Class="XAML-button XAML-button-save" Click="<%=sCreateAction%>"><%=tools_web.get_web_const( "c_create", curLngWeb )%></Button>
+			<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</Toolbar>	
+
+</SPXMLScreen>

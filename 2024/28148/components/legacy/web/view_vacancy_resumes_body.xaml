@@ -1,0 +1,48 @@
+﻿<SPXMLScreen>
+
+<%
+
+	Env = Request.Session.Env;
+	bShowTitle = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_resumes.bShowTitle", "true", true ) );
+	bCheckAccess = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_resumes.bCheckAccess", global_settings.settings.check_access_on_lists, true ) );
+	strPersonLinkType = tools_web.get_web_param( curParams, "vacancy_resumes.person_link_type", "collaborator", true );
+
+%>
+
+	<Collection Name="SearchVacancyResumes" Source="SearchVacancyResumes">
+		<Param Name="bCheckAccess" Value="<%=bCheckAccess%>"/>
+		<Param Name="strPersonLinkType" Value="<%=strPersonLinkType%>"/>
+	</Collection>
+
+<%
+	if ( bShowTitle )
+	{
+%>
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "otklikinavakan", curLngWeb )%></Label>
+<%
+	}
+%>
+	<DataGrid Name="PersonGrid" Source="{SearchVacancyResumes}" Height="400" Selection="single" Width="100%" PageSize="30" Categorized="id:parent_id">
+		<DataGridColumn Value="id" Hidden="true" Ghost="0"/>
+		<DataGridColumn Value="parent_id" Hidden="true" Ghost="0"/>
+<%
+		if ( curDevice.disp_type != "mobile" )
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="200" Type="link" Click="OPENURL={person_link}" Sortable="true"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>" Value="vacancy_name" Width="200" Type="link" Click="OPENURL={vacancy_link}" Sortable="true"/>
+	 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_resume", curLngWeb )%>" Value="position_name" Width="200" Type="link" Click="OPENURL={resume_link}" Sortable="true"/>
+	 	<DataGridColumn Title="<%=tools_web.get_web_const( "opytvkompaniil", curLngWeb )%>" Value="experience_in_company" Width="6%" Type="string" Sortable="true"/>
+	 	<DataGridColumn Title="<%=tools_web.get_web_const( "dohod", curLngWeb )%>" Value="wage" Width="6%" Type="string" Sortable="true"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "vrb_age", curLngWeb )%>" Value="age" Width="11%" Type="string" Sortable="true"/>
+<%
+		}
+		else
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="100%" Type="link" Click="OPENURL={person_link}" Sortable="true"/>
+<%
+		}
+%>
+	</DataGrid>
+</SPXMLScreen>

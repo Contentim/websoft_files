@@ -1,0 +1,143 @@
+﻿<SPXMLScreen Ready="SHOW=RowFiltersPanelReserveObjectResources">
+<%
+iRequestTypeID = OptInt( tools_web.get_web_param( curParams, "reserve_object_resources_body.request_type_id", null, true ) );
+if ( iRequestTypeID == undefined )
+{
+	catRequestType = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/object_type = 'object_resource' return $elem" ) );
+}
+else
+{
+	catRequestType = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/id = " + iRequestTypeID + " return $elem" ) );
+}
+if ( catRequestType != undefined )
+{
+%>
+<Action Name="ResourseCreateRequest" Source="reserve_object_resource_phases" Success="OPENURL=<%=tools_web.get_mode_clean_url( "request_create", null, { request_type_id: catRequestType.PrimaryKey.Value, request_object_id: "{SelectedReserveObjectResourcesId}", type: "object_resource", doc_id: curDocID } )%>" Failure="ALERT={messageText}">
+	<Param Name="object_resource_id" Value="{SelectedReserveObjectResourcesId}"/>
+	<Param Name="start_date" Value="{object_resource_start_date}"/>
+	<Param Name="finish_date" Value="{object_resource_finish_date}"/>
+</Action>
+<%
+}
+/*
+curView = {
+	"id": "Resourses",
+	"height": "",
+	"catalog_name": "object_resource",
+	"disp_filter": true,
+	"disp_paging": true,
+	"paging_size": 15,
+	"filter_mode": "custom",
+	"filter_items" : [
+		{ "id": "FilterType", "field":"type", "click": "RELOAD=CatalogListDataGridResourses" }
+	],
+	"disp_search": true,
+	"selection": "single",
+	"disp_link": false,
+	"is_data_grid": "true",
+	"disp_menu": true,
+	"menu_items" : [
+		{ "title": tools_web.get_web_const( "c_delete", curLngWeb ), "click": "DELETE=CatalogListDataGridSelList" }
+	]
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+
+*/
+curDate = curUrlQuery.GetOptProperty( "date", "" );
+curDate = curDate == "" ? Date() : Date( curDate );
+
+iYear = Year( curDate );
+iMonth = Month( curDate );
+dtStart = Date( "1." + iMonth + "." + iYear );
+dtFinish = Date( "1." + ( iMonth == 12 ? "1." + ( iYear + 1 ) : ( iMonth + 1 ) + "." + iYear ) );
+
+sMapType = CONTEXT.GetOptProperty( "PhaseTypeSelector", "list" );
+%>
+<%
+if ( catRequestType != undefined )
+{
+%>
+<Toolbar Class="XAML-toolbar">
+	<Button Class="XAML-button XAML-button-request" Click="ACTION=ResourseCreateRequest"><%=tools_web.get_web_const( "c_text_create_request", curLngWeb )%></Button>
+</Toolbar>
+<%
+}
+%>
+<Action Name="ResourseCheckParam" Source="reserve_object_resource_phases" Success="SET=PhaseCalendar,{object_resource_start_date};SHOW=ResourseEventPhasePanel,ResourceDescPanel;UPDATE=CatalogListDataGridPhaseList,PhaseCalendar,ResourceDescPanel" Failure="ALERT={messageText}">
+	<Param Name="object_resource_id" Value="{SelectedReserveObjectResourcesId}"/>
+	<Param Name="start_date" Value="{object_resource_start_date}"/>
+	<Param Name="finish_date" Value="{object_resource_finish_date}"/>
+</Action>
+
+<%
+	arr_filters = new Array();
+
+	obj_filter = new Object();
+	obj_filter.name = "SelectedReserveObjectResourcesId";
+	obj_filter.type = "foreign_elem";
+	obj_filter.catalog_name = "object_resource"
+	obj_filter.title = tools_web.get_web_const( "c_object_resource", curLngWeb );
+	arr_filters.push( obj_filter );
+
+	obj_filter = new Object();
+	obj_filter.name = "object_resource_start_date";
+	obj_filter.type = "date";
+	obj_filter.value = dtStart;
+	obj_filter.title = "Период с";
+	arr_filters.push( obj_filter );
+
+	obj_filter = new Object();
+	obj_filter.name = "object_resource_finish_date";
+	obj_filter.type = "date";
+	obj_filter.value = dtFinish;
+	obj_filter.title = "по";
+	arr_filters.push( obj_filter );
+
+	row_filters = new Array();
+	row_filters.push( arr_filters );
+
+	curFilter = {
+		'id': 'ReserveObjectResources',
+		'disp_search': false,
+		'action': "ACTION=ResourseCheckParam;",
+		'row_filters': row_filters,
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+<Panel Name="ResourceDescPanel" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="0" Width="100%" Source="desc_body" Hidden="true">
+	<Param Name="desc_object_id" Value="{SelectedReserveObjectResourcesId}"/>
+	<Param Name="disp_panel" Value="false"/>
+</Panel>
+
+<Panel Name="ResourseEventPhasePanel" Title="<%=XmlAttrEncode( tools_web.get_web_const( "etapymeropriyat", curLngWeb ) )%>" Hidden="true">
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+		<Button Class="XAML-button XAML-button-view icon-list" Toggle="1" ToggleGroup="PhaseTypeSelector" Pressed="<%=( sMapType == "list" ? "1" : "0" )%>" Click="HIDE=PhaseCalendar;SHOW=CatalogListDataGridPhaseList"><%=tools_web.get_web_const( "icpyfe9yb6", curLngWeb )%></Button>
+		<Button Class="XAML-button XAML-button-view icon-calendar" Toggle="1" ToggleGroup="PhaseTypeSelector" Pressed="<%=( sMapType == "calendar" ? "1" : "0" )%>" Click="HIDE=CatalogListDataGridPhaseList;SHOW=PhaseCalendar"><%=tools_web.get_web_const( "c_le_calendar", curLngWeb )%></Button>
+	</StackPanel>
+<%
+curView = {
+	"id": "PhaseList",
+	"height": "",
+	"disp_paging": true,
+	"paging_size": 15,
+	"hidden": ( sMapType != "list" ),
+	"catalog_name": "event_phase",
+	"xquery_qual": "$elem/object_resource_id = {SelectedReserveObjectResourcesId} and $elem/finish_date > date( '{object_resource_start_date}' ) and $elem/start_date < date( '{object_resource_finish_date}' )",
+	"disp_filter": false,
+	"disp_search": false,
+	"disp_link": false,
+	"link_object_field": "event_id",
+	"selection": "none",
+	"is_data_grid": false,
+	"disp_menu": false
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+	<Collection Name="PhaseCalendarCollection" Source="reserve_object_resources_phase_calendar">
+		<Param Name="object_resource_id" Value="{SelectedReserveObjectResourcesId}"/>
+		<Param Name="start_date" Value="{object_resource_start_date}"/>
+		<Param Name="finish_date" Value="{object_resource_finish_date}"/>
+	</Collection>
+	<Calendar Name="PhaseCalendar" Hidden="<%=( sMapType != "calendar" )%>" Width="100%" Height="500" Modes="day,week,month" SelectedView="month" Source="{PhaseCalendarCollection}"/>
+</Panel>
+</SPXMLScreen>

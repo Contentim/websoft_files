@@ -1,0 +1,790 @@
+﻿<SPXMLScreen>
+<%
+/*-----------------------------------------------------------------------------------------------------------*/
+	var paramListViewTab = CONTEXT.GetOptProperty("contests_tab",0);
+	var iPageSize = 0;
+	
+	var bThinMode = curDevice.disp_type == "mobile";
+	
+	var iTileRows = bThinMode ? 10 : 2;
+	var iTileColumns = bThinMode ? 1 : OptInt(tools_web.get_web_param( curParams, "contest_body.tile_view.columns_num", 2, true ), 2);
+	var bShowAllSub = !tools_web.is_true(tools_web.get_web_param( curParams, "contest_body.show_sub_only", false, true ));
+	var bShowDismissed = false;
+	if (iTileRows <= 0) iTileRows = 1;
+	if (iTileColumns <= 0 || iTileColumns >= 50) iTileColumns = 1;
+	
+	var catCurrentParticipant = ArrayOptFirstElem( XQuery( "for $elem in participants where $elem/contest_id = " + curObjectID + " and $elem/person_id = " + curUserID + "  return $elem" ) );
+	var bUserIsParticipant = ( catCurrentParticipant != undefined);
+	var bUserIsJudge = curObject.judges.ChildByKeyExists(curUserID);
+	var bUserIsMainJudge = bUserIsJudge && curObject.judges.GetChildByKey(curUserID).main;
+	var bUserIsPreparation = curObject.responsibles.ChildByKeyExists(curUserID);
+	
+	var bCanVote = false;
+	var bCanSumUp = (curObject.status_id == "assessment") && ((curObject.estimation_id == "com_general" ) ? bUserIsMainJudge : bUserIsJudge);
+	var bShowResults = curObject.show_results || bUserIsPreparation || bUserIsJudge;
+	var bShowPlace = (curObject.status_id == "close" && bShowResults) || bCanSumUp;	
+	var bShowRating = (curObject.status_id == "close" && bShowResults) || (curObject.status_id == "process" && curObject.show_rating) || (curObject.status_id == "assessment" && bCanSumUp);
+	
+	switch(curObject.estimation_id)
+	{
+		case "voting":
+			bCanVote = true;
+			break;
+		case "com_general":
+			bCanVote = bUserIsMainJudge;
+			break;
+		case "com_all":
+			bCanVote = bUserIsJudge;
+			break;
+	}
+	bCanVote = bCanVote && (curObject.status_id == "process");
+%>
+
+	
+<Action Name="Vote" Source="contest_participant_vote" Success="HIDE={ElementToHide};SHOW={ElementToShow};" Failure="ALERT={messageText}">		
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+	<Param Name="iMark" Value=""/>
+	<Param Name="sComment" Value=""/>
+</Action>
+
+<Action Name="SavePlace" Source="contest_participant_save_place" Failure="ALERT={messageText}">		
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+	<Param Name="iPlace" Value=""/>
+</Action>
+
+<Edit Name="ElementToHide" Hidden="1"/>
+<Edit Name="ElementToShow" Hidden="1"/>
+
+<Action Name="SaveContest" Source="contest_change" Success="REFRESH" Failure="ALERT={messageText}">		
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	<Param Name="sAction" Value="save"/>
+	<Param Name="sSelectedObjects" Value=""/>
+	<Param Name="sStatus" Value=""/>
+</Action>
+
+<%
+	if(bUserIsParticipant)
+	{
+%>
+<Action Name="SaveContestWork" Source="contest_participant_change" Success="REFRESH" Failure="ALERT={messageText}">
+	<Param Name="iObjectId" Value="<%=catCurrentParticipant.PrimaryKey%>"/>		
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	<Param Name="sAction" Value="save"/>
+	<Param Name="sStatus" Value=""/>
+</Action>
+<%
+
+	}
+%>
+
+<Action Name="Participate" Source="contest_participate" Success="REFRESH" Failure="ALERT={messageText}">		
+	<Param Name="iObjectId" Value="<%=curObjectID%>"/>	
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+</Action>
+
+<%
+	if(curObject.web_template_id == "gallery")
+	{
+%>
+
+<Collection Name="ContestParticipantsCollection" Source="contest_participants_collection">
+	<Param Name="iContestId" Value="<%=curObjectID%>"/>
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+</Collection>
+<%
+	}
+%>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+
+<%
+	if(bUserIsPreparation)
+	{
+%>
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-plan" Click="SET=SaveContest/sAction,set_status;SET=SaveContest/sStatus,plan;Action=SaveContest" Enabled="<%=(curObject.status_id != "plan" && curObject.status_id != "process" && curObject.status_id != "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "kplanirovaniyu", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-proceed" Click="SET=SaveContest/sAction,set_status;SET=SaveContest/sStatus,process;Action=SaveContest" Enabled="<%=(curObject.status_id == "plan") ? "1" : "0"%>"><%=tools_web.get_web_const( "vlpb_start", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-report" Click="SET=SaveContest/sAction,set_status;SET=SaveContest/sStatus,assessment;Action=SaveContest" Enabled="<%=(curObject.status_id == "process") ? "1" : "0"%>"><%=tools_web.get_web_const( "podvectiitogi", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-finish" Click="SET=SaveContest/sAction,set_status;SET=SaveContest/sStatus,close;Action=SaveContest" Enabled="<%=(curObject.status_id == "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "vllb_close", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-cancel" Click="SET=SaveContest/sAction,set_status;SET=SaveContest/sStatus,cancel;Action=SaveContest" Enabled="<%=(curObject.status_id == "plan" || curObject.status_id == "process" || curObject.status_id == "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "veb_to_cancel", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-magic" Click="SET=SaveContest/sAction,calculate_rating;SET=SaveContest/sStatus,plan;Action=SaveContest" Enabled="<%=(curObject.status_id == "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "rasschitatreyti", curLngWeb )%></Button>
+		</Toolbar>
+<%
+	}
+	
+	if( curObject.is_open && !bUserIsParticipant && !bUserIsJudge && !bUserIsPreparation )
+	{
+%>	
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-plan" Click="Action=Participate"><%=tools_web.get_web_const( "c_participate", curLngWeb )%></Button>	
+		</Toolbar>
+<%
+	}
+%>
+<TabControl Name="contests_tab" ActiveTab="<%=paramListViewTab%>">
+	<TabItem Title="<%=tools_web.get_web_const( "c_contest", curLngWeb )%>">
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="50%" Align="Right"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+				<Label><%=(curObject.status_id.HasValue ? curLngCommon.contest_states.GetChildByKey( curObject.status_id ).name : "")%></Label>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vremyaprovedeniya", curLngWeb )%>:</Label>
+			<%
+							if(curObject.start_date.HasValue)
+							{
+			%>
+				<Label><%=StrNonTitleCase( tools_web.get_web_const( "t1y74xh7qn", curLngWeb ) )%> <%=StrDate(curObject.start_date, true, false)%> <%=(curObject.finish_date.HasValue ? StrNonTitleCase( tools_web.get_web_const( "mkly6lmeds", curLngWeb ) ) + " " + StrDate(curObject.finish_date, true, false) : "")%></Label>
+			<%
+							}
+							else
+							{
+			%>
+				<Label><%=StrNonTitleCase( tools_web.get_web_const( "vrb_not_specified", curLngWeb ) )%></Label>
+			<%
+							}
+			%>
+			</GridRow>
+			<%
+							if(bUserIsParticipant || bUserIsJudge || bUserIsPreparation)
+							{
+			%>
+			
+			<GridRow Class="XAML-gridrow-multiline">
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vasharol", curLngWeb )%>:</Label>
+				<StackPanel Class="XAML-stack-container">
+			<%
+								if(bUserIsPreparation)
+								{
+			%>
+
+					<Label><%=tools_web.get_web_const( "97m1vc5abp", curLngWeb )%></Label>
+			<%
+								}
+								
+								if(bUserIsJudge)
+								{
+			%>
+					<Label><%=tools_web.get_web_const( "chlenkonkursnoy", curLngWeb )%><%=(bUserIsMainJudge ? " (" + StrNonTitleCase( tools_web.get_web_const( "c_tutor_main", curLngWeb ) ) + ")" : "")%></Label>
+			<%
+								}
+								
+								if(bUserIsParticipant)
+								{
+			%>
+					<Label><%=tools_web.get_web_const( "kr3ld5s4ij", curLngWeb )%></Label>
+			<%
+								}
+			%>
+				</StackPanel>
+			</GridRow>
+			<%	
+							}
+			%>
+		</Grid>
+	<%
+	if(curObject.desc.HasValue)
+	{
+		curDescObject = curObject;
+		curDescObjectID = curObjectID;
+		PARAMETERS.SetProperty( "disp_panel", true );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+	}
+
+	arrCustomFieldNames = Array();
+	fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+	if ( fldCustomElems != null )
+	{
+		curCustomFields = {
+			"id": "customFieldsViewGrid",
+			"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+			"source": curObject.custom_elems,
+			"modify_eval": true
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+	}
+	if ( curObject.show_works || bUserIsJudge)
+    {
+		var xarrParticipants = XQuery( "for $elem in participants where $elem/contest_id = " + curObjectID + " and ($elem/status_id = 'process' or $elem/status_id = 'assessment') return $elem" );
+		if(curObject.status_id == "close")
+			xarrParticipants = ArraySort(xarrParticipants, "place", "+");
+		if(curObject.web_template_id == "preview" || curObject.web_template_id == "list")
+		{
+%>
+<StackPanel Class="XAML-stack-tiles-container">
+	<Label><%=tools_web.get_web_const("cg_works",curLngWeb)%></Label>
+</StackPanel>
+
+<Grid Width="100%" Class="XAML-grid-table" Adapt="1">
+	<GridColumns>
+		<GridColumn Align="Right"/>
+		<GridColumn Width="250"/>
+<%
+			if(bCanVote)
+			{
+%>
+		<GridColumn Width="150" Align="Center"/>
+<%
+			}
+			if(bShowRating)
+			{
+%>
+		<GridColumn Width="90" Align="Center"/>
+<%
+			}
+			if(bShowPlace)
+			{	
+%>
+		<GridColumn Width="100" Align="Center"/>
+<%
+			}
+%>
+	</GridColumns>	
+<%
+	if (curDevice.disp_type != "mobile")
+	{
+%>
+	<GridRow Class="XAML-gridrow-header">
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "rabota", curLngWeb )%></Label>
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "vfb_author", curLngWeb )%></Label>
+<%
+			if(bCanVote)
+			{
+%>
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "vashaocenka", curLngWeb )%></Label>
+<%
+			}
+			if(bShowRating)
+			{
+%>
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "c_rating", curLngWeb )%></Label>
+<%
+			}
+			if(bShowPlace)
+			{	
+%>
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "fixhm1zzbf", curLngWeb )%></Label>
+<%
+			}
+%>
+	</GridRow>
+<%
+	}
+			for(catParticipant in xarrParticipants)
+			{
+				teParticipant = OpenDoc( UrlFromDocID( catParticipant.PrimaryKey )).TopElem;
+				if(teParticipant.person_id.OptForeignElem != undefined)
+				{
+%>
+	<GridRow>
+		<StackPanel Orientation="Vertical">
+			<StackPanel Orientation="Horizontal">
+				<Image Class="XAML-icon-info" Source="/pics/1blank.gif" Click="TOGGLE=WorkInfo<%=catParticipant.PrimaryKey%>" Width="30">
+					<HTMLTip><%=tools_web.get_web_const( "vnrqm9djn5", curLngWeb )%></HTMLTip>
+				</Image>
+				<Link Click="TOGGLE=WorkInfo<%=catParticipant.PrimaryKey%>"><%=(catParticipant.work_name.HasValue ? catParticipant.work_name : tools_web.get_web_const("c_not_name", curLngWeb))%></Link>
+			</StackPanel>
+			<StackPanel Name="WorkInfo<%=catParticipant.PrimaryKey%>" Orientation="Vertical" Hidden="1">
+<%
+					if(teParticipant.desc.HasValue)
+					{
+%>
+			<StackPanel Orientation="Vertical">
+				<Label ><%=tools_web.get_web_const("c_desc", curLngWeb)%>:</Label>
+				<HTMLBox>
+					<%=HtmlEncode( tools_web.get_web_desc( teParticipant.desc, UrlFromDocID( catParticipant.PrimaryKey ), teParticipant.Name + ".desc" ) )%>
+				</HTMLBox>
+			</StackPanel>
+<%
+					}
+					if(ArrayOptFirstElem(teParticipant.files) != undefined)
+					{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>	
+				<GridRow Class="XAML-gridrow-header">
+					<Label Class="XAML-grid-header-text"><%=tools.get_web_str("c_file")%></Label>
+<%
+	if (!bThinMode)
+	{
+%>
+					<Label Class="XAML-grid-header-text"><%=tools.get_web_str("c_desc")%></Label>
+<%
+	}
+%>
+				</GridRow>
+<%
+						for(fldFile in teParticipant.files)
+						{
+%>
+				<GridRow>
+					<Link Click="OPENWINDOW=download_file.html?file_id=<%=fldFile.file_id%>"><%=fldFile.file_id.ForeignElem.name%></Link>
+					<Label><%=fldFile.file_id.ForeignElem.comment%></Label>
+				</GridRow>								
+<%
+						}
+%>
+			</Grid>	
+<%
+					}
+					else if(!teParticipant.desc.HasValue)
+					{
+%>			
+            <Label><%=tools.get_web_str("c_worknotsent")%></Label>
+        
+<%        
+					}
+%>
+			</StackPanel>
+		</StackPanel>
+		
+		<Link Click="OPENURL=<%=tools_web.get_mode_clean_url(null, teParticipant.person_id, ({"doc_id": curDocID}))%>">
+			<%=teParticipant.person_id.ForeignElem.fullname%>			
+			<HTMLTip>
+				<![CDATA[
+					<p><b><%=tools.get_web_str("c_position")%>:</b> <%=teParticipant.person_id.ForeignElem.position_name%></p>
+					<p><b><%=tools.get_web_str("c_subd")%>:</b> <%=teParticipant.person_id.ForeignElem.position_parent_name%></p>
+					<p><b><%=tools.get_web_str("c_org")%>:</b> <%=teParticipant.person_id.ForeignElem.org_name%></p>
+				]]>
+			</HTMLTip>
+		</Link>
+		
+	<%
+					if(bCanVote)
+					{
+	%>
+		<StackPanel Orientation="Vertical" Align="Center" UsePadding="0">
+	<%
+						if(!(bUserIsParticipant && catParticipant.person_id == curUserID))
+						{
+							bVoted = teParticipant.marks.ChildByKeyExists(curUserID) || (teParticipant.general_mark.HasValue && curObject.estimation_id == "com_general");
+							if(!bVoted)
+							{
+	%>
+			<StackPanel Name="VotePanel<%=catParticipant.PrimaryKey%>" Orientation="Vertical" Align="Center" Class="XAML-stack-container">
+		<%
+								if(curObject.mark_min.HasValue && curObject.mark_max.HasValue)
+								{
+									if( curObject.mark_max - curObject.mark_min > 5 )
+									{
+	%>
+				<ComboBox Name="Mark<%=catParticipant.PrimaryKey%>">
+	<%
+										for( i=curObject.mark_min ; i <= curObject.mark_max; i++)
+										{
+	%>
+					<ComboBoxItem Value="<%=i%>"><%=i%></ComboBoxItem>
+	<%
+										}
+	%>
+				</ComboBox>
+	<%
+									}
+									else
+									{
+	%>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+	<%
+										for( i=curObject.mark_min ; i <= curObject.mark_max; i++)
+										{
+	%>
+				<RadioButton Name="Mark<%=catParticipant.PrimaryKey%>" Value="<%=i%>"><%=i%></RadioButton>
+	<%
+										}			
+	%>				
+				</StackPanel>
+	<%
+									}
+								}
+	%>
+				<StackPanel Name="Comment<%=catParticipant.PrimaryKey%>_container" Orientation="Vertical" Hidden="1" Class="XAML-stack-container">
+					<Label><%=tools.get_web_str("c_comment")%>:</Label>
+					<Edit Name="Comment<%=catParticipant.PrimaryKey%>" Width="100%"></Edit>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+					<Button Class="XAML-button-content icon-comment" Toggle="1" Click="SHOW=Comment<%=catParticipant.PrimaryKey%>_container" Release="HIDE=Comment<%=catParticipant.PrimaryKey%>_container"></Button>
+					<Button Class="XAML-button-content" Click="SET=Vote/iObjectId,<%=catParticipant.PrimaryKey%>;SET=Vote/iMark,{Mark<%=catParticipant.PrimaryKey%>};SET=Vote/sComment,{Comment<%=catParticipant.PrimaryKey%>};SET=ElementToHide,VotePanel<%=catParticipant.PrimaryKey%>;SET=ElementToShow,VotedPanel<%=catParticipant.PrimaryKey%>;ACTION=Vote"><%=tools_web.get_web_const( "vmeq_estimate", curLngWeb )%></Button>
+				</StackPanel>			
+			</StackPanel>
+			<StackPanel Name="VotedPanel<%=catParticipant.PrimaryKey%>" Align="Center" Hidden="1">
+				<Label><%=tools_web.get_web_const( "vashgolosprinyat", curLngWeb )%></Label>
+			</StackPanel>
+	<%
+							}
+							else
+							{
+	%>
+			<StackPanel Align="Center" Hidden="<%=( bVoted ? "0": "1" )%>">
+				<Label><%=((curObject.estimation_id != "com_general") ? teParticipant.marks.GetChildByKey(curUserID).value : teParticipant.general_mark )%></Label>
+			</StackPanel>		
+	<%
+							}
+						}
+						else
+						{
+	%>
+			<Label><%=tools_web.get_web_const( "nelyaocenivatsv", curLngWeb )%></Label>
+	<%	
+						}
+	%>
+		</StackPanel>
+	<%
+					}
+					if(bShowRating)
+					{
+	%>
+		<Label><%=StrReal(teParticipant.rating, 2)%></Label>
+	<%
+					}
+					if(bShowPlace)
+					{	
+						if(!bCanSumUp)
+						{
+	%>
+		<Label><%=teParticipant.place%></Label>
+	<%
+						}
+						else
+						{
+	%>
+		<StackPanel Name="PlacePanel<%=catParticipant.PrimaryKey%>" Orientation="Vertical" Align="Center">
+			<Edit Name="Place<%=catParticipant.PrimaryKey%>" Width="80"><%=teParticipant.place%></Edit>
+			<Button Click="SET=SavePlace/iObjectId,<%=catParticipant.PrimaryKey%>;SET=SavePlace/iPlace,{Place<%=catParticipant.PrimaryKey%>};ACTION=SavePlace"><%=tools.get_web_str("c_save")%></Button>
+		</StackPanel>
+	<%		
+						}
+					}
+	%>
+	</GridRow>
+<%
+				}
+			}
+%>
+</Grid>	
+<%
+			if( ArrayOptFirstElem(xarrParticipants) == undefined )
+			{
+%>
+	<StackPanel Align="Center">
+		<Label><%=tools_web.get_web_const( "netelementovdl", curLngWeb )%></Label>
+	</StackPanel>
+<%
+			}
+		}
+	
+		if(curObject.web_template_id == "gallery")
+		{
+%>
+	<TileView Name="ContestParticipantsTileView" Width="100%" Height="" TileHeight="300" DataSource="{ContestParticipantsCollection}" TemplateSource="contest_participant_tile" PageSize="<%=iPageSize%>" Columns="<%=iTileColumns%>" Rows="<%=iTileRows%>">
+		
+	</TileView>
+<%
+		}
+	}
+%>
+	</TabItem>
+	
+<%
+
+	if(bUserIsParticipant)
+	{
+		teCurrentParticipaint = OpenDoc( UrlFromDocID( catCurrentParticipant.PrimaryKey )).TopElem;		
+		bCanChangeOwnWork = (teCurrentParticipaint.status_id == "plan" || teCurrentParticipaint.status_id == "cancel");
+%>
+	<TabItem Title="<%=tools_web.get_web_const( "moyarabota", curLngWeb )%>">
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-content" Click="SET=SaveContestWork/sAction,save;Action=SaveContestWork" Enabled="<%=bCanChangeOwnWork ? "1" : "0"%>"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-content" Click="SET=SaveContestWork/sAction,set_status;SET=SaveContestWork/sStatus,plan;Action=SaveContestWork" Enabled="<%=(teCurrentParticipaint.status_id != "plan" && teCurrentParticipaint.status_id != "process" && teCurrentParticipaint.status_id != "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "veb_to_plan", curLngWeb )%></Button>	
+			<Button Class="XAML-button XAML-button-content" Click="SET=SaveContestWork/sAction,set_status;SET=SaveContestWork/sStatus,process;Action=SaveContestWork" Enabled="<%=(teCurrentParticipaint.status_id == "plan" && (teCurrentParticipaint.files.ChildNum != 0 || teCurrentParticipaint.desc != "")) ? "1" : "0"%>"><%=tools_web.get_web_const( "podatrabotu", curLngWeb )%></Button>	
+			<!--<Button Class="XAML-button XAML-button-report" Click="SET=SaveContestWork/sAction,set_status;SET=SaveContestWork/sStatus,assessment;Action=SaveContestWork" Enabled="<%=(teCurrentParticipaint.status_id == "process") ? "1" : "0"%>"><%=tools_web.get_web_const( "e7p9w5qrzk", curLngWeb )%></Button>	-->
+			<Button Class="XAML-button XAML-button-content" Click="SET=SaveContestWork/sAction,set_status;SET=SaveContestWork/sStatus,cancel;Action=SaveContestWork" Enabled="<%=(teCurrentParticipaint.status_id == "plan" || teCurrentParticipaint.status_id == "process" || teCurrentParticipaint.status_id == "assessment") ? "1" : "0"%>"><%=tools_web.get_web_const( "vppb_do_reject", curLngWeb )%></Button>	
+		</Toolbar>
+		
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="50%" Align="Right"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "nazvanieraboty", curLngWeb )%>:</Label>
+				<Edit Name="part_work_name" Width="100%"><%=teCurrentParticipaint.work_name%></Edit>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+				<Label><%=(teCurrentParticipaint.status_id.HasValue ? (curLngCommon.participant_states.GetChildByKey( teCurrentParticipaint.status_id ).name) : "")%></Label>
+			</GridRow>
+<%
+		if(bShowRating && teCurrentParticipaint.rating.HasValue)
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_rating", curLngWeb )%>:</Label>
+				<Label><%=teCurrentParticipaint.rating%></Label>
+			</GridRow>	
+<%		
+		}		
+		if(bShowPlace && teCurrentParticipaint.place.HasValue)
+		{	
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "fixhm1zzbf", curLngWeb )%>:</Label>
+				<Label><%=teCurrentParticipaint.place%></Label>
+			</GridRow>
+<%
+		}
+%>
+		</Grid>
+		
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="0" Width="100%">
+			<RichEdit Name="part_desc" Width="100%" Height="500">
+				<![CDATA[<%=teCurrentParticipaint.desc%>]]>
+			</RichEdit>
+		</Panel>
+<%
+		dummyObject = teCurrentParticipaint;
+		dummyObjectID = catCurrentParticipant.PrimaryKey;
+		sCloseAction = "ACTION=SaveContestWork;"
+		allowChangeFiles = bCanChangeOwnWork;
+		if(teCurrentParticipaint.files.ChildNum >= curObject.file_num )
+			bHideAddAction = true;
+			
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+	}
+	
+	if(bUserIsPreparation)
+	{
+%>
+	<TabItem Title="<%=tools_web.get_web_const( "kjwesxtn5m", curLngWeb )%>">
+		
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+			
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_code")%>:</Label>
+				<Edit Name="code" Width="300"><%=curObject.code%></Edit>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_name")%>:</Label>
+				<Edit Name="name" Width="300"><%=curObject.name%></Edit>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "dataprovedeniya", curLngWeb )%>:</Label>
+				<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+					<Label><%=StrNonTitleCase( tools_web.get_web_const( "vppb_from", curLngWeb ) )%></Label>
+					<DatePicker Name="start_date" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.start_date, true, false)%></DatePicker>
+<%
+			if (bThinMode)
+			{
+%>
+				</StackPanel>
+			</GridRow>
+			<GridRow>
+				<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+<%
+			}
+%>
+					<Label><%=StrNonTitleCase( tools_web.get_web_const( "po", curLngWeb ) )%></Label>
+					<DatePicker Name="finish_date" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.finish_date, true, false)%></DatePicker>
+				</StackPanel>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("vcb_open")%></Label>
+				<CheckBox Name="is_open" Checked="<%=( curObject.is_open ? "True" : "False" )%>"/>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("7m1c403cfl")%>:</Label>
+				<CheckBox Name="show_works" Checked="<%=( curObject.show_works ? "True" : "False" )%>"/>
+			</GridRow>
+			<GridRow>			
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "w708jalnkx", curLngWeb )%></Label>
+				<CheckBox Name="show_marks" Checked="<%=( curObject.show_marks ? "True" : "False" )%>"/>	
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "5wr4qlx3yo", curLngWeb )%></Label>
+				<CheckBox Name="show_rating" Checked="<%=( curObject.show_rating ? "True" : "False" )%>"/>	
+			</GridRow>
+			<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("g5xk16qnja")%></Label>
+					<CheckBox Name="online_vote" Checked="<%=( curObject.online_vote ? "True" : "False" )%>"/>	
+			</GridRow>
+			<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "pokazyvatrezul", curLngWeb )%></Label>	
+					<CheckBox Name="show_results" Checked="<%=( curObject.show_results ? "True" : "False" )%>"/>
+			</GridRow>
+			
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_score", curLngWeb )%>:</Label>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+					<Edit Name="mark_min" Width="35"><%=curObject.mark_min%></Edit>
+					<Label ><%=tools_web.get_web_const( "mkly6lmeds", curLngWeb )%></Label>
+					<Edit Name="mark_max" Width="35"><%=curObject.mark_max%></Edit>
+				</StackPanel>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "2zztq0p0yo", curLngWeb )%>:</Label>
+				<ComboBox Name="file_num" SelectedItem="<%=curObject.file_num%>" Width="70">
+	<%
+							for( i=1 ; i <= 10; i++)
+							{
+	%>
+					<ComboBoxItem Value="<%=i%>"><%=i%></ComboBoxItem>
+	<%
+							}
+	%>
+				</ComboBox>
+			</GridRow>
+
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "9enpte4cpg", curLngWeb )%>:</Label>
+				<ComboBox Name="web_template_id" SelectedItem="<%=curObject.web_template_id%>" Width="300">
+	<%
+							for( fldTemplate in common.contest_web_templates)
+							{
+	%>
+					<ComboBoxItem Value="<%=fldTemplate.id%>"><%=fldTemplate.name%></ComboBoxItem>
+	<%
+							}
+	%>
+				</ComboBox>
+			</GridRow>
+			
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8zb0ku5p24", curLngWeb )%>:</Label>
+				<ComboBox Name="estimation_id" SelectedItem="<%=curObject.estimation_id%>" Width="300">
+	<%
+							for( fldContestType in common.contest_types)
+							{
+	%>
+					<ComboBoxItem Value="<%=fldContestType.id%>"><%=fldContestType.name%></ComboBoxItem>
+	<%
+							}
+	%>
+				</ComboBox>
+			</GridRow>
+			
+			
+		</Grid>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="0" Width="100%">
+			<RichEdit Name="desc" Width="100%" Height="500">
+				<![CDATA[<%=curObject.desc%>]]>
+			</RichEdit>
+		</Panel>
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-content" Click="SET=SaveContest/sAction,save;Action=SaveContest"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>	
+		</Toolbar>
+	</TabItem>
+	<TabItem Title="<%=tools_web.get_web_const( "nswws195um", curLngWeb )%>">
+<%
+
+		/*--------------------------- Выбор ответственных за проведение ------------------*/
+		sID = "contestResponsibles";
+		sDispNameEditName = "TempDestinationEdit" + sID;
+			curSelectorList = {
+				"id": sID,
+				"title": tools_web.get_web_const( "otvetstvennyez", curLngWeb ),
+				"selected_object_ids": ArrayMerge( ArrayExtract( curObject.responsibles, "PrimaryKey" ), "This", ";" ),
+				"height": "",
+				"catalog_name": "collaborator",
+				"select_xquery_qual": ("$elem/is_dismiss = false()"),
+				"disp_search": "true",
+				"disp_filter": "false",
+				"sort_direct": "-",
+				"disp_array": "true",
+				"show_all": bShowAllSub,
+				"cur_object_type": "event",
+				"array": ( "{" + sDispNameEditName + "}" ),
+				"list_columns": "fullname;org_name;position_parent_name;position_name",
+				"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url("collaborator", "%7Bid%7D", ({"doc_id": curDocID}))),
+				"is_data_grid": "true",
+				"close_action": "SET=SaveContest/sSelectedObjects,{CatalogListDataGridSelList:*/id};SET=SaveContest/sAction,change_responsibles;ACTION=SaveContest;",
+				"buttons": [
+								{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": ("OPENDIALOG=SelectDialog" + sID) }
+							]
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+			
+			
+			/*--------------------------- Выбор конкурсной комиссии ------------------*/
+			sID = "contestJudges";
+			sDispNameEditName = "TempDestinationEdit" + sID;
+			curSelectorList = {
+				"id": sID,
+				"title": tools_web.get_web_const( "ca3jmq2425", curLngWeb ),
+				"selected_object_ids": ArrayMerge( ArrayExtract( curObject.judges, "PrimaryKey" ), "This", ";" ),
+				"height": "",
+				"catalog_name": "collaborator",
+				"select_xquery_qual": ("$elem/is_dismiss = false()"),
+				"disp_search": "true",
+				"disp_filter": "false",
+				"sort_direct": "-",
+				"disp_array": "true",
+				"show_all": bShowAllSub,
+				"cur_object_type": "event",
+				"array": ( "{" + sDispNameEditName + "}" ),
+				"list_columns": "fullname;org_name;position_parent_name;position_name",
+				"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url("collaborator", "%7Bid%7D", ({"doc_id": curDocID}))),
+				"is_data_grid": "true",
+				"close_action": "SET=SaveContest/sSelectedObjects,{CatalogListDataGridSelList:*/id};SET=SaveContest/sAction,change_judges;ACTION=SaveContest;",
+				"buttons": [
+								{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": ("OPENDIALOG=SelectDialog" + sID) }
+							]
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+	</TabItem>
+	<TabItem Title="<%=tools_web.get_web_const( "c_members", curLngWeb )%>">
+<%
+
+				/*--------------------------- Выбор участников  ------------------*/
+
+				sID = "contestParticipaints";
+				sDispNameEditName = "TempDestinationEdit" + sID;
+				tools_web.set_var_eval( "arrParticipaints", Env.curVars, XQuery( "for $elem in participants where $elem/contest_id = " + curObjectID + " return $elem" ), "value" );
+				arrSelectedParticipants = XQuery( "for $elem in participants where $elem/contest_id = " + curObjectID + " return $elem" );
+
+				curSelectorList = {
+					"id": sID,
+					"title": tools_web.get_web_const( "c_members", curLngWeb ),
+					"selected_object_ids": ArrayMerge( ArrayExtract( arrSelectedParticipants, "person_id" ), "This", ";" ),
+					"height": "",
+					"catalog_name": "collaborator",
+					"disp_search": "true",
+					"disp_filter": "false",
+					"check_access": "false",
+					"sort_direct": "-",
+					"disp_array": "true",
+					"show_all": bShowAllSub,
+					"array": ( "{" + sDispNameEditName + "}" ),
+					"list_columns": "fullname;org_name;position_parent_name;position_name",
+					"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url("collaborator", "%7Bid%7D", ({"doc_id": curDocID}))),
+					"is_data_grid": "true",
+					"source_type": "collaborator,participant",
+					"select_xquery_qual": (bShowDismissed ? "" : "$elem/is_dismiss = false()"),
+					"close_action": "SET=SaveContest/sSelectedObjects,{CatalogListDataGridSelList:*/id};SET=SaveContest/sAction,change_participants;ACTION=SaveContest;",
+				"buttons": [
+								{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": ("OPENDIALOG=SelectDialog" + sID) }
+							]
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+				
+%>	
+	</TabItem>
+<%
+	}
+%>
+</TabControl>
+</SPXMLScreen>

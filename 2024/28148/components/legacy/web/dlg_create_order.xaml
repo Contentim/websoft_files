@@ -1,0 +1,52 @@
+<SPXMLScreen>
+	<StackPanel Orientation="Vertical">
+<%
+    iOrder = null;
+	docOrder = OpenNewDoc( 'x-local://wtv/wtv_order.xmd' );
+
+	fldCustomElems = null;    
+	fldCustomElems = tools.get_custom_template( docOrder.TopElem.Name );
+	if ( fldCustomElems != null )
+	{
+		fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, "disp_web" );
+		if ( ArrayCount( fldWebCustomFields ) != 0 )
+		{
+			// arrCustomFieldNames = Array();
+			curCustomFields = 
+			{
+				"template": fldCustomElems,
+				"fields": fldWebCustomFields,
+				"source": null,
+				"modify_eval": true,
+				// "combo_box_width": 200,
+				"disp_pages": true,
+				"condition_action": "REFRESH"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		}
+	}
+%>	
+        <Action Name="CheckOrder" Source="check_order" Success="SET=CreatedOrder,{messageText};CLOSEDIALOG" Failure="ALERT={messageText}">
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+
+		<Edit Name="CreatedOrder" Hidden="1"><%=iOrder%></Edit>
+
+        <Label><![CDATA[<%=PARAMETERS.GetOptProperty( "label", "" )%>]]></Label>
+        <EditBox Class="XAML-dialog-edit-text" Name="DialogText" Width="100%" Height="100"></EditBox>
+		
+		<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100"/>
+				<GridColumn Width="100"/>
+			</GridColumns>
+			<GridRow>
+				<Label/>
+				<Button Class="XAML-button" Width="100" Click="ACTION=CheckOrder"><%=tools_web.get_web_const( "tkhz90n4pi", curLngWeb )%></Button>
+				<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+			</GridRow>
+		</Grid>
+
+	</StackPanel>
+</SPXMLScreen>

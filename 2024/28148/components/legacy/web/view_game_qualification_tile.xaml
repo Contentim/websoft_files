@@ -1,0 +1,459 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+sType = PARAMETERS.GetOptProperty( "type" );
+bOpenQualification = tools_web.is_true( PARAMETERS.GetOptProperty( "bOpenQualification" ) );
+
+if( iObjectID != undefined )
+{
+	teObject = null;
+	if( iObjectID != 0 )
+	{
+		iQualificationId = iObjectID;
+		teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	}
+	
+	if( teObject != null && ( teObject.Name == "qualification_assignment" || teObject.Name == "qualification" ) )
+	{
+		if( teObject.Name == "qualification_assignment" )
+		{
+			iQualificationId = teObject.qualification_id;
+			teQualification = OpenDoc( UrlFromDocID( teObject.qualification_id ) ).TopElem;
+		}
+		else
+			teQualification = teObject;
+
+		sURL = tools_web.get_object_source_url( "resource", teQualification.resource_id );
+		if( sURL=="" ) 
+			sURL = "design/default/images/standart_badge.png";
+		if( bOpenQualification )
+		{
+			sClickAction = "OPENWINDOW=" + tools_web.get_mode_clean_url( null, iQualificationId );
+		}
+		else
+		{
+			sClickAction = "OPENDIALOG=DescObject" + iQualificationId;
+		}
+%>
+	<Dialog Name="DescObject<%=iQualificationId%>" Source="dlg_desc" Title="">
+		<Param Name="iObjectId" Value="<%=iQualificationId%>"/>
+	</Dialog>
+<%
+		switch( sType )
+		{	
+			case "tile":
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-margin-tile-container">
+		<StackPanel Class="XAML-stack-tile-image-container">
+			<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Height="110" Width="110">
+				<BackgroundImage Source="<%=XmlAttrEncode( sURL )%>"/>
+
+				<HTMLTip>	
+					<![CDATA[
+						<div><%=teQualification.name%></div><br/><%=teQualification.desc%>
+					]]>
+				</HTMLTip>
+
+			</Image>
+		</StackPanel>
+<%
+				if( teObject.Name == "qualification_assignment" && teObject.status != "assigned" )
+				{
+					iScaledProgress = Math.round( teQualification.get_scaled_progress( curUserID ) );
+%>
+		<StackPanel Class="XAML-stack-tile-image-container" Orientation="Horizontal">
+			<ProgressBar FullScale="100" Aspect="0.2" Size="50" Value="<%=iScaledProgress%>"  Vertical="false" FitContainer="false" Class="wt-progress-plain wt-progress-hidden"/>
+			<Label><![CDATA[<%=iScaledProgress%> %]]></Label>
+		</StackPanel>
+<%
+				}
+%>
+	</StackPanel>
+<%	
+				break;
+				
+			case "list":
+%>
+	<StackPanel>
+		<Grid Width="100%" Class="XAML-game-list-items" Adapt="1">
+			<GridColumns>
+				<GridColumn  Width="64"/>
+				<GridColumn/>
+<%
+				if( teObject.Name == "qualification_assignment" && teObject.status != "assigned" )
+				{
+%>
+				<GridColumn Width="200"/>
+<%
+				}
+%>
+				<GridColumn Width="200"/>
+			</GridColumns>
+			<GridRow>
+				<StackPanel Class="XAML-stack-tile-image-container" Width="64">
+					<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="64" Height="64">
+						<BackgroundImage Source="<%=XmlAttrEncode( sURL )%>"/>
+						<HTMLTip>	
+							<![CDATA[
+								<div><%=teQualification.name%></div><br/><%=teQualification.desc%>
+							]]>
+						</HTMLTip>
+					</Image>
+				</StackPanel>
+				<StackPanel Orientation="Vertical">
+					<Link Click="<%=sClickAction%>" Class=""><%=teQualification.name%></Link>
+					<StackPanel Orientation="Horizontal">
+<%
+				if( teObject.Name == "qualification_assignment" )
+				{
+%>
+						<Label Class=""><%=teObject.status.ForeignElem.name%></Label>
+<%
+					if( teObject.status == "assigned" && teObject.assignment_date.HasValue )
+					{
+%>
+						<Label Class="">, <%=StrDate( teObject.assignment_date, true, false )%></Label>
+<%
+					}
+				}
+				else
+				{
+%>
+						<Label Class=""><%=tools_web.get_web_const( "tipvstupleniya", curLngWeb ) + " - " + teObject.join_mode.ForeignElem.name%></Label>
+<%
+				}
+%>
+					</StackPanel>
+				</StackPanel>
+<%
+				if( teObject.Name == "qualification_assignment" && teObject.status != "assigned" )
+				{
+					iScaledProgress = Math.round( teQualification.get_scaled_progress( curUserID ) );
+%>
+				<StackPanel Orientation="Horizontal">
+					<ProgressBar  FullScale="100" Aspect="0.05" Size="125" Value="<%=iScaledProgress%>"  Vertical="false" FitContainer="false" Class=" XAML-progress-bar-silver wt-progress-plain wt-progress-hidden"/>
+					<Label><![CDATA[<%=iScaledProgress%> %]]></Label>
+				</StackPanel>
+<%
+				}
+%>
+				<StackPanel Orientation="Vertical">
+<%
+				for( bonus in teQualification.game_bonuss )
+				{
+					feCurrency = bonus.currency_type_id.OptForeignElem;
+					if( feCurrency == undefined )
+						continue;
+%>
+					<Label><![CDATA[+ <%=bonus.sum%> <%=feCurrency.name%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%	
+				break;
+		}
+	}
+	// ВЫВОД ДАННЫХ ПО РЕЙТИНГУ СОТРУДНИКА
+	else if ( iObjectID == 0 || teObject.Name == "account" )
+	{
+		bRange = tools_web.is_true( PARAMETERS.GetOptProperty( "range_rating" ) );
+		iAmntCollsRating = OptInt( PARAMETERS.GetOptProperty( "amnt_colls_rating" ), 0 );
+		sFullName = "";
+
+		if ( iObjectID != 0 )
+		{
+			fePerson = teObject.object_id.OptForeignElem;
+			if( fePerson == undefined )
+				Cancel();
+
+			sFullName = ( bRange && iAmntCollsRating != 0 && fePerson.PrimaryKey == curUserID ) ? "Вы" : fePerson.fullname;
+
+			sURL = tools_web.get_object_source_url( "person", fePerson.PrimaryKey );
+			if ( sURL == "" )
+				sURL = "pics/nophoto32.png";
+			else
+			{
+				if ( StrContains( sURL, "?" ) )
+					sURL += "&type=32x32";
+				else
+					sURL += "?type=32x32";
+			}
+			sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( null, fePerson.PrimaryKey );
+		}
+		else
+			sClickAction = undefined;
+
+		sZone = PARAMETERS.GetOptProperty( "zone" );
+		bShowLvlNum = tools_web.is_true( PARAMETERS.GetOptProperty( "show_lvl_num", "true" ) );
+		bShowLvlName = tools_web.is_true( PARAMETERS.GetOptProperty( "show_lvl_name", "true" ) );
+
+		switch( sZone )
+		{
+			case "left_right":
+%>
+	<StackPanel>
+		<Grid Width="100%" Class="XAML-game-list-item" Adapt="1">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+<%
+				if ( PARAMETERS.GetOptProperty( "s_gap" ) != undefined )
+				{
+%>
+				<Label Class="XAML-text-bold"><%=PARAMETERS.GetOptProperty( "s_gap" )%></Label>
+<%
+				}
+				else
+				{
+%>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+					<Grid Width="100%" Adapt="1">
+						<GridColumns>
+							<GridColumn Width="32"/>
+							<GridColumn/>
+							<GridColumn Width="20" Align="right"/>
+						</GridColumns>
+						<GridRow>
+							<StackPanel Orientation="Horizontal">
+								<StackPanel Orientation="Horizontal">
+									<StackPanel Class="XAML-stack-tile-image-container">
+										<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+											<BackgroundImage Source="<%=XmlAttrEncode( sURL )%>"/>
+										</Image>
+									</StackPanel>
+								</StackPanel>
+							</StackPanel>
+							<Label/>
+							<Label Class="XAML-text-bold"><%=PARAMETERS.GetOptProperty( "person_score", "" )%></Label>
+						</GridRow>
+					</Grid>
+					<Link Click="<%=sClickAction%>" Class="person-name"><%=sFullName%></Link>
+<%
+					if ( fePerson.level_id.HasValue && bShowLvlName )
+					{				
+%>					
+					<Label Class="person-level"><%=fePerson.level_id.HasValue ? fePerson.level_id.ForeignElem.name : ""%></Label>
+<%
+					}
+%>			
+					<StackPanel Orientation="Vertical">
+<%
+					if ( fePerson.position_name.HasValue )
+					{
+%>
+						<Label Class="person-position"><%=fePerson.position_name%></Label>
+<%
+					}
+%>
+					</StackPanel>
+				</StackPanel>
+<%
+				}
+%>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+				break;
+			
+			case "main":
+
+				bHeader = tools_web.is_true( PARAMETERS.GetOptProperty( "header", "false" ) );
+				bCheckLevel = tools_web.is_true( PARAMETERS.GetOptProperty( "check_level", "false" ) );
+				arr_currency_types = tools.read_object( PARAMETERS.GetOptProperty( "currency_types", "[]" ) );
+
+				try
+				{
+					arr_currency_types = ArraySort( arr_currency_types, "This.id", "-" );
+				}
+				catch( ex )
+				{
+					arr_currency_types = new Array();
+				}
+
+				if( bHeader )
+					sClass = "XAML-grid-list-item XAML-game-grid-header";
+				else
+				{
+					sClass = "XAML-grid-list-item standart-position";
+					if( OptInt( PARAMETERS.GetOptProperty( "person_id", "" ) ) == curUserID )
+						sClass = "XAML-grid-list-item my-position";
+					else if( OptInt( PARAMETERS.GetOptProperty( "num", "" ) ) <= 3 )
+						sClass = "XAML-grid-list-item high-position";
+				}
+
+			//alert( "PARAMETERS: " + tools.object_to_text( PARAMETERS, 'json' ) );
+%>
+	<StackPanel>
+		<Grid Width="100%" Class="<%=sClass%>" Adapt="0">
+			<GridColumns>
+				<GridColumn Width="30"/>
+				<GridColumn/>
+<%
+				if ( curDevice.disp_type != "mobile" )
+				{
+					if ( bShowLvlName )
+					{
+%>
+				<GridColumn Width="150"/>
+<%
+					}
+					
+					if ( bCheckLevel && bShowLvlNum )
+					{
+%>
+				<GridColumn Width="100"/>
+<%
+					}
+
+					if ( ArrayCount( arr_currency_types ) > 1 )
+						for( ct in arr_currency_types )
+						{
+%>
+				<GridColumn Width="100"/>
+<%
+						}
+%>
+				<GridColumn Width="100"/>
+<%
+				}
+%>
+			</GridColumns>
+
+			<GridRow>
+<%
+				if ( bHeader )
+				{
+%>
+				<Label> № </Label>
+				<Label> <%=tools_web.get_web_const( "c_fio", curLngWeb )%> </Label>
+<%
+					if ( curDevice.disp_type != "mobile" )
+					{
+						if ( bShowLvlName )
+						{
+%>
+				<Label Class="XAML-game-grid-header-spacer"> <%=tools_web.get_web_const( "ela6vna8le", curLngWeb )%> </Label>
+<%
+						}
+						if ( bCheckLevel && bShowLvlNum )
+						{
+%>
+				<Label> № Уровня </Label>
+<%
+						}
+						if ( ArrayCount( arr_currency_types ) > 1 )
+							for ( ct in arr_currency_types )
+							{
+%>
+				<Label> <%=lists.currency_types.GetOptChildByKey( ct.id ) != undefined ? lists.currency_types.GetOptChildByKey( ct.id ).name.Value : ""%> </Label>
+<%
+							}
+%>
+				<Label> <%="Всего баллов"%> </Label>
+<%
+					}
+				}
+				else if ( sClickAction != undefined )
+				{
+%>
+				<Label Class="XAML-text-bold"><%=PARAMETERS.GetOptProperty( "num", "" )%></Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+					<StackPanel Orientation="Horizontal">
+						<StackPanel Orientation="Horizontal">
+							<StackPanel Class="XAML-stack-tile-image-container">
+								<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+									<BackgroundImage Source="<%=XmlAttrEncode( sURL )%>"/>
+								</Image>
+							</StackPanel>
+						</StackPanel>
+						<Link Click="<%=sClickAction%>"><%=sFullName%></Link>
+					</StackPanel>
+				</StackPanel>
+<%
+					if ( curDevice.disp_type != "mobile" )
+					{
+						if ( bShowLvlName )
+						{
+%>
+				<Label> <%=PARAMETERS.GetOptProperty( "level_name", "" )%> </Label>
+<%
+						}
+
+						if ( bCheckLevel && bShowLvlNum )
+						{
+%>
+				<Label Class="XAML-text-bold"> <%=PARAMETERS.GetOptProperty( "level_num", "" )%> </Label>
+<%
+						}
+						if ( ArrayCount( arr_currency_types ) > 1 )
+						{
+							for ( ct in arr_currency_types )
+							{
+%>
+				<Label Class="XAML-text-bold"><%=ct.person_score%></Label>
+<%
+							}
+						}
+%>
+				<Label Class="XAML-text-bold"><%=PARAMETERS.GetOptProperty( "person_score", "" )%></Label>
+<%
+					}
+				}
+				else if ( PARAMETERS.GetOptProperty( "s_gap" ) != undefined )
+				{
+%>
+				<Label Class="XAML-text-bold"><%=PARAMETERS.GetOptProperty( "s_gap" )%></Label>
+<%
+				}
+%>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+				break;
+		}
+	}
+	else if( teObject != null && teObject.Name == "collaborator" )
+	{
+		sURL = tools_web.get_object_source_url( "person", iObjectID );
+		if( sURL == "" )
+		{
+			sURL = "pics/nophoto32.png";
+		}
+		else
+		{
+			if( StrContains( sURL, "?" ) )
+			{
+				sURL += "&type=256x256";
+			}
+			else
+			{
+				sURL += "?type=256x256";
+			}
+		}
+		sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( null, iObjectID );
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-margin-tile-container">
+		<StackPanel Class="XAML-stack-tile-image-container">
+			<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Height="110" Width="110">
+				<BackgroundImage Source="<%=XmlAttrEncode( sURL )%>"/>
+				<HTMLTip>	
+					<![CDATA[
+						<div><%=teObject.fullname + ( teObject.position_name.HasValue ? ", " + teObject.position_name : "" )%></div>
+					]]>
+				</HTMLTip>
+			</Image>
+		</StackPanel>
+	</StackPanel>
+<%
+	}
+}
+%>
+</SPXMLScreen>

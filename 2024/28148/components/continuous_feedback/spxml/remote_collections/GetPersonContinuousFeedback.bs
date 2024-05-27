@@ -1,0 +1,29 @@
+try
+{
+	RESULT = [];
+	var oCollectionParam =
+	{
+		paging: PAGING,
+		sort: SORT,
+		distincts: [],
+		filters: [],
+		fulltext: sFilter
+	};
+	oCollectionParam.filters.push( {
+		id: "status",
+		type: "string",
+		value: String( arrStatus ).split( ";" )
+	} );
+
+	var oRes = tools.call_code_library_method( "libContinuousFeedback", "GetPersonContinuousFeedback", [ OptInt( sPersonID, null ), OptInt( sInitiatorID, null ), OptInt( sObjectID, null ), arrObjectTypes, iApplicationID, sApplicationAccessType, oCollectionParam ] );
+
+	ERROR = oRes.error;
+	MESSAGE = oRes.errorText;
+	RESULT = oRes.array;
+}
+catch ( g_err )
+{
+	alert( g_err );
+	ERROR = 1;
+	MESSAGE = "ERROR: RemoteCollection: GetPersonContinuousFeedback:\r\n" + g_err;
+}

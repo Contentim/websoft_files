@@ -1,0 +1,50 @@
+﻿<SPXMLScreen>
+
+<Action Name="RunAction" Source="event_actions" Success="ALERT={messageText};CLOSEDIALOG;">
+  <Param Name="iUserId" Value="<%=curUserID%>"/>
+  <Param Name="iEventId" Value="<%=curObjectID%>"/>
+  <Param Name="sAction" Value="change_comment"/>
+  <Param Name="sSelectedObjects" Value=""/>
+  <Param Name="sTextData" Value="{MessageText}"/>
+</Action>
+
+<%
+//sAddAction = "SET=TargetData,{CatalogListDataGridSelList:*};SET=SelectedData,{CatalogListDataGridFullList};CONTEXT=NULL;UPDATE=CatalogListDataGridSelList";
+sOkAction = "ACTION=RunAction;";
+
+sCommentText = "";
+catEventResult = ArrayOptFirstElem(XQuery( "for $elem in event_results where $elem/person_id = " + curUserID + " and $elem/event_id=" + curObjectID + " return $elem" ));
+if(catEventResult != undefined)
+{
+	sCommentText = OpenDoc( UrlFromDocID( catEventResult.PrimaryKey ) ).TopElem.collaborator_comment;
+}
+%>
+	<!--<ContextGroup Name="DlgCreateMessageContext" Items="PartnerId,MessageText"/>-->
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="100"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_event", curLngWeb )%>:</Label>	
+			<Label Class="XAML-label-with-left-padding"><![CDATA[<%=curObject.name%>]]></Label>	
+		</GridRow>
+		<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vfb_text", curLngWeb )%>:</Label>
+			<EditBox Name="MessageText" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "300"%>" Height="70"><![CDATA[<%=sCommentText%>]]></EditBox>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="<%=sOkAction%>">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

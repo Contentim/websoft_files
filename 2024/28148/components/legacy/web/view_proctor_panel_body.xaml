@@ -1,0 +1,68 @@
+﻿<%
+// const_start
+sConstProctorPanel = "Панель проктора";
+sConstSelectTest = "Выберите тест";
+sConstLearningCount = "Тестирований";
+// const_end
+%>
+<SPXMLScreen>
+<%
+
+
+arrAssessments = XQuery("for $elem in assessments where $elem/use_proctoring=true() return $elem");
+
+curTitle = {
+	"default_title": sConstProctorPanel
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+%>
+	<Collection Name="LearningsCollection" Source="proctor_panel_events">
+		<Param Name="iAssessmentId" Value="{SelectTest}"/>
+		<Param Name="sStatus" Value="{SelectStatus}"/>
+		<Param Name="dStartDate" Value="{StartDate}"/>
+		<Param Name="dFinishDate" Value="{FinishDate}"/>
+		
+	</Collection>
+	<StackPanel Orientation="<%=curDevice.disp_type == "mobile" ? "Vertical" : "Horizontal"%>" Align="right" Class="XAML-stack-filter">
+		<ComboBox Class="XAML-combo-view" Name="SelectTest" Width="270" Change="UPDATE=LearningsList;">
+			<ComboBoxItem Value="" Selected="true"><![CDATA[<%=sConstSelectTest%>]]></ComboBoxItem>
+<%
+for(catAssColl in arrAssessments)
+{
+%>
+			<ComboBoxItem Value="<%=catAssColl.id%>"><![CDATA[<%=catAssColl.title%>]]></ComboBoxItem>
+<%
+}
+%>
+		</ComboBox>
+		<ComboBox Class="XAML-combo-view" Name="SelectStatus" Width="130" Change="UPDATE=LearningsList;">
+			<ComboBoxItem Value="all" Selected="true"><![CDATA[<%=tools_web.get_web_const("vsestatusy", curLngWeb)%>]]></ComboBoxItem>
+<%
+for(fldStatus in curLngCommon.event_status_types)
+{
+%>
+			<ComboBoxItem Value="<%=fldStatus.id%>"><![CDATA[<%=fldStatus.name%>]]></ComboBoxItem>
+<%
+}
+%>
+		</ComboBox>
+		
+		<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+			<Label><![CDATA[<%=tools_web.get_web_const("vppb_from", curLngWeb)%>]]></Label>
+			<DatePicker Name="StartDate" Format="d.m.Y" Width="110" Change="UPDATE=LearningsList;"/>
+		</StackPanel>
+		<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+			<Label><![CDATA[<%=StrNonTitleCase(tools_web.get_web_const("po", curLngWeb))%>]]></Label>
+			<DatePicker Name="FinishDate" Format="d.m.Y" Width="110" Change="UPDATE=LearningsList;"/>
+		</StackPanel>
+		<Button Click="UPDATE=LearningsList;" Class="XAML-button XAML-button-view icon-search"></Button>
+	</StackPanel>
+	<DataGrid Name="LearningsList" Source="{LearningsCollection}" PageSize="15" Selection="single">
+		<DataGridColumn Title="ID" Value="id" Hidden="1" Ghost="false"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID } )%>"/>
+		<DataGridColumn Title="<%=sConstLearningCount%>" Value="learnings_count" Width="120" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="start_date" Width="150" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>" Value="finish_date" Width="150" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="140" Type="string"  Sortable="True"/>
+	</DataGrid>
+</SPXMLScreen>

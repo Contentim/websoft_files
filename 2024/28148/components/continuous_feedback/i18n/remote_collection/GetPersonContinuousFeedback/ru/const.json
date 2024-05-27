@@ -1,0 +1,18 @@
+﻿{
+"id":"ID отзыва",
+"code":"Код отзыва",
+"status":"Статус отзыва",
+"status_id":"Код статуса отзыва",
+"plan_date":"Плановая дата заполнения отзыва",
+"done_date":"Фактическая дата заполнения отзыва",
+"person_fullname":"ID респондента",
+"person_pict_url":"Фото респондента",
+"object_fullname":"ID оцениваемого",
+"object_pict_url":"Фото оцениваемого",
+"owner_person_fullname":"ID инициатора",
+"owner_person_pict_url":"Фото инициатора",
+"project_name":"Название проекта",
+"text_html":"HTML для тайла",
+"basic_score":"Оценка",
+"basic_desc":"Отзы"
+}

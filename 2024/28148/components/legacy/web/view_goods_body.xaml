@@ -1,0 +1,392 @@
+﻿<SPXMLScreen>
+
+<Label/>
+<Label/>
+<Label Class="XAML-object-title-label"><![CDATA[<%=tools_web.get_web_const( 'tovary', curLngWeb )%>]]></Label>
+<%
+sCatalogsListViewType = tools_web.get_web_param( curParams, "goods_body.tab_list.goods_tab.view_type", "list", true );
+sCatalogsListObjectsViewType = CONTEXT.GetOptProperty( 'sCatalogsListObjectsViewType', tools_web.get_web_param( curParams, "goods_body.tab_list.goods_tab.block_list.list_block.objects_view_type", "grid", true ) );
+bDispViewSelector = tools_web.is_true( tools_web.get_web_param( curParams, "goods_body.tab_list.goods_tab.disp_view_selector", true, true ) );
+bDispGoodType = tools_web.is_true( tools_web.get_web_param( curParams, "goods_body.tab_list.goods_tab.block_list.list_block.disp_good_type", true, true ) );
+iSelectedGoodsRoleID = OptInt( CONTEXT.GetOptProperty( "SelectedGoodsRoleID" ), null );
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'GoodsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'goods_body.tab_list', 'goods;basket;orders', true ) ).split( ';' );
+%>
+<Edit Name="SelectedGoodsRoleID" Hidden="1"><%=iSelectedGoodsRoleID%></Edit>
+<Edit Name="SelectedGoodsRoleCondition" Hidden="1"><%=CONTEXT.GetOptProperty( "SelectedGoodsRoleCondition", "" )%></Edit>
+<TabControl Name="GoodsBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%"  DisplayMode="tab" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>">
+<%
+
+bShowInstance = tools_web.is_true( tools_web.get_web_param( curParams, 'bShowInstance', false, true ) );
+bFormOrder = tools_web.is_true( tools_web.get_web_param( curParams, 'bFormOrder', false, true ) );
+sUrlLink = "OPENURL=";
+if ( bShowInstance )
+{
+	sUrlLink += tools_web.get_mode_clean_url( null, '%7Bid%7D', { show_instance: 1, is_form_order: ( bFormOrder ) ? 1 : 0 } );
+}
+else
+{
+	sUrlLink += tools_web.get_mode_clean_url( null, '%7Bid%7D', { is_form_order: ( bFormOrder ) ? 1 : 0 } );
+}
+
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+	if ( sTabListParam == 'goods' )
+	{
+		iCurTab++;
+		arrBlockListParam = String( tools_web.get_web_param( curParams, 'goods_body.tab_list.goods_tab.block_list', 'tree;desc;list', true ) ).split( ';' );
+		sTabTitle = tools_web.get_web_param( curParams, "goods_body.tab_list.goods_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'tovary', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		bDispTree = ArrayOptFind( arrBlockListParam, "This=='tree'" ) != undefined;
+		if ( bDispTree )
+		{
+%>
+		<TabControl Name="MobileDesignTab" ActiveTab="<%=CONTEXT.GetOptProperty( "MobileDesignTab", 0 )%>" DisplayMode="tab" TabsHidden="true" Height="100%">
+			<TabItem Title="<%=tools_web.get_web_const( '3l2bo94bpm', curLngWeb )%>">
+
+				<Collection Name="GoodsRolesTreeCollection">
+					<Data>
+						<Row>
+							<Cell Id="id" Value=""/>
+							<Cell Id="parent" Value=""/>
+							<Cell Id="name" Value="<%=XmlAttrEncode( '- ' + tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb ) + ' -' )%>"/>
+							<Cell Id="icon" Value="<%=( iSelectedGoodsRoleID == null ? '/pics/arrow_right16x16.png' : '/pics/folder16x16.png' )%>"/>
+							<Cell Id="exp" Value="true"/>
+							<Cell Id="cond" Value=""/>
+						</Row>
+<%
+			xarrRoles = XQuery( 'for $elem in roles where $elem/catalog_name = "good" return $elem' );
+			if ( ArrayOptFirstElem( xarrRoles ) != undefined )
+			{
+%>
+						<Row>
+							<Cell Id="id" Value=""/>
+							<Cell Id="parent" Value=""/>
+							<Cell Id="name" Value="<%=XmlAttrEncode( '- ' + 'Без категории' + ' -' )%>"/>
+							<Cell Id="exp" Value="true"/>
+							<Cell Id="cond" Value="IsEmpty( $elem/role_id )=true()"/>
+						</Row>
+<%
+			}
+			for ( catRoleElem in xarrRoles )
+			{
+%>
+						<Row>
+							<Cell Id="id" Value="<%=catRoleElem.id%>"/>
+							<Cell Id="parent" Value="<%=catRoleElem.parent_role_id%>"/>
+							<Cell Id="name" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( catRoleElem.name, curLng.short_id ) )%>"/>
+							<Cell Id="icon" Value="<%=( catRoleElem.id == iSelectedGoodsRoleID ? '/pics/arrow_right16x16.png' : '/pics/folder16x16.png' )%>"/>
+							<Cell Id="exp" Value="true"/>
+							<Cell Id="cond" Value="MatchSome( $elem/role_id, (<%=catRoleElem.id%>) )"/>
+						</Row>
+<%
+			}
+%>
+					</Data>
+				</Collection>
+
+				<Tree Name="GoodsRolesTree" Source="{GoodsRolesTreeCollection}" DataID="id" DataParent="parent" DataTitle="name" DataIcon="icon" DataExpanded="exp" Click="SET=currentlySelectedRoleTitle,{name};SET=MobileDesignTab,1;SET=SelectedGoodsRoleID,{id};SET=SelectedGoodsRoleCondition,{cond};{!act};UPDATE=RoleDescPanel,GoodsResult;" Width="100%"></Tree>
+
+			</TabItem>
+
+			<TabItem Title="<%=tools_web.get_web_const( 'paneltovarov', curLngWeb )%>">
+				<Grid Width="100%" Class="XAML-grid-container">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+
+					<GridRow>
+						<Link Click="SET=MobileDesignTab,0;" Class="icon-arrow-left"></Link>
+						<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedRoleTitle" Editable="0"><%=CONTEXT.GetOptProperty( "currentlySelectedRoleTitle", "" )%></Edit>
+					</GridRow>
+				</Grid>
+				<Label/>
+<%
+		}
+
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == 'desc' )
+			{
+%>
+				<Panel Name="RoleDescPanel" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Source="desc_body" >
+					<Param Name="desc_object_id" Value="{SelectedGoodsRoleID}"/>
+					<Param Name="disp_panel" Value="false"/>
+				</Panel>
+<%
+			}
+
+			if ( sTabElem == 'list' )
+			{
+				arr_filters = new Array();
+
+				if ( bDispGoodType )
+				{
+					obj_filter = new Object();
+					obj_filter.name = "good_type_id";
+					obj_filter.title = tools_web.get_web_const( 'tiptovara', curLngWeb );
+					obj_filter.type = "foreign_elem";
+					obj_filter.SetProperty( "default", OptInt( CONTEXT.GetOptProperty( "good_type_id" ), "" ) );
+					obj_filter.SetProperty( "catalog_name", "good_type" );
+					arr_filters.push( obj_filter )
+				}
+				curFilter = {
+					'id': "Goods",
+					'search_field': 'goods_key_word',
+					'search_action': "UPDATE=GoodsResult;",
+					'selectors': ( bDispViewSelector ? 'list;tile' : "" ),
+					'disp_search': true,
+					'selectors_field': "sCatalogsListObjectsViewType",
+					'filters': arr_filters
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+					<Collection Name="GoodsResultCollection" Source="view_goods">
+						<Param Name="good_role_id" Value="{SelectedGoodsRoleID}"/>
+						<Param Name="good_role_cond" Value="{SelectedGoodsRoleCondition}"/>
+						<Param Name="search_word" Value="{goods_key_word}"/>
+						<Param Name="good_type_id" Value="{good_type_id}"/>
+						<Param Name="show_instance" Value="<%=bShowInstance%>"/>
+						<Param Name="type_currency" Value="<%=tools_web.get_web_param(curParams, 'sTypeCurrency', "", true)%>"/>
+						<Param Name="width_obj_img" Value="<%=tools_web.get_web_param(curParams, 'sWidthImg', "", true)%>"/>
+						<Param Name="height_obj_img" Value="<%=tools_web.get_web_param(curParams, 'sHeightImg', "", true)%>"/>
+					</Collection>
+<%
+				if ( sCatalogsListObjectsViewType == 'tile' )
+				{
+%>
+					<TileView Name="GoodsResult" Width="100%" TileHeight="275" TileWidth="275" DataSource="{GoodsResultCollection}" TemplateSource="object_tile">
+						<Param Name="click" Value="<%=sUrlLink%>"/>
+					</TileView>
+<%
+				}
+				else
+				{
+%>
+				<DataGrid Name="GoodsResult" Source="{GoodsResultCollection}" Width="100%">
+					<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', {is_form_order: ( bFormOrder ) ? 1 : 0 } )%>"/>
+					<DataGridColumn Value="sum" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_cost', curLngWeb ) )%>" Width="100" Type="string"/>
+					<DataGridColumn Value="currency" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_currency_type', curLngWeb ) )%>" Width="100" Type="string"/>
+<%
+					if ( bShowInstance )
+					{
+%>
+					<DataGridColumn Value="instance" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_num", curLngWeb ) )%>" Width="130" Type="string"/>
+<%
+					}
+%>
+				</DataGrid>
+<%
+				}
+			}
+		}
+
+		if ( bDispTree )
+		{
+%>
+			</TabItem>
+		</TabControl>
+<%
+		}
+%>
+	</TabItem>
+<%
+	}
+
+///////////////////////////////////////////////   BASKET TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'basket' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'goods_body.tab_list.basket_tab.block_list', 'actions;goods', true ) ).split( ';' );
+	sMsgNoAccount = tools_web.get_web_param( curParams, 'sMsgNoAccount', 'У вас отсутствует счет в валюте', true );
+	sMsgNotEnoughPoints = tools_web.get_web_param( curParams, 'sMsgNotEnoughPoints', 'У вас недостаточно баллов для покупки', true );
+	sTabTitle = tools_web.get_web_param( curParams, 'goods_body.basket_tab.add_tab', '', true );
+	bFormOrder = tools_web.is_true( tools_web.get_web_param( curParams, 'bFormOrder', false, true ) );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'l5o7acbegs', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	bInBasket = false;
+	catBasket = ArrayOptFirstElem( XQuery( 'for $elem in baskets where $elem/person_id = ' + curUserID + ' return $elem' ) );
+	if ( catBasket != undefined )
+	{
+		teBasket = OpenDoc( UrlFromDocID( catBasket.id ) ).TopElem;
+		bInBasket = ArrayCount( teBasket.goods ) != 0;
+	}
+	if ( ! bInBasket )
+	{
+		curMessageBox = {
+			"type": "info",
+			"text": tools_web.get_web_const( 'korzinapusta', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'actions' && bInBasket )
+		{
+			bDispDlgComment = tools_web.is_true( tools_web.get_web_param( curParams, "disp_dlg_comment", false, true ) );
+			bDispDlgCreateOrder = tools_web.is_true( tools_web.get_web_param( curParams, "disp_dlg_create_order", false, true ) );
+
+			sCreateOrderAction = 'ACTION=CreateOrderAction';
+			if ( bDispDlgComment && bDispDlgCreateOrder )
+				sCreateOrderAction = 'OPENDIALOG=OrderDialog';
+			else if ( bDispDlgComment )
+				sCreateOrderAction = 'OPENDIALOG=CommentDialog';
+			else if ( bDispDlgCreateOrder )
+				sCreateOrderAction = 'OPENDIALOG=OrderDialog';
+%>
+		<Dialog Name="OrderDialog" Source="dlg_create_order" Title="<%=XmlAttrEncode( 'Оформление заказа' )%>" Close="SET=CreateOrderAction/created_order,{CreatedOrder};SET=CreateOrderAction/comment,{DialogText};ACTION=CreateOrderAction;">
+			<Param Name="label" Value="<%='Коментарий к заказу' + ':'%>"/>
+		</Dialog>
+
+		<Dialog Name="CommentDialog" Source="dlg_edit_text" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vveditetekst', curLngWeb ) )%>" Close="SET=CreateOrderAction/comment,{DialogText};ACTION=CreateOrderAction;">
+			<Param Name="label" Value="<%='Коментарий к заказу' + ':'%>"/>
+		</Dialog>
+
+		<Action Name="CreateOrderAction" Source="basket_change" Success="HIDE=BasketToolbar;ALERT={messageText};REFRESH" Failure="SHOW=BasketToolbar;ALERT={messageText}">
+			<Param Name="action" Value="create_order"/>
+			<Param Name="msg_no_account" Value="<%=sMsgNoAccount%>"/>
+			<Param Name="msg_not_enough_points" Value="<%=sMsgNotEnoughPoints%>"/>
+			<Param Name="basket_id" Value="<%=catBasket.id%>"/>
+			<Param Name="comment" Value=""/>
+			<Param Name="created_order" Value=""/>
+			<Param Name="is_form_order" Value="<%=bFormOrder%>"/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+
+		<Action Name="UnformOrder" Source="basket_change" Success="ALERT={messageText};REFRESH" Failure="SHOW=BasketToolbar;ALERT={messageText}">
+			<Param Name="action" Value="clean_basket"/>
+			<Param Name="basket_id" Value="<%=catBasket.id%>"/>
+			<Param Name="is_form_order" Value="<%=bFormOrder%>"/>
+		</Action>
+
+		<StackPanel Name="BasketToolbar" UsePadding="false">
+			<Toolbar Class="XAML-toolbar">
+				<Button Class="XAML-button XAML-button-plus" Click="<%=sCreateOrderAction%>"><![CDATA[<%=tools_web.get_web_const( 'sformirovatzak', curLngWeb )%>]]></Button>
+				<Button Class="XAML-button XAML-button-plus" Click="ACTION=UnformOrder"><![CDATA[<%='Очистить корзину'%>]]></Button>
+			</Toolbar>
+		</StackPanel>
+<%
+		}
+
+		if ( sTabElem == 'goods' && bInBasket )
+		{
+%>
+		<Collection Name="BasketDataGridCollection">
+			<Data>
+<%
+		sCurrencyBasket = ( teBasket.currency_type_id.HasValue ) ? teBasket.currency_type_id.Value : "";
+
+		for ( fldGoodElem in teBasket.goods )
+		{
+			sSum = "";
+			sCurrency = "";
+			sCurrencyType = sCurrencyBasket;
+
+			catGood = fldGoodElem.PrimaryKey.OptForeignElem;
+			if ( catGood == undefined )
+				continue;
+
+			dGood = tools.open_doc( fldGoodElem.PrimaryKey );
+			if ( dGood == undefined )
+				continue;
+
+			teGood = dGood.TopElem;
+			oCurGood = ArrayOptFind( teGood.costs, "This.currency_type_id.Value == sCurrencyType" );
+			if ( oCurGood == undefined )
+			{
+				oCost = ArrayOptFirstElem( teGood.costs );
+				if ( oCost.currency_type_id.HasValue )
+					sCurrencyType = oCost.currency_type_id.Value;
+				if ( oCost.sum.HasValue )
+					sSum = oCost.sum.Value;
+			}
+			else if ( oCurGood.sum.HasValue )
+			{
+				sSum = oCurGood.sum.Value;
+			}
+
+			oCurrencyType = lists.currency_types.GetOptChildByKey( sCurrencyType );
+			sCurrency = ( oCurrencyType != undefined ) ? oCurrencyType.name.Value : sCurrencyType;
+%>
+				<Row>
+					<Cell Id="id" Value="<%=fldGoodElem.PrimaryKey%>"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode( catGood == undefined ? tools_web.get_web_const( 'c_deleted', curLngWeb ) : tools_web.get_cur_lng_name( catGood.name , curLng.short_id ) )%>"/>
+					<Cell Id="sum" Value="<%=sSum%>"/>
+					<Cell Id="currency" Value="<%=sCurrency%>"/>
+					<Cell Id="url" Value="<%=XmlAttrEncode( tools_web.get_mode_clean_url( null, fldGoodElem.PrimaryKey, { doc_id: curDocID, is_form_order: ( bFormOrder ) ? 1 : 0  } ) )%>"/>
+					<Cell Id="num" Value="<%=fldGoodElem.number%>"/>
+					<Cell Id="date" Value="<%=StrDate( fldGoodElem.reserved_date )%>"/>
+					<Cell Id="ico" Value="<%=''%>"/>
+				</Row>
+<%
+		}
+%>
+			</Data>
+		</Collection>
+
+		<DataGrid Name="BasketDataGrid" Title="" Source="{BasketDataGridCollection}">
+			<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={url}"/>
+			<DataGridColumn Value="sum" Hidden="<%=curDevice.disp_type == "mobile"%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_cost', curLngWeb ) )%>" Width="90" Type="string"/>
+			<DataGridColumn Value="currency" Hidden="<%=curDevice.disp_type == "mobile"%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_currency_type', curLngWeb ) )%>" Width="100" Type="string"/>
+			<DataGridColumn Value="num" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_num', curLngWeb ) )%>" Width="90" Type="string"/>
+			<DataGridColumn Value="date" Hidden="<%=curDevice.disp_type == "mobile"%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'datarezervirov', curLngWeb ) )%>" Width="180" Type="string"/>
+		</DataGrid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+
+
+///////////////////////////////////////////////   ORDERS TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'orders' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'goods_body.tab_list.orders_tab.block_list', 'orders', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "goods_body.tab_list.orders_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'zakazy', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'orders' )
+		{
+			curView = {
+				"id": "OrdersView",
+				"height": "400",
+				"catalog_name": "order",
+				"xquery_qual": ( "$elem/person_id = " + curUserID ),
+				"disp_link": true,
+				//"link_action": sUrlLink,
+				//"link_prop": "show_instance=1",
+				"link_mode": "order",
+				"typein": false,
+				"list_columns": ( curDevice.disp_type == "mobile" ? "name;status" : "code;person_fullname;sum;status;formed_date;paid_date;" ), // code;
+				"disp_filter": ( curDevice.disp_type == "mobile" ? false : true ),
+				"disp_search": true
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+</SPXMLScreen>

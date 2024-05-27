@@ -1,0 +1,21 @@
+﻿<SPXMLScreen Ready="OPENDIALOG=TransferScore">
+
+<%
+    aParams = Request.Header.Referer.split( "&" );
+    sObjectID = ArrayOptFind( aParams, "StrContains( This, 'object_id' )" );
+    aId = sObjectID.split( "=" );
+    sId = OptInt( ArrayOptFind( aId, "OptInt( This ) != undefined" ), "" );
+%>
+    <Dialog Name="TransferScore" Source="dlg_game_dialog" Width="<%=curDevice.disp_type != "mobile" ? "600" : "95%"%>" Title="<%=tools_web.get_web_param( curParams, 'dlg_title', 'Передача баллов', true )%>" Close="OPENURL=<%=global_settings.settings.portal_base_url%>;">
+        <Param Name="type" Value="thanks"/>
+        <Param Name="currency_type_id" Value="thanks"/>
+        <Param Name="thank_outlook" Value="1"/>
+        <Param Name="sender" Value="<%=sId%>"/>
+        <Param Name="cur_user" Value="<%=curUserID%>"/>
+        <Param Name="anonym_transfer" Value="<%=tools_web.is_true( tools_web.get_web_param( curParams, 'anonym_transfer', false, true ) )%>"/>
+        <Param Name="anonym_name" Value="<%=tools_web.get_web_param( curParams, 'anonym_name', '', true )%>"/>
+        <Param Name="show_fld_points" Value="<%=tools_web.get_web_param( curParams, 'show_fld_points', false, true )%>"/>
+        <Param Name="competence_profile_id" Value="<%=tools_web.get_web_param( curParams, 'competence_profile_id', '', true )%>"/>
+    </Dialog>
+
+</SPXMLScreen>

@@ -1,0 +1,72 @@
+﻿<HTML>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+
+		<table border="1" cellpadding="2" cellspacing="0">
+			<%
+				arrColumns = Ps.columns;
+			%>
+
+			<tr valign="middle">
+				<td width="300px" bgcolor="#FFCC99" colspan="4"></td>
+				<% for(column in Ps.columns){ %>
+					<td width="300px" bgcolor="#FFCC99" colspan="2" align="center"><b><%=column.name%></b></td>
+				<% } %>
+			</tr>
+			
+			<tr valign="middle">
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_coll')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+
+				<% for(column in arrColumns){ %>
+					<td width="300px" bgcolor="#FFCC99" align="center">Оценок</td>
+					<td width="300px" bgcolor="#FFCC99" align="center">Результат</td>
+				<% } %>
+			</tr>
+		<%
+
+		arrFeedbacks = Ps.feedback_results;
+
+		for (var i = 0; i < ArrayCount(arrFeedbacks); i++) {
+			_feedback = arrFeedbacks[i]
+		%>
+
+		<%if (i % 2 === 0) { %>
+			<tr valign="middle">
+		<% } else { %>
+			<tr valign="middle" bgcolor="#f1f0f0">
+		<% } %>
+			<!-- <td><%=_feedback.Xml%></td> -->
+			<td><%=_feedback.person_fullname%></td>
+			<td><%=_feedback.person_position_name%></td>
+			<td><%=_feedback.person_subdivision_name%></td>
+			<td><%=_feedback.person_org_name%></td>
+
+			<% for(column in arrColumns) { %>
+				<% if(ArrayOptFindByKey(_feedback.response_types, column.id, 'id') != undefined) { %>
+
+					<% _response_type = ArrayOptFirstElem(ArraySelectByKey(_feedback.response_types, column.id, 'id')); %>
+
+					<% if( _response_type.task_count > 0 ) { %>
+						<td><%=_response_type.task_count%></td>
+						<td><%=_response_type.assessment_count%></td>
+					<% } else { %>
+						<td>-</td>
+						<td>-</td>
+					<% } %>
+				<% } else { %>
+					<td>-</td>
+					<td>-</td>
+				<% } %>
+
+			<% } %>
+		  </tr>
+
+		<%
+		}
+		%>
+		</table>
+	</body>
+</HTML>

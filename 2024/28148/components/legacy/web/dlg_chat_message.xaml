@@ -1,0 +1,50 @@
+﻿<SPXMLScreen>
+
+<Action Name="CreatePersonalMessageAction" Source="communication_create_message" Success="REFRESH">
+  <Param Name="sMessageText" Value="{MessageText}"/>
+  <Param Name="iRecipientId" Value="{PartnerId}"/>
+</Action>
+
+<%
+//sAddAction = "SET=TargetData,{CatalogListDataGridSelList:*};SET=SelectedData,{CatalogListDataGridFullList};CONTEXT=NULL;UPDATE=CatalogListDataGridSelList";
+sOkAction = "ACTION=CreatePersonalMessageAction;CLOSEDIALOG";
+%>
+	<!--<ContextGroup Name="DlgCreateMessageContext" Items="PartnerId,MessageText"/>-->
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="100"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+			<ComboBox Name="PartnerId" Width="100%">
+			<%
+				xarrChats = XQuery("for $elem in personal_chats where $elem/person_id=" + curUserID + " and $elem/prohibited=false() and $elem/partner_prohibited=false() and $elem/confirmed=true() and $elem/partner_confirmed=true() order by $elem/partner_fullname return $elem");
+				for(catChat in xarrChats)
+				{
+			%>
+			  <ComboBoxItem Value="<%=catChat.partner_id%>"><%=catChat.partner_fullname%></ComboBoxItem>
+			<%
+				}
+			%>
+			</ComboBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vfb_text", curLngWeb )%>:</Label>
+			<EditBox Name="MessageText" Width="100%" Height="70"/>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="<%=sOkAction%>">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

@@ -1,0 +1,509 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/reports_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="-32vpx" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" LOOP-EXPR="
+				try
+				{
+					arrColumnsInfo = StrReplace( List.GetCurCodeSortInfo(), '\'', '' ).split( ',' );
+					sColumnName = Trim( arrColumnsInfo[0] );
+					sSortDir = Trim( arrColumnsInfo[1] );
+
+					Ps.successors.Sort( sColumnName, sSortDir )
+					return Ps.successors;
+				}
+				catch( ex )
+				{
+					return Ps.successors;
+				}
+			" ON-SEL-CHANGE="
+				if ( TopElem.ChildExists( 'count_sel' ) )
+				{
+					TopElem.set_sel_action( List );
+				}
+			">
+			<ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.id ) )" IMAGE-URL="ico/key_position.ico">
+				<COL WIDTH="30zr" COL-TITLE-EXPR="ms_tools.get_const( 'lhbyv18qkm' )"			TITLE-EXPR="ListElem.person_fullname"				ORDER="person_fullname"/>
+				
+				<COL WIDTH="30zr" COL-TITLE-EXPR="ms_tools.get_const( 'c_position' )"			TITLE-EXPR="ListElem.position_name"					ORDER="position_name"/>
+				<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'c_subd' )"				TITLE-EXPR="ListElem.subdivision_name"				ORDER="subdivision_name"/>
+				<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'klyuchevayadolzhno' )"	TITLE-EXPR="ListElem.key_position_name"				ORDER="key_position_name"/>	
+				<COL WIDTH="25zr" COL-TITLE-EXPR="'Подразделение ключевой должности'"			TITLE-EXPR="ListElem.key_position_sub_name"			ORDER="key_position_sub_name"/>	
+				<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'c_status' )"				TITLE-EXPR="ListElem.status"					ORDER="status"/>
+				
+				<LOOP EXPR="Ps.comparison_successor_params" VAR="ListParam">
+					<IF EXPR="ListParam.code == 'sex'">
+						<IF EXPR="ListElem.sex == 'm'">
+							<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'vpb_sex' )" TITLE-EXPR="ms_tools.get_const( 'vpb_m' )" ORDER="sex"/>
+						</IF>
+						<ELSE>
+							<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'vpb_sex' )" TITLE-EXPR="ms_tools.get_const( 'vpb_w' )" ORDER="sex"/>
+						</ELSE>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'age'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'vrb_age' )" TITLE-EXPR="ListElem.age" ORDER="age"/>
+					</IF>
+					
+					<!-- в разработке
+					<IF EXPR="ListParam.code == 'education'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'vrb_education' )" TITLE-EXPR="ListElem.education" ORDER="education"/>
+					</IF>
+					-->
+					
+					<IF EXPR="ListParam.code == 'exp_years_company'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="'Стаж в компании'" TITLE-EXPR="ListElem.exp_years_company" ORDER="exp_years_company"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'exp_years_position'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="'Стаж на должности'" TITLE-EXPR="ListElem.exp_years_position" ORDER="exp_years_position"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'exp_month_reserve'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="'Длительность нахождения в резерве'" TITLE-EXPR="ListElem.exp_month_reserve" ORDER="exp_month_reserve"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'efficiency'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="'Эффективность'" TITLE-EXPR="ListElem.efficiency" ORDER="efficiency"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'pdp_score_summary'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="'Выполнение ИПР'" TITLE-EXPR="ListElem.pdp_score_summary" ORDER="pdp_score_summary"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'efficiency_estimation_name'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'ocenkaeffektiv' )" TITLE-EXPR="ListElem.efficiency_estimation_name" ORDER="efficiency_estimation_name"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'development_potential_name'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'potencialrazvi_9' )" TITLE-EXPR="ListElem.development_potential_name" ORDER="development_potential_name"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'readiness_level_name'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'urovengotovnos' )" TITLE-EXPR="ListElem.readiness_level_name" ORDER="readiness_level_name"/>
+					</IF>
+					
+					<IF EXPR="ListParam.code == 'region_name'">
+						<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const( 'vrb_region' )" TITLE-EXPR="ListElem.region_name" ORDER="region_name"/>
+					</IF>
+
+				</LOOP>
+				
+			</ROW>
+			<MENU>
+				<IF EXPR="MainScreen.AuxData.GetOptProperty( 'curApplication', null ) == null">
+					<ITEM TYPE="std_grid_menu_items_base"/>
+				</IF>
+			</MENU>
+		</LIST>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+			
+			<ITEM TYPE="ms_object_selector" SOURCE="Ps.position_common_id" catalogExpr="'position_common'" WIDTH="100%" xqueryQualExpr="
+				return ''
+			"/>
+
+			<ITEM TYPE="ms_object_selector" SOURCE="Ps.key_position_id" catalogExpr="'key_position'" WIDTH="100%" xqueryQualExpr="
+				return ''
+			"/>
+
+			<CHECK SOURCE="Ps.is_comparison_successor" TITLE-EXPR="'Сравнить преемников'" MULTILINE="1"/>
+
+			<IF EXPR="(Ps.is_comparison_successor==true)">
+				<TitleLabel STD-MARGINS="0" TITLE-EXPR="'Параметры для сравнения'">
+					<WITH VAR="arrCompareParams" EXPR="
+						arrParams = [{ 
+								name: 'Пол', 
+								code: 'sex'
+							},
+							{
+								name: 'Возраст, лет.',
+								code: 'age'
+							},
+							/* в разработке
+							{
+								name: 'Образование',
+								code: 'education'
+							},
+							*/
+							{
+								name: 'Стаж в компании',
+								code: 'exp_years_company'
+							},
+							{
+								name: 'Стаж на должности',
+								code: 'exp_years_position'
+							},
+							{
+								name: 'Длительность нахождения в резерве (мес.)',
+								code: 'exp_month_reserve'
+							},				
+							{
+								name: 'Эффективность',
+								code: 'efficiency'
+							},
+							{
+								name: 'Выполнение ИПР',
+								code: 'pdp_score_summary'
+							},
+							{
+								name: 'Оценка эффективности',
+								code: 'efficiency_estimation_name'
+							},
+							{
+								name: 'Потенциал развития',
+								code: 'development_potential_name'
+							},
+							{
+								name: 'Уровень готовности',
+								code: 'readiness_level_name'
+							},
+							{
+								name: 'Регион',
+								code: 'region_name'
+							}
+						];
+						return arrParams;
+					">
+						<LOOP EXPR="arrCompareParams" VAR="ListElem">
+							<CHECK SOURCE="ArrayOptFind( Ps.comparison_successor_params, 'This.code == ' + CodeLiteral( ListElem.code ) ) != undefined" SET-VALUE-ACTION="
+							if ( NewValue )
+							{
+								xmCurField = Ps.comparison_successor_params.ObtainChildByKey( ListElem.code );
+								xmCurField.name = ListElem.name;
+							}
+							else
+							{
+								Ps.comparison_successor_params.DeleteChildByKey(ListElem.code);
+							}
+							TopElem.Doc.SetChanged( true );
+							" TITLE-EXPR="ListElem.name" MULTILINE="1"/>
+						</LOOP>
+					</WITH>
+				</TitleLabel>
+
+			</IF>
+
+				<ITEM TYPE="SelectOrgSubLabel" SOURCE="Ps.parent_object_id" orgWidthExpr="'100%'" subWidthExpr="'90%'" bDispTreeSelectorExpr="TopElem.disp_tree_selector" hierShowExpr="TopElem.hier_show" isAdaptiveExpr="1" xqueryQualExpr="
+				
+					curUser = tools.get_cur_user();
+					var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+					if( sApplicationID != '' )
+					{
+						task = new BackgroundTask;
+						task.RunOnServer = true;
+						task.ShowProgress = true;
+
+						oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+						if(oModelRoles.type != '')
+						{
+							switch( oModelRoles.type )
+							{
+								case 'admin':
+								case 'manager':
+								case 'expert':
+								{
+									return '';
+								}
+								case 'hr':
+								{
+									arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+								}
+								case 'observer':
+								{
+									arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+								}
+								case 'reject':
+								{
+									return '$elem/id = 0';
+								}
+								default:
+								{
+									return '$elem/id = 0';
+								}
+							}
+						}
+					} else {
+						return '';
+					}
+				
+				"/>
+				<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const( '0ee33c4ctr' )" MULTILINE="1"/>
+
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'c_status' )"/>
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const( 'c_choose' )" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+							dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+							dlgDoc.TopElem.variant = common.successor_status_types;
+							
+							dlgDoc.TopElem.multi_select = true;
+							dlgDoc.TopElem.value_array = Ps.statuses;
+							Screen.ModalDlg( dlgDoc );
+
+							Ps.statuses.Clear()
+							for ( _value in dlgDoc.TopElem.values )
+							{
+								Ps.statuses.ObtainChildByKey( _value.key_str );
+							}
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="StatusesGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.statuses, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW IMAGE-URL-EXPR="'ico/generic_item.ico'" OPEN-ACTION="" DELETE-ACTION="">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.name"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+
+				</PANEL>
+
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'potencialrazvi_9' )"/>
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const( 'c_choose' )" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+							dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+							dlgDoc.TopElem.variant = development_potentials;
+
+							dlgDoc.TopElem.multi_select = true;
+							dlgDoc.TopElem.value_array = Ps.development_potentials;
+							Screen.ModalDlg( dlgDoc );
+
+							Ps.development_potentials.Clear()
+							for ( _value in dlgDoc.TopElem.values )
+							{
+								Ps.development_potentials.ObtainChildByKey( _value.key_str );
+							}
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="DevelopmentPotentialsGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.development_potentials, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW IMAGE-URL-EXPR="'ico/generic_item.ico'" OPEN-ACTION="" DELETE-ACTION="">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.name"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+
+				</PANEL>
+
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'ocenkaeffektiv' )"/>
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const( 'c_choose' )" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+							dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+							dlgDoc.TopElem.variant = efficiency_estimations;
+
+							dlgDoc.TopElem.multi_select = true;
+							dlgDoc.TopElem.value_array = Ps.efficiency_estimations;
+							Screen.ModalDlg( dlgDoc );
+
+							Ps.efficiency_estimations.Clear()
+							for ( _value in dlgDoc.TopElem.values )
+							{
+								Ps.efficiency_estimations.ObtainChildByKey( _value.key_str );
+							}
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="EfficiencyEstimationsGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.efficiency_estimations, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW IMAGE-URL-EXPR="'ico/generic_item.ico'" OPEN-ACTION="" DELETE-ACTION="">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.name"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+
+				</PANEL>
+
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'urovengotovnos' )"/>
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const( 'c_choose' )" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+							dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+							dlgDoc.TopElem.variant = readiness_levels;
+
+							dlgDoc.TopElem.multi_select = true;
+							dlgDoc.TopElem.value_array = Ps.readiness_levels;
+							Screen.ModalDlg( dlgDoc );
+							
+							Ps.readiness_levels.Clear()
+							for ( _value in dlgDoc.TopElem.values )
+							{
+								Ps.readiness_levels.ObtainChildByKey( _value.key_str );
+							}
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="ReadinessLevelsGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.readiness_levels, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW IMAGE-URL-EXPR="'ico/generic_item.ico'" OPEN-ACTION="" DELETE-ACTION="">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.name"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+
+				</PANEL>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	arrSettings = [
+		{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+		{ 'name' : 'position_common_id', 'value' : TopElem.position_common_id.Value },
+		{ 'name' : 'key_position_id', 'value' : TopElem.key_position_id.Value },
+		{ 'name' : 'is_comparison_successor', 'value' : TopElem.is_comparison_successor.Value },
+		{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+		{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value },
+		{ 'name' : 'statuses', 'value' : TopElem.statuses },
+		{ 'name' : 'development_potentials', 'value' : TopElem.development_potentials },
+		{ 'name' : 'efficiency_estimations', 'value' : TopElem.efficiency_estimations },
+		{ 'name' : 'readiness_levels', 'value' : TopElem.readiness_levels },
+	];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	Ps.successors.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+	
+	var arrCompareParams = ArrayExtract(TopElem.comparison_successor_params, 'This.code.Value');
+	if(ArrayOptFirstElem(arrCompareParams) != undefined)
+		oParams.comparison_successor_params = arrCompareParams;
+		
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	curUser = tools.get_cur_user();
+
+	oResult = task.CallMethod( 'tools_report', 'successors_report', [ oParams ] );
+	
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount( oResult.successors );
+
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+		for ( oSuccessor in oResult.successors )
+		{
+			_child										= Ps.successors.AddChild();
+			_child.id									= oSuccessor.id;
+			_child.person_fullname						= oSuccessor.person_fullname;
+			_child.position_id 			 				= oSuccessor.position_id;
+			_child.position_name 			 			= oSuccessor.position_name;
+			_child.subdivision_id						= oSuccessor.subdivision_id;
+			_child.subdivision_name						= oSuccessor.subdivision_name;
+			_child.key_position_id						= oSuccessor.key_position_id;
+			_child.key_position_name					= oSuccessor.key_position_name;
+			_child.key_position_sub_name				= oSuccessor.key_position_sub_name;
+			_child.status								= oSuccessor.status;
+			
+			_child.development_potential_id				= oSuccessor.development_potential_id;
+			_child.efficiency_estimation_id				= oSuccessor.efficiency_estimation_id;
+			_child.readiness_level_id					= oSuccessor.readiness_level_id;
+			
+			_child.sex 									= oSuccessor.sex;
+			_child.age 									= oSuccessor.age;
+			//_child.education 							= oSuccessor.education; // в разработке
+			_child.exp_years_company 					= oSuccessor.exp_years_company;
+			_child.exp_years_position 					= oSuccessor.exp_years_position;
+			_child.exp_month_reserve 					= oSuccessor.exp_month_reserve;
+			_child.efficiency 							= oSuccessor.efficiency;
+			_child.pdp_score_summary 					= oSuccessor.pdp_score_summary;
+			_child.development_potential_name			= oSuccessor.development_potential_name;
+			_child.efficiency_estimation_name			= oSuccessor.efficiency_estimation_name;
+			_child.readiness_level_name					= oSuccessor.readiness_level_name;
+			_child.region_name 							= oSuccessor.region_name;
+		}
+
+		if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+		{
+			if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+			{
+				Screen.RunCommand( 'Export' );
+				Ps.successors.Clear();
+				TopElem.count_arr = null;
+			}
+		}
+	}
+
+	Ps.successors.Sort( 'person_fullname', '+' );
+"/>
+
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	arrColumns = [
+		{ 'name': 'person_fullname', 'title': ms_tools.get_const('c_coll') },
+		{ 'name': 'person_position_name', 'title': ms_tools.get_const('c_position') },
+		{ 'name': 'person_subdivision_name', 'title': ms_tools.get_const('c_subd') },
+		{ 'name': 'person_org_name', 'title': ms_tools.get_const('c_org') },
+		{ 'name': 'status', 'title': ms_tools.get_const('c_status') },
+		{ 'name': 'balance', 'title': ms_tools.get_const('c_balance') },
+		{ 'name': 'currency', 'title': ms_tools.get_const('c_currency_type') }
+	];
+
+	_str = EvalCodePageUrl( 'x-local://templates/successors_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, null, System.IsWebClient, EncodeJson( arrColumns ), Ps.successors  ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+	
+	ShellExecute('open', sReportFilePath);
+"/>
+
+</SPXML-SCREEN>

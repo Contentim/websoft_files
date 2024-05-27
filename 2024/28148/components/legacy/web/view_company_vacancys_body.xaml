@@ -1,0 +1,764 @@
+﻿<%
+    //bCheckAccess = tools_web.is_true(GetOptProperty( 'check_access', global_settings.settings.check_access_on_lists ) );
+
+    _exist_category          = tools_web.get_web_param( curParams, 'company_vacancys.main_tab_param.category_list', 'none', true );
+    bShowName                = tools_web.get_web_param( curParams, 'company_vacancys.show_name_doc', '0', true ) == '1';
+    display_tab_list         = tools_web.get_web_param( curParams, 'company_vacancys.display_tab_list', '0', true ) == '1'; 
+    vacancy_type             = tools_web.get_web_param( curParams, 'company_vacancys.type_vacancy', 'none', true );
+    bShowButtonCreate        = tools_web.get_web_param( curParams, 'company_vacancys.show_button_create', '0', true ) == '1';
+    bShowMoreParams          = tools_web.get_web_param( curParams, 'company_vacancys.show_more_params', '0', true ) == '1';  
+    bCheckAccess             = tools_web.get_web_param( curParams, 'company_vacancys.check_access', '0', true ) == '1';
+    tabs_position            = tools_web.get_web_param( curParams, 'company_vacancys.tabs_position', 'w', true );
+
+    bShowResumesCreateButton = tools_web.is_true(tools_web.get_web_param( curParams, 'company_vacancys.show_resume_create_btn', 'false', true ));
+    bShowResumesListButton   = tools_web.is_true(tools_web.get_web_param( curParams, 'company_vacancys.show_resumes_list_btn', 'false', true ));
+    strCurUserRole           = curUser.access.access_role;
+
+    arrVacancyListParam          = String( tools_web.get_web_param( curParams, 'company_vacancys.vacancy_tab_fields_list', 'name,org,prof_area,wage,region,subord,budget,response,employment_type,schedule_id,last_edit_date', true ) ).split( ';' );
+    arrCategoryListToSelectParam = String( tools_web.get_web_param( curParams, 'company_vacancys.main_tab_param.category_list_to_select', 'region,org,profarea', true ) ).split( ';' );
+    iVacancyTabPageItemsCnt      = Int( tools_web.get_web_param( curParams, 'company_vacancys.vacancy_tab_fields_list.page_size', 10, true ));
+
+    sDispType = curDevice.disp_type;
+    bDesctop  = sDispType != 'mobile';
+
+    iDefaultTextEditWidth   = bDesctop ? '200' : '100%';
+    iDefaultLabelWidth      = bDesctop ? '25'  : '20';
+    iDefaultComboWidth      = bDesctop ? '150' : '100%';
+
+%>
+
+<SPXMLScreen>
+
+<%
+    arrTabListParam = String( tools_web.get_web_param( curParams, 'company_vacancys.tab_list', 'main,vacancy_responses,selected_vacancys,recommendations,vacancy_subscriptions,resumes', true ) ).split( ';' );
+
+    if ( bShowName )
+    {
+        if ( ArrayCount( arrTabListParam ) > 1 )
+        {
+%>
+        <!-- <Label Class='XAML-object-title-label'><![CDATA[<%=( curDoc == null ? '' : tools_web.get_cur_lng_name( curDoc.name, curLng.short_id ) )%>]]></Label> -->
+                <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('vakansiikompan', curLngWeb)%></Label>
+<%
+        }
+        else if (ArrayCount(arrTabListParam) == 1)
+        {
+            sCurTab = ArrayOptFirstElem(arrTabListParam);
+            if ( sCurTab != undefined )
+            {
+                switch ( sCurTab )
+                {
+                    case 'main':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('nashivakansii', curLngWeb)%></Label>
+<%
+                        break;
+
+                    case 'vacancy_responses':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('moiotkliki', curLngWeb)%></Label>
+<%
+                        break;
+
+                    case 'selected_vacancys':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('moiizbrannyeva', curLngWeb)%></Label>
+<%
+                        break;
+
+                    case 'recommendations':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('moirekomendacii', curLngWeb)%></Label>
+<%
+                        break;
+
+                    case 'vacancy_subscriptions':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('moipodpiski', curLngWeb)%></Label>
+<%
+                        break;
+
+                    case 'resumes':
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('moirezyume', curLngWeb)%></Label>
+<%
+                        break;
+
+                    default: 
+%>
+                        <Label Class='XAML-object-title-label'><%=tools_web.get_web_const('vakansiikompan', curLngWeb)%></Label>
+<%
+                        break;
+                }
+            }
+        }
+    }
+%>
+
+    <!-- ========= Actions ============= -->
+
+    <Action Name='DeleteObject' Source='DeleteObject' Success = 'ALERT={messageText};REFRESH'>
+        <Param Name='object_id' Value=''/>
+        <Param Name='CONTEXT'   Value='{CONTEXT}'/>
+    </Action>
+
+    <Action Name='ChangeStatusVacancySubscription' Source='ChangeStatusVacancySubscription' Success = 'REFRESH'>
+        <Param Name='object_id' Value=''/>
+        <Param Name='CONTEXT'   Value='{CONTEXT}'/>
+    </Action>
+
+    <Collection Name='MySelectedVacancyCollection' Source='MySelectedVacancyCollection'>
+        <Param Name='context' Value='{CONTEXT}'/>
+    </Collection>
+
+    <Collection Name='MyVacancyResponsesCollection' Source='MyVacancyResponsesCollection'>
+        <Param Name='context' Value='{CONTEXT}'/>
+    </Collection>
+
+    <Collection Name='MyVacancyRecommendationCollection' Source='MyVacancyRecommendationCollection'>
+        <Param Name='context' Value='{CONTEXT}'/>
+    </Collection>
+
+    <Collection Name='MyResumeCollection' Source='MyResumeCollection'>
+        <Param Name='context' Value='{CONTEXT}'/>
+    </Collection>
+
+    <Collection Name='MyVacancySubscriptionCollection' Source='MyVacancySubscriptionCollection'>
+        <Param Name='context' Value='{CONTEXT}'/>
+    </Collection>
+
+    <Collection Name='SearchVacancyCollection' Source='SearchVacancyCollection'>
+        <Param Name='context'     Value='{CONTEXT}'/>
+        <Param Name='CheckAccess' Value='<%=bCheckAccess%>'/>
+        <!--<Param Name='category_from_base' Value='<%=_exist_category%>'/> -->
+<%
+
+    form_property_array = Array( 'key_words', 'min_age', 'max_age', 'min_wage', 'max_wage', 'currency_type', 'region', 'educ_type', 'employment_type', 'type_vacancy', 'category_field', 'show_closed', 'org', 'professional_area');
+    for ( _param in form_property_array )
+    {
+        if (_param == 'org')
+        {
+%>
+            <Param Name='<%=_param%>' Value='{TempDestinationEditOrgIds}'/>
+<%
+        }
+        else if (_param == 'professional_area')
+        {
+%>
+            <Param Name='<%=_param%>' Value='{TempDestinationEditProfessionIds}'/>
+<%
+        }
+        else
+        {
+%>
+            <Param Name='<%=_param%>' Value='{<%=_param%>}'/>
+<%
+        }
+    }
+%>
+
+    </Collection>
+
+<%
+    // arrTabListParam = String( tools_web.get_web_param( curParams, 'company_vacancys.tab_list', 'main,vacancy_responses,selected_vacancys,recommendations,vacancy_subscriptions,resumes', true ) ).split( ';' );
+
+    if ((ArrayCount(arrTabListParam) == 1 && display_tab_list) || ArrayCount(arrTabListParam) > 1)
+    {
+%>
+        <TabControl Name='AssessmentBodyTab' ActiveTab='0' Width='100%' Adapt='true' TabsLocation='<%=tabs_position%>'>
+<%
+    }
+    else if (ArrayCount(arrTabListParam) == 1 && !display_tab_list)
+    {
+%>
+        <TabControl Name='AssessmentBodyTab' TabsHidden = '1'>
+<%
+    }
+
+    for ( sTabListParam in arrTabListParam )
+    {
+        if ( sTabListParam == 'main' )
+        {
+            arrSearchParam         = String( tools_web.get_web_param( curParams, 'company_vacancys.main_tab_param.search_param', 'key_words;position_common_id;age;wage;currency_type;region;educ_type;employment_type;schedule_id;professional_area;category;org;show_closed;type_vacancy', true ) ).split( ';' );
+            
+            bShowOrgPanel          = tools_web.get_web_param( curParams, 'company_vacancys.panel_org_show', '0', true ) == '1';
+            bShowProfAreaPanel     = tools_web.get_web_param( curParams, 'company_vacancys.panel_prof_area_show', '0', true ) == '1';
+            bPanelParamsExpanded   = tools_web.get_web_param( curParams, 'company_vacancys.panel_params_expanded', 'true', true );
+            bPanelOrgExpanded      = tools_web.get_web_param( curParams, 'company_vacancys.panel_org_show.company_vacancys.panel_org_expanded', 'true', true );
+            bPanelProfAreaExpanded = tools_web.get_web_param( curParams, 'company_vacancys.panel_prof_area_show.panel_prof_area_expanded', 'true', true );
+
+%>
+            <TabItem Class='XAML-tab-with-icon icon-search2' Title='<%=tools_web.get_web_const( 'poiskvakansiy', curLngWeb )%>'>
+
+                <Panel Title='<%=tools_web.get_web_const( 'osnovnyeparame', curLngWeb )%>' Expanded = '<%=bPanelParamsExpanded%>'>
+                <Grid Class='XAML-grid-info-table' Width='100%' Adapt='true'>
+                    <GridColumns>
+                        <GridColumn Width='250'/>
+                        <GridColumn/>
+                    </GridColumns>
+<%
+            if ( ArrayOptFind( arrSearchParam, "This == 'key_words'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%='Ключевые слова (разделяются пробелами)'%>:</Label>
+                        <Edit Name='key_words' Width='100%'></Edit>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'age'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'vrb_age', curLngWeb )%>:</Label>
+                        <StackPanel Orientation='<%=bDesctop ? 'Horizontal' : 'Vertical'%>'>
+                            <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( '23bdvmp63b', curLngWeb ) )%></Label>
+                            <Edit Name='min_age' Width='<%=iDefaultTextEditWidth%>'></Edit>
+                            <Label Width='<%=iDefaultLabelWidth%>'></Label>
+                            <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( 'mgbip6hh3a', curLngWeb ) )%></Label>
+                            <Edit Name='max_age' Width='<%=iDefaultTextEditWidth%>'></Edit>
+                        </StackPanel>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'wage'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'urovendohoda', curLngWeb )%>:</Label>
+                        <StackPanel Orientation='<%=bDesctop ? 'Horizontal' : 'Vertical'%>'>
+                            <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( '23bdvmp63b', curLngWeb ) )%></Label>
+                            <Edit Name='min_wage' Width='<%=iDefaultTextEditWidth%>'></Edit>
+                            <Label Width='<%=iDefaultLabelWidth%>'></Label>
+                            <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( 'mgbip6hh3a', curLngWeb ) )%></Label>
+                            <Edit Name='max_wage' Width='<%=iDefaultTextEditWidth%>'></Edit>
+                            <Label Width='<%=iDefaultLabelWidth%>'></Label>
+<%
+                            if ( ArrayOptFind( arrSearchParam, "This == 'currency_type'" ) != undefined )
+                            {
+%>
+                                <ComboBox Name='currency_type' TypeAhead='1' Width='<%=iDefaultComboWidth%>'>
+                                    <ComboBoxItem Value=''></ComboBoxItem>
+<%
+                                    for ( _currency in lists.currency_types )
+                                    {
+%>
+                                    <ComboBoxItem Value='<%=_currency.id%>'><%=_currency.name%></ComboBoxItem>
+<%
+                                    }
+%>
+                                </ComboBox>
+<%
+                            }
+%>
+                        </StackPanel>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'position_common_id'" ) != undefined )
+            {
+                sPositionCommonCodes = Trim( String(tools_web.get_web_param(curParams, 'company_vacancys.main_tab_param.search_param.position_common_codes', '', true)));
+                sQueryQual = '';
+                
+                if(sPositionCommonCodes != '')
+                {
+                    arrPositionCommonCodes = sPositionCommonCodes.split(';');
+                    arrPositionCommon      = QueryCatalogByKeys( 'position_commons', 'code', arrPositionCommonCodes );
+                    sQueryQual             = 'MatchSome( $elem/id, (' + ArrayMerge(arrPositionCommon, 'This.id', ',') + ') )';
+                }
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%= tools_web.get_web_const( 'c_position_common', curLngWeb ) %>:</Label>
+<%
+                        iObjectId = OptInt( CONTEXT.GetOptProperty( 'position_common_id' ), '' );
+                        curSelector = {
+                            'id': 'position_common',
+                            'width': '100%',
+                            'catalog_name': 'position_common',
+                            'xquery_qual':sQueryQual,
+                            'object_id_item_name': 'position_common_id',
+                            'object_id': iObjectId,
+                            
+                        };
+                        Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector.xaml' ) );
+%>
+                    </GridRow>
+<%
+            }
+%>
+                    <GridRow>
+                        <Label Class   = 'XAML-info-grid-title-column'><%=tools_web.get_web_const( 'b3vuxp8ee6', curLngWeb )%>:</Label>
+                        <CheckBox Name='show_more_params' Change = 'TOGGLE=MoreParamsGrid' Value='<%=bShowMoreParams%>' Checked = '<%=bShowMoreParams%>'></CheckBox>
+                    </GridRow>
+                </Grid>
+
+                <StackPanel Name='MoreParamsGrid' Hidden='<%=!bShowMoreParams%>' Class='XAML-stack-container' Adapt='true'>
+                <Grid Class='XAML-grid-info-table' Width='100%' Adapt='true'>
+                    <GridColumns>
+                        <GridColumn/>
+                        <GridColumn/>
+                    </GridColumns>
+<%
+            if ( ArrayOptFind( arrSearchParam, "This == 'region'" ) != undefined)
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%= tools_web.get_web_const( 'vrb_region', curLngWeb ) %>:</Label>
+<%
+                        iObjectId = OptInt( CONTEXT.GetOptProperty( 'region' ), '' );
+                        curSelector = {
+                            'id': 'region',
+                            'width': '100%',
+                            'catalog_name': 'region',
+                            'object_id_item_name': 'region',
+                            'object_id': iObjectId,
+                            'can_be_empty': true
+                            
+                        };
+                        Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector.xaml' ) );
+%>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'schedule_id'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%= tools_web.get_web_const( 'grafikraboty', curLngWeb ) %>:</Label>
+<%
+                        iObjectId = OptInt( CONTEXT.GetOptProperty( 'schedule_id' ), '' );
+                        
+                        curSelector = {
+                            'id': 'schedule',
+                            'width': '100%',
+                            'catalog_name': 'work_schedule',
+                            'object_id_item_name': 'schedule_id',
+                            'object_id': iObjectId,
+                            'can_be_empty': true
+
+                        };
+                        Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector.xaml' ) );
+%>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'educ_type'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'vrb_education', curLngWeb )%>:</Label>
+                        <ComboBox Name='educ_type' Width='<%=iDefaultTextEditWidth%>'>
+                            <ComboBoxItem Value=''></ComboBoxItem>
+<%
+                        for (_educ_type_elem in common.educ_types)
+                        {
+%>
+                            <ComboBoxItem Value='<%=_educ_type_elem.id%>'><%=_educ_type_elem.name%></ComboBoxItem>
+<%
+                        }
+%>
+                        </ComboBox>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'employment_type'" ) != undefined )
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'c_employment_type', curLngWeb )%>:</Label>
+                        <ComboBox Name='employment_type' Width='<%=iDefaultTextEditWidth%>'>
+                            <ComboBoxItem Value=''></ComboBoxItem>
+<%
+                        for (_employment_type_elem in common.employment_types)
+                        {
+%>
+                            <ComboBoxItem Value='<%=_employment_type_elem.id%>'><%=_employment_type_elem.name%></ComboBoxItem>
+<%
+                        }
+%>
+                        </ComboBox>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'type_vacancy'" ) != undefined && ArrayOptFind( arrSearchParam, "This == 'show_closed'" ) == undefined)
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'tipvakansiy', curLngWeb )%>:</Label>
+                        <ComboBox Name='type_vacancy' SelectedItem='<%=vacancy_type%>' Width='<%=iDefaultTextEditWidth%>'>
+                            <ComboBoxItem Value='all'><%=tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb )%></ComboBoxItem>
+                            <ComboBoxItem Value='active'><%=tools_web.get_web_const( 'rgni7sf3i4', curLngWeb )%></ComboBoxItem>
+                            <ComboBoxItem Value='close'><%=tools_web.get_web_const( 'zakrytye', curLngWeb )%></ComboBoxItem>
+                        </ComboBox>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'category'" ) != undefined && _exist_category != 'none')
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'kategorizirova', curLngWeb )%>:</Label>
+                        <ComboBox Name='category_field' SelectedItem='<%=_exist_category%>' Width='<%=iDefaultTextEditWidth%>'>
+<%
+                        for ( elemCateg in arrCategoryListToSelectParam )
+                        {
+                            switch (elemCateg)
+                            {
+                                case 'none':
+%>
+                                    <ComboBoxItem Value='<%=elemCateg%>'><%=tools_web.get_web_const( 'bezkategorii', curLngWeb )%></ComboBoxItem>
+<%
+                                    break;
+                                case 'region':
+%>
+                                    <ComboBoxItem Value='<%=elemCateg%>'><%=tools_web.get_web_const( 'vrb_region', curLngWeb )%></ComboBoxItem>
+<%
+                                    break;
+                                case 'org':
+%>
+                                    <ComboBoxItem Value='<%=elemCateg%>'><%=tools_web.get_web_const( 'c_org', curLngWeb )%></ComboBoxItem>
+<%
+                                    break;
+                                case 'profarea':
+%>
+                                    <ComboBoxItem Value='<%=elemCateg%>'><%=tools_web.get_web_const( 'vrb_professional_field', curLngWeb )%></ComboBoxItem>
+<%
+                                    break;
+                                default:
+%>
+                                    <ComboBoxItem Value='<%=elemCateg%>'><%=elemCateg%></ComboBoxItem>
+<%
+                                    break;	
+                            }
+                        }
+%>
+                        </ComboBox>
+                    </GridRow>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'show_closed'" ) != undefined && ArrayOptFind( arrSearchParam, "This == 'type_vacancy'" ) == undefined)
+            {
+%>
+                    <GridRow>
+                        <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'pokazyvatzakry', curLngWeb )%>:</Label>
+                        <CheckBox Name='show_closed' Width='100' Value='true' Checked='true'></CheckBox>
+                    </GridRow>
+<%
+            }
+%>
+                </Grid>
+                </StackPanel>
+<%
+            if (( ArrayOptFind( arrSearchParam, "This == 'type_vacancy'" ) == undefined && ArrayOptFind( arrSearchParam, "This == 'show_closed'" ) == undefined)||( ArrayOptFind( arrSearchParam, "This == 'type_vacancy'" ) != undefined && ArrayOptFind( arrSearchParam, "This == 'show_closed'" ) != undefined))
+            {
+%>
+                <Edit Name='type_vacancy' Hidden='1'><%=vacancy_type%></Edit>
+<%
+            }
+%>
+
+                </Panel>
+<%
+            if ( ArrayOptFind( arrSearchParam, "This == 'org'" ) != undefined && bShowOrgPanel)
+            {
+%>
+                <Panel Title='<%=tools_web.get_web_const( 'ee7zmnel5k', curLngWeb )%>' Expanded = '<%=bPanelOrgExpanded%>'>
+<%
+                    curSelectorList = {
+                        'id': 'OrgIds',
+                        'height': '200',
+                        'catalog_name': 'org',
+                        'disp_link': 'true',
+                        'list_columns': ['name'],
+                        'link_field_index': 1,
+                        'close_action': '',
+                        'check_access':'true'
+                    };
+                    Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector_list.xaml' ) );
+%>
+                    <Button Class='XAML-button XAML-button-select' Click='OPENDIALOG=SelectDialogOrgIds'><%=tools_web.get_web_const( 'c_choose', curLngWeb )%></Button>
+                </Panel>
+<%
+            }
+            if ( ArrayOptFind( arrSearchParam, "This == 'professional_area'" ) != undefined && bShowProfAreaPanel)
+            {
+%>
+                <Panel Title='<%=tools_web.get_web_const( 'professionalny', curLngWeb )%>' Expanded = '<%=bPanelProfAreaExpanded%>'>
+<%
+                    curSelectorList = {
+                        'id': 'ProfessionIds',
+                        'height': '200',
+                        'catalog_name': 'professional_area',
+                        'disp_link': 'true',
+                        'list_columns': ['name'],
+                        'link_field_index': 1,
+                        'close_action': '',
+                        'check_access':'true'
+                    };
+                    Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector_list.xaml' ) );
+%>
+                    <Button Class='XAML-button XAML-button-select' Click='OPENDIALOG=SelectDialogProfessionIds'><%=tools_web.get_web_const( 'c_choose', curLngWeb )%></Button>
+                </Panel>
+<%
+            }
+%>
+            <Toolbar Class='XAML-toolbar' Adapt='true'>
+                <Button Click='SHOW=VacancyGrid;UPDATE=VacancyGrid' Class='XAML-button XAML-button-content-standalone'><%=tools_web.get_web_const( 'sf_submit', curLngWeb )%></Button>
+<%
+            if ( bShowButtonCreate )
+            {
+%>
+                <Button Class='XAML-button XAML-button-proceed' Click='OPENURL=<%=tools_web.get_mode_clean_url( "vacancy_estaff", null, { doc_id : curDocID } )%>'><%=tools_web.get_web_const( 'sozdatvakansiyu', curLngWeb )%> </Button>
+<%
+            }
+        
+            if ( bShowResumesCreateButton )
+            {
+                Request.Session.Env.SetProperty( 'sStartMode', curMode );
+%>
+                <Button Click='OPENURL=<%=tools_web.get_mode_clean_url( "resume", null, { doc_id : curDocID } )%>' Class='XAML-button XAML-button-new'><%=tools_web.get_web_const( 'sozdatrezyume', curLngWeb )%></Button>
+<%
+            }
+%>
+            </Toolbar>
+
+            <StackPanel Name='StackVacancyTiles' Hidden='0' Adapt='true'>
+                <TileView Name='VacancyTiles' Hidden='1' TileHeight='50' TileWidth='100%' Columns='1' DataSource='{SearchVacancyCollection}' TemplateSource='object_tile_row' />
+            </StackPanel>
+
+<%
+            if ( ArrayOptFind( arrSearchParam, "This == 'category'" ) != undefined && _exist_category != 'none' )
+            {
+%>
+            <DataGrid Name='VacancyGrid' Hidden='1' Source='{SearchVacancyCollection}'  Selection = 'multiple' Width='100%' Categorized='!id:parent_id'>
+<%
+            }
+            else
+            {
+%>
+            <DataGrid Name='VacancyGrid' Hidden='1' Source='{SearchVacancyCollection}' Selection='multiple' Width='100%' PageSize='<%=iVacancyTabPageItemsCnt%>'>
+<%
+            }
+%>
+                <DataGridColumn Title='id' Value='id' Type = 'string' Width='5' Hidden='true'/>
+                <DataGridColumn Title='parent_id' Value='parent_id' Width='5' Type = 'string' Hidden='true'/>
+<%   
+                if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'name'")) != undefined)
+                {
+%>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" <%=(curDevice.disp_type != "mobile" ? "Width='200'" : "Width='100%'")%> Type = "link" Click="{!on_click}OPENWINDOW={url}" Sortable = "true" ColorSource = "color"/>
+<%
+                }
+                if (curDevice.disp_type != 'mobile')
+                {
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'org'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'c_org', curLngWeb )%>' Value='org' Type = 'link' Click='OPENWINDOW={org_url}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'prof_area'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'profoblast', curLngWeb )%>' Value='prof_area' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'wage'")) != undefined)
+                    {
+%> 
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'dohod', curLngWeb )%>' Value='wage' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'region'")) != undefined)
+                    {
+%>
+                       <DataGridColumn Title='<%=tools_web.get_web_const( 'vrb_region', curLngWeb )%>' Value='region' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'subord'")) != undefined)
+                    {
+%>
+                       <DataGridColumn Title='<%=tools_web.get_web_const( 'podchinenie', curLngWeb )%>' Value='subordination' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'budget'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'c_budget', curLngWeb )%>' Value='budget' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'description'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'c_desc', curLngWeb )%>' Value='file_name' Type = 'link' Click='{!on_click}OPENWINDOW={file_url}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'response'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'otkliki', curLngWeb )%>' Value='responses' Type = 'link' Click='{!on_click}OPENWINDOW={response_url}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'employment_type'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'c_employment_type', curLngWeb )%>' Value='employment_type' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%	
+                    }
+                    if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'last_edit_date'")) != undefined)
+                    {
+%>
+                        <DataGridColumn Title='<%=tools_web.get_web_const( 'vrb_date_last_edit', curLngWeb )%>' Value='date' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    }
+                }
+%>
+            </DataGrid>
+            </TabItem>
+<%
+        }
+        if ( sTabListParam == 'selected_vacancys' )
+        {
+%>
+            <TabItem Class='XAML-tab-with-icon icon-cart-arrow-down' Title='<%=tools_web.get_web_const( 'moiizbrannyeva', curLngWeb )%>'>
+                <DataGrid Name='MySelectedVacancyGrid' Source='{MySelectedVacancyCollection}' <%=(curDevice.disp_type != 'mobile' ? "Height='400'" : "Height='200'")%> Selection = 'multiple' Width='100%' PageSize = '<%=iVacancyTabPageItemsCnt%>'>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_vacancy', curLngWeb )%>' Value='vacancy_name' Width='100%' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                if (curDevice.disp_type != 'mobile')
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='date' Width='150' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='<%=tools_web.get_web_const( 'c_delete', curLngWeb )%>' Width='200' Type = 'button' Sortable = 'true' ColorSource = 'color' Click='CONFIRM=<%=tools_web.get_web_const( 'vsvb_alert_delete', curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject'/>
+<%
+                }
+%>
+                </DataGrid>
+            </TabItem>
+<%
+        }
+        if ( sTabListParam == 'vacancy_responses' )
+        {
+%>
+            <TabItem Class='XAML-tab-with-icon icon-pencil-square-o' Title='<%=tools_web.get_web_const( 'moiotkliki', curLngWeb )%>'>
+                <DataGrid Name='MyVacancyResponsesGrid' Source='{MyVacancyResponsesCollection}' <%=(curDevice.disp_type != 'mobile' ? "Height='400'" : "Height='200'")%> Selection = 'multiple' Width='100%' PageSize = '<%=iVacancyTabPageItemsCnt%>'>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='date' Width='100%' Type = 'link' Click='OPENURL={url_date}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                if (curDevice.disp_type != 'mobile')
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_vacancy', curLngWeb )%>' Value='vacancy_name' Width='150' Type = 'link' Click='OPENURL={url_vacancy}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'vppb_state', curLngWeb )%>' Value='state' Width='150' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_resume', curLngWeb )%>' Value='resume_name' Width='200' Type = 'link' Click='OPENURL={url_resume}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='<%=tools_web.get_web_const( 'c_delete', curLngWeb )%>' Width='150' Type = 'button' Sortable = 'true' ColorSource = 'color' Click='CONFIRM=<%=tools_web.get_web_const( 'vyuverenychtoho_12', curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject'/>
+<%
+                }
+%>
+                </DataGrid>
+            </TabItem>
+<%
+        }
+
+        if ( sTabListParam == 'recommendations' )
+        {
+%>
+            <TabItem Class='XAML-tab-with-icon icon-share-square-o' Title='<%=tools_web.get_web_const( 'moirekomendacii', curLngWeb )%>'>
+                <DataGrid Name='MyVacancyRecommendationGrid' Source='{MyVacancyRecommendationCollection}' Width='100%' Selection = 'multiple' <%=(curDevice.disp_type != 'mobile' ? "Height='400'" : "Height='200'")%> PageSize = '<%=iVacancyTabPageItemsCnt%>'>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='date' Width='100%' Type = 'link' Click='OPENURL={url_date}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                if (curDevice.disp_type != 'mobile')
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_vacancy', curLngWeb )%>' Value='vacancy_name' Width='150' Type = 'link' Click='OPENURL={url_vacancy}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_fio', curLngWeb )%>' Value='fullname' Width='250' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='<%=tools_web.get_web_const( 'c_delete', curLngWeb )%>' Width='150' Type = 'button' Sortable = 'true' ColorSource = 'color' Click='CONFIRM=<%=tools_web.get_web_const( 'vyuverenychtoho_13', curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject'/>
+<%
+                }
+%>
+                </DataGrid>
+            </TabItem>
+<%
+        }
+        if ( sTabListParam == 'vacancy_subscriptions' )
+        {
+%>
+            <TabItem Class='XAML-tab-with-icon icon-check-square-o' Title='<%=tools_web.get_web_const( 'moipodpiski', curLngWeb )%>'>
+
+                <DataGrid Name='MyVacancySubscriptionGrid' Source='{MyVacancySubscriptionCollection}' <%=(curDevice.disp_type != 'mobile' ? "Height='400'" : "Height='200'")%> Selection = 'multiple' Width='100%' PageSize = '<%=iVacancyTabPageItemsCnt%>'>
+<%
+                if ( curDevice.disp_type != 'mobile' )
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='create_date' Width='150' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_name', curLngWeb )%>' Value='name' Width='100%' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'vrb_date_last_edit', curLngWeb )%>' Value='modification_date' Width='150' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='status_button_name' Width='170' Type = 'link' Sortable = 'true' ColorSource = 'color' Click='SET=ChangeStatusVacancySubscription/object_id,{id};ACTION=ChangeStatusVacancySubscription'/>
+                    <DataGridColumn Title='' Value='<%=tools_web.get_web_const( 'c_delete', curLngWeb )%>' Width='150' Type = 'button' Sortable = 'true' ColorSource = 'color' Click='CONFIRM=<%=tools_web.get_web_const( 'vyuverenychtoho_14', curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject'/>
+<%
+                }
+                else
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='create_date' Width='150' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_name', curLngWeb )%>' Value='name' Width='150' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='status_button_name' Width='170' Type = 'link' Sortable = 'true' ColorSource = 'color' Click='SET=ChangeStatusVacancySubscription/object_id,{id};ACTION=ChangeStatusVacancySubscription'/>
+<%
+                }
+%>
+                </DataGrid>
+                <Toolbar Class='XAML-toolbar' Adapt='true'>
+                    <Button Class='XAML-button XAML-button-proceed' Click='OPENURL=<%=tools_web.get_mode_clean_url( "vacancy_subscription", null, {} )%>'><%=tools_web.get_web_const( 'sozdatpodpisku', curLngWeb )%></Button>
+                </Toolbar>
+            </TabItem>
+
+<%
+        }
+        if ( sTabListParam == 'resumes' )
+        {
+%>
+            <TabItem Class='XAML-tab-with-icon icon-document-text' Title='<%=tools_web.get_web_const( 'moirezyume', curLngWeb )%>'>
+                <DataGrid Name='MyResumeGrid' Source='{MyResumeCollection}' <%=(curDevice.disp_type != 'mobile' ? "Height='400'" : "Height='200'")%> Selection = 'multiple' Width='100%' PageSize = '<%=iVacancyTabPageItemsCnt%>'>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_name', curLngWeb )%>' Value='name' Width='100%' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                if (curDevice.disp_type != 'mobile')
+                {
+%>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'vrb_professional_field', curLngWeb )%>' Value='profession_area' Width='200' Type = 'string' Click='OPENURL={url_vacancy}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>' Value='create_date' Width='150' Type = 'link' Click='OPENURL={url}' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='<%=tools_web.get_web_const( 'vrb_date_last_edit', curLngWeb )%>' Value='modification_date' Width='150' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+                    <DataGridColumn Title='' Value='<%=tools_web.get_web_const( 'c_delete', curLngWeb )%>' Width='150' Type = 'button' Sortable = 'true' ColorSource = 'color' Click='CONFIRM=<%=tools_web.get_web_const( 'vyuverenychtoho_15', curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject'/>
+<%
+                }
+%>
+                </DataGrid>
+                <Toolbar Class='XAML-toolbar' Adapt='true'>
+                    <Button Class='XAML-button XAML-button-proceed' Click='OPENURL=<%=tools_web.get_mode_clean_url( "resume", null, {} )%>'><%=tools_web.get_web_const( 'sozdatrezyume', curLngWeb )%></Button>
+<%
+                if ( bShowResumesListButton )
+                {
+%>
+                    <Button Class='XAML-button XAML-button-proceed' Click='OPENURL=<%=tools_web.get_mode_clean_url( "resumes", null, {} )%>'><%=tools_web.get_web_const( 'spisokrezyume', curLngWeb )%></Button>
+<%
+                }
+%>
+                </Toolbar>
+            </TabItem>
+
+<%
+        }
+    }
+
+    if ( ( ArrayCount( arrTabListParam ) == 1 && display_tab_list ) || ArrayCount( arrTabListParam ) > 1 )
+    {
+%>
+    </TabControl>
+<%
+    }
+    else if ( ArrayCount( arrTabListParam ) == 1 && ! display_tab_list )
+    {
+%>
+    </TabControl>
+<%
+    }
+%>
+
+</SPXMLScreen>

@@ -1,0 +1,345 @@
+﻿<%
+function get_boss_type( teObject )
+{
+	arrBossTypes = new Array();
+	if( curUserID == null )
+		return arrBossTypes;
+	if( teObject.func_managers.GetOptChildByKey( curUserID ) != undefined )
+		arrBossTypes.push( teObject.func_managers.GetOptChildByKey( curUserID ).boss_type_id )
+			
+	for( article_type in teWikiBase.wiki_article_types )
+		if( article_type.func_managers.GetOptChildByKey( curUserID ) != undefined )
+			arrBossTypes.push( article_type.func_managers.GetOptChildByKey( curUserID ).boss_type_id )
+			
+	return QueryCatalogByKeys( 'boss_types', 'id', ArraySelectDistinct( arrBossTypes, 'This' ) );;
+}
+function set_error( sError )
+{
+%>
+<SPXMLScreen>
+<%
+	curMessageBox = {
+		"type": "error",
+		"text": sError
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+try
+{
+	curUser;
+	curUserID;
+}
+catch( ex )
+{
+	curUser = null;
+	curUserID = null;
+}
+
+if( OptInt( curUrlQuery.GetOptProperty( "object_version_id", "" ) ) != undefined )
+{
+	curObjectID = OptInt( curUrlQuery.GetOptProperty( "object_version_id", "" ) );
+	curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+}
+
+if( OptInt( curUrlQuery.GetOptProperty( "wiki_article_id", "" ) ) != undefined )
+{
+	curObjectID = OptInt( curUrlQuery.GetOptProperty( "wiki_article_id", "" ) );
+	curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+}
+
+iTreeWidth = tools_web.get_web_param( curParams, "wiki_base_body.tree_width", "300", true );
+bShowTree = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.show_tree", "1", true ) );
+
+iWikiArticleID = "";
+iWikiBaseID = "";
+teWikiBase = null;
+sMode = ""
+
+switch( curObject.Name )
+{
+	case "wiki_article":
+		iWikiArticleID = curObjectID;
+		iWikiBaseID = curObject.wiki_base_id;
+		teWikiBase = OpenDoc( UrlFromDocID( iWikiBaseID ) ).TopElem;
+		sMode = "article";
+		break;
+		
+	case "object_version":
+		iWikiArticleID = curObjectID;
+		teWikiArticle = OpenDocFromStr( curObject.object_xml, 'form=x-local://wtv/wtv_wiki_article.xmd' ).TopElem;
+		iWikiBaseID = teWikiArticle.wiki_base_id;
+		teWikiBase = OpenDoc( UrlFromDocID( iWikiBaseID ) ).TopElem;
+		sMode = "object_version";
+		break;
+		
+	case "request":
+		iWikiArticleID = curObjectID;
+		teObjectVersion = OpenDoc( UrlFromDocID( curObject.object_id ) ).TopElem
+		teWikiArticle = OpenDocFromStr( teObjectVersion.object_xml, 'form=x-local://wtv/wtv_wiki_article.xmd' ).TopElem;
+		iWikiBaseID = teWikiArticle.wiki_base_id;
+		teWikiBase = OpenDoc( UrlFromDocID( iWikiBaseID ) ).TopElem;
+		sMode = "request";
+		break;
+		
+	default:
+		iWikiBaseID = curObjectID;
+		teWikiBase = curObject;
+		sMode = "main";
+		break;
+}
+function check_operation_access( catOperation )
+{
+	bAccess = catOperation.operation_catalog_list.HasValue && ( StrContains(',' + catOperation.operation_catalog_list.Value+',', ',wiki_base,') || StrContains(',' + catOperation.operation_catalog_list.Value + ',', ',wiki_article,'))
+	if( !bAccess )
+		return false;
+			
+	if ( catOperation.use_access_eval )
+	{
+		teOperation = OpenDoc( UrlFromDocID( catOperation.id ) ).TopElem;
+		if ( ! tools.safe_execution( teOperation.access_eval_code ) )
+			return false;
+	}
+	return true;
+}
+if( !tools_web.check_access( teWikiBase, curUserID, curUser, Session ) )
+	set_error( "У вас нет прав для просмотра этой wiki базы" );
+
+sMode = curUrlQuery.GetOptProperty( "wiki_mode", "" ) != ""  ? curUrlQuery.GetOptProperty( "wiki_mode", "" ) : sMode
+
+arrBosses = get_boss_type( teWikiBase );
+xarrOperations = tools.get_relative_operations_by_boss_types( arrBosses );
+xarrOperations = ArraySelect( xarrOperations, "check_operation_access( This )");
+
+bOpenArticleByUrl = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.open_article_by_url", "1", true ) )
+if ( teWikiBase.ChildExists( 'resource_id' ) && teWikiBase.resource_id.HasValue )
+	sObjectImageUrl = tools_web.get_object_source_url( 'resource', teWikiBase.resource_id );
+else
+	sObjectImageUrl = '/images/' + teWikiBase.Name + '.png';
+	
+bHideTree = false;
+if( bOpenArticleByUrl )
+	bHideTree = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.open_article_by_url.hide_tree", "0", true ) );
+bHideTree = bHideTree
+
+%><SPXMLScreen>
+<%
+//Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+arrBaseWikiArticleTypes = ArraySelect( teWikiBase.base_wiki_article_types, "This.base_wiki_article_type_id.HasValue" );
+if( bShowTree )
+{
+%>
+	<Collection Name="WikiBaseTreeCollection" Source="wiki_base_tree_collection">
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+		<Param Name="wiki_article_id" Value="{WikiArticleID}"/>
+		<Param Name="parent_id" Value="<%=bOpenArticleByUrl ? curUrlQuery.GetOptProperty( "parent_id", "" ) : ""%>"/>
+		<Param Name="base_wiki_article_type_id" Value="{BaseWikiArticleId}"/>
+	</Collection>
+	<Collection Name="WikiBaseMainTreeCollection">
+		<Data>
+			<Row>
+				<Cell Id="id" Value="main"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( teWikiBase.name, curLng.short_id ) )%>"/>
+				<Cell Id="parent_id" Value=""/>
+				<Cell Id="Expanded" Value="true"/>
+				<Cell Id="selected" Value="<%=sMode == "main"%>"/>
+			</Row>
+<%
+	function get_default_title( name )
+	{
+		switch( name )
+		{
+			case "news":
+				return tools_web.get_web_const( "vnp_news", curLngWeb );
+			case "subscribe":
+				return "Избранное";
+			case "search":
+				return tools_web.get_web_const( "vkpb_search", curLngWeb );
+			case "my_versions":
+				return "Мои версии";
+			case "sogl_requests":
+				return "Статьи на согласовании";
+			case "acquaints":
+				return "Для ознакомления";
+			case "my_article":
+				return "Мои статьи";
+		}
+		return "";
+	}
+	arrMenuParam = String( tools_web.get_web_param( curParams, "wiki_base_body.base_menu", "news;subscribe;search;my_versions;sogl_requests", true ) ).split( ";" );
+	for( catMenu in arrMenuParam )
+	{
+		sTitle = tools_web.get_web_param( curParams, "wiki_base_body.base_menu." + catMenu, "", true );
+		if( sTitle == "" )
+			sTitle = get_default_title( catMenu );
+		switch( catMenu )
+		{
+			case "subscribe":
+			case "my_article":
+			case "acquaints":
+				if( curUser == null )
+					continue;
+				break;
+			case "my_versions":
+				if( curUser == null )
+					continue;
+				if( ( !teWikiBase.free_access_edit && ArrayOptFind( teWikiBase.wiki_article_types, "This.free_access_edit" ) == undefined ) && ArrayOptFind( xarrOperations, "This.action == 'edit_wiki_article'" ) == undefined )
+					continue;
+				break;
+				
+			case "sogl_requests":
+				if( curUser == null )
+					continue;
+				sEvalCode = tools_web.get_web_param( curParams, "wiki_base_body.eval_code_request", "", true );
+				bShowRequest = false;
+				if( sEvalCode != "" )
+				{
+					bShowRequest = SafeEval( sEvalCode, [ { 'xarrOperations': xarrOperations, 'teWikiBase': teWikiBase } ] );
+				}
+				else
+				{
+					bShowRequest = ArrayOptFind( xarrOperations, "This.action == 'moderator_wiki_article'" ) != undefined;
+				}
+					
+				if( !bShowRequest )
+					continue;
+				break;
+		}
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catMenu%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( sTitle )%>"/>
+				<Cell Id="parent_id" Value="main"/>
+				<Cell Id="Expanded" Value="true"/>
+				<Cell Id="selected" Value="<%=sMode == catMenu%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+
+	<Collection Name="CatalogListMenuTree" Source="wiki_tree_operations_collection">
+		<Param Name="selected_data" Value="{WikiBaseTree}"/>
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+	</Collection>
+<%
+}
+else
+{
+%>
+	<Edit Name="BaseWikiArticleId" Hidden="1"><%=OptInt( curUrlQuery.GetOptProperty( "base_wiki_article_type_id" ), ArrayOptFirstElem( arrBaseWikiArticleTypes ).base_wiki_article_type_id )%></Edit>
+<%
+}
+%>
+	<Edit Name="WikiArticleID" Hidden="1"><%=iWikiArticleID%></Edit>
+	<Edit Name="LastWikiArticleID" Hidden="1"></Edit>
+	<Edit Name="PanelMode" Hidden="1"><%=sMode%></Edit>
+	<Edit Name="bEditArticle" Hidden="1"/>
+	<Edit Name="WikiArticleType" Hidden="1"/>
+	<Edit Name="CopyObjectVersionID" Hidden="1"/>
+	<Edit Name="WikiArticleCommunications" Hidden="1">[]</Edit>
+<%
+
+var sActionHideTree = bShowTree ? ( ( bHideTree || curDevice.disp_type == "mobile" ? "HIDE=WikiBaseTreeStackPanel;" : "" ) + ( curDevice.disp_type != "mobile" ? "SHOW=PanelWikiArticle;" : "" ) ) : ""
+if( curDevice.disp_type != "mobile" )
+{
+%>
+	<Grid Width="100%" Class="XAML-grid-content-hor-container">
+		<GridColumns>
+<%
+	if( bShowTree )
+	{
+%>
+			<GridColumn Width="<%=iTreeWidth%>"/>
+<%
+	}
+%>
+			<GridColumn/>
+		</GridColumns>	
+		<GridRow>
+<%
+}
+if( bShowTree )
+{
+%>
+			<StackPanel Class="XAML-stack-container" Name="WikiBaseTreeStackPanel" Hidden="<%=bHideTree || curDevice.disp_type == "mobile"%>" Orientation="Vertical">
+				<Tree Name="WikiBaseMainTree" Multiline="1" Source="{WikiBaseMainTreeCollection}" Tooltip_="true" DataSelected="selected" Preservable="true" DataID="id" DataParent="parent_id" DataTitle="name" DataExpanded="Expanded" DataIcon="icon" Click="<%=bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, iWikiBaseID, { wiki_mode: "{id}", base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : sActionHideTree + "SET=CopyObjectVersionID,;SET=PanelMode,{id};SET=WikiArticleID,;UPDATE=PanelWikiArticle;"%>">
+				</Tree>
+<%
+	if( ArrayCount( arrBaseWikiArticleTypes ) == 1 )
+	{
+%>
+				<Edit Name="BaseWikiArticleId" Hidden="1"><%=OptInt( curUrlQuery.GetOptProperty( "base_wiki_article_type_id" ), ArrayOptFirstElem( arrBaseWikiArticleTypes ).base_wiki_article_type_id )%></Edit>
+<%
+	}
+	else if( ArrayCount( arrBaseWikiArticleTypes ) > 1 )
+	{
+%>
+
+				<ComboBox Width="<%=iTreeWidth%>" Name="BaseWikiArticleId" SelectedItem="<%=OptInt( curUrlQuery.GetOptProperty( "base_wiki_article_type_id" ), ArrayOptFirstElem( arrBaseWikiArticleTypes ).base_wiki_article_type_id )%>">
+<%
+		for( article_type in arrBaseWikiArticleTypes )
+		{
+%>
+					<ComboBoxItem Value="<%=article_type.base_wiki_article_type_id%>" Change="UPDATE=WikiBaseTree"><%=XmlAttrEncode( article_type.name.HasValue ? article_type.name : article_type.base_wiki_article_type_id.ForeignElem.name )%></ComboBoxItem>	
+<%
+		}
+%>				
+				</ComboBox>
+<%
+	}
+%>
+
+				<Tree Name="WikiBaseTree" Source="{WikiBaseTreeCollection}" Multiline="1" DataID="id" Tooltip_="true" DataSelected="selected" DataParent="parent_id" DataTitle="name" DataExpanded="is_expanded" DataFatherhood="hasChildren" DataIcon="icon" Click="<%=bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, "{article_id}", { base_wiki_article_type_id: "{BaseWikiArticleId}", parent_id: "{parent_article_id}" } ) : sActionHideTree + "SET=CopyObjectVersionID,;SET=bEditArticle,0;SET=PanelMode,article;SET=WikiArticleID,{article_id};UPDATE=PanelWikiArticle;"%>">
+					<Menu Source="{CatalogListMenuTree}"/>
+				</Tree>
+			</StackPanel>
+<%
+}
+%>
+			<StackPanel>
+<%
+if( bShowTree && curDevice.disp_type != "mobile" )
+{
+%>
+				<StackPanel Class="XAML-stack-container" Name="WikiBaseLinkShowTreeStackPanel" Hidden="<%=!bHideTree%>" Orientation="Vertical">
+					<Grid Width="100%">
+						<GridColumns>
+							<GridColumn Width="100" Align="right"/>
+						</GridColumns>
+						<GridRow>
+							<Link Class="XAML-ShowTree-Link" Click="HIDE=WikiBaseLinkShowTreeStackPanel;SHOW=WikiBaseTreeStackPanel,WikiBaseNameStackPanel;<%=curDevice.disp_type == "mobile" ? "HIDE=PanelWikiArticle" : "UPDATE=PanelWikiArticle"%>"><%="Показать дерево"%></Link>
+						</GridRow>
+					</Grid>
+				</StackPanel>
+<%
+}
+%>
+				<Panel Name="PanelWikiArticle" Hidden="<%=curDevice.disp_type == "mobile" && bShowTree && !( bHideTree || curDevice.disp_type == "mobile" )%>" Source="wiki_article_panel" ShowHeader="false">
+					<Param Name="wiki_article_id" Value="{WikiArticleID}"/>
+					<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+					<Param Name="mode" Value="{PanelMode}"/>
+					<Param Name="edit" Value="{bEditArticle}"/>
+					<Param Name="article_type_id" Value="{WikiArticleType}"/>
+					<Param Name="wiki_article_communications" Value="{WikiArticleCommunications}"/>
+					<Param Name="last_wiki_article_id" Value="{LastWikiArticleID}"/>
+					<Param Name="copy_object_version_id" Value="{CopyObjectVersionID}"/>
+					<Param Name="base_wiki_article_type_id" Value="{BaseWikiArticleId}"/>
+					<Param Name="CONTEXTSTR" Value="<%=UrlEncode( tools.object_to_text(CONTEXT,"json") )%>"/>
+				</Panel>
+			</StackPanel>
+<%
+if( curDevice.disp_type != "mobile" )
+{
+%>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

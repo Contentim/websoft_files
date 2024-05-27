@@ -1,0 +1,362 @@
+﻿function AddResponseContinuousFeedbackCollaborator()
+{
+
+	function getParam(_oFormFields, _sName)
+	{
+		result = "";
+		try
+		{
+			_tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+			result = _tmpFld != undefined ? String(_tmpFld.value)+"" : PARAMETERS.GetOptProperty(_sName);
+		}
+		catch (_err)
+		{
+			result = "";
+			return result;
+		}
+		return result;
+	}
+	function get_objects_id()
+	{
+		var sObjectIDs = "";
+		if ( getParam( oFormFields, "selected_objects_id" ) == undefined || getParam( oFormFields, "selected_objects_id" ) == "" )
+		{
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = SELECTED_OBJECT_IDS + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = OBJECT_ID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if ( sObjectIDs == "" )
+			{
+				try
+				{
+					sObjectIDs = curObjectID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+		}
+		else
+		{
+			sObjectIDs = getParam(oFormFields, "selected_objects_id");
+		}
+
+		return ( sObjectIDs != "" ? String( sObjectIDs ).split( ";" ) : [] );
+	}
+	function getFormMessage(_sMessage)
+	{
+		var oForm;
+		oForm = {
+			command: "alert",
+			msg: _sMessage,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+
+		return oForm;
+	}
+
+	function merge_form_fields()
+	{
+		switch ( oResAction.command )
+		{
+			case "confirm":
+				_form_fields = oResAction.confirm_result.form_fields;
+				break;
+			default:
+				_form_fields = oResAction.form_fields
+				break;
+		}
+		try
+		{
+			for( _field in oFormFields )
+			{
+				if( ArrayOptFind( _form_fields, "This.name == _field.name" ) == undefined && !(oResAction.command == "select_object" && oResAction.field_name == _field.name ) )
+				{
+					_form_fields.push( { name: _field.name, type: "hidden", value: _field.value } );
+				}
+			}
+		}
+		catch( err ){}
+	}
+
+	function getPersonShortName( iPersonID )
+	{
+		var sShortName = "";
+		teCollaborator = tools.open_doc( iPersonID ).TopElem;
+		sShortName = teCollaborator.lastname + " " + StrCharRangePos(teCollaborator.firstname, 0, 1) + "." + StrCharRangePos(teCollaborator.middlename, 0, 1) + ".";
+		return sShortName;
+	}
+
+	function getParagraphName(_arrObjectIDs)
+	{
+		if (ArrayCount(_arrObjectIDs) > 2)
+		{
+			_aObjects = [getPersonShortName(_arrObjectIDs[0]), getPersonShortName(_arrObjectIDs[1])];
+			_sObjectsName = "Для кого: " + ArrayMerge(_aObjects, 'This', ', ') + " и еще " + (ArrayCount(_arrObjectIDs)-2);
+		}
+		else if (ArrayCount(_arrObjectIDs) == 1)
+			_sObjectsName = "Для кого: " + getPersonShortName(_arrObjectIDs[0]);
+		else
+			_sObjectsName = "Для кого: " + getPersonShortName(_arrObjectIDs[0]) + ", " + getPersonShortName(_arrObjectIDs[1]);
+		
+		return _sObjectsName;
+	}
+	
+
+	var teApplication = continuous_feedback.get_component_application();
+
+	var iContextObjectID = ArrayOptFirstElem(get_objects_id());
+	var bContextError = false;
+	if ( iContextObjectID == undefined )
+	{
+		bContextError = true;
+	}
+	else
+		{
+			var docObject= tools.open_doc(iContextObjectID);
+			if ( iContextObjectID == undefined )
+			{
+				bContextError = true;
+			}
+			else
+			{
+				var teContextObject = docObject.TopElem;
+				if (teContextObject.Name != 'collaborator')
+				{
+					bContextError = true;
+				}
+			}
+
+		}
+	if (bContextError)
+	{
+		return {command: "close_form", msg: i18n.t( 'snachalavyberitesotrudnika' )};
+	}
+
+
+	var arrApplicationResponseTypes = continuous_feedback.get_component_application_response_types();
+	var iResponseTypeID = getParam(oFormFields, "response_type");
+	if (iResponseTypeID == undefined)
+	{
+		var	sXQuery = "for $elem in response_types where $elem/object_type = 'collaborator' and MatchSome( $elem/id, (" + ArrayMerge(arrApplicationResponseTypes, "This.response_type_id",",") + ") ) return $elem/Fields('id','name')";
+		var xarrResponseTypes = tools.xquery(sXQuery);
+
+		if ( ArrayCount(xarrResponseTypes) == 0 )
+		{
+			return {command: "close_form", msg: i18n.t( 'obratnaiasviaznenastroena' )};
+		}
+		else
+		if ( ArrayCount(xarrResponseTypes) == 1 )
+		{
+			iResponseTypeID = xarrResponseTypes[0].id.Value;
+		}
+		else
+		{
+			arrRadioEntries = [];
+			for ( catResponseType in xarrResponseTypes)
+			{
+				arrRadioEntries.push({name: catResponseType.name.Value, value: catResponseType.id.Value});
+			}
+			sRadioValue = xarrResponseTypes[0].id.Value;
+
+			arrFormFields = [
+				{ name: "response_type", type: "radio", entries: arrRadioEntries, value: sRadioValue }
+			];
+
+		oResAction =
+			{
+				command: "display_form",
+				height: 175 + ArrayCount(xarrResponseTypes)*22 + 20,
+				title: "Запрос обратной связи",
+				form_fields: arrFormFields,
+				buttons:
+					[
+						{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+						{ name: "submit", label: "Далее", type: "submit", css_class: "btn-cancel-custom" }
+					],
+				no_buttons: false
+			};
+			merge_form_fields()
+			return oResAction;
+		}
+	}
+	iResponseTypeID = OptInt(iResponseTypeID);
+
+
+	var iDaysBetween = OptInt(teApplication.wvars.ObtainChildByKey( "days_between" ).value, 0);
+	if (iDaysBetween > 0)
+	{
+		sResponsesXQuery = "for $elem in responses where $elem/response_type_id = " + iResponseTypeID + " and $elem/person_id = " + curUserID + " and $elem/object_id = " + iContextObjectID + " and $elem/done_date != null() and $elem/done_date > " + XQueryLiteral( DateOffset(Date(), -86400*iDaysBetween) ) + " and MatchSome( $elem/status, ('done','plan')) order by $elem/object_id return $elem/Fields('object_id')";
+		
+		xarrResponses = tools.xquery(sResponsesXQuery);
+
+		if (ArrayOptFirstElem(xarrResponses) != undefined)
+		{
+			return {command: "close_form", msg: i18n.t( 'vyuzheostavlialiobratnuiusviaz' )};
+		}
+	}
+
+
+	var sStep = getParam(oFormFields, "step");
+	if (sStep != 'done')
+	{
+		oResAction = {
+			command: "display_form",
+			title: "Заполнение обратной связи",
+			form_fields: [
+				{
+					name: "step",
+					type: "hidden",
+					value: "done"
+				},
+				{
+					name: "object_fullname",
+					type: "paragraph",
+					value: ( "Оцениваемый" + ": " + getPersonShortName(iContextObjectID) )
+				}
+
+			],
+			buttons: [
+				{
+					name: "cancel",
+					label: "Отменить",
+					type: "cancel"
+				},
+				{
+					name: "submit",
+					label: "Выполнить",
+					type: "submit"
+				}
+			],
+			no_buttons: false
+		};
+		fldCustomTemplate = tools.get_custom_template( "response_type", iResponseTypeID );
+		if ( fldCustomTemplate != null )
+		{
+			for ( fldFieldElem in fldCustomTemplate.fields )
+			{
+				if ( ! fldFieldElem.disp_web || fldFieldElem.type == 'heading' || fldFieldElem.type == 'folder' )
+				{
+					continue;
+				}
+				oFormField = {
+					name: fldFieldElem.name.Value,
+					label: fldFieldElem.title.Value,
+					type: fldFieldElem.type.Value,
+					catalog: fldFieldElem.catalog.Value,
+					query_qual: fldFieldElem.xquery_qual.Value,
+					multiple: false,
+				};
+				if (fldFieldElem.is_required)
+				{
+					oFormField.mandatory =  true;
+					oFormField.validation = "nonempty";
+				}
+				if ( fldFieldElem.type == 'combo' )
+				{
+					oFormField.type = "select";
+				}
+				else if ( fldFieldElem.type == 'object' )
+				{
+					oFormField.type = "string";
+				}
+				if (ArrayOptFirstElem(fldFieldElem.entries) != undefined)
+				{
+					oFormField.entries = [];
+				}
+				for ( fldEntryElem in fldFieldElem.entries )
+				{
+					oFormField.entries.push( {
+						name: fldEntryElem.value.Value,
+						value: fldEntryElem.value.Value
+					} );
+				}
+				oResAction.form_fields.push( oFormField );
+			}
+		}
+		merge_form_fields()
+		return oResAction;
+	}
+
+
+	arrCustomFields = [];
+	fldCustomTemplate = tools.get_custom_template( "response_type", iResponseTypeID );
+	if ( fldCustomTemplate != null )
+	{
+		for ( fldFieldElem in fldCustomTemplate.fields )
+		{
+			oField = ArrayOptFind(oFormFields, "This.name == fldFieldElem.name");
+			if (oField != undefined)
+			{
+				arrCustomFields.push({name: oField.name, value: oField.value});
+			}
+		}
+	}
+
+
+	oRes = tools.call_code_library_method("libContinuousFeedback", "AddResponseContinuousFeedbackCollaborator", [curUserID, iResponseTypeID, iContextObjectID, arrCustomFields, sNotifyResponse, iNotifyResponseType]);
+
+	if ( oRes.error != 0 )
+	{
+		oResAction = {
+			command: "alert",
+			msg: "ERROR: libGame: AddResponseContinuousFeedbackCollaborator: " + oRes.errorText,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+	else
+	{
+		oResAction = {
+			command: "close_form",
+			msg: i18n.t( 'obratnaiasviazotpravlena' ),
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+
+	return oResAction;
+}
+
+var oResAction = new Object();
+try
+{
+	oFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch ( _err )
+{
+	try
+	{
+		oFormFields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+	}
+	catch ( _err )
+	{
+		oFormFields = [];
+	}
+}
+
+
+RESULT = AddResponseContinuousFeedbackCollaborator();

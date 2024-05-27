@@ -1,0 +1,64 @@
+﻿<%
+sID_curSelectorList = curSelectorList.GetOptProperty( 'id', '' );
+sCatalogName_curSelectorList = curSelectorList.GetOptProperty( 'catalog_name', '' );
+sDispNameEditName = 'TempDestinationEdit' + sID_curSelectorList;
+sArraySelectedEditName = 'TempSelectedEdit' + sID_curSelectorList;
+bShowAll = tools_web.is_true( curSelectorList.GetOptProperty( 'show_all', global_settings.settings.show_all_persons ) );
+bCheckAccess = curSelectorList.GetOptProperty( 'check_access', false );
+%>
+<Edit Name="<%=sArraySelectedEditName%>" Hidden="1">#empty#</Edit>
+<Edit Name="<%=sDispNameEditName%>" Hidden="1"><%=curSelectorList.GetOptProperty( 'selected_object_ids', '' )%></Edit>
+<Dialog Name="SelectDialog<%=sID_curSelectorList%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="Set=<%=sArraySelectedEditName%>,;Set=<%=sDispNameEditName%>,{CatalogListDataGridSelList};UPDATE=CatalogListDataGrid<%=sID_curSelectorList%>;<%=curSelectorList.GetOptProperty( 'close_action', '' )%>" Height="90%">
+	<Param Name="catalog_name" Value="<%=sCatalogName_curSelectorList%>"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="view_type" Value="<%=curSelectorList.GetOptProperty( 'view_type', '' )%>"/>
+	<Param Name="xquery_qual" Value="<%=curSelectorList.GetOptProperty( 'select_xquery_qual', '' )%>"/>
+	<Param Name="check_access" Value="<%=bCheckAccess%>"/>
+	<Param Name="selected_object_ids" Value="{<%=sDispNameEditName%>}"/><!--  {CatalogListDataGrid<%=sID_curSelectorList%>:*}  {<%=sDispNameEditName%>} -->
+	<Param Name="selected_from_data" Value="true"/>
+	<Param Name="display_object_ids" Value="<%=curSelectorList.GetOptProperty( 'display_object_ids', '' )%>"/>
+	<Param Name="disp_filter" Value="<%=curSelectorList.GetOptProperty( 'disp_filter', ( curDevice.disp_type == "" ) )%>"/>
+	<Param Name="filter_id" Value="<%=curSelectorList.GetOptProperty( 'filter_id', '#empty#' )%>"/>
+	<Param Name="show_all" Value="<%=bShowAll%>"/>
+	<Param Name="typein" Value="<%=curSelectorList.GetOptProperty( 'typein', 'false' )%>"/>
+	<Param Name="categorized" Value="<%=curSelectorList.GetOptProperty( 'categorized', '' )%>"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<%
+curView = {
+	"id": sID_curSelectorList,
+	"title": curSelectorList.GetOptProperty( 'title', '' ),
+	"height": curSelectorList.GetOptProperty( 'height', '200' ),
+	"catalog_name": sCatalogName_curSelectorList,
+	"disp_filter": curSelectorList.GetOptProperty( 'disp_filter', 'false' ),
+	"disp_search": curSelectorList.GetOptProperty( 'disp_search', 'false' ),
+	"disp_paging": curSelectorList.GetOptProperty( 'disp_paging', 'false' ),
+	"paging_size": curSelectorList.GetOptProperty( 'paging_size', 100 ),
+	"xquery_qual": curSelectorList.GetOptProperty( 'xquery_qual', '' ),
+	"check_access": bCheckAccess,
+	"disp_link": curSelectorList.GetOptProperty( 'disp_link', 'true' ),
+	"link_object_field": curSelectorList.GetOptProperty( 'link_object_field', 'PrimaryKey' ),
+	"link_field_index": curSelectorList.GetOptProperty( 'link_field_index', 0 ),
+	"link_mode": curSelectorList.GetOptProperty( 'link_mode', '' ),
+	"link_prop": curSelectorList.GetOptProperty( 'link_prop', '' ),
+	"link_action": curSelectorList.GetOptProperty( 'link_action', '' ),
+	"link_object_field": curSelectorList.GetOptProperty( 'link_object_field', 'PrimaryKey' ),
+	"list_columns": curSelectorList.GetOptProperty( 'list_columns', '' ),
+	"list_headers": curSelectorList.GetOptProperty( 'list_headers', '' ),
+	"col_headers": curSelectorList.GetOptProperty( 'col_headers', '' ),
+	"col_cells": curSelectorList.GetOptProperty( 'col_cells', '' ),
+	"data_fields": curSelectorList.GetOptProperty( 'data_fields', '' ),
+	"disp_array": "true",
+	"array": ( "{" + sDispNameEditName + "}" ),
+	"array_default": curSelectorList.GetOptProperty( 'selected_object_ids', '' ),
+	"array_selected": ( "{" + sArraySelectedEditName + "}" ),
+	"is_data_grid": "true",
+	"source_type": curSelectorList.GetOptProperty( 'source_type', '' ),
+	"show_all": bShowAll,
+	"buttons": curSelectorList.GetOptProperty( 'buttons', [] ),
+	"disp_schema": curSelectorList.GetOptProperty( 'disp_schema', '' ),
+	"categorized": curSelectorList.GetOptProperty( 'categorized', '' ),
+	"param_preffix": curSelectorList.GetOptProperty( 'param_preffix', '' )
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>

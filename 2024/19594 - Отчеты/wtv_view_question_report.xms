@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_question_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<GRID NAME="ViewGrid" HEIGHT="-32vpx" SOLID-ROWS="1" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+			<COLUMNS>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="100%"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="10zr"/>
+			</COLUMNS>
+			<ROW HEADER="1">
+				<LABEL TITLE="##ms_tools.get_const('c_test')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('c_section')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('c_question')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('c_type')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('ques_score')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('0env6jy5gf')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('lcnwu5wcgk')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('r1s987zw3e')##" ALIGN="center"/>
+				<LABEL TITLE="##ms_tools.get_const('oiy3763cg8')##" ALIGN="center"/>
+			</ROW>
+
+			<LOOP EXPR="Ps.questions" VAR="_question">
+				<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+					<LABEL TITLE-EXPR="_question.assessment_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.section_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.text" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.qtype.ForeignElem.name" FLAT="1" ERROR-TEXT=""/>
+					<LABEL TITLE-EXPR="_question.maxweight" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.num" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.correct_num + ' (' + StrReal( _question.per_cent, 1 ) + '%)'" FLAT="1"/>
+					<LABEL TITLE-EXPR="_question.incorrect_num + ' (' + StrReal( _question.incorrect_per_cent, 1 ) + '%)'" FLAT="1"/>
+					<LABEL TITLE-EXPR="StrReal( _question.avg_score, 2 )" FLAT="1"/>
+				</ROW>
+
+				<IF EXPR="Ps.disp_answers">
+					<LOOP EXPR="_question.variants" VAR="_answer">
+						<ROW>
+							<LABEL HSPAN="2" FLAT="1"/>
+							<LABEL TITLE-EXPR="_answer.text" FLAT="1"/>
+
+							<IF EXPR="_question.qtype == 'choice' || _question.qtype == 'select'">
+								<LABEL TITLE-EXPR="_answer.cor_text" BK-COLOR-EXPR="_answer.correct == '1' ? '190,240,200' : ''" FLAT="1" ALIGN="center" ERROR-TEXT="" HSPAN="2"/>
+								<LABEL TITLE-EXPR="_answer.correct_num" FLAT="1"/>
+								<LABEL TITLE-EXPR="_answer.correct_num + ( _question.num == 0 ? '' : ' (' + StrReal( ( _answer.correct_num / _question.num ) * 100.0, 1 ) + '%)' )" FLAT="1"/>
+							</IF>
+							<ELSE>
+								<LABEL TITLE-EXPR="_answer.cor_text" BK-COLOR="190,240,200" FLAT="1" HSPAN="2"/>
+								<LABEL FLAT="1"/>
+								<LABEL FLAT="1"/>
+							</ELSE>
+
+							<LABEL FLAT="1"/>
+							<LABEL FLAT="1"/>
+						</ROW>
+					</LOOP>
+				</IF>
+
+			</LOOP>
+
+		</GRID>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.assessment_id"  catalogExpr="'assessment'" doFillingExpr="true"/>
+
+				<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id"/>
+
+				<IF EXPR="! Ps.person_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" SOURCE="Ps.parent_object_id" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" />
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				</IF>
+
+				<TitleLabel TITLE-EXPR="ms_tools.get_const( '8fep4npfsh' )">
+					<COMBO WIDTH="100%" SOURCE="Ps.disp_learning_type">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('8fcf8y2h17')" VALUE="test_learnings"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('b3uk06edze')" VALUE="active_test_learnings"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="active_test_learnings,test_learnings"/>
+					</COMBO>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<CHECK SOURCE="Ps.disp_answers" TITLE="##ms_tools.get_const('61mn3fm7nr')##" MULTILINE="1"/>
+
+
+				<ComboLabelEntry SOURCE="Ps.sort_type_id" WIDTH="100%" TITLE-EXPR="ms_tools.get_const( 'c_sort' )" entriesExpr="
+						[
+							{ title: ms_tools.get_const( 'c_test' ), value: 'assessment_name' },
+							{ title: ms_tools.get_const( 'c_section' ), value: 'section_name' },
+							{ title: ms_tools.get_const( 'c_question' ), value: 'text' },
+							{ title: ms_tools.get_const( 'c_type' ), value: 'qtype' },
+							{ title: ms_tools.get_const( 'ques_score' ), value: 'maxweight' },
+							{ title: ms_tools.get_const( '0env6jy5gf' ), value: 'num' },
+							{ title: ms_tools.get_const( 'uamu0tux4g' ), value: 'per_cent' }
+						]
+					" afterSelectAction="
+					
+							Ps.sort_type_id = NewValue;
+							Ps.questions.Sort( Ps.sort_type_id, '+' );
+				"/>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	arrSettings = [
+					{ 'name' : 'assessment_id', 'value' : TopElem.assessment_id.Value },
+					{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+					{ 'name' : 'group_id', 'value' : TopElem.group_id.Value },
+					{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+					{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+					{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value },
+					{ 'name' : 'disp_learning_type', 'value' : TopElem.disp_learning_type.Value },
+					{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+					{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value },
+					{ 'name' : 'disp_answers', 'value' : TopElem.disp_answers.Value },
+					{ 'name' : 'sort_type_id', 'value' : TopElem.sort_type_id.Value },
+					{ 'name' : 'section_id', 'value' : TopElem.section_id.Value }
+				];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	Ps.questions.Clear();
+	Ps.sections.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	curUser = tools.get_cur_user();
+
+	oResult = task.CallMethod( 'tools_report', 'question_report', [ oParams ] );
+
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+
+		if ( System.IsWebClient )
+		{
+			try
+			{
+				TopElem.LoadData( tools_report.get_report_data( UrlEncode( oResult.sDataUrl ), true ) );
+			}
+			catch(ex)
+			{
+				alert( 'report ex: ' + ex );
+			}
+		}
+		else
+		{
+			TopElem.LoadDataFromUrl( oResult.sDataUrl );
+		}
+
+		TopElem.count_arr = ArrayCount( TopElem.questions );
+
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+		if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+		{
+			if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', TopElem.count_arr), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+			{ // Выгрузка отчета в Excel
+				Screen.RunCommand( 'Export' );
+				Ps.questions.Clear();
+				Ps.sections.Clear();
+				TopElem.count_arr = null;
+			}
+		}
+	}
+
+	Ps.questions.Sort( Ps.sort_type_id, '+' );
+
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/question_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+
+"/>
+
+</SPXML-SCREEN>

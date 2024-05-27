@@ -1,0 +1,1244 @@
+﻿<%
+// const_start
+var sConstStartDatePlan = tools_web.get_web_const( 'planiruemayadat_4', curLngWeb );
+var sConstTaskType = 'Тип задачи';
+// const_end
+%>
+<SPXMLScreen>
+<%
+iFieldsOnTabCount=30
+iDepth=20
+bInsert=false;
+function fnFieldVisibility(arrFieldsParam,strFieldNameParam)
+{
+	if(curUser.access.access_role == "admin")
+		return true;
+	return (ArrayOptFind(arrFieldsParam, "This == " + CodeLiteral( strFieldNameParam )) !=undefined);
+}
+
+function fnFillSource( strObjectParam)
+{
+	var teFieldObject=null
+	try
+	{
+		teFieldObject = OpenDoc( UrlFromDocID( oSourceAndParent.GetOptProperty('i'+strObjectParam+'Id' ) )).TopElem;
+		oSourceAndParent.SetProperty('s'+strObjectParam+'Name', tools.get_disp_name_value( teFieldObject ));
+		if (strObjectParam=='SourceObject')
+		{
+			oSourceAndParent.sSourceName=teFieldObject.Name
+		}
+	}
+	catch(ex)
+	{
+		tools.log('view_project_task fnFillSource error:'+ex, "error");
+	}
+	return teFieldObject
+	
+}
+
+function fnSetSourceAndParent( oSourceAndParentParam)
+{
+
+	try
+	{
+		var teFieldObject=fnFillSource( 'SourceObject')
+		if (teFieldObject!=null)
+		{
+			if (oSourceAndParentParam.sSourceName=='task')
+			{
+				oSourceAndParentParam.iParentTaskId=oSourceAndParentParam.iSourceObjectId
+				oSourceAndParentParam.sParentTaskName=oSourceAndParentParam.sSourceName
+				oSourceAndParentParam.iSourceObjectId=(teFieldObject.source_object_id.HasValue?teFieldObject.source_object_id.Value:null)
+				fnFillSource( 'SourceObject')
+			}
+		}
+	}
+	catch(ex)
+	{
+		tools.log('view_project_task fnSetSourceAndParent error:'+ex, "error");
+	}
+}
+
+function fnBuildCustomFields(sXamlLocationParam,sFieldLocationParam)
+{
+	var bShow= false;
+	if(fnCheckRight("task_edit_custom_fields_list")||fnCheckRight("task_see_custom_fields_list"))
+	{
+		arrCustomFieldNames = Array();
+		fldCustomElems = tools.get_custom_template( teTask.Name, iTaskID, teTask );
+		if ( fldCustomElems != null )
+		{
+			curCustomFields = {
+						"id": "customFieldsViewGrid",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+						"source": teTask.custom_elems,
+						"modify_eval": fnCheckRight("task_edit_custom_fields_list")
+					};
+			bShow=true;
+		}
+	}
+	
+	if (bShow)
+	{
+		if (sXamlLocationParam=='custom_tab'&&sFieldLocationParam=='tab')
+		{
+
+%>
+	<TabItem Title="<%=tools_web.get_web_const( "c_additional", curLngWeb )%>">
+<%
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+	</TabItem>
+<%
+		}
+		if (sXamlLocationParam=='main_tab'&&sFieldLocationParam=='tab')
+		{
+%>
+	<TabItem Title="<%=tools_web.get_web_const( "c_additional", curLngWeb )%>">
+<%
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+	</TabItem>
+<%
+		}
+		if (sXamlLocationParam=='main_tab'&&sFieldLocationParam=='panel')
+		{
+			//curCustomFields.SetProperty("width","50%")
+
+			curCustomFields.SetProperty("draw_grid_columns",false)
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+
+		}
+	}
+}
+
+function fnBuildObjectSelector (oSourceObjectParams)
+{
+	strSelectorType=oSourceObjectParams.GetOptProperty("selector_type","selector")
+	if (strSelectorType=="selector")
+	{
+		curSelector = {
+		"id": oSourceObjectParams.GetOptProperty("id",""),
+		"object_id": oSourceObjectParams.GetOptProperty("object_id",""),
+		"object_id_item_name": oSourceObjectParams.GetOptProperty("object_id_item_name",""),
+		"multi_select": "false",
+		"display_object_ids":  oSourceObjectParams.GetOptProperty("display_object_ids",""),
+		"object_name":  oSourceObjectParams.GetOptProperty("object_name",""),
+		"width":oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth ),
+		"catalog_name": oSourceObjectParams.GetOptProperty("catalog_name","")
+		}
+	
+		curSelector.SetProperty("close_action",oSourceObjectParams.GetOptProperty("close_action","STOP"))
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+	}
+	else
+	{	
+		sCatalogName=oSourceObjectParams.GetOptProperty("catalog_name","place")
+		sDispName=common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name
+		strWhere=""
+		if (oSourceObjectParams.GetOptProperty("display_object_ids","")!="")
+		{
+				strWhere=strWhere+(strWhere!=""?" and ":"")+"MatchSome( $elem/id, ("+StrReplace(oSourceObjectParams.GetOptProperty("display_object_ids",""),';',',')+" ) )"
+		}
+		arrObjects=XQuery("for $elem in "+sCatalogName+"s "+(strWhere!=""?" where ":"")+strWhere+" order by $elem/"+sDispName+" return $elem")
+		iDefaultId=oSourceObjectParams.GetOptProperty("object_id",null)
+		strDefaultValue=oSourceObjectParams.GetOptProperty("default_value",tools_web.get_web_const( 'pusto', curLngWeb ))
+%>
+		<ComboBox Class="XAML-combo-view" Name="<%=oSourceObjectParams.GetOptProperty("id","")%>" Width="<%=oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth)%>" Change="<%=oSourceObjectParams.GetOptProperty("close_action","STOP")%>">								
+			<ComboBoxItem Value="" <%=(iDefaultId == null ? "Selected=\"true\"" : "")%>><%=(iDefaultId == null ? "" : XmlAttrEncode(strDefaultValue))%></ComboBoxItem>
+<%
+			for(catObject in arrObjects)
+			{
+%>
+			<ComboBoxItem Value="<%=catObject.PrimaryKey%>" Selected="<%=(catObject.PrimaryKey == iDefaultId)%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( catObject.Child(sDispName).Value, curLng.short_id ))%></ComboBoxItem>
+<%
+			}
+%>
+		</ComboBox>	
+<%
+	}
+}
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bIsNew=false
+oSourceAndParent={
+"iSourceObjectId": null,
+"sSourceObjectName":null,
+"sSourceName":null,
+"iParentTaskId": null,
+"sParentTaskName":null
+}
+iTaskID = null;
+bSearchForParams=false
+
+oSourceAndParent.sSourceName='task'
+if (ISDIALOG)
+{
+	oSourceAndParent.iSourceObjectId = OptInt(oParamSource.GetOptProperty( 'iSourceObjectId' , null ),null);
+	bSearchForParams=true;
+	
+	strTaskID = oParamSource.GetOptProperty( 'iTaskId' , null );
+	if ( strTaskID != null )
+	{
+		if (strTaskID=='new')
+		{
+			bIsNew=true;	
+		}
+		else
+		{
+			iTaskID = OptInt(strTaskID,null);
+			if (iTaskID!=null)
+			{
+				try
+				{
+					teTask=OpenDoc( UrlFromDocID( iTaskID ) ).TopElem
+				}
+				catch(ex)
+				{
+					curMessageBox = {
+							"type": "error",
+							"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+			%>
+	</SPXMLScreen>
+			<%
+						Cancel();
+				}
+			}
+		}
+	}
+	else
+	{
+		bIsNew=true;
+	}
+	
+}
+else
+{
+
+	try
+	{
+	
+		try
+		{
+			curTaskObject
+		}
+		catch(ex)
+		{
+			curTaskObject=undefined
+		}
+		if (curTaskObject!=undefined)
+		{
+			bInsert=true
+			if (curObjectID==null)
+			{	
+			curObjectID = curTaskObject.GetOptProperty( 'curObjectID', null );
+			curObject=curTaskObject.GetOptProperty( 'curObject', null );
+
+			Env.SetProperty( 'curObjectID', curObjectID );
+			Env.SetProperty( 'curObjectDoc', OpenDoc( UrlFromDocID( curObjectID ) ) );
+			Env.SetProperty( 'curObject', curObject);
+			strContext=curTaskObject.GetOptProperty( 'curContext', null )
+			if (strContext!=null&&strContext!='')
+			{
+				bSearchForParams=true
+				CONTEXT=tools.read_object(strContext);
+				}
+			}
+		}
+		
+		teTask=curObject
+		iTaskID=curObjectID
+		oSourceAndParent.iSourceObjectId=(teTask.source_object_id.HasValue?teTask.source_object_id.Value:null)
+	}
+	catch(ex)
+	{
+		bIsNew=true
+	}
+
+	if (teTask==undefined||teTask==null)
+	{
+		bIsNew=true
+	}
+}
+
+
+if (bSearchForParams)
+{
+	fldOverrideTamplate=ArrayOptFirstElem(XQuery("for $elem in override_web_templates where $elem/is_enabled=true() and $elem/mode='project_task' return $elem"))
+	if (fldOverrideTamplate!=undefined)
+	{		
+		teOverrideTamplate=null
+		try
+		{
+			teOverrideTamplate=OpenDoc( UrlFromDocID(fldOverrideTamplate.id ) ).TopElem
+		}
+		catch(ex)
+		{
+		}
+		if (teOverrideTamplate!=null)
+		{
+			curParams = new SafeObject;
+			tools_web.set_web_params(curParams, teOverrideTamplate.wvars, true );
+			Request.Session.Env.SetProperty("curParams", curParams);
+		}
+	}
+}
+
+if (bIsNew)
+{
+	fnSetSourceAndParent( oSourceAndParent )
+	try
+	{
+		teTask=OpenNewDoc('x-local://wtv/wtv_task.xmd' ).TopElem
+		teTask.parent_task_id=oSourceAndParent.iParentTaskId;
+	}
+	catch(ex)
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+}
+teWorkflow = null;
+if( teTask.workflow_id.HasValue )
+{
+	teWorkflow = OpenDoc( UrlFromDocID( teTask.workflow_id ) ).TopElem;
+}
+
+oSourceAndParent.iParentTaskId=(oSourceAndParent.iParentTaskId==null?(teTask.parent_task_id.HasValue?teTask.parent_task_id:null):oSourceAndParent.iParentTaskId);
+
+function fnCheckRight(sActionCodeParam)
+{
+	if (oSourceAndParent.sSourceName!=''&&oSourceAndParent.sSourceName!='task')
+	{
+		sAction=oSourceAndParent.sSourceName+'_'+sActionCodeParam
+	}
+	else
+	{
+		sAction=sActionCodeParam
+	}
+	if(curUser.access.access_role == "admin"||bIsNew)
+		return true;
+	return (ArrayOptFind(xarrOperationsRights, "This.action == " + CodeLiteral( sAction ) ) !=undefined);
+}
+
+function fnCheckTaskEditRights()
+{
+	if(curUser.access.access_role == "admin"||bIsNew)
+		return true;
+
+	strActionCodeList=String( "task_edit_code;task_edit_name;task_edit_custom_fields_list;task_edit_executor;task_edit_status;task_edit_date_plan;task_edit_date_fact;task_edit_mark;task_edit_comment;task_edit_desc;task_edit_parent_task")
+	arrActionCodes = strActionCodeList.split( ";" );
+
+	for (sActionCode in arrActionCodes)
+	{
+		if (fnCheckRight(sActionCode))
+		{
+			return true
+		}
+	}
+	return false;
+}
+
+function fnBuildFormButtons()
+{
+%>
+	<Toolbar>	
+<%
+	if (bAllowEdit)
+	{
+%>
+		<Button Class="XAML-button XAML-button-ok" Click="SET=ProjectTaskChangeAction/sAction,save;SET=ProjectTaskChangeAction/CONTEXT,{CONTEXT};SET=ProjectTaskChangeSuccessAction,<%=UrlEncode(ISDIALOG?'SET=ProjectTaskChangeAction/sSelectedObjects,#empty#;CLOSEDIALOG':sDefaultSuccessAction)%>;SET=ProjectTaskChangeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;Action=ProjectTaskChangeAction"><%=HtmlEncode(tools_web.get_web_const( 'c_save', curLngWeb ))%></Button>
+<%
+	}
+	if (ISDIALOG)
+	{
+%>
+		<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_close', curLngWeb ))%></Button>
+<%	
+	}
+
+	if( !bIsNew && teWorkflow != null )
+	{
+
+		tmpCurObject = curObject;
+		iTmpCurObjectID = curObjectID;
+		
+		curObject = teTask;
+		curObjectID = iTaskID;
+		for ( fldActionElem in teWorkflow.actions )
+		{
+			if ( tools.safe_execution( fldActionElem.condition_eval_str ) )
+			{
+%>
+	<Button Click="SET=WorckflowAction/action_id,<%=fldActionElem.PrimaryKey%>;ACTION=WorckflowAction" Class="XAML-button"><![CDATA[<%=tools_web.get_cur_lng_name( fldActionElem.name, curLng.short_id )%>]]></Button>
+<%
+			}
+		}
+		curObject = tmpCurObject;
+		curObjectID = iTmpCurObjectID;
+	}
+%>
+	</Toolbar>
+<%
+}
+
+var teSourceObject = null;
+
+if (oSourceAndParent.iSourceObjectId!=null)
+{
+	if (oSourceAndParent.sSourceObjectName == null)
+	{
+		try
+		{
+			teFieldObject = teSourceObject = OpenDoc( UrlFromDocID( oSourceAndParent.iSourceObjectId ) ).TopElem;
+			oSourceAndParent.sSourceObjectName = tools.get_disp_name_value( teFieldObject );
+			oSourceAndParent.sSourceName=teFieldObject.Name
+		}
+		catch ( err )
+		{
+			oSourceAndParent.sSourceObjectName = global_settings.object_deleted_str ;
+		}
+	}
+	
+	xarrBossTypes = tools.get_object_relative_boss_types(curUserID, oSourceAndParent.iSourceObjectId);
+	
+	xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+	xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ','+oSourceAndParent.sSourceName+',') )");
+}
+else
+{
+	xarrOperations = Array()
+}
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+
+strTabList=String( tools_web.get_web_param( curParams, "project_task.tab_list", "main;workflow;files;desc;custom", true ) )
+arrTabListParam = strTabList.split( ";" );
+
+strCustomFieldsDefaultView=String( tools_web.get_web_param( curParams, "project_task.tab_list.custom.default_view","tab", true ) )	
+
+bAllowEdit = (fnCheckTaskEditRights());
+
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+bLastColExist=(bAllowEdit||ISDIALOG)
+iDefaultWidth=bDesctop?"300":"100%"
+
+
+arrExecutorTypes=[];
+arrExecutorTypes.push({"id":"collaborator","name":tools_web.get_web_const( 'c_coll', curLngWeb )})
+arrExecutorTypes.push({"id":"group","name":tools_web.get_web_const( 'c_group', curLngWeb )})
+if ((oSourceAndParent.iSourceObjectId!=null&&oSourceAndParent.sSourceName!='project')||oSourceAndParent.iSourceObjectId==null)
+{
+	arrExecutorTypes.push({"id":"subdivision","name":tools_web.get_web_const( 'c_subd', curLngWeb )})
+	arrExecutorTypes.push({"id":"org","name":tools_web.get_web_const( 'c_org', curLngWeb )})
+}
+
+sDefaultSuccessAction='SET=ProjectTaskChangeAction/sSelectedObjects,#empty#;REFRESH'
+sDefaultFailureAction='SET=ProjectTaskChangeAction/CONTEXT,#empty#;SET=ProjectTaskChangeAction/sSelectedObjects,#empty#;ALERT={!messageText}'
+
+bShowAllSub = tools_web.get_web_param( curParams, "project.show_only_sub_collaborators", "0", true ) != "1";
+
+arrProjectTaskDispSettings=[]
+if (global_settings.settings.project_task.options.use_custom_project_task_status&&oSourceAndParent.sSourceName=='project')
+{
+	arrProjectTaskDispSettings=global_settings.settings.project_task.project_task_status_types
+}
+else
+{
+	arrProjectTaskDispSettings=ArraySelectAll(curLngCommon.task_statuses)
+}
+
+fldStatus=teTask.status.HasValue?ArrayOptFind(arrProjectTaskDispSettings,'This.id=='+CodeLiteral( teTask.status.Value ) ):undefined;
+
+%>
+<Edit Name="ProjectTaskChangeSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+<Edit Name="ProjectTaskChangeFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+<Action Name="ProjectTaskChangeAction" Source="project_task_change" Success="<%=(bIsNew&&!ISDIALOG&&!curUrlQuery.HasProperty("object_id")?('OPENURL='+PAGEURL+'&object_id={task_id}'):'{!ProjectTaskChangeSuccessAction}')%>" Failure="{!ProjectTaskChangeFailureAction}">
+	<Param Name="sAction" Value=""/>
+	<Param Name="iObjectId" Value="<%=iTaskID%>"/>
+	<Param Name="sSelectedObjects" Value="#empty#"/>
+	<Param Name="CONTEXT" Value="#empty#"/>
+</Action>
+
+		<Action Name="WorckflowAction" Source="workflow_process" Success="{!workflow_action_success_action}" Failure="ALERT={messageText}">
+			<Param Name="action_id" Value=""/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			<Param Name="object_id" Value="<%=iTaskID%>"/>
+		</Action>
+
+<%
+if (bIsNew)
+{
+%>
+<Edit Name="task_assigner_id" Hidden="1"><%=curUserID%></Edit>
+<%
+}
+if (oSourceAndParent.iSourceObjectId!=null)
+{
+%>
+<Edit Name="task_source_object_id" Hidden="1"><%=oSourceAndParent.iSourceObjectId%></Edit>
+<Edit Name="task_source_object_type" Hidden="1"><%=oSourceAndParent.sSourceName%></Edit>
+<%
+}
+
+if (!bIsNew)
+{
+	if (!bInsert)
+	{
+		curTitle={ 'object': teTask };
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	}
+}
+if (!ISDIALOG)
+{
+	fnBuildFormButtons();
+}
+%>
+<TabControl Name="ProjectTaskBodyTab<%=curObjectID%>" Preservable="1" TabsLocation="<%=bInsert||ISDIALOG ? "n" : "w"%>" Adapt="true" TabsWidth="200" Width="100%">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{		
+		switch(sTabListParam)
+		{
+			case "main":
+			{
+			
+				strGeneralFieldsList=String( tools_web.get_web_param( curParams, "project_task.tab_list.main_tab.fields_list", "code;name", true ) )
+				arrGeneralFieldsList = strGeneralFieldsList.split( ";" );
+				
+				arrGeneralFields=[]
+				if (fnFieldVisibility(arrGeneralFieldsList,'code'))
+				{
+					arrGeneralFields.push({"id":"code","bCanSee":true,"bCanEdit":fnCheckRight("task_edit_code")})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,'name'))
+				{
+					arrGeneralFields.push({"id":"name","bCanSee":true,"bCanEdit":fnCheckRight("task_edit_name")})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"parent_task"))
+				{
+					arrGeneralFields.push({"id":"parent_task","bCanSee":(fnCheckRight("task_edit_parent_task")||fnCheckRight("task_see_parent_task")),"bCanEdit":fnCheckRight('task_edit_parent_task')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"task_type_id"))
+				{
+					arrGeneralFields.push({"id":"task_type_id","bCanSee":(fnCheckRight("task_edit_task_type")||fnCheckRight("task_see_task_type")),"bCanEdit":fnCheckRight('task_edit_task_type')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"task_source_object")&&oSourceAndParent.iSourceObjectId!=null)
+				{
+					arrGeneralFields.push({"id":"task_source_object","bCanSee":true,"bCanEdit":true})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"assigner")&&teTask.assigner_id.HasValue)
+				{
+					arrGeneralFields.push({"id":"assigner","bCanSee":true,"bCanEdit":true})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"executor_type"))
+				{
+					arrGeneralFields.push({"id":"executor_type","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_executor')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"executor"))
+				{
+					arrGeneralFields.push({"id":"executor","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_executor')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"status"))
+				{
+					arrGeneralFields.push({"id":"status","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_status')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"start_date_plan"))
+				{
+					arrGeneralFields.push({"id":"start_date_plan","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_start_date_plan')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"date_plan"))
+				{
+					arrGeneralFields.push({"id":"date_plan","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_date_plan')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"end_date_plan"))
+				{
+					arrGeneralFields.push({"id":"end_date_plan","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_end_date_plan')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"date_fact"))
+				{
+					arrGeneralFields.push({"id":"date_fact","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_date_fact')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"value"))
+				{
+					arrGeneralFields.push({"id":"value","bCanSee":true,"bCanEdit":fnCheckRight('task_edit_mark')})
+				}
+				if (fnFieldVisibility(arrGeneralFieldsList,"comment"))
+				{
+					arrGeneralFields.push({"id":"comment","bCanSee":(fnCheckRight("task_edit_comment")||fnCheckRight("task_see_comment")),"bCanEdit":fnCheckRight('task_edit_comment')})
+				}
+				
+				iTabCount=0
+				arrTabs=[]				
+				iBorder=ArrayCount(arrGeneralFields)
+				if (ISDIALOG&&iBorder>iFieldsOnTabCount)
+				{
+					for (i=0;i<iBorder;i++)
+					{
+						arrTemp=ArrayRange(arrGeneralFields, i*iFieldsOnTabCount,iFieldsOnTabCount)
+						if (ArrayOptFirstElem(arrTemp)!=undefined)
+						{
+							sTitle=(iTabCount==0?tools_web.get_web_const( 'osnovnyeatribu', curLngWeb ):(iTabCount==1?tools_web.get_web_const( 'dopolnitelnyea', curLngWeb ):iTabCount==2?tools_web.get_web_const( 'vrb_extra_info', curLngWeb ):tools_web.get_web_const( 'c_additional', curLngWeb )))
+							arrTabs.push({"title":sTitle,"arrGeneralFields":arrTemp})
+							iTabCount++
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+				else
+				{
+					arrTabs.push({"title":"","arrGeneralFields":arrGeneralFields})
+					iTabCount++
+				}
+
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+<%
+		if (iTabCount>1)
+		{
+%>
+			<TabControl Name="ProjectTaskGeneralTab<%=curObjectID%>" Preservable="1" TabsWidth="200">
+<%
+		}
+		for (fldTab in arrTabs)
+		{
+			if (iTabCount>1)
+			{
+%>
+			<TabItem Title="<%=XmlAttrEncode(fldTab.title)%>">
+<%
+			}
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+<%
+		for (oField in fldTab.arrGeneralFields)
+		{	
+			if (oField.id=="code")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_code', curLngWeb ))%>:</Label>
+<%
+					if (oField.bCanEdit)
+					{
+%>
+				<Edit Name="task_code" Width="<%=iDefaultWidth%>"><%=XmlAttrEncode(teTask.code)%></Edit>
+<%
+					}
+					else
+					{
+%>
+				<Label><%=HtmlEncode(teTask.code)%></Label>
+<%
+					}
+%>
+
+			</GridRow>
+<%
+			}
+			if (oField.id=="name")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_name', curLngWeb ))%>:</Label>
+<%
+					if (oField.bCanEdit)
+					{
+%>
+					<EditBox Name="task_name" Width="<%=iDefaultWidth%>"><%=XmlAttrEncode(teTask.name)%></EditBox>
+<%
+					}
+					else
+					{
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(teTask.name, curLng.short_id ))%></Label>
+<%
+					}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="parent_task"&&(oField.bCanEdit||oField.bCanSee))
+			{
+%>			
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'roditelskayazad', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+					if (oSourceAndParent.iSourceObjectId!=null&&oSourceAndParent.sSourceName=='project')
+					{
+						arrTasks = XQuery("for $elem in tasks where $elem/source_object_id="+oSourceAndParent.iSourceObjectId+" return $elem");
+						arrObjects=ArraySort(QueryCatalogByKeys('tasks', 'id', ArrayExtract(arrTasks, 'This.id')),"This.name","+")
+					}
+					else
+					{
+						arrObjects=ArrayRange(XQuery("for $elem in tasks order by $elem/name descending return $elem"),0,100);
+					}
+					bHasSelection=teTask.parent_task_id.OptForeignElem!= undefined
+					
+					oSourceObject = {
+							"id": "task_parent_task_id",
+							"object_id": (teTask.parent_task_id.OptForeignElem!= undefined?teTask.parent_task_id:null),
+							"object_id_item_name": "task_parent_task_id",
+							"multi_select": "false",
+							"catalog_name": "task",
+							"width":iDefaultWidth,
+							"display_object_ids":  (ArrayMerge(arrObjects,"This.id",";")),
+							"selector_type": "selector"
+						};
+						oSourceObject.SetProperty("close_action","")
+						fnBuildObjectSelector (oSourceObject)
+
+				}
+				else
+				{
+					if ( teTask.task_type_id.Value )
+					{
+						if (oSourceAndParent.sParentTaskName==null)
+						{
+							fnFillSource( 'ParentTask')
+						}
+					}
+
+%>
+					<Label><%=HtmlEncode(tools_web.get_cur_lng_name(oSourceAndParent.sParentTaskName, curLng.short_id ))%></Label>
+<%
+				}
+%>
+			</GridRow>				
+<%
+			}
+			if (oField.id=="task_type_id"&&(oField.bCanEdit||oField.bCanSee))
+			{
+%>			
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstTaskType)%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+					bHasSelection=teTask.task_type_id.OptForeignElem!= undefined
+					
+					oSourceObject = {
+							"id": "task_task_type_id",
+							"object_id": (teTask.task_type_id.OptForeignElem!= undefined?teTask.task_type_id:null),
+							"object_id_item_name": "task_task_type_id",
+							"multi_select": "false",
+							"catalog_name": "task_type",
+							"width":iDefaultWidth,
+							"selector_type": "selector"
+						};
+						oSourceObject.SetProperty("close_action","")
+						fnBuildObjectSelector (oSourceObject)
+
+				}
+				else
+				{
+					strTaskTypeName=(teTask.task_type_id.HasValue && teTask.task_type_id.OptForeignElem != undefined ? (teTask.task_type_id.ForeignElem.name) : ""),
+
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(strTaskTypeName, curLng.short_id ))%></Label>
+<%
+				}
+%>
+			</GridRow>				
+<%
+			}
+			if (oField.id=="task_source_object")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'obektistochnik', curLngWeb ))%>:</Label>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(oSourceAndParent.sSourceObjectName, curLng.short_id ))%></Label>
+			</GridRow>
+<%
+				if (oSourceAndParent.iSourceObjectId!=null&&oSourceAndParent.sSourceName=='project')
+				{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode( 'Этап договора' )%>:</Label>
+<%
+					if( teSourceObject == null )
+						teSourceObject = OpenDoc( UrlFromDocID( oSourceAndParent.iSourceObjectId ) ).TopElem;
+					curSelector = {
+						"id": "task_pay_stage_id",
+						"object_id": teTask.pay_stage_id,
+						"multi_select": "false",
+						"width": iDefaultWidth,
+						"catalog_name":"pay_stage",
+						//"xquery_qual": "$elem/contract_id = " + ( teSourceObject.contract_id.HasValue ? teSourceObject.contract_id : "null()" )
+					}
+				
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+			</GridRow>
+<%
+				}
+			}
+			if (oField.id=="assigner")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'naznachivshiyzad', curLngWeb ))%>:</Label>
+				<Label><%=HtmlEncode(	teTask.assigner_id.OptForeignElem.fullname!=undefined?teTask.assigner_id.OptForeignElem.fullname.Value:global_settings.object_deleted_str
+)%></Label>
+			</GridRow>
+<%
+			}
+			if (oField.id=="executor_type")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'tipotvetstvenn', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<ComboBox Name="task_executor_type" Width="<%=iDefaultWidth%>">
+<%
+							for( fldExecutorType in arrExecutorTypes)
+							{
+
+								strAction='SET=task_'+teTask.executor_id.Name+',;SET=ObjectNameEdittask_executor_id,;'
+
+								strSelected=''
+								if (fldExecutorType.id==teTask.executor_type)
+								{
+									strSelected=' Selected="True"'
+									bHasSelection=true
+								}
+
+								try
+								{
+%>
+						<ComboBoxItem Value="<%=fldExecutorType.id%>" Change="<%=strAction%>"<%=strSelected%>><%=XmlAttrEncode(fldExecutorType.name)%></ComboBoxItem>
+<%
+								}
+								catch(ex)
+								{
+								}
+							}
+%>
+				</ComboBox>
+<%
+				}
+				else
+				{
+					strExecutorType=''
+					if (teTask.executor_type.HasValue)
+					{
+						fldExecutorType=ArrayOptFind(arrExecutorTypes,"This.id==" + CodeLiteral( teTask.executor_type ))
+						if (fldExecutorType!=undefined)
+						{
+							strExecutorType=fldExecutorType.name
+						}
+					}
+%>
+				<Label><%=HtmlEncode(strExecutorType)%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="executor")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'otvetstvennyyz_2', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+					bHasSelection=(teTask.executor_id.OptForeignElem!= undefined?teTask.executor_id:null)
+					oSourceObject = {
+						"id": "task_executor_id",
+						"object_id": (teTask.executor_id.OptForeignElem!= undefined?teTask.executor_id:null),
+						"object_id_item_name": ('task_'+teTask.executor_id.Name),
+						"multi_select": "false",
+						"catalog_name": "{task_executor_type}",
+						"object_name":  (teTask.executor_id.HasValue && teTask.executor_id.OptForeignElem != undefined ? (teTask.executor_id.ForeignElem.ChildExists('fullname')?teTask.executor_id.ForeignElem.fullname:teTask.executor_id.ForeignElem.name) : ""),
+						"width":iDefaultWidth,
+						"selected_object_ids": teTask.executor_id,
+						"selector_type": "selector"
+					};
+					if (oSourceAndParent.iSourceObjectId!=null&&oSourceAndParent.sSourceName=='project')
+					{
+						arrParticipants = XQuery("for $elem in project_participants where $elem/project_id="+oSourceAndParent.iSourceObjectId+" and $elem/object_id!=null() and ( $elem/status_id = \'active\' or $elem/status_id = null() ) return $elem");
+						oSourceObject.SetProperty('display_object_ids',ArrayMerge(arrParticipants,'object_id',';'))
+					}
+					oSourceObject.SetProperty("close_action","")
+					fnBuildObjectSelector (oSourceObject)
+				}
+				else
+				{
+					strExecutor=''
+					if ( teTask.executor_id.Value )
+					{
+						try
+						{
+							teFieldObject = OpenDoc( UrlFromDocID( teTask.executor_id.Value ) ).TopElem;
+							strExecutor=tools.get_disp_name_value( teFieldObject );
+						}
+						catch ( err )
+						{
+							strExecutor = global_settings.object_deleted_str ;
+						}
+					}
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(strExecutor, curLng.short_id ))%></Label>
+<%
+				}
+%>
+
+			</GridRow>
+<%
+			}
+			if (oField.id=="status")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_status', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<ComboBox Name="task_status" Width="<%=iDefaultWidth%>">
+<%
+					for(fldStatus in arrProjectTaskDispSettings)
+					{
+						try
+						{
+							strSelected=''
+							if ((bIsNew&&fldStatus.ChildIndex==0)||(!bIsNew&&fldStatus.id==teTask.status))
+							{
+								strSelected=' Selected="True"'
+							}
+
+%>
+					<ComboBoxItem Value="<%=fldStatus.id%>" <%=strSelected%>><%=XmlAttrEncode(tools_web.get_cur_lng_name(fldStatus.name,curLng.short_id ))%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+						}
+					}
+%>
+				</ComboBox>
+<%
+				}
+				else
+				{
+%>
+<%
+						if (fldStatus!=undefined)
+						{
+%>
+						<HTMLBox><![CDATA[<font color="#<%=StrHexColor(fldStatus.text_color)%>"><%=HtmlEncode(tools_web.get_cur_lng_name(fldStatus.name, curLng.short_id ))%></font>]]></HTMLBox>
+<%
+						}
+						else
+						{
+%>
+						<Label></Label>
+<%
+						}
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="start_date_plan")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstStartDatePlan)%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<DatePicker Name="task_start_date_plan" Format="d.m.Y" Width="130"><%=StrDate(teTask.start_date_plan, false, false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(StrDate(teTask.start_date_plan,false,false ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="date_plan")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'fakticheskayadat_1', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<DatePicker Name="task_date_plan" Format="d.m.Y" Width="130"><%=StrDate(teTask.date_plan, false, false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(StrDate(teTask.date_plan,false,false ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="end_date_plan")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'planiruemayadat_1', curLngWeb ))%>:</Label>
+<%
+
+				if (oField.bCanEdit)
+				{
+%>
+				<DatePicker Name="task_end_date_plan" Format="d.m.Y" Width="130"><%=StrDate(teTask.end_date_plan, false, false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(StrDate(teTask.end_date_plan,false,false ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="date_fact")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'fakticheskayadat', curLngWeb ))%>:</Label>
+<%
+
+				if (oField.bCanEdit)
+				{
+%>
+				<DatePicker Name="task_date_fact" Format="d.m.Y" Width="130"><%=StrDate(teTask.date_fact, false, false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(StrDate(teTask.date_fact,false,false ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+			if (oField.id=="value")
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'ass_mark', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<Edit Name="task_value" Width="60"><%=XmlAttrEncode(teTask.value)%></Edit>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(teTask.value, curLng.short_id ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%	
+			}
+			if (oField.id=="comment"&&(oField.bCanEdit||oField.bCanSee))
+			{	
+%>		
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_comment', curLngWeb ))%>:</Label>
+<%
+				if (oField.bCanEdit)
+				{
+%>
+				<EditBox Name="task_comment" Height="100"  Width="100%"><%=XmlAttrEncode(teTask.comment)%></EditBox>
+<%
+				}
+				else
+				{ 
+%>
+				<HTMLBox>
+							<![CDATA[<%=HtmlEncode( tools_web.get_web_desc( teTask.comment, (OptInt(iTaskID,null)!=null?UrlFromDocID( iTaskID ):null), teTask.Name + ".comment" ) )%>]]>	
+				</HTMLBox>
+<%
+				}
+%>
+			</GridRow>				
+<%
+			}
+		}
+		if (iTabCount==1)
+		{
+			fnBuildCustomFields('main_tab',strCustomFieldsDefaultView)
+		}
+%>			
+		</Grid>
+<%
+			if (iTabCount>1)
+			{
+%>
+			</TabItem>
+<%
+			}
+		}
+
+		if (iTabCount>1)
+		{
+			if (strCustomFieldsDefaultView=='panel')
+			{
+				fnBuildCustomFields('main_tab','tab')
+			}
+%>
+			</TabControl>
+<%
+		}
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "workflow":
+			{
+				
+				if( !bIsNew && teWorkflow != null )
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'soglasovanie', curLngWeb ))%>">
+<%
+				
+				
+					tmpCurObject = curObject;
+					iTmpCurObjectID = curObjectID;
+					arrWorkflowFields = Array();
+					for ( fldGroupElem in teWorkflow.field_groups )
+						if ( tools.safe_execution( fldGroupElem.read_conditions.condition_eval_str ) )
+							for ( fldFieldElem in ArraySelectByKey( teWorkflow.workflow_fields, fldGroupElem.code, 'field_group_id' ) )
+								arrWorkflowFields.push( fldFieldElem );
+
+					arrCustomFieldNames = Array();
+					curCustomFields = {
+						"id": "Workflow",
+						"fields": arrWorkflowFields,
+						"source": teTask.workflow_fields,
+						"modify_eval": false,
+						"field_modify_eval": "tools.safe_execution(fldFieldElem.Parent.Parent.field_groups.GetChildByKey(fldFieldElem.field_group_id).write_conditions.condition_eval_str)",
+						"combo_box_width": "300"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					curObject = tmpCurObject;
+					curObjectID = iTmpCurObjectID;
+%>
+	</TabItem>
+<%
+				}
+				break;
+			}
+			
+			case "files":
+			{
+				if (teTask.ChildExists('files')&&!bIsNew)
+				{
+					if (fnCheckRight('task_edit_files')||fnCheckRight('task_edit_files'))
+					{
+						dummyObjectID=iTaskID
+						dummyObject=teTask
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+<%
+						if(fnCheckRight('task_edit_files'))
+						{
+							allowChangeFiles = true;
+							bStaticCollection = false;
+							bShowChangeVisibilityAction=(oSourceAndParent.iSourceObjectId!=null&&oSourceAndParent.sSourceName=='project')
+							sFilesListViewType = "datagrid";
+						}
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+					}
+				}
+				break;
+			}
+			case "desc":
+			{
+
+				if(fnCheckRight("task_edit_desc")||fnCheckRight("task_see_desc"))
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'podrobnoeopisa', curLngWeb ))%>">
+<%
+					if (fnCheckRight("task_edit_desc"))
+					{
+
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="1" Width="100%">			
+			<RichEdit Name="desc" Width="100%" Height="500">
+				<![CDATA[<%=tools_web.get_web_desc( teTask.Child( "desc" ),(OptInt(iTaskID,null)!=null?UrlFromDocID( iTaskID ):null) , teTask.Name + ".desc" )%>]]>
+			</RichEdit>
+		</Panel>
+<%
+					}
+					else
+					{
+						curDescObject = teTask;
+						curDescObjectID = iTaskID;
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+					}
+%>
+	</TabItem>
+<%
+				}
+				break;
+			}
+			case "custom":
+			{
+				fnBuildCustomFields('custom_tab',strCustomFieldsDefaultView)
+				break;
+			}
+		}
+	}
+%>
+</TabControl>
+<%
+if (ISDIALOG)
+{
+	fnBuildFormButtons()
+}
+%>
+</SPXMLScreen>

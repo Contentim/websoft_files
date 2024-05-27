@@ -1,0 +1,2489 @@
+
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=ProgId content=Excel.Sheet>
+<meta name=Generator content="Microsoft Excel 11">
+<!--[if gte mso 9]><xml>
+<o:DocumentProperties>
+	<o:Author>РОЛЬФ</o:Author>
+	<o:LastAuthor>РОЛЬФ</o:LastAuthor>
+	<o:Created>2010-05-30T12:51:09Z</o:Created>
+	<o:LastSaved>2010-05-30T13:03:28Z</o:LastSaved>
+	<o:Version>11.9999</o:Version>
+</o:DocumentProperties>
+</xml><![endif]-->
+<style>
+<!--table
+	{mso-displayed-decimal-separator:",";
+	mso-displayed-thousand-separator:" ";}
+@page
+	{margin:1.0in .75in 1.0in .75in;
+	mso-header-margin:.5in;
+	mso-footer-margin:.5in;}
+tr
+	{mso-height-source:auto;}
+col
+	{mso-width-source:auto;}
+br
+	{mso-data-placement:same-cell;}
+.style0
+	{mso-number-format:General;
+	text-align:general;
+	vertical-align:bottom;
+	white-space:nowrap;
+	mso-rotate:0;
+	mso-background-source:auto;
+	mso-pattern:auto;
+	color:windowtext;
+	font-size:10.0pt;
+	font-weight:400;
+	font-style:normal;
+	text-decoration:none;
+	font-family:Arial;
+	mso-generic-font-family:auto;
+	mso-font-charset:204;
+	border:none;
+	mso-protection:locked visible;
+	mso-style-name:Normal;
+	mso-style-id:0;}
+td
+	{mso-style-parent:style0;
+	padding-top:1px;
+	padding-right:1px;
+	padding-left:1px;
+	mso-ignore:padding;
+	color:windowtext;
+	font-size:10.0pt;
+	font-weight:400;
+	font-style:normal;
+	text-decoration:none;
+	font-family:Arial;
+	mso-generic-font-family:auto;
+	mso-font-charset:204;
+	mso-number-format:General;
+	text-align:general;
+	border:none;
+	mso-background-source:auto;
+	mso-pattern:auto;
+	mso-protection:locked visible;
+	mso-rotate:0;}
+.xl30
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	text-align:center;
+	vertical-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:.5pt solid black;
+	white-space:normal;}
+.xl31
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-weight:700;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	text-align:center;
+	vertical-align:top;
+	border:.5pt solid black;
+	white-space:normal;}
+.xl34
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:none;
+	white-space:normal;}
+.xl32_comp
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:none;
+	white-space:normal;
+	background:#90EE90;}
+.xl33_comp
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:none;
+	white-space:normal;
+	background:#DB7093;}
+.xl35_comp
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:#DB7093;}
+.xl36_comp
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:#90EE90;}
+.xl37
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:left;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;}
+.xl35_indi
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:green;}
+.xl36_indi
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:#0000ff;}
+.xl32_finall
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:none;
+	white-space:normal;
+	background:lightgreen;}
+.xl34_finall
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:none;
+	white-space:normal;
+	background:khaki;}
+.xl33_finall
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	text-align:right;
+	vertical-align:center;
+	border-top:none;
+	border-right:.5pt solid black;
+	border-bottom:.5pt solid black;
+	border-left:.5pt solid black;
+	white-space:normal;}
+.xl35_finall
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:lightgreen;}
+.xl36_finall
+	{mso-style-parent:style0;
+	font-size:11.0pt;
+	font-family:Calibri, sans-serif;
+	mso-font-charset:204;
+	vertical-align:center;
+	text-align:center;
+	border-top:none;
+	border-right:none;
+	border-bottom:none;
+	border-left:none;
+	white-space:normal;
+	background:khaki}
+
+
+-->
+</style>
+
+<!--[if gte mso 9]><xml>
+ <x:ExcelWorkbook>
+  <x:ExcelWorksheets>
+   <x:ExcelWorksheet>
+    <x:Name>Отчет по оценке компетенций</x:Name>
+    <x:WorksheetOptions>
+     <x:Print>
+      <x:ValidPrinterInfo/>
+      <x:PaperSizeIndex>9</x:PaperSizeIndex>
+      <x:Scale>21</x:Scale>
+      <x:HorizontalResolution>600</x:HorizontalResolution>
+      <x:VerticalResolution>0</x:VerticalResolution>
+     </x:Print>
+     <x:ShowPageBreakZoom/>
+     <x:Selected/>
+     <x:LeftColumnVisible>3</x:LeftColumnVisible>
+     <x:Panes>
+      <x:Pane>
+       <x:Number>3</x:Number>
+       <x:ActiveRow>19</x:ActiveRow>
+       <x:ActiveCol>3</x:ActiveCol>
+      </x:Pane>
+     </x:Panes>
+     <x:ProtectContents>False</x:ProtectContents>
+     <x:ProtectObjects>False</x:ProtectObjects>
+     <x:ProtectScenarios>False</x:ProtectScenarios>
+    </x:WorksheetOptions>
+    <x:PageBreaks>
+     <x:RowBreaks>
+      <x:RowBreak>
+       <x:Row>45</x:Row>
+      </x:RowBreak>
+     </x:RowBreaks>
+    </x:PageBreaks>
+   </x:ExcelWorksheet>
+  </x:ExcelWorksheets>
+  <x:WindowHeight>12240</x:WindowHeight>
+  <x:WindowWidth>19440</x:WindowWidth>
+  <x:WindowTopX>480</x:WindowTopX>
+  <x:WindowTopY>120</x:WindowTopY>
+  <x:ProtectStructure>False</x:ProtectStructure>
+  <x:ProtectWindows>False</x:ProtectWindows>
+ </x:ExcelWorkbook>
+</xml><![endif]-->
+
+</head>
+<body link=blue vlink=purple lang=RU style='tab-interval:35.4pt'><h3>Оценка 360° Департамент рисков</h3>
+		<p align='left'><b>Аналитические данные по оценке компетенций</b></p>
+<table x:str border=0 cellpadding=0 cellspacing=0 style='border-collapse:collapse'>
+	<tr style='mso-height-source:userset;mso-yfti-irow:0'>
+	<td class=xl35_comp width='100'>&nbsp</td>
+	<td class=xl37_comp >Отклонение>0 </td>
+	<td class=xl37_comp >&nbsp</td>
+	<td class=xl36_comp width='100'>&nbsp</td>
+	<td class=xl37 >Отклонение<0 </td>
+	</tr>
+</table>
+<br>
+<table x:str border=0 cellpadding=0 cellspacing=0 style='border-collapse:collapse'>
+	<tr style='mso-height-source:userset;mso-yfti-irow:0'>
+	<td class=xl37 >&nbsp</td>
+	</tr>
+	<tr height=81 style='height:60.75pt;mso-yfti-firstrow:yes;mso-yfti-irow:0'>
+	<td class=xl31>Компетенции</td>
+	<td class=xl31>Стандартный профиль</td>
+	<td class=xl31>Отклонение самооценки от стандартного профиля</td>
+	<td class=xl31>Отклонение оценки руководителя от стандартного профиля</td>
+	<td class=xl31>Отклонение оценки подчиненных от стандартного профиля</td>
+	<td class=xl31>Отклонение оценки коллег от стандартного профиля</td>
+	<td class=xl31>Отклонение оценки экспертов от стандартного профиля</td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:1'>
+	<td class=xl30>Результативность</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-0.5">-0.5</td>
+	<td class=xl32_comp x:num="-1.75">-1.75</td>
+	<td class=xl32_comp x:num="-0.38">-0.38</td>
+	<td class=xl32_comp x:num="-1.68">-1.68</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:2'>
+	<td class=xl30>Сотрудничество</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-0.75">-0.75</td>
+	<td class=xl32_comp x:num="-2.08">-2.08</td>
+	<td class=xl32_comp x:num="-0.36">-0.36</td>
+	<td class=xl32_comp x:num="-1.92">-1.92</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:3'>
+	<td class=xl30>Гибкость</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1.25">-1.25</td>
+	<td class=xl32_comp x:num="-1.83">-1.83</td>
+	<td class=xl32_comp x:num="-0.53">-0.53</td>
+	<td class=xl32_comp x:num="-2">-2</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:4'>
+	<td class=xl30>Доверие других</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1">-1</td>
+	<td class=xl32_comp x:num="-1.75">-1.75</td>
+	<td class=xl32_comp x:num="-0.31">-0.31</td>
+	<td class=xl32_comp x:num="-1.59">-1.59</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:5'>
+	<td class=xl30>Создание команды</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1">-1</td>
+	<td class=xl32_comp x:num="-1.5">-1.5</td>
+	<td class=xl32_comp x:num="-0.41">-0.41</td>
+	<td class=xl32_comp x:num="-1.66">-1.66</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:6'>
+	<td class=xl30>Качество решений</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1.5">-1.5</td>
+	<td class=xl32_comp x:num="-1.92">-1.92</td>
+	<td class=xl32_comp x:num="-0.53">-0.53</td>
+	<td class=xl32_comp x:num="-1.93">-1.93</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:7'>
+	<td class=xl30>Организация рабочих процессов</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-0.75">-0.75</td>
+	<td class=xl32_comp x:num="-1.83">-1.83</td>
+	<td class=xl32_comp x:num="-0.39">-0.39</td>
+	<td class=xl32_comp x:num="-1.64">-1.64</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:8'>
+	<td class=xl30>Мотивация и вовлечение</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1">-1</td>
+	<td class=xl32_comp x:num="-2.42">-2.42</td>
+	<td class=xl32_comp x:num="-0.59">-0.59</td>
+	<td class=xl32_comp x:num="-1.88">-1.88</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+	<tr style='mso-height-source:userset;mso-yfti-irow:9'>
+	<td class=xl30>Эмоциональное лидерство</td>
+	<td class=xl34 x:num="4">4</td>
+	<td class=xl32_comp x:num="-1">-1</td>
+	<td class=xl32_comp x:num="-2.26">-2.26</td>
+	<td class=xl32_comp x:num="-0.61">-0.61</td>
+	<td class=xl32_comp x:num="-1.93">-1.93</td>
+	<td class=xl34 x:num=""></td>
+	</tr>
+</table>
+<br>
+<p align="left"><b>Профиль оценок по компетенциям</b></p>
+<!--[if gte vml 1]><v:shapetype id='_x0000_t201'
+   coordsize='21600,21600' o:spt='201' path='m,l,21600r21600,l21600,xe'>
+   <v:stroke joinstyle='miter'/>
+   <v:path shadowok='f' o:extrusionok='f' strokeok='f' fillok='f'
+    o:connecttype='rect'/>
+   <o:lock v:ext='edit' shapetype='t'/>
+  </v:shapetype><v:shape id='_x0000_s1025' type='#_x0000_t201' style='position:absolute;
+   margin-left:36pt;margin-top:9.75pt;width:456.75pt;height:300pt;z-index:1'
+   fillcolor='window [78]' strokecolor='windowText [77]' o:insetmode='auto'>
+   <v:fill color2='windowText [77]'/>
+   <o:lock v:ext='edit' rotation='t' text='t'/>
+   <x:ClientData ObjectType='Chart'>
+    <x:WebChart>
+     <x:Scaling>
+      <x:ScaleID>0</x:ScaleID>
+      <x:Orientation>MinMax</x:Orientation>
+     </x:Scaling>
+     <x:Scaling>
+      <x:ScaleID>1</x:ScaleID>
+      <x:Orientation>MinMax</x:Orientation>
+     </x:Scaling>
+     <x:Chart>
+      <x:Name>Диагр. 1</x:Name>
+      <x:Options>
+       <x:SizeWithWindow/>
+      </x:Options>
+      <x:PageSetup>
+       <x:ChartSize>FullPage</x:ChartSize>
+       <x:PageMargins Bottom='0.984251969' Left='0.78740157499999996'
+        Right='0.78740157499999996' Top='0.984251969'/>
+      </x:PageSetup>
+      <x:Font>
+       <x:FontName>Arial Cyr</x:FontName>
+       <x:Size>10</x:Size>
+       <x:AutoScale/>
+      </x:Font>
+      <x:Left>0</x:Left>
+      <x:Top>0</x:Top>
+      <x:Width>9149.9853515625</x:Width>
+      <x:Height>6014.99267578125</x:Height>
+      <x:ChartGrowth>
+       <x:HorzGrowth>1</x:HorzGrowth>
+       <x:VertGrowth>1</x:VertGrowth>
+      </x:ChartGrowth>
+      <x:PlotArea>
+       <x:Border>
+        <x:ColorIndex>None</x:ColorIndex>
+       </x:Border>
+       <x:Interior>
+        <x:ColorIndex>None</x:ColorIndex>
+       </x:Interior>
+       <x:Font>
+        <x:FontName>Arial Cyr</x:FontName>
+        <x:Size>10</x:Size>
+        <x:AutoScale/>
+       </x:Font>
+       <x:Graph>
+        <x:Type>Radar</x:Type>
+        <x:SubType>Standard</x:SubType>
+        <x:SubType>Marker</x:SubType>
+        <x:ScaleID>0</x:ScaleID>
+        <x:ScaleID>1</x:ScaleID>
+		 <x:Series>
+		  <x:Index>0</x:Index>
+		  <x:Caption>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>&quot;Самооценка&quot;</x:Data>
+		  </x:Caption>
+		  <x:Name>Самооценка</x:Name>
+          <x:Line>
+           <x:Weight>Medium</x:Weight>
+          </x:Line>
+		  <x:Marker>
+		   <x:Size>5</x:Size>
+		  </x:Marker>
+		  <x:Category>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{&quot;Результативность&quot;,&quot;Сотрудничество&quot;,&quot;Гибкость&quot;,&quot;Доверие других&quot;,&quot;Создание команды&quot;,&quot;Качество решений&quot;,&quot;Организация рабочих процессов&quot;,&quot;Мотивация и вовлечение&quot;,&quot;Эмоциональное лидерство&quot;}</x:Data>
+		  </x:Category>
+		  <x:Value>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{3.5,3.25,2.75,3,3,2.5,3.25,3,3}</x:Data>
+		  </x:Value>
+		 </x:Series>
+		 <x:Series>
+		  <x:Index>1</x:Index>
+		  <x:Caption>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>&quot;Руководитель&quot;</x:Data>
+		  </x:Caption>
+		  <x:Name>Руководитель</x:Name>
+          <x:Line>
+           <x:Weight>Medium</x:Weight>
+          </x:Line>
+		  <x:Marker>
+		   <x:Size>5</x:Size>
+		  </x:Marker>
+		  <x:Category>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{&quot;Результативность&quot;,&quot;Сотрудничество&quot;,&quot;Гибкость&quot;,&quot;Доверие других&quot;,&quot;Создание команды&quot;,&quot;Качество решений&quot;,&quot;Организация рабочих процессов&quot;,&quot;Мотивация и вовлечение&quot;,&quot;Эмоциональное лидерство&quot;}</x:Data>
+		  </x:Category>
+		  <x:Value>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{2.25,1.92,2.17,2.25,2.5,2.08,2.17,1.58,1.74}</x:Data>
+		  </x:Value>
+		 </x:Series>
+		 <x:Series>
+		  <x:Index>2</x:Index>
+		  <x:Caption>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>&quot;Подчиненные&quot;</x:Data>
+		  </x:Caption>
+		  <x:Name>Подчиненные</x:Name>
+          <x:Line>
+           <x:Weight>Medium</x:Weight>
+          </x:Line>
+		  <x:Marker>
+		   <x:Size>5</x:Size>
+		  </x:Marker>
+		  <x:Category>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{&quot;Результативность&quot;,&quot;Сотрудничество&quot;,&quot;Гибкость&quot;,&quot;Доверие других&quot;,&quot;Создание команды&quot;,&quot;Качество решений&quot;,&quot;Организация рабочих процессов&quot;,&quot;Мотивация и вовлечение&quot;,&quot;Эмоциональное лидерство&quot;}</x:Data>
+		  </x:Category>
+		  <x:Value>
+		   <x:DataSource>-1</x:DataSource>
+		   <x:Data>{3.62,3.64,3.47,3.69,3.59,3.47,3.61,3.41,3.39}</x:Data>
+		  </x:Value>
+		 </x:Series><x:PlotVisible/>
+       </x:Graph>
+       <x:Axis>
+        <x:Placement>Bottom</x:Placement>
+        <x:AxisID>0</x:AxisID>
+        <x:ScaleID>0</x:ScaleID>
+        <x:CrossingAxis>1</x:CrossingAxis>
+        <x:Font>
+         <x:FontName>Arial Cyr</x:FontName>
+         <x:Size>10</x:Size>
+         <x:AutoScale/>
+        </x:Font>
+        <x:Number>
+         <x:SourceLinked/>
+         <x:BuiltInFormat>0</x:BuiltInFormat>
+        </x:Number>
+        <x:Type>Automatic</x:Type>
+       </x:Axis>
+       <x:Axis>
+        <x:Placement>Left</x:Placement>
+        <x:AxisID>1</x:AxisID>
+        <x:ScaleID>1</x:ScaleID>
+        <x:MajorGridlines/>
+        <x:CrossingAxis>0</x:CrossingAxis>
+        <x:CrossesAt>Minimum</x:CrossesAt>
+        <x:CrossBetween>Between</x:CrossBetween>
+        <x:Font>
+         <x:FontName>Arial Cyr</x:FontName>
+         <x:Size>10</x:Size>
+         <x:AutoScale/>
+        </x:Font>
+        <x:Number>
+         <x:SourceLinked/>
+         <x:BuiltInFormat>0</x:BuiltInFormat>
+        </x:Number>
+        <x:MajorTick>Cross</x:MajorTick>
+        <x:Type>Value</x:Type>
+       </x:Axis>
+      </x:PlotArea>
+      <x:Legend>
+       <x:Placement>Bottom</x:Placement>
+       <x:Font>
+        <x:FontName>Arial Cyr</x:FontName>
+        <x:Size>10</x:Size>
+        <x:AutoScale/>
+       </x:Font>
+      </x:Legend>
+     </x:Chart>
+    </x:WebChart>
+   </x:ClientData>
+  </v:shape><![endif]--><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br>
+<p align='left'><b>Отчет по результатам оценки(общая статистика)</b></p>
+<table x:str border=0 cellpadding=0 cellspacing=0 style='border-collapse:collapse'>
+	<tr style='mso-height-source:userset;mso-yfti-irow:0'>
+	<td class=xl35_finall width='100' >&nbsp</td>
+	<td class=xl37 >Выгружаемое значение</td>
+	<td class=xl37 >&nbsp</td>
+	<td class=xl36_finall  width='100'>&nbsp</td>
+	<td class=xl37 >Рассчитываемое значение</td>
+	</tr>
+</table>
+<div></div>
+<div style='overflow: auto;'>
+<table x:str border=0 cellpadding=0 cellspacing=0 style='border-collapse:collapse'>
+	<tr style='mso-height-source:userset;mso-yfti-irow:0'>
+	<td class=xl37 >&nbsp</td>
+	</tr>
+	<tr height=81 style='height:60.75pt;mso-yfti-firstrow:yes'>
+	<td class=xl31>Компетенция/индикатор</td>
+	<td class=xl31>Самооценка</td>
+	<td class=xl31>Руководитель(Абенова Альмира Курбаналиевна)</td>
+	<td class=xl31>Подчиненный1(Жиентаев Нурлан Сансызбайулы)</td>
+	<td class=xl31>Подчиненный2(Абдрахманова Салтанат Зайкеновна)</td>
+	<td class=xl31>Подчиненный3(Баймуханов Биржан Аскарович)</td>
+	<td class=xl31>Подчиненный4(Дуанбеков Марат Жомартович)</td>
+	<td class=xl31>Подчиненный5(Баяндинов Алишер Айдарович)</td>
+	<td class=xl31>Подчиненный6(Жупбаев Ануар Аскарович)</td>
+	<td class=xl31>Подчиненный7(Сабанчиева Рысалды Бакытхановна)</td>
+	<td class=xl31>Подчиненный8(Бейсенов Бахтияр Кендыбаевич)</td>
+	<td class=xl31>Среднее по подчиненным</td>
+	<td class=xl31>Коллега1(Черных Евгений Юрьевич)</td>
+	<td class=xl31>Коллега2(Малько Анна Степановна)</td>
+	<td class=xl31>Коллега3(Турсунбаев Асхат Маратович)</td>
+	<td class=xl31>Коллега4(Мантель Денис Евгеньевич)</td>
+	<td class=xl31>Коллега5(Фербер Дана Марковна)</td>
+	<td class=xl31>Коллега6(Кусаинова Салтанат Базархановна)</td>
+	<td class=xl31>Коллега7(Кан Ирина Димитриевна)</td>
+	<td class=xl31>Коллега8(Абылайхан Арман Абылайханұлы)</td>
+	<td class=xl31>Коллега9(Колесниченко Лариса Вениаминовна)</td>
+	<td class=xl31>Коллега10(Асылханова Айнур Бауыржановна)</td>
+	<td class=xl31>Коллега11(Синеев Евгений Владимирович)</td>
+	<td class=xl31>Коллега12(Байболова Салтанат Койшыбаевна)</td>
+	<td class=xl31>Коллега13(Калибаева Лаура Тулегеновна)</td>
+	<td class=xl31>Коллега14(Ковалева Александра Игоревна)</td>
+	<td class=xl31>Коллега15(Мейров Марат Бахытжанович)</td>
+	<td class=xl31>Коллега16(Овчинникова Любовь Сергеевна)</td>
+	<td class=xl31>Среднее по коллегам</td>
+	<td class=xl31>Среднее по экспертам</td>
+	<td class=xl31>Стандарт по профилю</td>
+	</tr>
+	<tr>
+
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Результативность</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >2.25</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.62</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.67</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.45</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Достигает практических результатов по целевым показателям работы</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.94</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Последовательно добивается результатов, даже действуя в трудных условиях</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.94</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Прикладывает дополнительные усилия, чтобы выполнить задание в срок</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1.44</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Сподвигает себя и других к достижению результатов</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.31</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Сотрудничество</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >1.92</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.19</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >1.75</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.3</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Эффективно сотрудничает с коллегами из разных подразделений для достижения рабочих целей</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Отстаивает собственные интересы, не пренебрегая интересами других</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.88</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Признает и ценит достижения и вклад других в общее дело</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Оказывает поддержку коллегам по рабочим вопросам</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Гибкость</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >2.17</td>
+	<td class=xl34_finall >3.75</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >3.47</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Умеет выстраивать  взаимодействие с окружающими  в зависимости от ситуации</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.31</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Эффективно действует в условиях неопределенности</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>2.88 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Применяет разные способы решения рабочих задач в зависимости от ситуации</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.94</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Принимает внешние/внутренние изменения, используя их как возможности и ресурсы для Компании</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.38 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.12</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Доверие других</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >2.25</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.69</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.75</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.33</td>
+	<td class=xl34_finall >1.5</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Действует открыто и честно</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Последовательно придерживается транслируемых им  ценностей</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Прямо и открыто выражает свое мнение</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.75 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl34_finall >1.69</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Выполняет взятые на себя обязательства</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.38 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Создание команды</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.59</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.5</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.17</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Формирует и обеспечивает понимание общих целей у всех членов команды</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.75 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Учитывает разные  навыки, подходы, опыт и мотивацию сотрудников для достижения цели</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.5 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Поддерживает открытый диалог и сотрудничество между членами команды</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Разделяет как успехи команды, признавая вклад каждого сотрудника, так и неудачи, принимая на себя личную ответственность</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Качество решений</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >2.08</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.75</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >3.75</td>
+	<td class=xl34_finall >3.47</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.67</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.29</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Принимает взвешенные решения, в том числе в ситуации неопределенности</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Своевременно принимает решения</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Учитывает мнения и опыт сотрудников при принятии решения</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.38</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Взаимодействует с другими подразделениями для принятия эффективных решений</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Организация рабочих процессов</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >2.17</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.5</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.75</td>
+	<td class=xl34_finall >3.16</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.5</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.75</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.33</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Определяет порядок выполнения поставленных задач</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Перераспределяет задачи/нагрузку для обеспечения эффективной работы</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1.12</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Выстраивает рабочие процессы системно</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1.12</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Оптимизирует и совершенствует рабочие процессы</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Мотивация и вовлечение</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.58</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.25</td>
+	<td class=xl34_finall >2.25</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.41</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.5</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.5</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.06</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Создает позитивную рабочую среду, способствующую повышению мотивации сотрудников</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.81</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Наделяет сотрудников полномочиями</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Учитывает индивидуальную мотивацию сотрудников при организации работы</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.88 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >0.5</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Транслирует сотрудникам их вклад в общее дело, предоставляя мотивирующую обратную связь</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.69</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl30 style='font-weight: 600' >Эмоциональное лидерство</td>
+	<td class=xl34_finall >3</td>
+	<td class=xl34_finall >1.74</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >3.58</td>
+	<td class=xl34_finall >2.64</td>
+	<td class=xl34_finall >3.67</td>
+	<td class=xl34_finall >4</td>
+	<td class=xl34_finall >2.6</td>
+	<td class=xl34_finall >2.75</td>
+	<td class=xl34_finall >3.85</td>
+	<td class=xl34_finall >3.39</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >3.54</td>
+	<td class=xl34_finall >2</td>
+	<td class=xl34_finall >2.12</td>
+	<td class=xl34_finall >1.67</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.54</td>
+	<td class=xl34_finall >2.8</td>
+	<td class=xl34_finall >2.13</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >0</td>
+	<td class=xl34_finall >1.08</td>
+	<td class=xl34_finall >2.77</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >1.29</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Обладает адекватной самооценкой, понимает свои сильные и слабые стороны</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.5 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.88</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Умеет контролировать свои негативные эмоции, не повышает голос</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.19</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Понимает чувства других людей и проявляет заботу</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.88 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.81</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Умеет воодушевить</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>3 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.69</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Убедителен, аргументированно обосновывает свою позицию</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.5 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.25</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Умеет разрешать и предотвращать конфликты</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.12 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.81</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Уделяет внимание саморазвитию</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.5 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >0.56</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Поддерживает развитие  других</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.5 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >0.75</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Запрашивает от коллег и руководителя  обратную связь о себе</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>1</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>1.88 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >0.94</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Доброжелателен к коллегам, независимо от их статуса и должности</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >1.67</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.88 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.19</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Способен извиниться, признать свою неправоту</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl34_finall RESULT>2.62 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - Справедливо и беспристрастно относится к людям, не вешает ярлыки</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>0</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>2.38 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl34_finall >0.62</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+ <tr style='mso-height-source:userset;'>
+  <td class=xl33_finall > - В общении внимателен к собеседнику,  проявляет терпение</td>
+	<td class=xl32_finall >3</td>
+	<td class=xl32_finall >1.33</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>2</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>3</td>
+	<td class=xl32_finall DEVELOPER>4</td>
+	<td class=xl34_finall RESULT>3.25 </td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >4</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >0</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl32_finall >2</td>
+	<td class=xl32_finall >1</td>
+	<td class=xl34_finall >1.19</td>
+	<td class=xl34_finall >0</td>
+
+	<td class=xl32_finall >4</td>
+	</tr>
+</table></div>

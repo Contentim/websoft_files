@@ -1,0 +1,1487 @@
+﻿<%
+// const_start
+sConstAllStatuses = tools_web.get_web_const( 'vsestatusy', curLngWeb );
+sConstChangeTutors = tools_web.get_web_const( 'izmenitizspisk', curLngWeb );
+sConstCreateIPR = tools_web.get_web_const( 'sozdatplanrazv', curLngWeb );
+sConstTasksLeft = 'Осталось задач';
+// const_end
+%>
+<SPXMLScreen>
+
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bAllowEdit=false
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+
+
+if (ISDIALOG)
+{
+	curObjectID = OptInt(oParamSource.GetOptProperty( 'iObjectId' , null ),null);
+	bNoObject=true
+	if (curObjectID!=null)
+	{
+		try
+		{
+			curObjectDoc=OpenDoc( UrlFromDocID( curObjectID ) )
+			curObject=curObjectDoc.TopElem
+			Env.SetProperty( 'curObjectID', curObjectID );
+			Env.SetProperty( 'curObjectDoc', curObjectDoc );
+			Env.SetProperty( 'curObject', curObject);
+			bNoObject=false
+		}
+		catch(ex)
+		{
+
+		}
+	}
+
+	if (bNoObject)
+	{
+
+			curMessageBox = {
+					"type": "error",
+					"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	%>
+</SPXMLScreen>
+	<%
+				Cancel();
+	}
+
+
+	fldOverrideTamplate=ArrayOptFirstElem(XQuery("for $elem in override_web_templates where $elem/is_enabled=true() and $elem/mode='talent_pool_cr_card' and $elem/code='talent_pool_cr_card' return $elem"))
+	if (fldOverrideTamplate!=undefined)
+	{
+		teOverrideTamplate=null
+		try
+		{
+			teOverrideTamplate=OpenDoc( UrlFromDocID(fldOverrideTamplate.id ) ).TopElem
+		}
+		catch(ex)
+		{
+		}
+		if (teOverrideTamplate!=null)
+		{
+			curParams = new SafeObject;
+			tools_web.set_web_params(curParams, teOverrideTamplate.wvars, true );
+			Request.Session.Env.SetProperty("curParams", curParams);
+		}
+	}
+}
+Env = Request.Session.Env;
+curUrlQuery = tools_web.get_url_query( PAGEURL );
+
+fldPerson=curObject.person_id.OptForeignElem
+if ( fldPerson==undefined)
+{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'neukazanidsotr', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+}
+
+
+name_id="Career_reserve"
+var iNameLength=25
+
+arrCardBlocksListParam = String( tools_web.get_web_param( curParams, 'talent_pool_cr_card.block_list', 'object_header;object_buttons;object_tabs', true ) ).split( ";" );
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+
+sTabsDispType = tools_web.get_web_param( curParams, 'talent_pool_cr_card.tabs_disp_type', 'w', true );
+strTabList=String( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list", "general;func_man;ipr;tasks;career_tree;custom_fields;files", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+
+
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'TalentPoolCRCardBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+strInformersPosition=String( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.general.informers_position", "top", true ) )
+
+bShowPersonPhoto=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_cr_card.bShowPersonPhoto", "false", true ));
+
+strInformersCodes=String( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.general.disp_informers_list", "completed;task_left;days_left;passed", true ) )
+arrInformersCodes=strInformersCodes.split( ";" )
+arrInformersCodes=ArraySelect(arrInformersCodes,"Trim(This)!=''")
+
+strInformersPosition=(strInformersPosition!='bottom'&&strInformersPosition!='top'?'top':strInformersPosition)
+
+curInformers = ({
+		"informers": []
+	});
+
+var arrSimpleTask = ArraySelect(curObject.tasks,"This.type!='stage'")
+for (strCode in arrInformersCodes)
+{
+
+	iCompleteCount = ArrayCount(ArraySelect(arrSimpleTask,"This.status=='passed'||This.status=='failed'"))
+	if (strCode=='completed')
+	{
+		iNotCanceledCount=ArrayCount(ArraySelect(arrSimpleTask,"This.status!='cancel'"))
+		curInformers.informers.push( {
+			"type": "scale_number",
+			"title": tools_web.get_web_const( 'mndn3f98h2', curLngWeb ),
+			"count": iCompleteCount,
+			"max_count": iNotCanceledCount
+		} );
+	}
+	else if (strCode=='task_left')
+	{
+		iCount = ArrayCount(ArraySelect(arrSimpleTask,"(This.status=='plan'||This.status=='active')"))
+		curInformers.informers.push( {
+			"type": "number",
+			"title": sConstTasksLeft,
+			"value": iCount
+		} );
+	}
+	else if (strCode=='days_left')
+	{
+		if (curObject.plan_readiness_date.HasValue)
+		{
+			curInformers.informers.push( {
+				"type": "number",
+				"title": tools_web.get_web_const( 'vlpb_message10', curLngWeb ),
+				"value": StrRealFixed(1.0 + Real(DateDiff(curObject.plan_readiness_date,Date()))/86400,0)
+			} );
+		}
+	}
+	else if (strCode=='passed')
+	{
+		iPassedCount = ArrayCount(ArraySelect(arrSimpleTask,"This.status=='passed'"))
+		curInformers.informers.push( {
+			"type": "scale_number",
+			"title": tools_web.get_web_const( 'uspeshno', curLngWeb ),
+			"count": iPassedCount,
+			"max_count": iCompleteCount
+		} );
+	}
+}
+
+
+strGoodColor=String(tools_web.get_web_param( curParams, 'talent_pool_cr_card.tab_list.competence_good_color', '142,209,0', true ));
+
+if (Trim(strGoodColor)!='')
+{
+	strGoodColor='#'+StrHexColor(strGoodColor)
+}
+
+strBadColor=String(tools_web.get_web_param( curParams, 'talent_pool_cr_card.tab_list.competence_bad_color', '255,96,111', true ));
+
+if (Trim(strBadColor)!='')
+{
+	strBadColor='#'+StrHexColor(strBadColor)
+}
+
+sOverdueColor=""
+bShowOverdue=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.bHighlightOverdue", "false", true ))
+if (bShowOverdue)
+{
+	sColor=String(tools_web.get_web_param( curParams, 'talent_pool_cr_card.tab_list.tasks.bHighlightOverdue.overdue_color', '255,96,111', true ));
+	if (Trim(sColor)!='')
+	{
+		sOverdueColor='#'+StrHexColor(sColor)
+	}
+}
+
+
+iPageCRItemsCount = Int( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.iPageTasksCount", 25, true ));
+iCRGridHeight =  tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.iTasksGridHeight", 400, true );
+bSelectOnlyTutors=OptInt(tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.bSelectOnlyTutors", 0, true ),0)==1
+bShowAllPersonsInTutors=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.bShowAllPersonsInTutors", global_settings.settings.show_all_persons, true ))
+strTaskDispFieldCodes=String( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.tasks.task_disp_fields", "name;type;status;plan_date;fact_date;score", true ) )
+arrTaskDispFieldCodes=strTaskDispFieldCodes.split( ";" )
+arrTaskDispFieldCodes=ArraySelect(arrTaskDispFieldCodes,"Trim(This)!=''")
+
+strDefaultTaskStatusFilterValue=String(tools_web.get_web_param( curParams, 'talent_pool_cr_card.tab_list.tasks.default_status', 'all', true ));
+
+if (Trim(strDefaultTaskStatusFilterValue)=='')
+{
+	strDefaultTaskStatusFilterValue='all'
+}
+
+strDefaultTaskOrder=String(tools_web.get_web_param( curParams, 'talent_pool_cr_card.tab_list.tasks.default_order', '', true ));
+
+if (Trim(strDefaultTaskOrder)=='')
+{
+	strDefaultTaskOrder=null
+}
+
+
+function fnCheckRight(sAction)
+{
+	if(curUser.access.access_role == "admin")
+		return true;
+	return (ArrayOptFind(xarrOperationsRights, "This.action == '" + sAction + "'") !=undefined);
+}
+
+function fnCheckEditRights()
+{
+	if(curUser.access.access_role == "admin")
+		return true;
+
+	strActionCodeList=String( "career_reserve_edit_dates;career_reserve_edit_readiness_percent;career_reserve_edit_action_place;career_reserve_edit_mentor_comment;career_reserve_edit_custom_fields;career_reserve_edit_current_profile;career_reserve_edit_target_profile")
+	arrActionCodes = strActionCodeList.split( ";" );
+
+	for (sActionCode in arrActionCodes)
+	{
+		if (fnCheckRight(sActionCode))
+		{
+			return true
+		}
+	}
+	return false;
+}
+
+xarrBossTypes = tools.get_object_relative_boss_types(curUserID, curObjectID);
+
+xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',career_reserve,') )");
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+bAllowEdit = fnCheckEditRights();
+
+strPlanCompIDs=''
+tePlan=null;
+if (fnCheckRight('career_reserve_see_ipr'))
+{
+	if (curObject.development_plan_id.HasValue)
+	{
+		try
+		{
+			tePlan=OpenDoc( UrlFromDocID (curObject.development_plan_id)).TopElem;
+			strPlanCompIDs=ArrayMerge( ArrayExtract( tePlan.competences, 'competence_id' ), 'This', ';' )
+		}
+		catch(ex)
+		{
+		}
+	}
+}
+
+bHasActions=false;
+
+arrModuls= Array()
+iModulCounter=0;
+
+oNewModulElem= new Object;
+oNewModulElem.id="position";
+oNewModulElem.name=tools_web.get_web_const('vcrb_target_position', curLngWeb );
+arrModuls[iModulCounter]=oNewModulElem;
+iModulCounter++
+
+oNewModulElem= new Object;
+oNewModulElem.id="position_common";
+oNewModulElem.name=tools_web.get_web_const('vcrb_target_position_common', curLngWeb );
+arrModuls[iModulCounter]=oNewModulElem;
+iModulCounter++
+
+oNewModulElem= new Object;
+oNewModulElem.id="staff_position";
+oNewModulElem.name="Целевая позиция штатного расписания";
+arrModuls[iModulCounter]=oNewModulElem;
+iModulCounter++
+
+oNewModulElem= new Object;
+oNewModulElem.id="name";
+oNewModulElem.name=tools_web.get_web_const('c_position', curLngWeb );
+arrModuls[iModulCounter]=oNewModulElem;
+iModulCounter++
+
+oNewModulElem= new Object;
+oNewModulElem.id="adaptation";
+oNewModulElem.name=tools_web.get_web_const('vcrb_adaptation', curLngWeb );
+arrModuls[iModulCounter]=oNewModulElem;
+iModulCounter++
+
+
+strTargetPosName=tools_web.get_web_const("c_deleted", curLngWeb)
+strPositionTypeName=""
+fldModul=ArrayOptFind(arrModuls,'This.id=="'+curObject.position_type+'"')
+if (fldModul!=undefined)
+{
+	fldTargetPos=undefined
+	strPositionTypeName=fldModul.name
+	switch(curObject.position_type.Value)
+	{
+		case 'adaptation':
+		{
+			strTargetPosName = curObject.person_id.sd.position_name;
+			break;
+		}
+		case 'position':
+		{
+			fldTargetPos=curObject.position_id.OptForeignElem;
+			if (fldTargetPos!=undefined)
+			{
+				strTargetPosName = fldTargetPos.name;
+			}
+			else
+			{
+				strTargetPosName = curObject.position_id.sd.name;
+			}
+			break;
+		}
+		case 'position_common':
+		{
+			fldTargetPos=curObject.position_common_id.OptForeignElem;
+			if (fldTargetPos!=undefined)
+			{
+				strTargetPosName = fldTargetPos.name;
+			}
+			else
+			{
+				strTargetPosName = curObject.position_common_id.sd.name;
+			}
+			break;
+		}
+		case 'staff_position':
+		{
+			fldTargetPos=curObject.staff_position_id.OptForeignElem;
+			if (fldTargetPos!=undefined)
+			{
+				strTargetPosName = fldTargetPos.name;
+			}
+			else
+			{
+				strTargetPosName = curObject.staff_position_id.sd.name;
+			}
+			break;
+		}
+		case 'name':
+		{
+			strTargetPosName = curObject.position_name;
+			break;
+		}
+	}
+}
+
+
+function fnBuildGraph(iPositionIdParam,iParentPostionIdParam,iElemCounterParam)
+{
+	try
+	{
+		teCommonPosition=OpenDoc( UrlFromDocID (iPositionIdParam)).TopElem;
+%>
+		<Row>
+			<Cell Id="name" Value="<%=XmlAttrEncode( '<b>' + tools_web.get_cur_lng_name( teCommonPosition.name, curLng.short_id ) + '</b>' )%>"/>
+			<Cell Id="id" Value="<%=iPositionIdParam%>"/>
+			<Cell Id="parent_object_id" Value="<%=iParentPostionIdParam%>"/>
+		</Row>
+<%
+		arrParentPosition=ArraySort(QueryCatalogByKeys( 'position_commons', 'id', ArrayExtract(teCommonPosition.parent_position_commons,'position_common_id') ),'name','+');
+		for ( fldPositionElem in arrParentPosition)
+		{
+			iElemCounterParam++
+			if (iElemCounterParam<500)
+			{
+				fnBuildGraph(fldPositionElem.id,iPositionIdParam,iElemCounterParam)
+			}
+		}
+	}
+	catch(ex)
+	{
+		alert('fnBuildGraph error: '+ex)
+	}
+}
+
+if ( ArrayOptFirstElem( xarrOperationsActions ) != undefined )
+{
+	bHasActions=true;
+}
+
+
+if(bHasActions)
+{
+	curCollectionMenu = {
+	"id": name_id,
+	"name_id": name_id
+	};
+	curCollectionMenu.SetProperty( "catalog_name", "career_reserve");
+	curCollectionMenu.SetProperty( "selected_data", UrlEncode16('[{"id":'+curObjectID+',"name":null}]'));
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+}
+
+
+
+function fnBuildFormButtons()
+{
+%>
+	<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="true">	
+<%
+	if(bHasActions)
+	{
+%>
+		<ComboBox Name="OperationId">
+			<ComboBoxItem Value="" Selected="True"><%=StrNonTitleCase( tools_web.get_web_const( "vypolnitoperac", curLngWeb ) )%></ComboBoxItem>
+<%
+		oParam = {
+			"action": "CRRunAction",
+			"name_id": name_id,
+			"curUserID": curUserID,
+			"curUser": curUser
+		};
+		for(catActionElem in xarrOperationsActions)
+		{
+			if ( catActionElem.use_access_eval )
+			{
+				teOperation = OpenDoc( UrlFromDocID( catActionElem.id ) ).TopElem;
+				if ( ! tools.safe_execution( teOperation.access_eval_code ) )
+					continue;
+			}
+			sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+			<ComboBoxItem Value="<%=catActionElem.PrimaryKey%>" Change="<%=sClick%>;"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></ComboBoxItem>
+<%
+		}
+%>
+		</ComboBox>
+<%
+	}
+	if (bAllowEdit)
+	{
+%>
+		<Button Class="XAML-button XAML-button-save" Click="SET=SaveCR/sAction,save;SET=SaveCR/iObjectId,<%=curObjectID%>;SET=TalentPoolCRCardSaveSuccessAction,<%=UrlEncode(ISDIALOG?'CLOSEDIALOG':sDefaultSuccessAction)%>;SET=TalentPoolCRCardSaveFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;Action=SaveCR"><%=HtmlEncode(tools.get_web_str("c_save"))%></Button>
+<%
+	}
+	if (ISDIALOG)
+	{
+%>
+		<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_close', curLngWeb ))%></Button>
+<%
+	}
+%>
+	</StackPanel>
+<%
+}
+
+function fnBuildInformers()
+{
+%>
+	<StackPanel Class="XAML-stack-tiles-container" Adapt="true" Orientation="Horizontal">
+
+<%
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+	</StackPanel>
+<%
+}
+
+iDefaultWidth=!bDesctop?"100%":"300"
+iDatePickerWidth=""
+
+sDefaultSuccessAction='ALERT={!DefaultAlertMessage};REFRESH;'
+sDefaultFailureAction='ALERT={!messageText}'
+%>
+<Edit Name="strPlanCompIDs" Hidden="1"><%=strPlanCompIDs%></Edit>
+<Edit Name="DefaultAlertMessage" Hidden="1"><%=XmlAttrEncode(tools_web.get_web_const( 'dannyesohraneny', curLngWeb ))%></Edit>
+<Edit Name="TalentPoolCRCardSaveSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+<Edit Name="TalentPoolCRCardSaveFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+<Action Name="SaveCR" Source="talent_pool_cr_save" Success="{!TalentPoolCRCardSaveSuccessAction}" Failure="{!TalentPoolCRCardSaveFailureAction}">
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	<Param Name="sAction" Value=""/>
+</Action>
+<Action Name="CRRunAction" Source="talent_pool_cr_actions" Success="UPDATE={ResultAction};SET=strPlanCompIDs,{ResultSet};ALERT={messageText};" Failure="ALERT={messageText}">
+  <Param Name="iObjectId" Value=""/>
+  <Param Name="sAction" Value=""/>
+  <Param Name="sSelectedObjects" Value=""/>
+  <Param Name="sSetSelectedObjects" Value=""/>
+  <Param Name="sNeedUpdateList" Value=""/>
+  <Param Name="bConfirm" Value=""/>
+</Action>
+<Edit Name="CRRunActionSuccess" Hidden="1">ALERT={messageText};</Edit>
+<Action Name="CRRunActionRight" Source="talent_pool_cr_actions" Success=";Update={ResultAction};SET=strPlanCompIDs,{ResultSet};ALERT={messageText}" Failure="ALERT={messageText}">
+  <Param Name="iObjectId" Value=""/>
+  <Param Name="sAction" Value=""/>
+  <Param Name="sSelectedObjects" Value=""/>
+  <Param Name="sSetSelectedObjects" Value=""/>
+  <Param Name="sNeedUpdateList" Value=""/>
+</Action>
+<Action Name="CRRunActionRefresh" Source="talent_pool_cr_actions" Success="ALERT={messageText};REFRESH" Failure="ALERT={messageText}">
+  <Param Name="iObjectId" Value=""/>
+  <Param Name="sAction" Value=""/>
+  <Param Name="sSelectedObjects" Value=""/>
+  <Param Name="sSetSelectedObjects" Value=""/>
+  <Param Name="sNeedUpdateList" Value=""/>
+</Action>
+
+<Dialog Name="CRCardDialog" Source="<%=tools_web.get_web_param( curParams, 'position_common_recommendation_template_code', 'position_common_rec_learning', true )%>">
+	<Param Name="object_id" Value=""/>
+	<Param Name="person_id" Value="<%=fldPerson.id%>"/>
+	<Param Name="good_color" Value="<%=XmlAttrEncode(strGoodColor)%>"/>
+	<Param Name="bad_color" Value="<%=XmlAttrEncode(strBadColor)%>"/>
+	<Param Name="title" Value="<%=XmlAttrEncode(tools_web.get_web_const( 'c_position_common', curLngWeb ))%>"/>
+</Dialog>
+<Dialog Name="SelectDialogCompetence" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'spisokkompeten_2', curLngWeb ) )%>" Close="Set=CRRunActionRight/sSelectedObjects,{CatalogListDataGridSelList:*};CONFIRM=<%=tools_web.get_web_const( 'spisokkompeten_3', curLngWeb )%>;ACTION=CRRunActionRight;">
+		<Param Name="catalog_name" Value="competence"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="view_type" Value="competence"/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<%
+for ( sCardBlocksList in arrCardBlocksListParam )
+{
+	if ( sCardBlocksList == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if ( sCardBlocksList == 'object_desc' )
+	{
+		if ( curObject.desc.HasValue || curObject.comment.HasValue )
+		{
+			if ( ! curObject.desc.HasValue )
+			{
+				curDesc = {
+					"text": curObject.comment.Value
+				};
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+
+		}
+	}
+	if ( sCardBlocksList == 'object_header' )
+	{
+		if (curObject.person_id.HasValue)
+		{
+			curTitle = {"title":curObject.person_id.sd.fullname}
+
+			if (bShowPersonPhoto)
+			{
+				docPerson=tools.open_doc(curObject.person_id)
+				if (docPerson!=undefined)
+				{
+					curTitle = {"object":docPerson.TopElem,"object_title":curLngCommon.exchange_object_types.GetChildByKey( curObject.Name ).title.Value,"image_url":tools_web.get_object_source_url( "person", curObject.person_id, "200x200" )}
+				}
+			}
+			if (curObject.position_type=='adaptation')
+			{
+				curTitle.SetProperty("object_title",tools_web.get_web_const('vcrb_adaptation', curLngWeb ))
+			}
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	}
+	if ( sCardBlocksList == 'object_buttons' )
+	{
+		fnBuildFormButtons()
+	}
+	if ( sCardBlocksList == 'object_tabs' )
+	{
+		%>
+		<TabControl Name="TalentPoolCRCardBodyTab<%=curObjectID%>" Preservable="1" Adapt="true" TabsLocation="<%=!ISDIALOG ? sTabsDispType : "n"%>" TabsWidth="200" Width="100%" <%=paramListViewTab!=0?'ActiveTab="'+paramListViewTab+'"':''%>>
+		<%
+			for ( sTabListParam in arrTabListParam )
+			{
+				switch(sTabListParam)
+				{
+					case "general":
+					{
+		%>
+						<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+
+		<%
+						arrBlockListParam = String( tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.general.block_list", "info", true ) ).split( ";" );
+
+						for ( sBlockList in arrBlockListParam )
+						{
+							if ( sBlockList == "info" )
+							{
+								strPosName=tools.get_web_str("c_deleted")
+								fldPosition = fldPerson.position_id.OptForeignElem;
+								fldSub=undefined;
+								fldOrg=undefined;
+								if (fldPosition != undefined)
+								{
+									strPosName=fldPosition.name
+									if (fldPosition.parent_object_id.HasValue)
+									{
+										fldSub = fldPosition.parent_object_id.OptForeignElem;
+										fldOrg = fldPosition.org_id.OptForeignElem;
+									}
+									else
+									{
+										fldOrg = fldPosition.org_id.OptForeignElem;
+									}
+								}
+
+								if (strInformersPosition=='top')
+								{
+									fnBuildInformers()
+								}
+				%>
+								<StackPanel Class="XAML-stack-container">
+									<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="true">
+										<GridColumns>
+											<GridColumn Width="50%"/>
+											<GridColumn/>
+										</GridColumns>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools.get_web_str("c_position"))%>:</Label>
+											<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldPerson.id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strPosName, curLng.short_id ))%></Link>
+										</GridRow>
+				<%
+								if (fldSub!=undefined)
+								{
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_subd")%>:</Label>
+											<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldSub.id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( fldSub.name, curLng.short_id ))%></Link>
+										</GridRow>
+				<%
+								}
+								if (fldOrg!=undefined)
+								{
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_org")%>:</Label>
+											<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldOrg.id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( fldOrg.name, curLng.short_id ))%></Link>
+										</GridRow>
+				<%
+								}
+								if (curObject.position_type!='adaptation')
+								{
+									fldPersonalReserve=curObject.personnel_reserve_id.OptForeignElem
+
+									if (fldPersonalReserve!=undefined)
+									{
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'ntdvwhol72', curLngWeb ))%>:</Label>
+				<%
+
+
+										if (false)
+										{
+											strTagName='personnel_reserve_id'
+											curSelector = {
+											"id": strTagName,
+											"object_id": curObject.personnel_reserve_id,
+											"object_id_item_name": strTagName,
+											"object_name":  (curObject.personnel_reserve_id.HasValue && curObject.personnel_reserve_id.OptForeignElem != undefined ? curObject.personnel_reserve_id.ForeignElem.name : ""),
+											"multi_select": "false",
+											"catalog_name": "personnel_reserve",
+											"xquery_qual":("$elem/person_id="+fldPerson.id),
+											"selected_object_ids": curObject.personnel_reserve_id
+											};
+											Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+										}
+										else
+										{
+
+											if (fldPersonalReserve!=undefined)
+											{
+												fldPersonalReserveType=fldPersonalReserve.career_reserve_type_id.OptForeignElem
+												
+												//tools_web.get_mode_clean_url( "talent_pool_pr_card", fldPersonalReserve.id.Value, { doc_id: curDocID } )
+
+				%>
+											<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldPersonalReserve.id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name((fldPersonalReserveType!=undefined?fldPersonalReserveType.name:fldPersonalReserve.name), curLng.short_id ))%></Link>
+				<%
+											}
+											else
+											{
+				%>
+											<Label></Label>
+				<%
+											}
+										}
+				%>
+								</GridRow>
+				<%
+									}
+								}
+
+								if (fnCheckRight('career_reserve_see_status')||fnCheckRight('career_reserve_change_status'))
+								{
+				%>
+								<GridRow>
+									<Label Class="XAML-grid-label-name"><%=HtmlEncode( tools_web.get_web_const( 'c_status', curLngWeb ) )%>:</Label>
+				<%
+									if( fnCheckRight('career_reserve_change_status') )
+									{
+										strTagName='status'
+				%>
+									<ComboBox Name="<%=strTagName%>" Width="<%=iDefaultWidth%>" Change="SET=SaveCR/sAction,change_status;SET=SaveCR/iObjectId,<%=curObjectID%>;Action=SaveCR">
+									<ComboBoxItem Value="" Selected="True"><%=XmlAttrEncode(curObject.status.HasValue ? curLngCommon.career_reserve_status_types.GetChildByKey( curObject.status).name : "")%></ComboBoxItem>
+				<%
+										for( fldElem in common.career_reserve_status_types)
+										{
+											try
+											{
+				%>
+												<ComboBoxItem Value="<%=fldElem.id%>"><%=XmlAttrEncode(curLngCommon.career_reserve_status_types.GetChildByKey( fldElem.id).name)%></ComboBoxItem>
+				<%
+											}
+											catch(ex)
+											{
+											}
+										}
+				%>
+
+										</ComboBox>
+				<%
+									}
+									else
+									{
+				%>
+
+									<Label NoWrap="true"><%=HtmlEncode(curObject.status.HasValue ? curLngCommon.career_reserve_status_types.GetChildByKey( curObject.status).name : "")%></Label>
+				<%
+									}
+				%>
+							</GridRow>
+				<%
+								}
+
+								if (fnCheckRight('career_reserve_see_target_goal')||fnCheckRight('career_reserve_change_target_goal'))
+								{
+
+									if (fnCheckRight('career_reserve_change_target_goal'))
+									{
+										strTagName='position_type'
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'celrazvitiya', curLngWeb ))%>:</Label>
+												<ComboBox Name="<%=strTagName%>" Width="<%=iDefaultWidth%>">
+				<%
+											for( fldElem in arrModuls)
+											{
+												strSelected=''
+												if (curObject.position_type==fldElem.id)
+												{
+													strSelected=' Selected="True"'
+												}
+													strAction="SET=SaveCR/sAction,position_type_change;SET=SaveCR/iObjectId,"+curObjectID+";Action=SaveCR"
+
+				%>
+													<ComboBoxItem Value="<%=fldElem.id%>" Change="<%=strAction%>"<%=strSelected%>><%=XmlAttrEncode( fldElem.name)%></ComboBoxItem>
+				<%
+											}
+				%>
+
+									</ComboBox>
+									</GridRow>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(strPositionTypeName)%>:</Label>
+				<%
+
+											switch ( curObject.position_type )
+											{
+												case 'position':
+												case 'position_common':
+												case 'staff_position':
+
+													oPositionCommonXmlElement=curObject.EvalPath(curObject.position_type+"_id")
+													strTagName=curObject.position_type+'_id'
+													curSelector = {
+													"id": strTagName,
+													"object_id": oPositionCommonXmlElement,
+													"object_id_item_name": strTagName,
+													"object_name":  (oPositionCommonXmlElement.HasValue && oPositionCommonXmlElement.OptForeignElem != undefined ? oPositionCommonXmlElement.ForeignElem.name : ''),
+													"multi_select": "false",
+													"width":iDefaultWidth,
+													"catalog_name": curObject.position_type,
+													"selected_object_ids": oPositionCommonXmlElement
+													};
+													curSelector.SetProperty("close_action","SET=SaveCR/sAction,position_change;SET=SaveCR/iObjectId,"+curObjectID+";Action=SaveCR")
+													Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+													break;
+
+													case 'name':
+														strTagName='position_name'
+				%>
+														<Edit Name="<%=strTagName%>" Width="<%=iDefaultWidth%>"><%=HtmlEncode(strTargetPosName)%></Edit>
+				<%
+														break;
+													case 'adaptation':
+														strTagName='position_name'
+				%>
+														<Label Class="XAML-grid-label-value"><%=HtmlEncode(strTargetPosName)%></Label>
+				<%
+														break;
+												}
+				%>
+										</GridRow>
+				<%
+									}
+									else
+									{
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'celrazvitiya', curLngWeb ))%>:</Label>
+											<Label Class="XAML-grid-label-value"><%=HtmlEncode(strPositionTypeName)%></Label>
+										</GridRow>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(strPositionTypeName)%>:</Label>
+											<Label Class="XAML-grid-label-value"><%=HtmlEncode(strTargetPosName)%></Label>
+										</GridRow>
+				<%
+									}
+									if (curObject.position_type=='position'&&curObject.position_id.HasValue&&curObject.position_id.sd.basic_collaborator_fullname.HasValue)
+									{
+				%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'hkjld9msys', curLngWeb ))%>:</Label>
+				<%
+
+										if (curObject.position_id.sd.basic_collaborator_id.HasValue)
+										{
+				%>
+											<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, curObject.position_id.sd.basic_collaborator_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(curObject.position_id.sd.basic_collaborator_fullname)%></Link>
+				<%
+										}
+										else
+										{
+				%>
+											<Label Class="XAML-grid-label-value"><%=HtmlEncode(curObject.position_id.sd.basic_collaborator_fullname)%></Label>
+				<%
+										}
+				%>
+										</GridRow>
+				<%
+
+									}
+
+
+								}
+								if ((fnCheckRight('career_reserve_see_dates')&&curObject.start_date.HasValue)||fnCheckRight('career_reserve_edit_dates'))
+								{
+				%>
+									<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'qpltbj1sg1', curLngWeb ))%>:</Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_dates'))
+									{
+									strTagName='start_date'
+				%>
+										<DatePicker Name="<%=strTagName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(curObject.start_date, false, false)%></DatePicker>
+				<%
+									}
+									else
+									{
+				%>
+									<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(curObject.start_date, false, false))%></Label>
+				<%
+									}
+				%>
+									</GridRow>
+				<%
+								}
+								if ((fnCheckRight('career_reserve_see_dates')&&curObject.plan_readiness_date.HasValue)||fnCheckRight('career_reserve_edit_dates'))
+								{
+				%>
+									<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_plan_readiness_date', curLngWeb ))%>:</Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_dates'))
+									{
+										strTagName='plan_readiness_date'
+				%>
+										<DatePicker Name="<%=strTagName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(curObject.plan_readiness_date, false, false)%></DatePicker>
+				<%
+									}
+									else
+									{
+				%>
+										<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(curObject.plan_readiness_date, false, false))%></Label>
+				<%
+									}
+				%>
+									</GridRow>
+				<%
+								}
+								if ((fnCheckRight('career_reserve_see_dates')&&curObject.finish_date.HasValue)||fnCheckRight('career_reserve_edit_dates'))
+								{
+				%>
+									<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'datafaktichesko', curLngWeb ))%>:</Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_dates'))
+									{
+										strTagName='finish_date'
+				%>
+										<DatePicker Name="<%=strTagName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(curObject.finish_date, false, false)%></DatePicker>
+				<%
+									}
+									else
+									{
+				%>
+										<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(curObject.finish_date, false, false))%></Label>
+				<%
+									}
+				%>
+									</GridRow>
+				<%
+								}
+								if ((fnCheckRight('career_reserve_see_readiness_percent')&&curObject.readiness_percent.HasValue)||fnCheckRight('career_reserve_edit_readiness_percent'))
+								{
+				%>
+									<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_readiness_percent', curLngWeb ))%>:</Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_readiness_percent'))
+									{
+										strTagName='readiness_percent'
+				%>
+										<Edit Name="<%=strTagName%>" Width="110"><%=curObject.readiness_percent%></Edit>
+				<%
+									}
+									else
+									{
+				%>
+										<Label Class="XAML-grid-label-value"><%=HtmlEncode(curObject.readiness_percent)%></Label>
+				<%
+									}
+				%>
+
+								</GridRow>
+				<%
+								}
+								if ((fnCheckRight('career_reserve_see_action_place')&&curObject.subdivision_id.HasValue)||fnCheckRight('career_reserve_edit_action_place'))
+								{
+				%>
+								<GridRow>
+									<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_action_place', curLngWeb ))%>:</Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_action_place'))
+									{
+											strTagName='subdivision_id'
+											curSelector = {
+											"id": strTagName,
+											"object_id": curObject.subdivision_id,
+											"object_id_item_name": strTagName,
+											"object_name":  (curObject.subdivision_id.HasValue && curObject.subdivision_id.OptForeignElem != undefined ? curObject.subdivision_id.ForeignElem.name : ""),
+											"multi_select": "false",
+											"catalog_name": "subdivision",
+											"width":iDefaultWidth,
+											"selected_object_ids": curObject.subdivision_id
+											};
+											Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+									}
+									else
+									{
+				%>
+									<Label Class="XAML-grid-label-value"><%=HtmlEncode(curObject.subdivision_id.HasValue && curObject.subdivision_id.OptForeignElem != undefined ? curObject.subdivision_id.ForeignElem.name : "")%></Label>
+				<%
+									}
+				%>
+
+								</GridRow>
+				<%
+								}
+								if ((fnCheckRight('career_reserve_see_mentor_comment')&&curObject.comment.HasValue)||fnCheckRight('career_reserve_edit_mentor_comment'))
+								{
+				%>
+								<GridRow>
+									<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vcrb_mentor_comment', curLngWeb ))%></Label>
+				<%
+
+									if (fnCheckRight('career_reserve_edit_mentor_comment'))
+									{
+										strTagName='comment'
+				%>
+									<EditBox Name="<%=strTagName%>" Height="100"  Width="100%"><%=curObject.comment%></EditBox>
+				<%
+									}
+									else
+									{
+				%>
+									<HTMLBox><![CDATA[<%=HtmlEncode(curObject.comment)%>]]></HTMLBox>
+				<%
+									}
+				%>
+
+								</GridRow>
+				<%
+								}
+				%>
+								</Grid>
+								</StackPanel>
+				<%
+
+
+								if (strInformersPosition=='bottom')
+								{
+									fnBuildInformers()
+								}
+							}
+							if ( sBlockList == "custom")
+							{
+								xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_main', 'zone' );
+								if (ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+								{
+									for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+									{
+										Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+									}
+								}
+							}
+						}
+		%>
+						</TabItem>
+		<%
+						break;
+					}
+					case "func_man":
+					{
+
+						if (fnCheckRight('career_reserve_see_tutors_list')||fnCheckRight('career_reserve_edit_tutors_list'))
+						{
+		%>
+							<TabItem Title="<%=tools_web.get_web_const( "5wdhewcbmb", curLngWeb )%>">
+		<%
+
+							sID = "CRFuncManagers";
+							sDispNameEditName = "TempDestinationEdit" + sID;
+							arrForNewHeaders = new Array();
+							arrForNewCells = new Array();
+							bDispSearch= (bDesctop?"true":fnCheckRight('career_reserve_edit_tutors_list')?false:true)
+
+							arrTutors = tools_web.set_var_eval( "arrManegers", Env.curVars, XQuery("for $elem in talent_pool_func_managers where $elem/object_id="+curObjectID+" return $elem"), "value" );
+							arrBossTypes = tools_web.set_var_eval( "arrBossTypes", Env.curVars, ArrayDirect( QueryCatalogByKeys("boss_types", "id", ArrayExtract( arrTutors, "boss_type_id" ))), "value" );
+
+							arrForNewHeaders[ArrayCount(arrForNewHeaders)]=tools_web.get_web_const( 'c_manager_type', curLngWeb );
+							arrForNewCells[ArrayCount(arrForNewCells)]="(fldManeger=ArrayOptFind( Env.curVars.GetOptProperty('arrManegers', []), 'person_id==' + ListElem.id ), ((fldManeger!=undefined&&fldManeger.boss_type_id.HasValue)?temp = ArrayOptFind( Env.curVars.GetOptProperty('arrBossTypes', []), 'id==' +fldManeger.boss_type_id ):temp = undefined),((temp == undefined) ? '"+tools_web.get_web_const( 't4vmwpkm6h', curLngWeb )+"' : (temp.name)))";
+
+							curSelectorList = {
+									"id": sID,
+									"title": (bDesctop?tools_web.get_web_const( '5wdhewcbmb', curLngWeb ):""),
+									"selected_object_ids": ArrayMerge( ArrayExtract( arrTutors, 'person_id' ), 'This', ';' ),
+									"catalog_name": "collaborator",
+									"disp_search": bDispSearch,
+									"disp_filter": "false",
+									"check_access": "false",
+									"sort_direct": "-",
+									"disp_array": "false",
+									"multi_select": "false",
+									"height":"100%",
+									"show_all":bShowAllPersonsInTutors,
+									"array": ( "{" + sDispNameEditName + "}" ),
+									"list_columns": (bDesctop?"fullname;position_parent_name;position_name":"fullname"),
+									"col_headers": ArrayMerge( arrForNewHeaders, "This", ";" ),
+									"col_cells": ArrayMerge( arrForNewCells, "This", ";" ),
+									"is_data_grid": "true"
+							}
+
+							if(fnCheckRight('career_reserve_edit_tutors_list'))
+							{
+								strXQueryQual=' MatchSome( $elem/id, ('+ArrayMerge(XQuery('for $elem in tutors where $elem/status=\'active\' return $elem'),'person_id',',')+' ) ) '
+
+		%>
+							<Edit Name="XQueryQualEdit" Hidden="1"><%=strXQueryQual%></Edit>
+		<%
+								
+								sTitleTop=bDesctop?sConstChangeTutors:(StrCharCount(  sConstChangeTutors ) > iNameLength ? StrLeftCharRange(  sConstChangeTutors, iNameLength ) + '...' :  sConstChangeTutors);
+								curSelectorList.SetProperty( "buttons", [
+									{ "title": tools_web.get_web_const( "izmenit", curLngWeb ), "click": "Set=SelectDialogCRFuncManagers/xquery_qual,;OPENDIALOG=SelectDialogCRFuncManagers" },
+									{ "title": sTitleTop, "click": "SET=SelectDialogCRFuncManagers/xquery_qual,{XQueryQualEdit};OPENDIALOG=SelectDialogCRFuncManagers" }
+									])
+
+								curSelectorList.SetProperty("close_action","SET=CRRunAction/iObjectId,"+curObjectID+";SET=CRRunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=CRRunAction/sAction,change_managers;SET=CRRunAction/sNeedUpdateList,CatalogListDataGrid"+sID+";ACTION=CRRunAction;")
+							}
+
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+		%>
+						</TabItem>
+		<%
+						}
+
+
+						break;
+					}
+					
+// =======  Отключено =========				
+					
+					case "ipr*":
+					{
+						if ((fnCheckRight('career_reserve_see_ipr')&&curObject.development_plan_id.HasValue)||(fnCheckRight('career_reserve_see_target_profile')&&curObject.target_competence_profile_id.HasValue)||fnCheckRight('career_reserve_edit_target_profile')||fnCheckRight('career_reserve_edit_current_profile')||(fnCheckRight('career_reserve_see_current_profile')&&curObject.target_competence_profile_id.HasValue))
+						{
+	%>
+						<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_development_plan', curLngWeb ) )%>">
+	<%
+							if (true)//((fnCheckRight('career_reserve_edit_current_profile')||(fnCheckRight('career_reserve_see_current_profile')&&curObject.current_competence_profile_id.HasValue))||((fnCheckRight('career_reserve_see_target_profile')&&curObject.target_competence_profile_id.HasValue)||fnCheckRight('career_reserve_edit_target_profile')))
+							{
+								bShowCurrentProfile=(fnCheckRight('career_reserve_edit_current_profile')||(fnCheckRight('career_reserve_see_current_profile')&&curObject.current_competence_profile_id.HasValue))
+								bShowTurgetProfile=((fnCheckRight("career_reserve_see_target_profile")&&curObject.target_competence_profile_id.HasValue)||fnCheckRight("career_reserve_edit_target_profile"))
+								bShowDevPlan=((curObject.development_plan_id.HasValue||fnCheckRight('career_reserve_edit_ipr'))||(fnCheckRight('career_reserve_create_new_ipr')))
+								
+								fldProc=undefined
+								if (tePlan!=null)
+								{
+									fldProc=tePlan.assessment_appraise_id.OptForeignElem
+								}
+								
+								if (bShowCurrentProfile||bShowTurgetProfile||bShowDevPlan||fldProc!=undefined)
+								{
+	%>
+								<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+									<GridColumns>
+										<GridColumn Width="50%"/>
+										<GridColumn/>
+									</GridColumns>
+	<%
+									if (bShowCurrentProfile)
+									{
+	%>
+										<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vcrb_begin_competence_profile', curLngWeb ))%>:</Label>
+	<%
+										if (fnCheckRight('career_reserve_edit_current_profile'))
+										{
+												strTagName='current_competence_profile_id'
+												curSelector = {
+												"id": strTagName,
+												"width":iDefaultWidth,
+												"object_id": curObject.current_competence_profile_id,
+												"object_id_item_name": strTagName,
+												"object_name":  (curObject.current_competence_profile_id.HasValue && curObject.current_competence_profile_id.OptForeignElem != undefined ? curObject.current_competence_profile_id.ForeignElem.name : ""),
+												"multi_select": "false",
+												"catalog_name": "competence_profile",
+												"selected_object_ids": curObject.current_competence_profile_id
+												};
+												curSelector.SetProperty("close_action","SET=SaveCR/iObjectId,"+curObjectID+";Action=SaveCR;")
+												Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+										}
+										else
+										{
+											try
+											{
+												current_competence_name = curObject.current_competence_profile_id.ForeignElem.name;
+											}
+											catch(err)
+											{
+												current_competence_name = tools.get_web_str("c_deleted");
+											}
+	%>
+										<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, curObject.current_competence_profile_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( current_competence_name, curLng.short_id ))%></Link>
+	<%
+										}
+	%>
+										</GridRow>
+	<%
+									}
+									if(bShowTurgetProfile)
+									{
+	%>
+										<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vcrb_target_competence_profile', curLngWeb ))%>:</Label>
+	<%
+										if (fnCheckRight('career_reserve_edit_target_profile'))
+										{
+												strTagName='target_competence_profile_id'
+												curSelector = {
+												"id": strTagName,
+												"width":iDefaultWidth,
+												"object_id": curObject.target_competence_profile_id,
+												"object_id_item_name": strTagName,
+												"object_name":  (curObject.target_competence_profile_id.HasValue && curObject.target_competence_profile_id.OptForeignElem != undefined ? curObject.target_competence_profile_id.ForeignElem.name : ""),
+												"multi_select": "false",
+												"catalog_name": "competence_profile",
+												"selected_object_ids": curObject.target_competence_profile_id
+												};
+
+
+												curSelector.SetProperty("close_action","SET=SaveCR/iObjectId,"+curObjectID+";Action=SaveCR;")
+												Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+										}
+										else
+										{
+											try
+											{
+												target_competence_name = curObject.target_competence_profile_id.ForeignElem.name;
+											}
+											catch(err)
+											{
+												target_competence_name = tools.get_web_str("c_deleted");
+											}
+	%>
+										<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, curObject.target_competence_profile_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( target_competence_name, curLng.short_id ))%></Link>
+	<%
+										}
+	%>
+										</GridRow>
+	<%
+									}
+									if (bShowDevPlan)
+									{
+	%>
+										<GridRow>
+											<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_development_plan', curLngWeb ))%>:</Label>
+											<StackPanel Class="XAML-stack-container" Adapt="true" Orientation="Horizontal">
+	<%
+											if(fnCheckRight('career_reserve_edit_ipr'))
+											{
+												strTagName='development_plan_id'
+												curSelector = {
+												"id": strTagName,
+												"width":iDefaultWidth,
+												"object_id": curObject.development_plan_id,
+												"object_id_item_name": strTagName,
+												"object_name":  (curObject.development_plan_id.HasValue && curObject.development_plan_id.OptForeignElem != undefined ? curObject.development_plan_id.ForeignElem.name : ""),
+												"multi_select": "false",
+												"catalog_name": "development_plan",
+												"xquery_qual":("$elem/person_id="+fldPerson.id),
+												"selected_object_ids": curObject.development_plan_id
+												};
+
+
+												curSelector.SetProperty("close_action","SET=SaveCR/iObjectId,"+curObjectID+";Action=SaveCR;")
+												Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+											}
+											else
+											{
+	%>
+												<Label Class="XAML-grid-label-value"><%=HtmlEncode(curObject.development_plan_id.HasValue && curObject.development_plan_id.OptForeignElem != undefined ? curObject.development_plan_id.ForeignElem.name : "")%></Label>
+	<%
+											}
+											if(fnCheckRight('career_reserve_create_new_ipr'))
+											{
+	%>
+												<Button Class="XAML-button XAML-button-activate" Click="SET=CRRunActionRefresh/iObjectId,<%=curObjectID%>;SET=CRRunActionRefresh/sNeedUpdateList,;SET=CRRunActionRefresh/sAction,create_new_ipr;CONFIRM=<%=tools_web.get_web_const( 'planrazvitiyabu', curLngWeb )%>;ACTION=CRRunActionRefresh;"><%=HtmlEncode(sConstCreateIPR)%></Button>
+	<%
+											}
+	%>
+												</StackPanel>
+											</GridRow>
+	<%
+									}
+									if (fldProc!=undefined)
+									{
+	%>
+										<GridRow>
+												<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'ssylkanaplan', curLngWeb ))%>:</Label>
+												<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldProc.id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name((fldProc.name), curLng.short_id ))%></Link>
+										</GridRow>
+	<%
+									}
+	%>
+								</Grid>
+	<%
+
+								}
+						}
+						if (curObject.development_plan_id.HasValue)
+						{
+				
+							curFilter = {
+								"id": "IPRFiltersPanelNew",
+								"action": "UPDATE=CompetenceListGrid",
+								"disp_search": (fnCheckRight('career_reserve_change_ipr_comp')&&curObject.development_plan_id.HasValue?false:true),
+								"search_field": "CompetenceSearchField",
+								"search_value": "",
+								"search_width": "200",
+								"buttons": [],
+								"filters":[],
+								"row_filters": [],
+								"schema": "small"
+							};
+							if(fnCheckRight('career_reserve_change_ipr_comp')&&curObject.development_plan_id.HasValue)
+							{
+								curFilter.buttons.push( { "title": tools_web.get_web_const( 'izmenitspisokk', curLngWeb ), "click": ( "SET=CRRunActionRight/iObjectId,"+curObjectID+";SET=CRRunActionRight/sNeedUpdateList,CompetenceListGrid;SET=CRRunActionRight/sAction,change_ipr_comp;Set=SelectDialogCompetence/selected_object_ids,{strPlanCompIDs};Set=SelectDialogCompetence/multi_select,true;OPENDIALOG=SelectDialogCompetence" ) } );
+							}
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );	
+	%>
+					<Collection Name="CompetenceListCollection"	Source="talent_pool_cr_dev_plan_competences">
+						<Param Name="iObjectID" Value="<%=curObjectID%>"/>
+						<Param Name="good_color" Value="<%=XmlAttrEncode(strGoodColor)%>"/>
+						<Param Name="bad_color" Value="<%=XmlAttrEncode(strBadColor)%>"/>
+						<Param Name="sSearchWord" Value="{CompetenceSearchField}"/>
+					</Collection>
+					<DataGrid Name="CompetenceListGrid" Source="{CompetenceListCollection}">
+						<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+						<DataGridColumn Value="target_competence_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ass_competence', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={sUrl}" Sortable="True"/>
+	<%
+					if (bDesctop)
+					{
+	%>
+						<DataGridColumn Value="dev_method" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vdb_development_method', curLngWeb ) )%>" Width="200" Type="string" Sortable="True"/>
+						<DataGridColumn Value="edu_method" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vepb_edu_methods', curLngWeb ) )%>" Width="200" Type="string" Sortable="True"/>
+						<DataGridColumn Value="current_level" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ib4f868k39', curLngWeb ) )%>" Width="100" Type="string" ColorSource="color" Sortable="True"/>
+	<%
+					}
+	%>
+						<DataGridColumn Value="target_level" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'suznb72uoa', curLngWeb ) )%>" Width="100" Type="string" ColorSource="color" Sortable="True"/>
+					</DataGrid>
+	<%
+							}
+	%>
+						</TabItem>
+	<%
+						}
+
+						break;
+					}
+					
+// =======  Отключено =========				
+					
+					case "tasks":
+					{
+	%>
+						<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'c_activity_plan', curLngWeb ))%>">
+	<%
+						if (fnCheckRight('career_reserve_see_forbid_tasks')||fnCheckRight('career_reserve_edit_forbid_tasks'))
+						{
+	%>
+								<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+									<GridColumns>
+										<GridColumn Width="50%"/>
+										<GridColumn/>
+									</GridColumns>
+									<GridRow>
+										<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'zapretitizmene', curLngWeb ))%>:</Label>					
+										<CheckBox Name="forbid_tasks_edit" Enabled="<%=fnCheckRight('career_reserve_edit_forbid_tasks')%>"<%=(curObject.forbid_tasks_edit ? " Checked=\"true\"" : "")%>><%=HtmlEncode(tools_web.get_web_const( 'c_yes', curLngWeb ))%></CheckBox>
+									</GridRow>
+								</Grid>
+	<%
+						}
+
+						curTalentPoolCRTasksViewer = {
+							"id": "TalentPoolCRTasksViewer",
+							"forbid_tasks_edit": curObject.forbid_tasks_edit,
+							"object_id": curObjectID,
+							"grid_height": iCRGridHeight,
+							"page_items_count": iPageCRItemsCount,
+							"select_only_tutors":bSelectOnlyTutors,
+							"columns":arrTaskDispFieldCodes,
+							"sOverdueColor":sOverdueColor,
+							"bHasComps":true,
+							"strDefaultTaskStatusFilterValue":strDefaultTaskStatusFilterValue,
+							"strDefaultTaskOrder":strDefaultTaskOrder
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_talent_pool_cr_tasks.xaml" ) );
+	%>
+
+						</TabItem>
+	<%
+						break;
+					}
+					case "career_tree":
+					{
+						if (fnCheckRight('career_reserve_see_career_tree')&&(curObject.position_type=='position_common'||curObject.position_type=='position'))
+						{
+
+							if (curObject.position_type=='position')
+							{
+								fldPosition=curObject.position_id.OptForeignElem
+								fldCommonPosition=(fldPosition!=undefined?fldPosition.position_common_id.OptForeignElem:undefined)
+							}
+							else
+							{
+								fldCommonPosition=curObject.position_common_id.OptForeignElem
+							}
+
+							if (fldCommonPosition!=undefined)
+							{
+								try
+								{
+									teCommonPosition=OpenDoc( UrlFromDocID (fldCommonPosition.id)).TopElem;
+								}
+								catch(ex)
+								{
+								}
+	%>
+						<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'hnumlkieoy', curLngWeb ))%>">
+							<StackPanel Width="100%" Adapt="true">
+								<Collection Name="CommonPositionCollection">
+									<Data>
+	<%
+										fnBuildGraph(fldCommonPosition.id,null,0)
+	%>
+									</Data>
+								</Collection>
+								<FlowChart Name="CommonPositionChart" Width="100%" Height="400" DataID="id" DataTitle="name" DataParent="parent_object_id" Source="{CommonPositionCollection}" Click="SET=CRCardDialog/object_id,{id};OPENDIALOG=CRCardDialog"/>
+							</StackPanel>
+						</TabItem>
+	<%
+							}
+						}
+						break;
+					}
+					case "custom_fields":
+					{
+						if (fnCheckRight('career_reserve_see_custom_fields')||fnCheckRight('career_reserve_edit_custom_fields'))
+						{
+							arrCustomFieldNames = Array();
+							fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+							if ( fldCustomElems != null )
+							{
+	%>
+							<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'c_additional', curLngWeb ))%>">
+	<%
+
+								curCustomFields = {
+									"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+									"source": curObject.custom_elems,
+									"modify_eval": fnCheckRight('career_reserve_edit_custom_fields')
+								};
+								curCustomFields.SetProperty('id',"customFieldsEditGrid")
+								Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+
+	%>
+							</TabItem>
+	<%
+							}
+						}
+						break;
+					}
+					case "files":
+					{
+						if (fnCheckRight('career_reserve_see_files')||fnCheckRight('career_reserve_edit_files'))
+						{
+		%>
+							<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+		<%
+							if(fnCheckRight('career_reserve_edit_files'))
+							{
+								allowChangeFiles = true;
+								bStaticCollection = false;
+								sFilesListViewType = "datagrid";
+							}
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+		%>
+							</TabItem>
+		<%
+						}
+						break;
+					}
+					case "custom_tab":
+					{
+						xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+						if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+						{
+							sTabTitle = tools_web.get_web_param( curParams, "talent_pool_cr_card.tab_list.custom_tab", "", true );
+%>
+						<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+							for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+							{
+								Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+							}
+	%>
+						</TabItem>
+	<%
+						}
+						break;
+					}
+				}
+			}
+		%>
+		</TabControl>
+		<%
+	}
+}
+%>
+</SPXMLScreen>

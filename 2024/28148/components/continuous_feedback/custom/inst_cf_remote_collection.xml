@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>3sdoqrysfa</id>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<remote_collections>
+		<remote_collection>
+			<id>0x60B5F5B683DBF0E7</id>
+			<code>GetPersonContinuousFeedback</code>
+			<name VALUE="##'Непрерывная обратная связь / Отзывы'##"/>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_collections/GetPersonContinuousFeedback.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_collections/GetPersonContinuousFeedback.bs</url>
+			<catalog_name>response</catalog_name>
+			<wvars>
+				<wvar>
+					<name>sPersonID</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'ID сотрудника'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sInitiatorID</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'ID инцииатора'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sObjectID</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'ID оцениваемого'##"/>
+					<silent>0</silent>
+					<position>3</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>arrObjectTypes</name>
+					<type>list</type>
+					<entries>
+						<entry>
+							<id>collaborator</id>
+							<name VALUE="##'Сотрудник'##"/>
+						</entry>
+						<entry>
+							<id>project_participant</id>
+							<name VALUE="##'Участник проекта'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Типы оцениваемых'##"/>
+					<silent>0</silent>
+					<position>4</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iApplicationID</name>
+					<type>foreign_elem</type>
+					<catalog>application</catalog>
+					<description lang-ru:VALUE="##'ID приложения, по которому определяется доступ'##"/>
+					<silent>0</silent>
+					<position>5</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sApplicationAccessType</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'Роль, для которой отображается информация в приложении'##"/>
+					<silent>0</silent>
+					<position>6</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sFilter</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'Фильтр запроса'##"/>
+					<silent>0</silent>
+					<position>7</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>arrStatus</name>
+					<type>list</type>
+					<entries>
+						<entry>
+							<id>plan</id>
+							<name VALUE="##'Запланирован'##"/>
+						</entry>
+						<entry>
+							<id>done</id>
+							<name VALUE="##'Заполнен'##"/>
+						</entry>
+						<entry>
+							<id>cancel</id>
+							<name VALUE="##'Отменен'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Статусы отзывов'##"/>
+					<silent>0</silent>
+					<position>8</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<result_fields>
+				<result_field>
+					<id>97t7uo</id>
+					<name>id</name>
+					<type>integer</type>
+					<title>i18n.t( 'id' )</title>
+				</result_field>
+				<result_field>
+					<id>3ddklt</id>
+					<name>code</name>
+					<type>string</type>
+					<title>i18n.t( 'code' )</title>
+				</result_field>
+				<result_field>
+					<id>nebbzf</id>
+					<name>status</name>
+					<type>string</type>
+					<title>i18n.t( 'status' )</title>
+				</result_field>
+				<result_field>
+					<id>cu52v5</id>
+					<name>status_id</name>
+					<type>string</type>
+					<title>i18n.t( 'status_id' )</title>
+				</result_field>
+				<result_field>
+					<id>i85mzh</id>
+					<name>plan_date</name>
+					<type>date</type>
+					<title>i18n.t( 'plan_date' )</title>
+				</result_field>
+				<result_field>
+					<id>74cq2y</id>
+					<name>done_date</name>
+					<type>date</type>
+					<title>i18n.t( 'done_date' )</title>
+				</result_field>
+				<result_field>
+					<id>wjf8k3</id>
+					<name>person_fullname</name>
+					<type>string</type>
+					<title>i18n.t( 'person_fullname' )</title>
+				</result_field>
+				<result_field>
+					<id>q3z28z</id>
+					<name>person_pict_url</name>
+					<type>string</type>
+					<title>i18n.t( 'person_pict_url' )</title>
+				</result_field>
+				<result_field>
+					<id>i9edlt</id>
+					<name>object_fullname</name>
+					<type>string</type>
+					<title>i18n.t( 'object_fullname' )</title>
+				</result_field>
+				<result_field>
+					<id>1cz1qy</id>
+					<name>object_pict_url</name>
+					<type>string</type>
+					<title>i18n.t( 'object_pict_url' )</title>
+				</result_field>
+				<result_field>
+					<id>30iy66</id>
+					<name>owner_person_fullname</name>
+					<type>string</type>
+					<title>i18n.t( 'owner_person_fullname' )</title>
+				</result_field>
+				<result_field>
+					<id>vhj7d5</id>
+					<name>owner_person_pict_url</name>
+					<type>string</type>
+					<title>i18n.t( 'owner_person_pict_url' )</title>
+				</result_field>
+				<result_field>
+					<id>hnzz1e</id>
+					<name>project_name</name>
+					<type>string</type>
+					<title>i18n.t( 'project_name' )</title>
+				</result_field>
+				<result_field>
+					<id>b7t8dx</id>
+					<name>text_html</name>
+					<type>string</type>
+					<title>i18n.t( 'text_html' )</title>
+				</result_field>
+				<result_field>
+					<id>8y0eom</id>
+					<name>basic_score</name>
+					<type>string</type>
+					<title>i18n.t( 'basic_score' )</title>
+				</result_field>
+				<result_field>
+					<id>5tznqk</id>
+					<name>basic_desc</name>
+					<type>string</type>
+					<title>i18n.t( 'basic_desc' )</title>
+				</result_field>
+			</result_fields>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_collection/GetPersonContinuousFeedback</load_path>
+				<code>components/continuous_feedback/remote_collection/GetPersonContinuousFeedback</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_collection>
+		<remote_collection>
+			<id>0x60F9982AFFF9F573</id>
+			<code>GetProjectParticipantsApp</code>
+			<name lang-ru:VALUE="##'Участники проектов'##"/>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_collections/GetProjectParticipantsApp.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_collections/GetProjectParticipantsApp.bs</url>
+			<catalog_name>project_participant</catalog_name>
+			<wvars>
+				<wvar>
+					<name>sAccessTypeId</name>
+					<value>auto</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>admin</id>
+							<name lang-ru:VALUE="##'Администратор приложения'##"/>
+						</entry>
+						<entry>
+							<id>manager</id>
+							<name lang-ru:VALUE="##'Администратор процесса'##"/>
+						</entry>
+						<entry>
+							<id>hr</id>
+							<name>HR</name>
+						</entry>
+						<entry>
+							<id>observer</id>
+							<name lang-ru:VALUE="##'Наблюдатель'##"/>
+						</entry>
+						<entry>
+							<id>auto</id>
+							<name lang-ru:VALUE="##'Получать автоматически из приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Определяет роль, для которой отображается информация'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sApplication</name>
+					<parent_wvar_name>sAccessTypeId</parent_wvar_name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'Код/ID приложения, по которому определяется доступ'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sFilter</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'Строка для XQuery-фильтра'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>bShowDismiss</name>
+					<value>0</value>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Показывать уволенных участников'##"/>
+					<silent>0</silent>
+					<position>3</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>aStateParticipants</name>
+					<value>agreement;project;active;archive;cancel</value>
+					<type>list</type>
+					<entries>
+						<entry>
+							<id>project</id>
+							<name lang-ru:VALUE="##'Проект'##"/>
+						</entry>
+						<entry>
+							<id>agreement</id>
+							<name lang-ru:VALUE="##'На согласовании'##"/>
+						</entry>
+						<entry>
+							<id>active</id>
+							<name lang-ru:VALUE="##'В работе'##"/>
+						</entry>
+						<entry>
+							<id>archive</id>
+							<name lang-ru:VALUE="##'Архив'##"/>
+						</entry>
+						<entry>
+							<id>cancel</id>
+							<name lang-ru:VALUE="##'Отменен'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Статусы участников'##"/>
+					<silent>0</silent>
+					<position>4</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>aAdditionalFields</name>
+					<type>list</type>
+					<entries>
+						<entry>
+							<id>response_received</id>
+							<name lang-ru:VALUE="##'Получено оценок обратной связи'##"/>
+						</entry>
+						<entry>
+							<id>response_requested</id>
+							<name lang-ru:VALUE="##'Запрошено оценок обратной связи'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Дополнительные поля'##"/>
+					<silent>0</silent>
+					<position>5</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<result_fields>
+				<result_field>
+					<id>i45ion</id>
+					<name>id</name>
+					<type>integer</type>
+					<title lang-ru:VALUE="##'ID участника проекта'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>ywg8qc</id>
+					<name>project_id</name>
+					<type>integer</type>
+					<title lang-ru:VALUE="##'ID проекта'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>bd2nea</id>
+					<name>project_name</name>
+					<type>string</type>
+					<title lang-ru:VALUE="##'Название проекта'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>77om67</id>
+					<name>state</name>
+					<type>string</type>
+					<title lang-ru:VALUE="##'Название статуса участника'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>fkjp9y</id>
+					<name>fullname</name>
+					<type>string</type>
+					<title lang-ru:VALUE="##'ФИО участника'##"/>
+					<desc lang-ru:VALUE="##'ФИО сотрудника, являющегося участником'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>g1bmqj</id>
+					<name>position_name</name>
+					<type>string</type>
+					<title lang-ru:VALUE="##'Название основной должности'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>66cipc</id>
+					<name>subdivision_name</name>
+					<type>string</type>
+					<title lang-ru:VALUE="##'Название подразделения основной должности'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>i14i8v</id>
+					<name>response_received</name>
+					<type>integer</type>
+					<title lang-ru:VALUE="##'Сколько раз был оценен'##"/>
+					<desc lang-ru:VALUE="##'сколько раз был оценен, число отзывов об участнике проекта в статусе Заполнен'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>wv4rlk</id>
+					<name>response_requested</name>
+					<type>integer</type>
+					<title lang-ru:VALUE="##'Запрошено оценок'##"/>
+					<desc lang-ru:VALUE="##'сколько запрошено оценок, число отзывов об участнике проекта в статусе Планируется. Считается, только есть в параметре aAdditionalFiels выборки включен одноименный пункт.'##"/>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+			</result_fields>
+			<api_ver>1</api_ver>
+			<api_search>
+				<has_fulltext>1</has_fulltext>
+			</api_search>
+			<ready_to_analytics>0</ready_to_analytics>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_collection>
+	</remote_collections>
+</data>

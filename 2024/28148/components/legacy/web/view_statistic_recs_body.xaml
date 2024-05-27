@@ -1,0 +1,34 @@
+﻿<SPXMLScreen>
+<%
+curView = ({
+	"id": "Statistic_recs",
+	"height": "",
+	"catalog_name": "statistic_rec",
+	"disp_link": "true",
+	"list_columns": "name",
+	"disp_filter": "false",
+	"disp_search": "false",
+	"disp_paging": "true",
+	"height": "",
+	"paging_size": 15
+});
+
+try
+{
+	isManager =(ArrayOptFirstElem(XQuery('for $elem in func_managers where $elem/person_id='+curUserID+' return $elem') )!=undefined || curUser.access.access_role == 'admin');
+}
+catch(ex)
+{
+	isManager=false
+}
+
+if (!isManager)
+{
+	curView.SetProperty( 'disp_array', 'true');
+	curView.SetProperty( 'array', Array());
+}
+
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</SPXMLScreen>

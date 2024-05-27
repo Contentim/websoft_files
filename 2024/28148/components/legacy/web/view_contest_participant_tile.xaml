@@ -1,0 +1,257 @@
+﻿<%
+// const_start
+sConstNoImage = "Изображение отсутствует";
+// const_end
+
+	var iParticipantId = Int(PARAMETERS.GetOptProperty("iParticipantId"));
+	var bShowAsDialog = (OptInt(PARAMETERS.GetOptProperty("bShowAsDialog"),0) == 1);
+	var teParticipant = OpenDoc( UrlFromDocID( iParticipantId )).TopElem;
+	var catPerson = teParticipant.person_id.ForeignElem;
+	var teContest = OpenDoc( UrlFromDocID( teParticipant.contest_id )).TopElem;
+	
+	var bUserIsJudge = teContest.judges.ChildByKeyExists(curUserID);
+	var bUserIsMainJudge = bUserIsJudge && teContest.judges.GetChildByKey(curUserID).main;
+	var bUserIsPreparation = teContest.responsibles.ChildByKeyExists(curUserID);
+	
+	var bCanVote = false;
+	var bCanSumUp = (teContest.status_id == "assessment") && ((teContest.estimation_id == "com_general" ) ? bUserIsMainJudge : bUserIsJudge);
+	var bShowResults = teContest.show_results || bUserIsPreparation || bUserIsJudge;
+	var bShowPlace = (teContest.status_id == "close" && bShowResults) || bCanSumUp;	
+	var bShowRating = (teContest.status_id == "close" && bShowResults) || (teContest.status_id == "process" && teContest.show_rating) || (teContest.status_id == "assessment" && bCanSumUp);
+	var bIsOwnWork = (teParticipant.person_id == curUserID);
+	
+	switch(teContest.estimation_id)
+	{
+		case "voting":
+			bCanVote = true;
+			break;
+		case "com_general":
+			bCanVote = bUserIsMainJudge;
+			break;
+		case "com_all":
+			bCanVote = bUserIsJudge;
+			break;
+	}
+	bCanVote = bCanVote && (teContest.status_id == "process");
+	
+	var sImageUrl = "";
+	if( ArrayOptFirstElem(teParticipant.files) != undefined )
+	{
+		for(fldFile in teParticipant.files)
+		{
+			if(fldFile.file_id.OptForeignElem != undefined && fldFile.file_id.ForeignElem.type=="img")
+			{
+				sImageUrl = "/download_file.html?file_id=" + fldFile.file_id + "&sid=" + tools_web.get_sum_sid( fldFile.file_id, Request.Session.sid );
+				break;
+			}
+		}
+	}
+%>
+
+<SPXMLScreen>
+
+<Action Name="Vote" Source="contest_participant_vote" Success="HIDE={ElementToHide};SHOW={ElementToShow};" Failure="ALERT={messageText}">
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+	<Param Name="iMark" Value=""/>
+	<Param Name="sComment" Value=""/>
+</Action>
+<Action Name="SavePlace" Source="contest_participant_save_place" Failure="ALERT={messageText}">		
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+	<Param Name="iPlace" Value=""/>
+</Action>
+<Dialog Name="GalleryItemDialog" Source="dlg_contest_item" Title="<%=tools_web.get_web_const( "prosmotr", curLngWeb )%>"  Width="auto" Height="" Close="" ShowHeader="0" Class="XAML-dialog-gallery">
+	<Param Name="iParticipantId" Value=""/>
+	<Param Name="pic_mode" Value=""/>
+	<Param Name="pic_width" Value=""/>
+</Dialog>
+	
+<Edit Name="ElementToHide" Hidden="1"/>
+<Edit Name="ElementToShow" Hidden="1"/>
+<Edit Name="DlgGalleryIndexHolder" Hidden="1"><%=PARAMETERS.GetOptProperty("pic_idx")%></Edit>
+<Edit Name="DlgGalleryShifter" Hidden="1">0</Edit>
+	
+		<Grid Class="XAML-grid-container XAML-grid-tile-horizontal1" Width="100%">
+			<GridColumns>
+				<GridColumn Width="50%" Align="Center"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<StackPanel  Orientation="Vertical" Class="XAML-stack-container" Width="100%">
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url(null, teParticipant.person_id, ({"doc_id": curDocID}))%>"><%=catPerson.fullname%>
+						<HTMLTip>
+							<![CDATA[
+								<p><b><%=tools.get_web_str("c_position")%>:</b> <%=catPerson.position_name%></p>
+								<p><b><%=tools.get_web_str("c_subd")%>:</b> <%=catPerson.position_parent_name%></p>
+								<p><b><%=tools.get_web_str("c_org")%>:</b> <%=catPerson.org_name%></p>
+							]]>
+						</HTMLTip>
+					</Link>
+<%
+				if(!bShowAsDialog)
+				{
+					if(sImageUrl != "")
+					{
+%>
+					<Image Source="<%=sImageUrl%>" Click="Set=GalleryItemDialog/iParticipantId,<%=iParticipantId%>;OPENDIALOG=GalleryItemDialog" Height="240"/>
+<%
+					}
+					else
+					{
+%>
+					<Label><![CDATA[<%=sConstNoImage%>]]></Label>	
+<%
+					}
+				}
+				else
+				{
+	%>
+					<Panel Name="DlgGalleryPanel" Source="contest_participant_gallery_tile" ShowHeader="0" Width="auto">
+						<Param Name="id" Value="<%=iParticipantId%>"/>
+						<Param Name="pic_idx" Value="{DlgGalleryIndexHolder}"/>
+						<Param Name="shift" Value="{DlgGalleryShifter}"/>
+					</Panel>
+					
+					<HTMLBox>
+						<%=HtmlEncode( tools_web.get_web_desc( teParticipant.desc, UrlFromDocID( iParticipantId ), teParticipant.Name + ".desc" ) )%>
+					</HTMLBox>
+	<%			
+				}
+				if(teParticipant.work_name.HasValue)
+				{
+	%>
+					<Label><%=teParticipant.work_name%></Label>
+	<%
+				}
+	%>
+				</StackPanel>
+				<StackPanel Orientation="Vertical" Width="100%" Class="XAML-stack-container">	
+	<%
+					if(bCanVote)
+					{
+	%>
+					<StackPanel Orientation="Vertical" Class="XAML-stack-container" Width="100%">
+	<%
+						if(!bIsOwnWork)
+						{
+							bVoted = teParticipant.marks.ChildByKeyExists(curUserID) || (teParticipant.general_mark.HasValue && teContest.estimation_id == "com_general");
+							if(!bVoted)
+							{
+	%>
+						<StackPanel Name="VotePanel<%=iParticipantId%>" Orientation="Vertical" Width="100%" Class="XAML-stack-container">
+		<%
+								if(teContest.mark_min.HasValue && teContest.mark_max.HasValue)
+								{
+									if( teContest.mark_max - teContest.mark_min > 5 )
+									{
+	%>
+							<ComboBox Name="Mark<%=iParticipantId%>">
+	<%
+										for( i=teContest.mark_min ; i <= teContest.mark_max; i++)
+										{
+	%>
+								<ComboBoxItem Value="<%=i%>"><%=i%></ComboBoxItem>
+	<%
+										}
+	%>
+							</ComboBox>
+	<%
+									}
+									else
+									{
+	%>
+							<StackPanel Orientation="Horizontal" Align="Center" Width="100%" Class="XAML-stack-container">
+	<%
+										for( i=teContest.mark_min ; i <= teContest.mark_max; i++)
+										{
+	%>
+								<RadioButton Name="Mark<%=iParticipantId%>" Value="<%=i%>"><%=i%></RadioButton>
+	<%
+										}			
+	%>				
+							</StackPanel>
+	<%
+									}
+								}
+	%>
+							<StackPanel Name="Comment<%=iParticipantId%>_container" Orientation="Vertical" Hidden="1" Class="XAML-stack-container">
+								<Label><%=tools.get_web_str("c_comment")%>:</Label>
+								<Edit Name="Comment<%=iParticipantId%>" Width="100%"></Edit>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Width="100%" Class="XAML-stack-container" Align="center">
+								<Button Class="XAML-button XAML-button-content icon-comment" Toggle="1" Click="SHOW=Comment<%=iParticipantId%>_container" Release="HIDE=Comment<%=iParticipantId%>_container"/>
+								<Button Class="XAML-button XAML-button-content" Click="SET=Vote/iObjectId,<%=iParticipantId%>;SET=Vote/iMark,{Mark<%=iParticipantId%>};SET=Vote/sComment,{Comment<%=iParticipantId%>};SET=ElementToHide,VotePanel<%=iParticipantId%>;SET=ElementToShow,VotedPanel<%=iParticipantId%>;ACTION=Vote"><%=tools_web.get_web_const( "vmeq_estimate", curLngWeb )%></Button>
+							</StackPanel>			
+						</StackPanel>
+						
+						<StackPanel Name="VotedPanel<%=iParticipantId%>" Hidden="1">
+							<Label><%=tools_web.get_web_const( "vashgolosprinyat", curLngWeb )%></Label>
+						</StackPanel>
+	<%
+							}
+							else
+							{
+	%>
+	
+						<StackPanel Orientation="Horizontal" Hidden="<%=( bVoted ? "0": "1" )%>" Class="XAML-stack-container">
+							<Label Class="XAML-grid-label-name" Width="120"><%=tools_web.get_web_const( "vashaocenka", curLngWeb )%>:</Label>
+							<Label><%=((teContest.estimation_id != "com_general") ? teParticipant.marks.GetChildByKey(curUserID).value : teParticipant.general_mark )%></Label>
+						</StackPanel>
+	<%
+							}
+						}
+						else
+						{
+	%>
+						<Label Align="Center"><%=tools_web.get_web_const( "nelzyaocenivats", curLngWeb )%></Label>
+	<%	
+						}
+	%>
+					</StackPanel>
+	<%
+					}
+					if(bShowRating && teParticipant.rating.HasValue)
+					{
+	%>
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+						<Label Class="XAML-grid-label-name" Width="120"><%=tools_web.get_web_const( "c_rating", curLngWeb )%>:</Label>
+						<Label><%=teParticipant.rating%></Label>
+					</StackPanel>
+	<%
+					}
+					if(bShowPlace)
+					{	
+	%>		
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+						<Label Class="XAML-grid-label-name" Width="120"><%=tools_web.get_web_const( "fixhm1zzbf", curLngWeb )%>:</Label>
+	<%
+						if(!bCanSumUp)
+						{
+	%>
+						<Label><%=teParticipant.place%></Label>
+	<%
+						}
+						else
+						{
+	%>
+						<StackPanel Name="PlacePanel<%=iParticipantId%>" Orientation="Vertical" Class="XAML-stack-container">
+							<Edit Name="Place<%=iParticipantId%>" Width="40"><%=teParticipant.place%></Edit>
+						</StackPanel>
+	<%		
+						}
+	%>	
+					</StackPanel>
+<%
+						if(bCanSumUp)
+						{
+%>
+							<Button Class="XAML-button XAML-button-content" Click="SET=SavePlace/iObjectId,<%=iParticipantId%>;SET=SavePlace/iPlace,{Place<%=iParticipantId%>};ACTION=SavePlace"><%=tools.get_web_str("c_save")%></Button>							
+	<%
+						}
+					}
+	%>	
+				</StackPanel>
+			</GridRow>
+		</Grid>
+</SPXMLScreen>

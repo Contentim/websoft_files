@@ -1,0 +1,274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" LOOP-EXPR="
+					_column='person_fullname';
+					switch( List.GetCurSortColumnIndex() )
+					{
+						case 0:
+							_column='person_fullname';
+							break;
+						case 1:
+								_column=( Ps.disp_person_list_staff ? 'person_list_staff' :'person_subdivision_name' );
+								break;
+						case 2:
+								_column='code';
+								break;
+								
+						case 3:
+								_column='person_position_name';
+								break;
+								
+						case 4:
+								_column='qualification_id';
+								break;
+								
+						case 5:
+								_column='assignment_date';
+								break;
+								
+						case 6:
+								_column='expiration_date';
+								break;
+								
+								
+						case 7:
+								_column='status';
+								break;
+					}
+					Ps.qualifications.Sort(_column ,List.GetCurSortDir());
+					return Ps.qualifications;
+					">
+			<ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.id ) )" IMAGE-URL="ico/collaborator.ico">
+					<COL WIDTH="30zr" COL-TITLE-EXPR="ms_tools.get_const('wrm4ebg7c9')" TITLE-EXPR="ListElem.person_fullname" ORDER="person_fullname"/>
+					<COL WIDTH="10%" COL-TITLE-EXPR="ms_tools.get_const('c_code')" TITLE-EXPR="ListElem.code" ORDER="code"/>
+					<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const('c_subd')" TITLE-EXPR="TopElem.disp_person_list_staff ? ListElem.person_list_staff : ListElem.person_subdivision_name" ORDER="TopElem.disp_person_list_staff ? person_list_staff :person_subdivision_name"/>	
+					<COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('c_position')" TITLE-EXPR="ListElem.person_position_name" ORDER="person_position_name"/>			
+					<COL WIDTH="30zr" COL-TITLE-EXPR="ms_tools.get_const('c_qualification')" ALIGN="center" TITLE-EXPR="ListElem.qualification_id.ForeignElem.name" ORDER="qualification_id"/>
+					<COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('c_qualif_ass_date')" TITLE-EXPR="StrDate( ListElem.assignment_date, false, false )" ORDER="assignment_date"/>
+					<COL WIDTH="16zr" COL-TITLE-EXPR="ms_tools.get_const('c_qualif_end_date')" TITLE-EXPR="StrDate( ListElem.expiration_date, false, false )" ORDER="expiration_date"/>
+					<COL WIDTH="12zr" COL-TITLE-EXPR="ms_tools.get_const('vppb_state')" TITLE-EXPR="ListElem.status.ForeignElem.name" ORDER="status" ERROR-TEXT=""/>
+			</ROW>	
+			<MENU>
+				<INHERIT TYPE="qualification_base"/>
+			</MENU>	
+		</LIST>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+			<WITH EXPR="
+				var curUser = tools.get_cur_user();
+				var _APPLICATION = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().code.Value )
+				return tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUser.id.Value, _APPLICATION ] );
+			" VAR="_role_level">
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" VERT-ALIGN="top" catalogExpr="'collaborator'" SOURCE="Ps.person_id" xqueryQualExpr="
+					if ( _role_level == 1 || _role_level == 5 )
+					{
+						var curUser = tools.get_cur_user();
+						return tools.call_code_library_method( 'libMain', 'get_subordinate_xquery_cond', [ curUser.id.Value, {bIsSubdivisionHier: true} ] );
+					}
+					else
+					{
+						return '';
+					}
+				"/>
+
+				<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+					if ( _role_level == 1 || _role_level == 5 )
+					{
+						var curUser = tools.get_cur_user();
+						var arrSubIDs =  ArraySelect(ArrayUnion(
+								ArrayExtract( tools.xquery( 'for $elem in func_managers where $elem/person_id = ' + curUser.id.Value + ' and $elem/catalog = \'subdivision\' return $elem' ), 'object_id' ),
+								ArrayExtract( tools.xquery( 'for $elem in func_managers where $elem/person_id = ' + curUser.id.Value + ' and $elem/catalog = \'position\' and $elem/parent_id != null() return $elem' ), 'parent_id' )
+							), 'OptInt(This) != undefined');
+
+						arrAllSubIDs = arrSubIDs;
+						for ( iSubIDElem in arrSubIDs )
+						{
+							arrAllSubIDs = ArrayUnion( arrAllSubIDs, ArrayExtract( tools.xquery( 'for $elem in subdivisions where IsHierChild( $elem/id, ' + iSubIDElem + ' ) order by $elem/Hier() return $elem' ), 'id' ) );
+						}						
+						return 'MatchSome($elem/id, (' + ArrayMerge(arrAllSubIDs, 'This', ',') + '))';
+					}
+					else
+					{
+						return '';
+					}
+				"/>
+
+				<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'group'" SOURCE="Ps.group_id" xqueryQualExpr="
+					if ( _role_level == 1 || _role_level == 5 )
+					{
+						var curUser = tools.get_cur_user();
+						var arrGroups =  tools.xquery( 'for $elem in func_managers where $elem/person_id = ' + curUser.id.Value + ' and $elem/catalog = \'group\' return $elem' );
+						
+						return 'MatchSome($elem/id, (' + ArrayMerge(arrGroups, 'This.object_id.Value', ',') + '))';
+					}
+					else
+					{
+						return '';
+					}
+				"/>
+				
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'qualification'" SOURCE="Ps.qualification_id" />
+
+				<LINE>
+					<DateLabel SOURCE="Ps.assignment_date_start_date" TITLE-EXPR="'Дата присвоения с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.assignment_date_finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.expiration_date_start_date" TITLE-EXPR="'Дата истечения с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.expiration_date_finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<ComboLabel SOURCE="Ps.status" ELEM="ListElem.name" TITLE-EXPR="ms_tools.get_const('n169la1uzx')" WIDTH="100%"/>
+
+				<CHECK SOURCE="Ps.disp_person_list_staff" TITLE-EXPR="ms_tools.get_const('ef2trjd7i5')"/>
+			</WITH>
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	arrSettings = [
+					{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+					{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+					{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+					{ 'name' : 'group_id', 'value' : TopElem.group_id.Value },
+					{ 'name' : 'qualification_id', 'value' : TopElem.qualification_id.Value },
+					{ 'name' : 'assignment_date_start_date', 'value' : TopElem.assignment_date_start_date.Value },
+					{ 'name' : 'assignment_date_finish_date', 'value' : TopElem.assignment_date_finish_date.Value },
+					{ 'name' : 'expiration_date_start_date', 'value' : TopElem.expiration_date_start_date.Value },
+					{ 'name' : 'expiration_date_finish_date', 'value' : TopElem.expiration_date_finish_date.Value },
+					{ 'name' : 'status', 'value' : TopElem.status.Value },
+					{ 'name' : 'disp_person_list_staff', 'value' : TopElem.disp_person_list_staff.Value },
+					{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value }
+				];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	curUser = tools.get_cur_user();
+
+	Ps.qualifications.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+	oParams.APPLICATION = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().code.Value );
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	oResult = task.CallMethod( 'tools_report', 'qualification_report', [ oParams ] );
+
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount( oResult.qualifications );
+
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+		function getReport(Ps, oResult){
+			for ( oPerson in oResult.qualifications )
+			{
+				if ( oPerson != undefined && oPerson != null )
+				{
+					_child = Ps.qualifications.AddChild();
+					_child.id = oPerson.id;
+					_child.person_id = oPerson.person_id;
+					_child.person_fullname = oPerson.person_fullname;
+					_child.code = oPerson.code;
+					_child.person_position_name = oPerson.person_position_name;
+					_child.person_subdivision_name = oPerson.person_subdivision_name;
+					_child.person_list_staff = oPerson.person_list_staff;
+					_child.qualification_id = oPerson.qualification_id;
+					_child.assignment_date = oPerson.assignment_date;
+					_child.expiration_date = oPerson.expiration_date;
+					_child.status = oPerson.status;
+				}
+			}
+			Ps.qualifications.Sort( Ps.sort_type_id, '+' );
+
+			return Ps;
+		}
+
+		if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+		{
+			if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', TopElem.count_arr), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+			{ // Выгрузка отчета в Excel
+
+				Screen.RunCommand( 'Export' );
+				Ps.qualifications.Clear();
+				TopElem.count_arr = null;
+				
+			} else { // Открыть отчет сейчас? Да
+				getReport(Ps, oResult);
+			}
+		} else {
+			getReport(Ps, oResult);
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/qualification_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

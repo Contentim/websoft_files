@@ -1,0 +1,152 @@
+﻿<SPXMLScreen>
+
+<%
+    sRislLevelIds = "";
+	
+    sSelectData = PARAMETERS.GetOptProperty( "select_data", "" );
+		
+	selected_data=(StrBegins(sSelectData,'[')?'':'[')+sSelectData+(StrEnds(sSelectData,']')?'':']')
+    oSelected = tools.read_object( selected_data );
+	
+   /*iSelectedObjId = Int(selectObject.id);
+	teSelectedObj = OpenDoc(UrlFromDocID(iSelectedObjId)).TopElem;
+	
+	if (ArrayOptFirstElem(teSelectedObj.risk_levels) != undefined)
+	{
+	   sRislLevelIds = ArrayExtract(teSelectedObj.risk_levels,"risk_level_id").join(";");  
+	}
+	
+	iCurRiskPerspectId = (teSelectedObj.risk_perspective_id != null ? teSelectedObj.risk_perspective_id : undefined);*/
+	
+	arrRiskPerspects = XQuery("for $elem in risk_perspectives return $elem");
+	
+	arrRiskLevels = XQuery("for $elem in risk_levels return $elem");
+		
+%>	
+   <Action Name="KeyPositionSetParamsAction" Source="talent_pool_key_position_set_params" Success="ALERT={!messageText};CLOSEDIALOG">
+	   <Param Name="KeyPositionId" Value=''/>
+		<Param Name="RiskPesrpId" Value=''/>
+		<Param Name="Context" Value="{CONTEXT}"/>
+	</Action> 
+	
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+		   <GridColumn Width="200"/>
+			<GridColumn />
+		</GridColumns>
+
+<%
+      fldOtherRiskLev = ArrayOptFirstElem(XQuery("for $elem in risk_levels where contains($elem/name," + XQueryLiteral(tools_web.get_web_const( '0umlpsvt2x', curLngWeb )) + ") or contains($elem/name," + XQueryLiteral(StrNonTitleCase( tools_web.get_web_const( '0umlpsvt2x', curLngWeb ) )) + ") return $elem"));
+		
+      for(elemSelect in oSelected)
+      {
+
+				iCurObjId = Int(elemSelect.id); 
+				sCurRiskLevelIds = Trim(elemSelect.risk_level_ids);
+				
+				teCurObj = OpenDoc(UrlFromDocID(iCurObjId)).TopElem;
+				iCurRiskPerspectId = (teCurObj.risk_perspective_id != null ? teCurObj.risk_perspective_id : undefined);
+				
+				//bHasOther = CONTEXT.GetOptProperty( 'kd_' + iCurObjId + '_risk_lev_' + fldOtherRiskLev.id,null);
+				//bHasOther = (bHasOther != null ? (bHasOther != 'true' ? '' : 'true') : '');
+				bHasOther = false;
+%>	
+				<GridRow>
+					<StackPanel Orientation="Horizontal">
+						<Edit Name="KeyPosit_<%=iCurObjId%>" Hidden="1"/>
+						<Label Class="XAML-info-grid-title-column" Width="200"><%=teCurObj.position_name%></Label>
+					</StackPanel>	
+					
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn Width="150"/>
+							<GridColumn />
+						</GridColumns>
+						
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(tools_web.get_web_const( 'faktoryriskakd', curLngWeb ))%></Label>
+							
+							<StackPanel Orientation="Vertical">
+								<Grid>
+									<GridColumns>
+										<GridColumn Width="20"/>
+										<GridColumn/>
+									</GridColumns> 		
+									
+					<%
+									for(catRiskLevel in arrRiskLevels)
+									{
+										sChecked = "";
+										//sChange = "Value='true'";
+										sChange = "";
+										sValue = "";
+										sCommentOther ="";
+										
+										if (sCurRiskLevelIds != "" && StrContains(sCurRiskLevelIds,catRiskLevel.id) == true)
+										{
+											sChecked = "Checked='True'"; 
+										} 	
+										
+										if (fldOtherRiskLev != undefined && fldOtherRiskLev.id == catRiskLevel.id)
+										{
+											bHasOther=(StrContains(sCurRiskLevelIds,catRiskLevel.id) == true);
+											sChange = "Change=\"TOGGLE=kd_" + iCurObjId + "_rl_other_panel;\""; 
+											sCommentOther = (teCurObj.custom_elems.ObtainChildByKey("comment_other").value != null ? teCurObj.custom_elems.ObtainChildByKey("comment_other").value : "");
+										}
+															
+					%>		 
+										<GridRow>
+											<CheckBox Name="kd_<%=iCurObjId%>_risk_lev_<%=catRiskLevel.id%>" Value="true" <%=sChecked%> <%=sChange%>></CheckBox>
+											<Label><%=tools_web.get_cur_lng_name( catRiskLevel.name, curLng.short_id )%></Label>
+										</GridRow>
+					<%
+									}
+					%>
+								</Grid>	
+								<StackPanel Name="kd_<%=iCurObjId%>_rl_other_panel" Hidden="<%=!bHasOther%>">
+									<Edit Name="kd_<%=iCurObjId%>_rl_other_comment" Width="350"><%=sCommentOther%></Edit>	
+								</StackPanel>								
+							</StackPanel>	 								
+						</GridRow>
+						
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column" Width="150"><%=HtmlEncode(tools_web.get_web_const( 'urovenriskakd', curLngWeb ))%></Label>
+							<ComboBox Name="kd_<%=iCurObjId%>_risk_perspective_id" Width="200">
+				<%
+								for ( catRiskPersp in arrRiskPerspects )
+								{
+									sSelected = ""; 
+									if (catRiskPersp.id == iCurRiskPerspectId)
+									{
+										sSelected = "Selected='true'"; 
+									}					
+				%>
+									<ComboBoxItem Value="<%=catRiskPersp.id%>" <%=sSelected%>><%=tools_web.get_cur_lng_name( catRiskPersp.name, curLng.short_id )%></ComboBoxItem>
+				<%
+								}
+				%>
+							</ComboBox>
+						</GridRow>	
+					</Grid> 
+									
+				</GridRow>	
+<%
+      }
+%>				
+   </Grid>
+	
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=KeyPositionSetParamsAction">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>	
+

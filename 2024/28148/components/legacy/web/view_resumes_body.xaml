@@ -1,0 +1,82 @@
+﻿<SPXMLScreen>
+
+<%
+
+try
+{
+	RedirectUrl = _url;
+}
+catch(ex)
+{
+	RedirectUrl = tools_web.get_mode_clean_url( 'resume', null, { doc_id : curDocID } );
+}
+
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+
+strTabList=String( tools_web.get_web_param( curParams, "resumes.tab_list", "active;archive", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'ResumesBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+sCoList=String( tools_web.get_web_param( curParams, "resumes.view_col_list", 'creation_date;modification_date;name;profession_area;education', true ) )
+%>
+<TabControl Name="ResumesBodyTab" ActiveTab="<%=paramListViewTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{		
+	switch(sTabListParam)
+	{
+		case "active":
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'aktualnyerezyum', curLngWeb ))%>">
+<%
+		curView = {
+				"id": "ResumeActive",
+				"height": "400",
+				"catalog_name": "resume",
+				"disp_search": "false",
+				"disp_filter": "false",
+				"sort_direct": "-",
+				"list_columns": sCoList,
+				"disp_array": "false",
+				"link_action": ( 'OPENURL=' + tools_web.get_mode_clean_url( 'resume', null, { resume_id : '%7Bid%7D', doc_id : curDocID } ) )
+			};
+			curView.SetProperty("xquery_qual","($elem/person_id="+curUserID+" or $elem/creator_person_id = "+curUserID+") and $elem/is_archive=false()")
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );		
+		
+%>
+			<Button Class="XAML-button XAML-button-new" Click="OPENURL=<%=RedirectUrl%>"><%=tools_web.get_web_str('vrb_create')%></Button>
+	</TabItem>
+<%
+			break;
+		}
+		case "archive":
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vmkpb_archive', curLngWeb ))%>">
+<%
+		curView = {
+			"id": "ResumeArchive",
+			"height": "400",
+			"catalog_name": "resume",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"list_columns": sCoList,
+			"disp_array": "false",
+			"link_action": ( 'OPENURL=' + tools_web.get_mode_clean_url( 'resume', null, { resume_id : '%7Bid%7D', doc_id : curDocID } ) )
+		};
+		curView.SetProperty("xquery_qual","($elem/person_id="+curUserID+" or $elem/creator_person_id = "+curUserID+") and $elem/is_archive=true()")
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );		
+%>
+	</TabItem>
+<%
+			break;		
+		}
+	}
+}
+%>
+</TabControl>
+</SPXMLScreen>

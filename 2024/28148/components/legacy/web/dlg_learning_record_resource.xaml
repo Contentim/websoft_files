@@ -1,0 +1,64 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "object_id" ) );
+teRecord = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+sObjectImageUrl = tools_web.get_object_source_url( 'resource', iObjectID );
+bCanEdit = tools_web.is_true( PARAMETERS.GetOptProperty( "can_edit" ) );
+sComment = PARAMETERS.GetOptProperty( "comment" );
+%>
+	<Grid Width="99%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn/>
+		</GridColumns>	
+		<GridRow>
+			<Image Class="XAML-image-tile-image" Source="<%=XmlAttrEncode( sObjectImageUrl )%>" Width="100%"/>
+		</GridRow>
+		<GridRow>
+			<StackPanel Class="XAML-stack-container">
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_comment', curLngWeb )%>:</Label>
+<%
+if( bCanEdit )
+{
+%>
+				<EditBox Name="sDialogComment" Width="100%" Height="60"><%=XmlAttrEncode( sComment )%></EditBox>
+<%
+}
+else
+{
+%>
+				<Label Class="XAML-info-grid-title-column"><%=XmlAttrEncode( sComment )%></Label>
+<%
+}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+	
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+<%
+if( bCanEdit )
+{
+%>
+			<GridColumn Width="100"/>
+<%
+}
+%>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+<%
+if( bCanEdit )
+{
+%>
+			<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+<%
+}
+%>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

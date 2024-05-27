@@ -1,0 +1,28 @@
+﻿<SPXMLScreen>
+	<StackPanel Align="right">
+		<Link Click="CLOSEDIALOG" Class="icon-close"></Link>
+	</StackPanel>
+	<Edit Name="DlgGalleryIndexHolder" Hidden="1"><%=PARAMETERS.GetOptProperty("pic_idx")%></Edit>
+	<Edit Name="DlgGalleryShifter" Hidden="1">0</Edit>
+	<Grid>
+		<GridColumns>
+			<GridColumn Width="30" Align="center"/>
+			<GridColumn/>
+			<GridColumn Width="30" Align="center"/>
+		</GridColumns>
+		<GridRow>
+			<Link Click="SET=DlgGalleryShifter,-1;UPDATE=DlgGalleryPanel" Class="icon-angle-left XAML-link-prev-image"></Link>
+			<!--<Image Source="icons/32png/32_prev_1.png" Click="SET=DlgGalleryShifter,-1;UPDATE=DlgGalleryPanel"/>-->
+			<Panel Name="DlgGalleryPanel" Source="gallery_dialog_panel" ShowHeader="0" Width="auto">
+				<Param Name="pic_idx" Value="{DlgGalleryIndexHolder}"/>
+				<Param Name="shift" Value="{DlgGalleryShifter}"/>
+				<Param Name="repositorium_id" Value="<%=PARAMETERS.GetOptProperty("repositorium_id")%>"/>
+				<Param Name="source" Value="<%=PARAMETERS.GetOptProperty("source")%>"/>
+				<Param Name="pic_mode" Value="<%=PARAMETERS.GetOptProperty("pic_mode")%>"/>
+			</Panel>
+			
+			<Link Click="SET=DlgGalleryShifter,1;UPDATE=DlgGalleryPanel" Class="icon-angle-right XAML-link-next-image"></Link>
+			<!--<Image Source="/icons/32png/32_next_1.png" Click="SET=DlgGalleryShifter,1;UPDATE=DlgGalleryPanel"/>-->
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

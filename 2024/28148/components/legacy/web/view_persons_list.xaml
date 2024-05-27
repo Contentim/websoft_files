@@ -1,0 +1,158 @@
+<%
+try
+{
+	curPersonsList;
+}
+catch ( err )
+{
+	curPersonsList = new Object;
+}
+sID_curPersonsList = curPersonsList.GetOptProperty( 'id', '' );
+sPersonsType_curPersonsList = curPersonsList.GetOptProperty( 'type', '' );
+sPersonsSelected_curPersonsList = tools_web.is_true( curPersonsList.GetOptProperty( 'selected' ) );
+arrPersons_curPersonsList = curPersonsList.GetOptProperty( 'persons', [] );
+iMaxPersonsInRow_curPersonsList = ( curDevice.disp_type == "" ? OptInt( curPersonsList.GetOptProperty( 'max_columns' ), 3 ) : 2 );
+sPrimaryKey_curPersonsList = curPersonsList.GetOptProperty( 'primary_key', '' );
+curPersonsList_arrCatalogFields = curPersonsList.GetOptProperty( 'catalog_fields', [
+	{ "field_name": "position_name" }
+] );
+arrArrayFields_curPersonsList = curPersonsList.GetOptProperty( 'array_fields', [] );
+
+iCurPersonssCounter_curPersonsList = 0;
+iAllPersonsCounter_curPersonsList = 0;
+
+sTitle_curPersonsList = "";
+arrButtons_curPersonsList = curPersonsList.GetOptProperty( "buttons", [] );
+if ( sPersonsType_curPersonsList == "func_managers" && sPersonsSelected_curPersonsList )
+{
+	arrPersons_curPersonsList = curObject.func_managers;
+	sTitle_curPersonsList = tools_web.get_web_const( 'weg16bxma7', curLngWeb );
+	arrButtons_curPersonsList.push( { "title": tools_web.get_web_const( 'veb_b7', curLngWeb ), "click": ( "OPENDIALOG=SelectDialogGroupManagers" + sID_curPersonsList ) } );
+%>
+<Dialog Name="SelectDialogGroupManagers<%=sID_curPersonsList%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="<%=curPersonsList.GetOptProperty( 'dialog_close_action', '' )%>" Height="90%">
+	<Param Name="catalog_name" Value="collaborator"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="selected_object_ids" Value="<%=ArrayMerge( curObject.func_managers, 'PrimaryKey', ';' )%>"/>
+	<Param Name="typein" Value="true"/>
+</Dialog>
+<%
+}
+sTitle_curPersonsList = curPersonsList.GetOptProperty( "title", sTitle_curPersonsList );
+if ( ArrayCount( arrButtons_curPersonsList ) == 0 )
+{
+	if ( sTitle_curPersonsList != '' )
+	{
+%>
+	<Label Class="XAML-label-header-4"><![CDATA[<%=sTitle_curPersonsList%>:]]></Label>
+<%
+	}
+}
+else
+{
+	curFilter = {
+		'id': sID_curPersonsList,
+		'title': sTitle_curPersonsList,
+		'disp_selector': false,
+		'disp_search': false,
+		'buttons': arrButtons_curPersonsList
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+}
+%>
+<Grid Class="XAML-grid-photos-container XAML-grid-tile-view" Adapt="true">
+	<GridColumns>
+<%
+	for ( x=0; x < iMaxPersonsInRow_curPersonsList; x++ )
+	{
+%>
+		<GridColumn Width="<%=Int( 100 / iMaxPersonsInRow_curPersonsList )%>%"/>
+<%
+	}
+%>
+	</GridColumns>
+	<GridRow>
+<%
+	iCount = ArrayCount( arrPersons_curPersonsList );
+	for ( oPersonElem in arrPersons_curPersonsList )
+	{
+		if ( sPrimaryKey_curPersonsList == '' )
+		{
+			oPerson = oPersonElem.PrimaryKey.OptForeignElem;
+			iPersonID = oPerson.PrimaryKey.Value;
+		}
+		else
+		{
+			oPerson = oPersonElem.Child( sPrimaryKey_curPersonsList ).OptForeignElem;
+			iPersonID = oPersonElem.Child( sPrimaryKey_curPersonsList ).Value;
+		}
+		if ( oPerson != undefined )
+		{
+			sPersonName = oPerson.fullname;
+			sPersonImageUrl = tools_web.get_object_source_url( "person", iPersonID, "200x200" );
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-person-tile">
+			<StackPanel Class="XAML-stack-tile-image-container">
+				<Image Source="pics/1blank.gif" Class="bg-cover XAML-person-tile-image" Height="216">
+					<BackgroundImage Source="<%=XmlAttrEncode( sPersonImageUrl )%>"/>
+				</Image>
+			</StackPanel>
+			<StackPanel Class="XAML-stack-tile-title-container">
+				<Link Class="XAML-link-tile-title" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, iPersonID, { doc_id: curDocID } )%>"><![CDATA[<%=sPersonName%>]]></Link>
+			</StackPanel>
+<%
+			for ( curPersonsList_sFieldNameElem in curPersonsList_arrCatalogFields )
+			{
+				curPersonsList_fldField = oPerson.Child( curPersonsList_sFieldNameElem.field_name );
+				if ( curPersonsList_fldField.ForeignArrayCodeStr == '' )
+				{
+					curPersonsList_sValue = curPersonsList_fldField.Value;
+				}
+				else
+				{
+					curPersonsList_sValue = curPersonsList_fldField.ForeignElem.name.Value;
+				}
+%>
+				<Label Class="XAML-label-tile-desc"><![CDATA[<%=curPersonsList_sValue%>]]></Label>
+<%
+			}
+			for ( curPersonsList_sFieldNameElem in arrArrayFields_curPersonsList )
+			{
+				curPersonsList_fldField = oPersonElem.Child( curPersonsList_sFieldNameElem.field_name );
+				if ( curPersonsList_fldField.ForeignArrayCodeStr == '' )
+				{
+					curPersonsList_sValue = curPersonsList_fldField.Value;
+				}
+				else
+				{
+					curPersonsList_sValue = curPersonsList_fldField.ForeignElem.name.Value;
+				}
+%>
+				<Label Class="XAML-label-tile-desc"><![CDATA[<%=curPersonsList_sValue%>]]></Label>
+<%
+			}
+%>
+		</StackPanel>
+<%
+		}
+		iCurPersonssCounter_curPersonsList++;
+		iAllPersonsCounter_curPersonsList++;
+		if ( iCurPersonssCounter_curPersonsList == iMaxPersonsInRow_curPersonsList && iAllPersonsCounter_curPersonsList != iCount )
+		{
+			iCurPersonssCounter_curPersonsList = 0;
+%>
+	</GridRow>
+	<GridRow>
+<%
+		}
+
+	}
+	while ( iCurPersonssCounter_curPersonsList != iMaxPersonsInRow_curPersonsList )
+	{
+%>
+	<Label/>
+<%
+		iCurPersonssCounter_curPersonsList++;
+	}
+%>
+	</GridRow>
+</Grid>

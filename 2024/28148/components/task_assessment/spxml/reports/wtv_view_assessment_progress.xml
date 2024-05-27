@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<wtv_view_assessment_progress>
+
+	<!-- MAIN -->
+		<report_name TYPE="string" DEFAULT="wtv_view_assessment_progress"/>
+		<is_minimized TYPE="bool" DEFAULT="false"/>
+		<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+		<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+		<hier_show TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<disp_tree_selector TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<!-- Объектов в списке -->
+		<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+		<!-- Выбрано объектов -->
+		<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+		<!-- Сотрудники -->
+		<persons>
+			<person MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+				<person_fullname TYPE="string"/>
+				<person_position_name TYPE="string"/>
+				<person_subdivision_name TYPE="string"/>
+				<person_org_name TYPE="string"/>
+				<eval_task_count TYPE="integer"/>
+				<current_mark TYPE="real"/>
+			</person>
+		</persons>
+
+	
+
+	<!-- FILTERS -->
+		<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+		<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+		<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<assessment_appraise_id TYPE="integer" FOREIGN-ARRAY="assessment_appraises"/>
+
+
+	<set_sel_action PROPERTY="1" PARAM="List" PARAM="Screen" EXPR="
+		TopElem = Child(0).Parent;
+		iSelrowsCount = ArrayCount( List.SelRows );
+		TopElem.count_sel = iSelrowsCount;
+		Screen.FindItem( 'StatusPanel' ).Update();
+	"/>
+
+</wtv_view_assessment_progress>
+
+<OnInit PROPERTY="1" EXPR="
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>ouqhv5nab8</id>
+		<create_date>2024-02-09T12:51:03+00:00</create_date>
+		<server_version>2023.2.836 (2024-02-06)</server_version>
+	</basic>
+	<server_agents>
+		<server_agent>
+			<id>0x65C2269F7E469202</id>
+			<code>websoft_continuous_feedback_processing_requests</code>
+			<name>Обрабатывать запросы обратной связи</name>
+			<trigger_type>daily</trigger_type>
+			<period>1</period>
+			<start_time>01:00</start_time>
+			<finish_time>24:00</finish_time>
+			<all_day>true</all_day>
+			<start_day>1</start_day>
+			<start_week_day>1</start_week_day>
+			<last_run_date>2024-02-09T12:41:04Z</last_run_date>
+			<type>code</type>
+			<wvars>
+				<wvar>
+					<name>remind_requests</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Напоминать о сроке запросов обратной связи</description>
+					<silent>false</silent>
+					<position>1</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>remind_request_type</name>
+					<value>6992802252619773800</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомлений с напоминанием</description>
+					<silent>false</silent>
+					<position>2</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>delete_request</name>
+					<value>cancel</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>nothing</id>
+							<name>Ничего не делать</name>
+						</entry>
+						<entry>
+							<id>cancel</id>
+							<name>Отменять</name>
+						</entry>
+						<entry>
+							<id>delete</id>
+							<name>Удалять</name>
+						</entry>
+					</entries>
+					<description>Что делать с запросами с истекшим сроком</description>
+					<silent>false</silent>
+					<position>3</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>delete_notify</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять инициатор об отмене запроса</description>
+					<silent>false</silent>
+					<position>4</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>remind_request_delete_type</name>
+					<value>6992803538906266396</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<silent>false</silent>
+					<position>5</position>
+					<required>false</required>
+				</wvar>
+			</wvars>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/agents/websoft_continuous_feedback_processing_requests.bs</code_url>
+			</exec_code>
+			<run_code_url>x-local://components/continuous_feedback/spxml/agents/websoft_continuous_feedback_processing_requests.bs</run_code_url>
+			<is_std>false</is_std>
+			<changed>false</changed>
+		</server_agent>
+	</server_agents>
+	<notifications>
+		<notification>
+			<id>0x610B6DC4E89A3B1C</id>
+			<code>continuous_feedback_delete_notify</code>
+			<name>Уведомление об отмене запроса на обратную связь</name>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>6992803414063069331</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>true</active>
+			<is_std>false</is_std>
+			<changed>false</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0.0E0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+		<notification>
+			<id>0x610B6C996BF3F768</id>
+			<code>continuous_feedback_remind</code>
+			<name>Напоминание о необходимости заполнить обратную связь</name>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>6992802554912268160</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>true</active>
+			<is_std>false</is_std>
+			<changed>false</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0.0E0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+	<notification_templates>
+		<notification_template>
+			<id>0x610B6DA7D75E3893</id>
+			<code>continuous_feedback_delete_notify</code>
+			<name>Уведомление об отмене запроса на обратную связь</name>
+			<subject>Уведомление об отмене запроса на обратную связь</subject>
+			<body>&lt;%&#10;&#10;// owner_person_id - адресат&#10;// person_id - респондент. &#10;// object_id - сотрудник&#10;&#10;teAddresseeObject = OpenDoc( UrlFromDocID( OptInt( objDoc.owner_person_id.Value ) ) ).TopElem;&#10;sAddresseeSex = (teAddresseeObject.sex.HasValue &amp;&amp; teAddresseeObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;teRespondentObject = OpenDoc( UrlFromDocID( OptInt( objDoc.person_id.Value ) ) ).TopElem;&#10;sRespondentSex = (teRespondentObject.sex.HasValue &amp;&amp; teRespondentObject.sex == "w" ) ? "ую" : "ого";&#10;&#10;teCollObject = OpenDoc( UrlFromDocID( OptInt( objDoc.object_id.Value ) ) ).TopElem;&#10;sCollSex = (teCollObject.sex.HasValue &amp;&amp; teCollObject.sex == "w" ) ? "ла" : "л";&#10;&#10;%&gt;&#10;Уважаем&lt;%=sAddresseeSex%&gt;, &lt;%=teAddresseeObject.fullname%&gt;!&#10;&#10;&lt;%=teRespondentObject.fullname%&gt;, котор&lt;%=sRespondentSex%&gt; Вы просили оставить обратную связь работнику &lt;%=objDoc.object_name%&gt;, не заполни&lt;%=sCollSex%&gt; отзыв в срок. Запрос был отменен.</body>
+			<body_type>plane</body_type>
+			<is_std>false</is_std>
+			<changed>false</changed>
+		</notification_template>
+		<notification_template>
+			<id>0x610B6CDFCDFD5F80</id>
+			<code>continuous_feedback_remind</code>
+			<name>Напоминание о необходимости заполнить обратную связь</name>
+			<subject>Напоминание о необходимости заполнить обратную связь</subject>
+			<body>&lt;%&#10;&#10;// person_id - адресат&#10;// object_id - сотрудник&#10;// owner_person_id - инициатор&#10;&#10;teAddresseeObject = OpenDoc( UrlFromDocID( OptInt( objDoc.person_id.Value ) ) ).TopElem;&#10;&#10;sAddresseeSex = (teAddresseeObject.sex.HasValue &amp;&amp; teAddresseeObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;teInitiatorObject = OpenDoc( UrlFromDocID( OptInt( objDoc.owner_person_id.Value ) ) ).TopElem;&#10;&#10;sInitiatorSex = (teInitiatorObject.sex.HasValue &amp;&amp; teInitiatorObject.sex == "w" ) ? "ла" : "л";&#10;&#10;%&gt;&#10;&#10;Уважаем&lt;%=sAddresseeSex%&gt;, &lt;%=objDoc.person_fullname%&gt;!&#10;&#10;Напоминаем, что &lt;%=teInitiatorObject.fullname%&gt; проси&lt;%=sInitiatorSex%&gt; оставить Вас обратную связь о работнике &lt;%=objDoc.object_name%&gt; до &lt;%=StrDate(objDoc.plan_date, true, false)%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "/continuous_feedback" )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "/continuous_feedback" )%&gt;&lt;/a&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>false</is_std>
+			<changed>false</changed>
+		</notification_template>
+	</notification_templates>
+</data>

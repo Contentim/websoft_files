@@ -1,0 +1,78 @@
+﻿<SPXMLScreen>
+<%
+	iMaterialId = Int(PARAMETERS.GetProperty("iMaterialId"));
+	teMaterial = OpenDoc( UrlFromDocID( iMaterialId )).TopElem;
+
+	bAutoplayVideo = true;
+	sMediaServerUrl = "";
+	catWebinarSystem = ArrayOptFirstElem(tools.xquery("for $elem in webinar_systems where $elem/code='vclass' return $elem/id,$elem/__data"));
+	if(catWebinarSystem != undefined)
+	{
+		teWebinarSystem = OpenDoc(UrlFromDocID(catWebinarSystem.id)).TopElem;
+		sMediaServerUrl = teWebinarSystem.get_setting('media_library_host').value;
+	}
+	sFileUrl = teMaterial.file_name;
+
+	sLinkClickAction = "OPENURL=" + tools_web.get_mode_clean_url("library_material", iMaterialId, ({"doc_id": curDocID}));
+
+	catViewing = ArrayOptFirstElem(tools.xquery( "for $elem in library_material_viewings where $elem/person_id = " + curUserID + " and $elem/material_id=" + iMaterialId + " return $elem/id,$elem/__data" ));
+	if(catViewing == undefined)
+	{
+		docViewing = OpenNewDoc( "x-local://wtv/wtv_library_material_viewing.xmd" );
+		docViewing.BindToDb( DefaultDb );
+		docViewing.TopElem.state_id = "finished";
+		docViewing.TopElem.material_id = iMaterialId;
+		docViewing.TopElem.person_id = curUserID;
+		docViewing.TopElem.start_viewing_date = CurDate;
+		docViewing.TopElem.last_viewing_date = CurDate;
+		docViewing.TopElem.finish_viewing_date = CurDate;
+		tools.common_filling( 'collaborator', docViewing.TopElem, curUserID);
+		docViewing.Save();
+	}
+	else
+	{
+		docViewing = OpenDoc(UrlFromDocID(catViewing.id));
+		if(catViewing.state_id != "finished")
+		{
+			docViewing.TopElem.state_id = "finished";
+			docViewing.TopElem.finish_viewing_date = CurDate;
+		}
+		docViewing.TopElem.last_viewing_date = CurDate;
+		docViewing.Save();
+	}
+%>
+	<StackPanel Orientation="Vertical" Align="Center" Class="XAML-stack-container">
+		<HTMLBox Height="400">
+				<![CDATA[
+				<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="400" id="_VideoPlayer">
+					<param name="movie" value="videoplayer/_VideoPlayer.swf" />
+					<param name="quality" value="high" />
+					<param name="bgcolor" value="#ffffff" />
+					<param name="allowScriptAccess" value="always" />
+					<param name="allowFullScreenInteractive" value="true" />
+					<param name='flashVars' value='server=<%=sMediaServerUrl%>&filename=<%=sFileUrl%>.flv&quality=<%=teMaterial.online_video_quality%>&autoplay=<%=bAutoplayVideo%>'/>
+					<embed src="videoplayer/_VideoPlayer.swf" quality="high" bgcolor="#ffffff"
+						width="100%" height="400" name="_VideoPlayer" align="middle"
+						play="true"
+						loop="false"
+						allowScriptAccess="always"
+						allowFullScreenInteractive="true"
+						type="application/x-shockwave-flash"
+						flashVars="server=<%=sMediaServerUrl%>&filename=<%=sFileUrl%>.flv&quality=<%=teMaterial.online_video_quality%>&autoplay=<%=bAutoplayVideo%>">
+					</embed>
+				</object>
+				]]>
+		</HTMLBox>
+		<Link Class="XAML-link-center" Click="<%=sLinkClickAction%>"><%=HtmlEncode(tools_web.get_cur_lng_name( teMaterial.name, curLng.short_id ))%></Link>
+		<%
+			if(teMaterial.description.HasValue)
+			{
+		%>
+			<HTMLBox>
+				<%=HtmlEncode( tools_web.get_web_desc( teMaterial.description, UrlFromDocID( iMaterialId ), teMaterial.Name + ".description" ) )%>
+			</HTMLBox>
+		<%
+			}
+		%>
+	</StackPanel>
+</SPXMLScreen>

@@ -1,0 +1,729 @@
+﻿<%
+// const_start
+
+sConstAllStatuses = tools_web.get_web_const( "vsestatusy", curLngWeb );
+sConstAllPlaces = tools_web.get_web_const( "vseraspolozheniya", curLngWeb );
+sConstAllOrgForms = tools_web.get_web_const( "vseorganizacio", curLngWeb );
+sConstAllEventForms = "Все формы проведения";
+sConstAllEduOrgs = tools_web.get_web_const( "vseobuchayushieor", curLngWeb );
+sConstAllLectors = tools_web.get_web_const( "vseprepodavate", curLngWeb );
+sConstAllEduPrograms = tools_web.get_web_const( "vsenaboryprogr", curLngWeb );
+sConstFilters = tools_web.get_web_const( "c_filter", curLngWeb );
+sConstTiles = tools_web.get_web_const( "plitki", curLngWeb );
+sConstAllMonths = "Все месяцы";
+sConstMysSubEvents = "Подчиненных";
+// const_end
+
+bIsMobile = (curDevice.disp_type == "mobile");
+
+arrTypes = new Array();
+for(fldEventType in event_types)
+{
+	arrTypes.push(fldEventType.code);
+}
+
+
+sTitle = tools_web.get_web_param( curParams,"event_calendar.title", "", true );
+sEventTypesListParam = tools_web.get_web_param( curParams,"event_calendar.event_type_codes", "", true );
+if(IsEmptyValue(sEventTypesListParam))
+{
+	sEventTypesListParam = tools_web.get_web_param( curParams,"event_calendar.event_types", arrTypes.join(","), true );
+	sEventTypesListParam = StrReplace(sEventTypesListParam, ";", ",");
+}
+
+bUseTimezone = tools_web.is_true( tools_web.get_web_param( curParams,"event_calendar.use_timezone", false, true ) );
+
+sProjectColor = tools_web.get_web_param( curParams,"status.project", "rgba(250,250,120,0.7)", true );
+sPlanColor = tools_web.get_web_param( curParams,"status.plan", "rgba(150,150,250,0.7)", true );
+sActiveColor = tools_web.get_web_param( curParams,"status.process", "rgba(150,250,150,0.7)", true );
+sCloseColor = tools_web.get_web_param( curParams,"status.finished", "rgba(150,150,250,0.7)", true );
+sCancelColor = tools_web.get_web_param( curParams,"status.cancel", "rgba(150, 150, 150, 0.7)", true );	
+
+arrStatusListParam = String( tools_web.get_web_param( curParams,"event_calendar.use_filters.use_status_filter.statuses", "plan;active;close;cancel", true ) ).split( ";" );
+bShowCalendarExcelExportButton = tools_web.get_web_param( curParams, "event_calendar.show_calendar.allow_calendar_excel_export", "1", true ) == "1";
+bShowEducationalMethodName = tools_web.get_web_param( curParams, "event_calendar_body.show_education_method_name", "1", true ) == "1";
+bShowDescInTooltip = tools_web.get_web_param( curParams, "event_calendar.show_desc_in_calendar_item_tooltip", "1", true ) == "1";
+bShowSearch = tools_web.is_true(tools_web.get_web_param( curParams, "event_calendar.show_search", "0", true ));	
+
+sStatuses = tools_web.get_web_param( curParams, "event_calendar.use_filters.use_status_filter.statuses", "plan;active;close;cancel", true );
+
+bUseFilters = tools_web.get_web_param( curParams, "event_calendar.use_filters", "0", true ) == "1";
+bFiltersPanelExpanded = tools_web.get_web_param( curParams, "event_calendar.use_filters.show_expanded", "0", true ) == "1";	
+bShowOnlySamePlace = tools_web.get_web_param( curParams, "event_calendar.show_same_place", "0", true ) == "1";	
+bShowFiltersPanel = tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.use_filters.show_panel_filter", "1", true ) );
+sSortDirection = tools_web.get_web_param( curParams,"event_calendar_body.sort_events.direction", "DESC", true );
+sSortField = tools_web.get_web_param( curParams,"event_calendar_body.sort_events.field", "start_date", true );
+bCheckHirePlace = tools_web.is_true( tools_web.get_web_param( curParams,"event_calendar_body.check_hire_place", false, true ) );
+
+bShowList = tools_web.is_true(tools_web.get_web_param( curParams, "event_calendar.show_list", "1", true ));
+bShowCalendar = tools_web.is_true(tools_web.get_web_param( curParams, "event_calendar.show_calendar", "1", true )) && !bIsMobile;
+bShowTiles = tools_web.is_true(tools_web.get_web_param( curParams, "event_calendar.show_tiles", "1", true ));
+iListItemsCount = OptInt(tools_web.get_web_param( curParams, "event_calendar.show_list.tiles_count", 4, true ));
+sListColumns = String( tools_web.get_web_param( curParams, "event_calendar.show_list.column_list", 4, true ) );
+
+sCalendarDefaultViewParam = tools_web.get_web_param( curParams, "event_calendar.show_calendar.default_view", "month", true );
+arrCategoriesListParam = String( tools_web.get_web_param( curParams,"event_calendar.show_calendar.categories", "education_method_id;education_org_id;place_id", true ) ).split( ";" );
+sDefaultCategoryParam = tools_web.get_web_param( curParams, "event_calendar.show_calendar.default_category", "education_method_id", true );	
+iCategoryRepeatHeader = Int(tools_web.get_web_param( curParams,"event_calendar.show_calendar.category_repeat_header", 0, true ));	
+sDefaultViewParam = tools_web.get_web_param( curParams,"event_calendar.default_view", "list", true );
+sListType = tools_web.get_web_param( curParams,"event_calendar.show_list.list_type", "datagrid", true );
+
+sPostCode = UrlEncode(tools_web.get_web_param( curParams,"event_calendar.post_code", "", true ));
+bShowLegend = tools_web.is_true(tools_web.get_web_param( curParams, "event_calendar.show_legend", "1", true ));
+
+bOpenSimplifiedDialogEvent = tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.open_simplified_dialog", "0", true ) );
+
+if((sDefaultViewParam == "list" && !bShowList) || (sDefaultViewParam == "calendar" && !bShowCalendar) || (sDefaultViewParam == "tiles" && !bShowTiles))
+{		
+	sDefaultViewParam = bShowList ? "list" : (bShowCalendar) ? "calendar" : "tiles";
+}
+
+
+/*------------------------ functions --------------------------*/
+
+function add_filter( name, ident, is_main )
+{
+	obj_filter = new Object();
+	const = "";
+	var sUpdateAction = "UPDATE=" + ident + "EventsList," + ident + "EventsCalendar," + ident + "EventsTiles";
+	sDefault = tools_web.get_web_param( curParams, "event_calendar.use_filters.use_" + name + "_filter.default_value", get_filter_default_value( name, true ), true );
+	aResultArray = null;
+	switch( name )
+	{
+		case "place":
+		case "education_org":
+		case "lectors":
+		case "education_program":
+			obj_filter.type = "combo";
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "0", title: get_filter_name_all( name, is_main ) } );
+			for ( catElem in XQuery( "for $i in " + name + ( StrEnds( name, "s" ) ? "" : "s" ) + " return $i" ) )
+			{
+				if( name == "lectors" && catElem.is_dismiss )
+					continue;
+				obj_filter.items.push( { value: catElem.id.Value, title: String( tools_web.get_cur_lng_name( tools.get_disp_name_value( catElem ), curLng.short_id ) ) } );
+			}
+			break;
+		case "organization_form":
+			aResultArray = lists.organizational_forms;
+		case "event_form":
+			if( aResultArray == null )
+				aResultArray = lists.event_forms;
+		case "status":
+			if( aResultArray == null )
+				aResultArray = curLngCommon.event_status_types;
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 120;
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: get_filter_name_all( name, is_main ) } );
+			for ( catElem in aResultArray )
+			{
+				if( name != "status" || ArrayOptFind( arrStatusListParam, "This == catElem.id" ) != undefined )
+					obj_filter.items.push( { value: catElem.id.Value, title: catElem.name.Value } );
+			}
+			break;
+		case "month":
+			obj_filter.type = "combo";
+			obj_filter.width = 115;
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "0", title: get_filter_name_all( name, is_main ) } );
+			for ( catElem in curLngCommon.months )
+				obj_filter.items.push( { value: ( catElem.ChildIndex + 1 ), title: catElem.name.Value } );
+			
+			switch( sDefault )
+			{
+				case "this":
+					sDefault = Month( Date() );
+					break;
+				default:
+					sDefault = "0";
+			}
+			break;
+		case "year":
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 70;
+			obj_filter.SetProperty( "default", Year( Date() ) );
+			obj_filter.items = new Array();
+			for ( i = 2000; i < 2030; i++ )
+				obj_filter.items.push( { value: i, title: i } );
+			break;
+		case "sub_type":
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 180;
+			obj_filter.items = new Array();
+
+			obj_filter.items.push( { value: "direct", title: tools_web.get_web_const( "neposredstvennye", curLngWeb ) } );
+			obj_filter.items.push( { value: "all", title: tools_web.get_web_const( "f0j4vfoxrb", curLngWeb ), change: "CONFIRM=" + tools_web.get_web_const( "pokazinformaci", curLngWeb ) + ";" + sUpdateAction } );
+			break;
+		case "type":
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 180;
+			obj_filter.items = new Array();
+
+			obj_filter.items.push( { value: "all", title: get_filter_name_all( name, is_main ) } );
+			obj_filter.items.push( { value: "participant", title: tools_web.get_web_const( "meropriyatiyagde", curLngWeb ) } );
+			obj_filter.items.push( { value: "tutor", title: tools_web.get_web_const( "meropriyatiyagde_1", curLngWeb ) } );
+			obj_filter.items.push( { value: "lector", title: tools_web.get_web_const( "meropriyatiyagde_2", curLngWeb ) } );
+			break;
+		case "category":
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 230;
+			obj_filter.items = new Array();
+
+			for(sCategory in arrCategoriesListParam)
+			{
+				sName = "";
+				switch( sCategory )
+				{
+					case "education_method_id":
+						sName = StrNonTitleCase( tools_web.get_web_const( "pouchebnymprogr", curLngWeb ) );
+						break;
+					case "education_org_id":
+						sName = StrNonTitleCase( tools_web.get_web_const( "poobuchayushimorg", curLngWeb ) );
+						break;
+					case "place_id":
+						sName = StrNonTitleCase( tools_web.get_web_const( "poraspolozheniyam", curLngWeb ) );
+						break;
+				}
+				obj_filter.items.push( { value: sCategory, title: sName } );
+			}
+			break;
+	}
+	obj_filter.name = name + ident;
+	if( !is_main )
+		obj_filter.title = get_filter_name( name, is_main );
+	else
+		obj_filter.change = sUpdateAction;
+
+	if( obj_filter.GetOptProperty( "default" ) == undefined )
+		obj_filter.SetProperty( "default", sDefault );
+		
+	if( obj_filter.GetOptProperty( "value" ) == undefined )
+		obj_filter.SetProperty( "value", sDefault );
+	return obj_filter;	
+}
+
+function get_filter_name( name )
+{
+	switch( name )
+	{
+		case "place":
+			return tools_web.get_web_const( "c_place", curLngWeb );
+		case "education_org":
+			return tools_web.get_web_const( "8ep5fzi6uu", curLngWeb );
+		case "lectors":
+			return tools_web.get_web_const( "c_lector", curLngWeb );
+		case "education_program":
+			return tools_web.get_web_const( "c_edu_prog", curLngWeb );
+		case "organization_form":
+			return tools_web.get_web_const( "c_org_form", curLngWeb );
+		case "event_form":
+			return tools_web.get_web_const( "c_event_form", curLngWeb );
+		case "status":
+			return tools_web.get_web_const( "c_status", curLngWeb );
+		case "month":
+			return tools_web.get_web_const( "tm5jxtl2m3", curLngWeb );
+		case "year":
+			return tools_web.get_web_const( "god", curLngWeb );
+		case "sub_type":
+			return tools_web.get_web_const( "c_events", curLngWeb );
+		case "type":
+			return tools_web.get_web_const( "c_events", curLngWeb );
+		case "category":
+			return  tools_web.get_web_const( "kategorizaciya", curLngWeb );
+	}
+	return "";
+}
+function get_filter_name_all( name, is_main )
+{
+	if( !is_main )
+		return tools_web.get_web_const( "f0j4vfoxrb", curLngWeb );
+	switch( name )
+	{
+		case "place":
+			return tools_web.get_web_const( "vseraspolozheniya", curLngWeb );
+		case "education_org":
+			return tools_web.get_web_const( "vseobuchayushieor", curLngWeb );
+		case "lectors":
+			return tools_web.get_web_const( "vseprepodavate", curLngWeb );
+		case "education_program":
+			return tools_web.get_web_const( "vsenaboryprogr", curLngWeb );
+		case "organization_form":
+			return tools_web.get_web_const( "vseorganizacio", curLngWeb );
+		case "event_form":
+			return sConstAllEventForms;
+		case "status":
+			return tools_web.get_web_const( "vsestatusy", curLngWeb );
+		case "month":
+			return sConstAllMonths;
+		case "type":
+			return tools_web.get_web_const( "c_all_types", curLngWeb );
+			
+	}
+	return "";
+}
+function get_filter_default_value( name, is_active )
+{
+	var sDefaultValue = tools_web.get_web_param( curParams, "event_calendar.use_filters.use_" + name + "_filter.default_value", "", true );
+
+	if( is_active && sDefaultValue != "" )
+		return sDefaultValue;
+	switch( name )
+	{
+		case "place":
+		case "education_org":
+		case "lectors":
+		case "education_program":
+		case "year":
+			return 0;
+		case "month":
+		case "event_form":
+		case "organization_form":
+		case "type":
+		case "status":
+			return "all";
+		case "sub_type":
+			return "direct";
+	}
+	return "";
+}
+	
+function DrawCollection(sTabId)
+{
+%>
+	<Collection Name="<%=sTabId%>Events" Source="<%=tools_web.get_web_param( curParams,"event_calendar.collection_code", "", true ) != "" ? tools_web.get_web_param( curParams,"event_calendar.collection_code", "", true ) : "event_calendar_events"%>">
+		<Param Name="curUserID" Value="<%=curUserID%>"/>
+		<Param Name="sSelectedType" Value="{type<%=sTabId%>}"/>
+		<Param Name="sSelectedStatus" Value="{status<%=sTabId%>}"/>
+		<Param Name="sSelectedCategory" Value="{category<%=sTabId%>}"/>
+		<Param Name="sSearchWord" Value="{SearchField<%=sTabId%>}"/>
+		
+		<Param Name="iSelectedPlace" Value="{place<%=sTabId%>}"/>
+		<Param Name="iSelectedEducationOrg" Value="{education_org<%=sTabId%>}"/>
+		<Param Name="sSelectedTab" Value="<%=sTabId%>"/>
+		
+		<Param Name="sSelectedOrgForm" Value="{organization_form<%=sTabId%>}"/>
+		<Param Name="sSelectedEventForm" Value="{event_form<%=sTabId%>}"/>
+		
+		<Param Name="iSelectedLector" Value="{lectors<%=sTabId%>}"/>		
+		<Param Name="iSelectedEducationProgram" Value="{education_program<%=sTabId%>}"/>	
+		<Param Name="iSelectedMonth" Value="{month<%=sTabId%>}"/>
+		<Param Name="iSelectedYear" Value="{year<%=sTabId%>}"/>
+		
+		<Param Name="sSelectedView" Value="{SelectedView<%=sTabId%>}"/>
+		
+		<Param Name="sSelectedSubType" Value="{sub_type<%=sTabId%>}"/>
+		
+		<Param Name="sTypes" Value="<%=sEventTypesListParam%>"/>
+		<Param Name="sProjectColor" Value="<%=sProjectColor%>"/>
+		<Param Name="sPlanColor" Value="<%=sPlanColor%>"/>
+		<Param Name="sActiveColor" Value="<%=sActiveColor%>"/>
+		<Param Name="sCloseColor" Value="<%=sCloseColor%>"/>
+		<Param Name="sCancelColor" Value="<%=sCancelColor%>"/>
+		<Param Name="sStatuses" Value="<%=sStatuses%>"/>
+		<Param Name="bShowOnlySamePlace" Value="<%=bShowOnlySamePlace%>"/>		
+		<Param Name="bShowEducationalMethodName" Value="<%=bShowEducationalMethodName%>"/>		
+		<Param Name="bShowDesc" Value="<%=(bShowCalendar && bShowDescInTooltip) || (bShowList && sListType == "tiles")%>"/>	
+		<Param Name="sPostCode" Value="<%=sPostCode%>"/>
+		<Param Name="sColumnList" Value="<%=sListColumns%>"/>
+		<Param Name="bUseTimezone" Value="<%=bUseTimezone%>"/>
+		<Param Name="sSortField" Value="<%=sSortField%>"/>
+		<Param Name="sSortDirection" Value="<%=sSortDirection%>"/>
+		<Param Name="bCheckHirePlace" Value="<%=bCheckHirePlace%>"/>
+		<Param Name="iCategoryId" Value="<%=OptInt( tools_web.get_web_param( curParams,"event_calendar.category_id", "", true ), "" )%>"/>
+	</Collection>
+<%
+	if(bShowList && sListType == "datagrid")
+	{
+		curCollectionMenu = {
+			"id": (sTabId + "Events"),
+			"catalog_name": "event",
+			"data_grid_id": (sTabId + "EventsList")
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+	}
+}
+	
+	
+	/*------------------------ end of functions --------------------------*/
+%>
+<SPXMLScreen>	
+	<Action Source="ExcelExporterAction" Name="excelExportAction" Success="OPENWINDOW=assessment_excel_export.html?mode=htmlfileurl&htmlfileurl={xls_url}" Failure="ALERT={messageText}">
+		<Param Name="sCollection" Value=""/>
+		<Param Name="sCollectionData" Value=""/>
+		<Param Name="sData" Value=""/>
+		<Param Name="sMode" Value=""/>
+		<Param Name="sColumnList" Value=""/>
+	</Action>
+	<Action Name="ChangeEventStatus" Source="event_status_change" Success="REFRESH;" Failure="ALERT={messageText}">
+		<Param Name="iUserId" Value="<%=curUserID%>"/>
+		<Param Name="sEventId" Value="{id}"/>
+		<Param Name="sStatus" Value=""/>
+	</Action>
+<%
+sOpenAction = "OPENURL=" + tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID } );
+bShowOpenButton = tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.open_simplified_dialog.show_open_button", "1", true ) );
+sSimplifiedCustomWebTemplateCode = "";
+if( bOpenSimplifiedDialogEvent )
+{
+	sOpenAction = "SET=SimplifiedDialogEvent/object_id,{id};OPENDIALOG=SimplifiedDialogEvent;"
+	sSimplifiedCustomWebTemplateCode = tools_web.get_web_param( curParams, "event_calendar.open_simplified_dialog.custom_template_code", "", true );
+	if( sSimplifiedCustomWebTemplateCode == "" )
+		sSimplifiedCustomWebTemplateCode = "dlg_simplified_event_body";
+%>
+	<Dialog Name="SimplifiedDialogEvent" Source="<%=sSimplifiedCustomWebTemplateCode%>" Title="<%=tools_web.get_web_const( "c_event", curLngWeb )%>"  Width="800">
+		<Param Name="object_id" Value=""/>
+		<Param Name="show_button" Value="<%=bShowOpenButton%>"/>
+		<Param Name="use_timezone" Value="<%=bUseTimezone%>"/>
+	</Dialog>
+<%
+}
+arrTabListParam = String( tools_web.get_web_param( curParams, "event_calendar.tab_list", "all;my;my_sub", true ) ).split( ";" );	
+
+bShowTabs = ArrayCount(arrTabListParam) > 1;
+if( curMode != "my_account" )
+{
+	curTitle = {
+		"default_title": ( sTitle != "" ? sTitle : tools_web.get_web_const( "kalendarmeropr", curLngWeb ) )
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+}
+if(bShowTabs)
+{
+%>
+<TabControl Name="ListViewTab" _Width="100" Preservable="1" Class="XAML-tabcontrol-filter">
+<%
+}
+	
+for ( sTabListParam in arrTabListParam )
+{
+	sParamNameStart = "event_calendar.tab_list.tab_" + sTabListParam;	
+	sTabNameParam = "All";
+	sTabTitle = tools_web.get_web_const( "f0j4vfoxrb", curLngWeb );
+	switch(sTabListParam)
+	{
+		case "my":
+			sTabNameParam = "My";
+			sTabTitle = tools_web.get_web_const( "moi", curLngWeb );
+			break;
+		case "my_sub":
+			sTabNameParam = "MySub";
+			sTabTitle = sConstMysSubEvents;
+			break;
+	}
+	DrawCollection(sTabNameParam);
+	sUpdateAction = "UPDATE=" + sTabNameParam + "EventsList," + sTabNameParam + "EventsCalendar," + sTabNameParam + "EventsTiles";
+	
+
+	sTabTitle = tools_web.get_web_param( curParams,sParamNameStart + ".title", sTabTitle, true );	
+	
+	iCategoryColunmWidth = Int(tools_web.get_web_param( curParams, "event_calendar.tab_list.tab_my.show_calendar.category_column_width", "500", true ));
+
+	if(bShowTabs)
+	{
+		sIconClass = "";
+		switch(sTabNameParam)
+		{
+			case "All":
+				//sIconClass = "icon-calendar";
+				break;
+			case "My":
+				//sIconClass = "icon-calendar-check-o";
+				break;
+			case "MySub":
+				//sIconClass = "icon-group";
+				break;
+		}
+%>
+	<TabItem Class="<%=sIconClass%>" Title="<%=sTabTitle%>" Name="<%=sTabNameParam%>Tab">	
+<%
+	}
+%>
+		<StackPanel Class="XAML-stack-container">
+<%
+
+	arrFilters = new Array( "category", "sub_type", "type", "place", "education_org", "lectors", "education_program", "organization_form", "event_form", "status", "month", "year" );
+	row_filters = new Array();
+	arr_filters = new Array();
+	row_tmp_filters = new Array();
+	cnt_row_filter = 0;
+	sSelectedCalendarView = CONTEXT.GetOptProperty( "SelectedCalendarView" + sTabNameParam, sCalendarDefaultViewParam )
+	sSelectedView = CONTEXT.GetOptProperty( "SelectedView" + sTabNameParam, sDefaultViewParam )
+	if( tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.use_filters", "0", true ) ) )
+	{
+
+		for( catFilter in arrFilters )
+		{
+			bActive = tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.use_filters.use_" + catFilter + "_filter", "0", true ) );
+			bShow = tools_web.is_true( tools_web.get_web_param( curParams, "event_calendar.use_filters.use_" + catFilter + "_filter.show_filter", "0", true ) );
+
+			if( !bActive || !bShow )
+			{
+%>
+			<Edit Name="<%=catFilter + sTabNameParam%>" Hidden="1"><%=get_filter_default_value( catFilter, bActive )%></Edit>
+<%
+			}
+			else
+			{
+				if( cnt_row_filter >= 3 )
+				{
+					row_filters.push( row_tmp_filters );
+					row_tmp_filters = new Array();
+					cnt_row_filter = 0;
+				}
+				switch( catFilter )
+				{
+					case "month":
+					case "year":
+						if( sSelectedView != "calendar" )
+							arr_filters.push( add_filter( catFilter, sTabNameParam, true ) );
+						break;
+					case "category":
+						if( sSelectedView == "calendar" && sSelectedCalendarView == "category" )
+							arr_filters.push( add_filter( catFilter, sTabNameParam, true ) );
+						break;
+					case "sub_type":
+						if( sTabNameParam == "MySub" )
+							arr_filters.push( add_filter( catFilter, sTabNameParam, true ) );
+						break;
+					case "type":
+						if( sTabNameParam == "My" )
+							arr_filters.push( add_filter( catFilter, sTabNameParam, true ) );
+						break;
+						
+					default:
+						bMain = tools_web.get_web_param( curParams, "event_calendar.use_filters.use_" + catFilter + "_filter.type", "", true ) == "main";
+						if( bMain )
+							arr_filters.push( add_filter( catFilter, sTabNameParam, bMain ) );
+						else
+						{
+							row_tmp_filters.push( add_filter( catFilter, sTabNameParam, bMain ) );
+							cnt_row_filter++;
+						}
+						break
+						
+				}
+			}
+		}
+		if( cnt_row_filter > 0 )
+			row_filters.push( row_tmp_filters );
+	}
+	arr_selector = new Array();
+	
+	if(bShowList)
+	{
+		if( sSelectedView == "calendar" )
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",list;REFRESH;"
+		else
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",list;HIDE=" + sTabNameParam + "EventsTiles;HIDE=" + sTabNameParam + "EventsCalendar;SHOW=" + sTabNameParam + "EventsList;UPDATE=" + sTabNameParam + "EventsList;HIDE=CalendarPanel" + sTabNameParam + ";HIDE=ExcelExportContainer" + sTabNameParam + ";";
+		arr_selector.push( { "class": "XAML-button XAML-button-view icon-list", "title": 'Список', "pressed": ( sSelectedView == "list" ), "click": sViewClickAction } )
+	}
+	if(bShowCalendar)
+	{
+		if( sSelectedView != "calendar" )
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",calendar;REFRESH;"
+		else
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",calendar;REFRESH;HIDE=" + sTabNameParam + "EventsTiles;HIDE=" + sTabNameParam + "EventsList;SHOW=" + sTabNameParam + "EventsCalendar;UPDATE=" + sTabNameParam + "EventsCalendar;SHOW=CalendarPanel" + sTabNameParam + ";SHOW=ExcelExportContainer" + sTabNameParam + ";";
+		arr_selector.push( { "class": "XAML-button XAML-button-view icon-calendar", "title": 'Календарь', "pressed": ( sSelectedView == "calendar" ), "click": sViewClickAction } )
+	}
+
+	if(bShowTiles)
+	{
+		if( sSelectedView == "calendar" )
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",tiles;REFRESH;"
+		else
+			sViewClickAction = "SET=SelectedView" + sTabNameParam + ",tiles;SHOW=" + sTabNameParam + "EventsTiles;HIDE=" + sTabNameParam + "EventsList;HIDE=" + sTabNameParam + "EventsCalendar;HIDE=CalendarPanel" + sTabNameParam + ";HIDE=ExcelExportContainer" + sTabNameParam + ";UPDATE=" + sTabNameParam + "EventsTiles;";
+		arr_selector.push( { "class": "XAML-button XAML-button-view icon-th", "title": tools_web.get_web_const( 'predprosmotr', curLngWeb ), "pressed": ( sSelectedView == "tiles" ), "click": sViewClickAction } )
+	}
+	// alert( tools.object_to_text(row_filters, 'json') )
+	curFilter = {
+		'id': sTabNameParam,
+		'disp_search': bShowSearch,
+		'search_field': ( "SearchField" + sTabNameParam ),
+		'selectors': arr_selector,
+		'selectors_field': "SelectedView" + sTabNameParam,
+		'selectors_value': sSelectedView,
+		'search_action': ( "UPDATE=" + sTabNameParam + "EventsList," + sTabNameParam + "EventsCalendar," + sTabNameParam + "EventsTiles" ),
+		'action': ( "UPDATE=" + sTabNameParam + "EventsList," + sTabNameParam + "EventsCalendar," + sTabNameParam + "EventsTiles" ),
+		'disp_row_filters_field': bFiltersPanelExpanded,
+		'row_filters': row_filters,
+		'filters': arr_filters,
+	};
+	if( bShowCalendarExcelExportButton && sSelectedView == "calendar" )
+	{
+		sExcelExportAction = "SET=excelExportAction/sCollection," + ( tools_web.get_web_param( curParams,"event_calendar.collection_code", "", true ) != "" ? tools_web.get_web_param( curParams,"event_calendar.collection_code", "", true ) : "event_calendar_events" );
+		sExcelExportAction += ";SET=excelExportAction/sCollectionData";
+		sExcelExportAction += ",curUserID=" + curUserID + "&sSelectedType={type" + sTabNameParam + "}&sSelectedCategory={category" + sTabNameParam + "}&sSelectedTab=" + sTabNameParam + "&sTypes=" + UrlEncode(sEventTypesListParam);
+		sExcelExportAction += "&sProjectColor=" + sProjectColor + "&sPlanColor=" + sPlanColor + "&sActiveColor=" + sActiveColor + "&sCloseColor=" + sCloseColor + "&sCancelColor=" + sCancelColor;
+		sExcelExportAction += "&sSelectedView=calendar&sStatuses=" + UrlEncode(sStatuses) + "&iSelectedPlace={place" + sTabNameParam + "}";
+		sExcelExportAction += "&iSelectedEducationOrg=" + "{education_org" + sTabNameParam+ "}" + "&sSelectedOrgForm=" + "{organization_form" + sTabNameParam + "}";
+		sExcelExportAction += "&iSelectedLector=" + "{lectors" + sTabNameParam + "}" + "&iSelectedEducationProgram=" + "{education_program" + sTabNameParam + "}";
+		sExcelExportAction += "&sSelectedEventForm=" + "{event_form" + sTabNameParam + "}";
+		sExcelExportAction += "&sSelectedStatus={status" + sTabNameParam + "}";
+		sExcelExportAction += ";SET=excelExportAction/sData,{" + sTabNameParam + "EventsCalendar};SET=excelExportAction/sMode,calendar;SET=excelExportAction/sColumnList,start=start_date&end=finish_date&title=name&format=formatfld&color=color";						
+		sExcelExportAction += ";ACTION=excelExportAction";
+		curFilter.SetProperty( "buttons", [ { title: tools_web.get_web_const( "c_export_to_excel", curLngWeb ), click: sExcelExportAction } ] )
+	}
+	if( !bShowFiltersPanel )
+	{
+%>
+			<StackPanel Class="XAML-stack-filters-container" Height="54"/>
+			<StackPanel Hidden="1">
+<%
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+	if( !bShowFiltersPanel )
+	{
+%>
+			</StackPanel>
+<%
+	}
+	if(bShowCalendar)
+	{	
+		sActionCategory = "";
+		sActionOther = "";
+		if( sSelectedCalendarView == "category" )
+		{
+			sActionCategory = "UPDATE=" +sTabNameParam + "EventsCalendar;";
+			sActionOther = "REFRESH;";
+		}
+		else
+		{
+			sActionOther = "UPDATE=" +sTabNameParam + "EventsCalendar;";
+			sActionCategory = "REFRESH;";
+		}
+		sActionCategory = "REFRESH;";
+		sActionOther = "REFRESH;";
+%>
+			<Edit Name="SelectedCalendarView<%=sTabNameParam%>" Hidden="1"><%=sSelectedCalendarView%></Edit>
+			<Calendar Name="<%=sTabNameParam%>EventsCalendar" Width="100%" Height="800" DataTitle="name" Hidden="<%=(sSelectedView != "calendar")%>"
+				DataStart="start_date" DataEnd="finish_date" DataFormat="formatfld" Source="{<%=sTabNameParam%>Events}"
+					DataCategory="category" SelectedView="<%=sSelectedCalendarView%>" CategoryClick="SET=SelectedCalendarView<%=sTabNameParam%>,category;<%=sActionCategory%>"
+					DayClick="SET=SelectedCalendarView<%=sTabNameParam%>,day;<%=sActionOther%>" WeekClick="SET=SelectedCalendarView<%=sTabNameParam%>,week;<%=sActionOther%>" MonthClick="SET=SelectedCalendarView<%=sTabNameParam%>,month;<%=sActionOther%>"
+					EventClick="<%=sOpenAction%>"
+					DataColor="color" Modes="day,month,week,category" CategoryWidth="<%=iCategoryColunmWidth%>" RepeatHeader="<%=iCategoryRepeatHeader%>" 
+					AutoReload="True"/>
+<%
+	}
+	
+	if(bShowTiles)
+	{
+%>
+			<TileView Width="100%" PageSize="<%=OptInt( tools_web.get_web_param( curParams,"event_calendar.show_tiles.page_size", "", true ), 10 );%>" TileHeight="<%=OptInt( tools_web.get_web_param( curParams,"event_calendar.show_tiles.height", "", true ), 370 )%>" DataSource="{<%=sTabNameParam%>Events}" TemplateSource="<%=tools_web.get_web_param( curParams,"event_calendar.show_tiles.tile_code", "", true ) != "" ? tools_web.get_web_param( curParams,"event_calendar.show_tiles.tile_code", "", true ) : "event_tile"%>" Name="<%=sTabNameParam%>EventsTiles" Hidden="<%=(sSelectedView != "tiles")%>">
+				<Param Name="bOpenSimplifiedDialogEvent" Value="<%=bOpenSimplifiedDialogEvent%>"/>
+				<Param Name="sSimplifiedCustomWebTemplateCode" Value="<%=sSimplifiedCustomWebTemplateCode%>"/>
+				<Param Name="bShowOpenButton" Value="<%=bShowOpenButton%>"/>
+				<Param Name="bUseTimezone" Value="<%=bUseTimezone%>"/>
+			</TileView>
+<%
+	}
+		
+	if(bShowList)
+	{
+		if(sListType == "tiles")
+		{
+%>
+			<TileView Width="100%" Columns="1" PageSize="<%=iListItemsCount%>"  DataSource="{<%=sTabNameParam%>Events}" TemplateSource="<%=tools_web.get_web_param( curParams,"event_calendar.show_list.tile_list_code", "", true ) != "" ? tools_web.get_web_param( curParams,"event_calendar.tile_list_code", "", true ) : "event_tile_row"%>" Name="<%=sTabNameParam%>EventsList" Hidden="<%=(sSelectedView != "list")%>" Class="XAML-tileview-list">
+				<Param Name="bOpenSimplifiedDialogEvent" Value="<%=bOpenSimplifiedDialogEvent%>"/>
+				<Param Name="sSimplifiedCustomWebTemplateCode" Value="<%=sSimplifiedCustomWebTemplateCode%>"/>
+				<Param Name="bShowOpenButton" Value="<%=bShowOpenButton%>"/>
+				<Param Name="bUseTimezone" Value="<%=bUseTimezone%>"/>
+			</TileView>
+<%
+		}
+		else
+		{
+%>
+			<DataGrid Name="<%=sTabNameParam%>EventsList" Source="{<%=sTabNameParam%>Events}" PageSize="15" Selection="single" Hidden="<%=(sSelectedView != "list")%>">
+				<DataGridColumn Title="ID" Value="id" Hidden="1" Ghost="false"/>
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Sortable="True" Click="<%=sOpenAction%>"/>
+<%
+		if(curDevice.disp_type != "mobile")
+		{
+			//tools_web.get_cur_lng_name( catEvent.name.Value, curLng.short_id )
+			//sListColumns = String( tools_web.get_web_param( curParams, "event_calendar.show_list.column_list", 4, true ) );
+			oViewTypeEvent = view_types.GetOptChildByKey( "event" );
+			for( elem in sListColumns.split( ";" ) )
+			{
+				sColumnName = elem;
+				if( elem == "type" )
+					sColumnName = "type_id"
+				oColumn = ArrayOptFind( oViewTypeEvent.columns, "This.order == sColumnName" );
+				if( oColumn == undefined )
+					continue;
+				
+				bPercent = StrContains( oColumn.width, '%' );
+				sWidth = bPercent ? '200' : Int( StrReplace( oColumn.width, 'zr', '' ) ) * 10;
+
+%>
+				<DataGridColumn Title="<%=tools_web.get_web_const( oColumn.const, curLngWeb )%>" Value="<%=elem%>" <%=sColumnName == "status_id" ? 'ClassSource="class"' : ""%> Width="<%=sWidth%>" Type="string" Sortable="True"/>
+<%
+			}
+		}
+		else if( StrContains( sListColumns, "start_date" ) )
+		{
+%>
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="start_date" Width="150" Type="string"  Sortable="True"/>
+<%
+		}
+%>							
+				<Menu Source="{CatalogListMenu<%=sTabNameParam%>Events}">
+				</Menu>
+			</DataGrid>
+<%
+		}
+	}
+%>
+<%
+	if(bShowLegend)
+	{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-legend" Adapt="1">			
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">				
+					<Image Source="pics/1blank.gif" Class="<%=tools_web.get_class_for_status( "project" )%>" Height="17" Width="17"></Image>
+					<Label><%=tools_web.get_web_const( "c_project", curLngWeb )%></Label>
+				</StackPanel>			
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">				
+					<Image Source="pics/1blank.gif" Class="<%=tools_web.get_class_for_status( "plan" )%>" Height="17" Width="17"></Image>
+					<Label><%=tools_web.get_web_const( "planiruetsya", curLngWeb )%></Label>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">				
+					<Image Source="pics/1blank.gif" Class="<%=tools_web.get_class_for_status( "active" )%>" Height="17" Width="17"></Image>
+					<Label><%=tools_web.get_web_const( "vcb_started", curLngWeb )%></Label>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">				
+					<Image Source="pics/1blank.gif" Class="<%=tools_web.get_class_for_status( "close" )%>" Height="17" Width="17"></Image>
+					<Label><%=tools_web.get_web_const( "zaversheno", curLngWeb )%></Label>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">				
+					<Image Source="pics/1blank.gif" Class="<%=tools_web.get_class_for_status( "cancel" )%>" Height="17" Width="17"></Image>
+					<Label><%=tools_web.get_web_const( "otmeneno", curLngWeb )%></Label>
+				</StackPanel>
+			</StackPanel>
+<%
+	}
+%>
+		</StackPanel>
+		
+<%
+	if(bShowTabs)
+	{
+%>
+	</TabItem>
+<%
+	}
+}
+if(bShowTabs)
+{
+%>
+	</TabControl>
+
+<%
+}
+%>
+</SPXMLScreen>

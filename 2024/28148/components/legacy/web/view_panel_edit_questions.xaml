@@ -1,0 +1,161 @@
+﻿<SPXMLScreen><%
+
+function write_conditions( catQuestion )
+{
+	isItem = false;
+	switch( catQuestion.type_id )
+	{
+		case "multiple_choice":
+		case "multiple_response":
+			isItem = true;
+		case "choice":
+		case "select":
+		case "combo":
+		
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "dngduhlnxs", curLngWeb ) )%>:</Label>	
+		<Grid Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="80%"/>
+				<GridColumn/>
+			</GridColumns>
+<%
+			for( _entr in ( isItem ? catQuestion.answers : catQuestion.entries ) )
+			{
+%>
+			<GridRow>
+				<Label><%=XmlAttrEncode( isItem ? _entr.text : _entr.value )%></Label>	
+				<Label Width="100%"><![CDATA[<%=XmlAttrEncode( ( isItem ? _entr.is_correct_answer : _entr.is_correct ) ? tools_web.get_web_const( "vieb_correct", curLngWeb ) : "" )%>]]></Label>	
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+<%
+			break;
+			
+		case "gap_fill":
+		case "numerical_fill_in_blank":
+			isItem = true;
+		case "string":
+		case "text":
+		case "number":
+		
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "frfayv6mpc", curLngWeb ) )%>:</Label>	
+		<Grid Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="10%"/>
+				<GridColumn/>
+			</GridColumns>
+<%
+			for( _condition in ( isItem ? ( ArrayOptFirstElem( catQuestion.answers ) != undefined ? ArrayOptFirstElem( catQuestion.answers ).conditions : [] ) : catQuestion.conditions ) )
+			{
+				_option = catQuestion.type_id == "number" ? _condition.grading_option_id : ( _condition.sentence_option_id.HasValue ? _condition.sentence_option_id.ForeignElem.name : "" );
+%>
+			<GridRow>
+				<HTMLBox><![CDATA[<%=( _option )%>]]></HTMLBox>
+				<Label Width="100%"><![CDATA[<%=XmlAttrEncode( _condition.value )%>]]></Label>	
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+<%
+			break;
+			
+		default:
+%>
+		<Label/>
+		<Label/>
+<%
+			
+	}
+}
+
+teQuestions = OpenDocFromStr( "<top_elem>" + UrlDecode( tools_web.get_web_param( PARAMETERS, "questions_xml", "", true ) ) + "</top_elem>", 'form=x-local://wtv/wtv_acquaint.xmd;ignore-top-elem-name=1' ).TopElem.questions;
+bCanEdit = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_edit", "0", true ) )
+bCanDelete = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_delete", "0", true ) )
+		
+sNewName = tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" )
+
+for( _question in teQuestions )
+{
+	if( _question.item_id.HasValue && !_question.is_custom )
+		teItem = OpenDoc( UrlFromDocID( _question.item_id ) ).TopElem;
+	else
+		teItem = _question;
+%>
+	<StackPanel Width="100%" Name="StackPanelQuestion<%=_question.id%>" Orientation="Vertical" Class="XAML-stack-container">
+		<Edit Name="Delete<%=_question.id%>" Hidden="1"/>
+		
+		<Grid Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="20"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label><%=XmlAttrEncode( _question.ChildIndex + 1 )%>.</Label>
+				<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+					<GridColumns>
+						<GridColumn Width="20%"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const(  "c_type", curLngWeb ) )%>:</Label>	
+						<Grid Width="100%" Adapt="true">
+							<GridColumns>
+								<GridColumn/>
+<%
+	if( bCanEdit )
+	{
+%>
+								<GridColumn Width="150"/>
+								<GridColumn Width="150"/>
+<%
+	}
+	if( bCanDelete )
+	{
+%>
+								<GridColumn Width="100"/>
+<%
+	}
+%>
+							</GridColumns>
+							<GridRow>
+								<Label Width="100%"><![CDATA[<%=teItem.type_id.HasValue ? teItem.type_id.ForeignElem.name : ""%>]]></Label>
+<%
+	if( bCanEdit )
+	{
+%>
+								<Button Class="XAML-button-edit" Align="right" Width="150" Click="<%="SET=DialogEditQuestion/question_id," + _question.id + ";OPENDIALOG=DialogEditQuestion"%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_edit", curLngWeb ) )%></Button>
+								<Button Class="XAML-button-edit" Align="right" Width="150" Click="<%="SET=sQuestionID," + _question.id + ";OPENDIALOG=SelectAcquaintItem;"%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_choose", curLngWeb ) )%></Button>
+<%
+	}
+	if( bCanDelete )
+	{
+%>
+								<Button Class="XAML-button-delete" Align="right" Width="100" Click="SET=Delete<%=_question.id%>,1;HIDE=StackPanelQuestion<%=_question.id%>;"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%></Button>
+<%
+	}
+%>
+							</GridRow>
+						</Grid>
+					</GridRow>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_heading", curLngWeb ) )%>:</Label>	
+						<Label Width="100%"><![CDATA[<%=teItem.title%>]]></Label>
+					</GridRow>
+					<GridRow>
+<%
+	write_conditions( teItem );
+%>
+					</GridRow>
+				</Grid>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+}
+%>
+</SPXMLScreen>

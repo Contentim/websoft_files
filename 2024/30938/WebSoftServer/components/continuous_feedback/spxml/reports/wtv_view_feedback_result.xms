@@ -1,0 +1,267 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="
+
+    fldThisReportikLocalSettings = local_settings.custom_datas.ObtainChildByKey( TopElem.report_name );
+">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+    <PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+        <PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+            <ITEM TYPE="standard_report_actions_panel" />
+        </PANEL>
+
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        
+        <!-- колонки -->
+        <GRID NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+        	<COLUMNS>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="20zr"/>
+				
+				<LOOP EXPR="Ps.columns" VAR="_column">
+					<COL WIDTH="20zr"/>
+					<COL WIDTH="20zr"/>
+				</LOOP>
+			</COLUMNS>
+			<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+				<LABEL HSPAN="4" FLAT="1"/>
+
+				<LOOP EXPR="Ps.columns" VAR="_column">
+					<LABEL HSPAN="2" TITLE-EXPR="_column.name" ALIGN="center" FLAT="1" BOLD="1"/>
+				</LOOP>
+			</ROW>
+			<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_fio')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_position')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_subd')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_org')" FLAT="1" BOLD="1"/>
+
+				<LOOP EXPR="Ps.columns" VAR="_column">
+					<LABEL TITLE="Оценок" ALIGN="center"/>
+					<LABEL TITLE="Результат" ALIGN="center"/>
+				</LOOP>
+			</ROW>
+			
+			<LOOP EXPR="Ps.feedback_results" VAR="_feedback_result">
+				<ROW>
+					<LABEL TITLE-EXPR="_feedback_result.person_fullname" FLAT="1"/>
+					<LABEL TITLE-EXPR="_feedback_result.person_position_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="_feedback_result.person_subdivision_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="_feedback_result.person_org_name" FLAT="1"/>
+					
+					<LOOP EXPR="Ps.columns" VAR="_column">
+						<IF EXPR="ArrayOptFindByKey(_feedback_result.response_types, _column.id, 'id') != undefined">
+							<WITH VAR="_response_type" EXPR="
+								_result = ArrayOptFirstElem(ArraySelectByKey(_feedback_result.response_types, _column.id, 'id'));
+								return _result;
+							">
+								<IF EXPR="_response_type.task_count > 0">
+									<LABEL TITLE-EXPR="_response_type.task_count" FLAT="1" ALIGN="center"/>
+									<LABEL TITLE-EXPR="_response_type.assessment_count" FLAT="1" ALIGN="center"/>
+								</IF>
+								<ELSE>
+									<LABEL FLAT="1" TITLE="-" FLAT="1" ALIGN="center"/>
+									<LABEL FLAT="1" TITLE="-" FLAT="1" ALIGN="center"/>
+								</ELSE>
+							</WITH>
+						</IF>
+						<ELSE>
+							<LABEL FLAT="1" TITLE="-" FLAT="1" ALIGN="center"/>
+							<LABEL FLAT="1" TITLE="-" FLAT="1" ALIGN="center"/>
+						</ELSE>
+					</LOOP>
+				</ROW>
+			</LOOP>
+
+        <MENU></MENU>			
+		</GRID>
+
+        <ITEM TYPE="status_panel"/>
+
+    </PANEL>
+
+    <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+    <PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+        <IF EXPR="! TopElem.is_minimized">
+            <PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+                <WITH VAR="oModelRoles" EXPR="
+                    curUser = tools.get_cur_user();
+                    var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+                    if( sApplicationID != '' )
+                    {
+                        return CallServerMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ]  );
+                    } else {
+                        return {};
+                    }
+                ">
+
+                    <!-- поля фильтра -->
+
+                    <!-- 
+                        Тип отзыва
+                    -->
+                    <ITEM VERT-ALIGN="top" TYPE="ms_object_selector" TITLE="Типы обратной связи" WIDTH="100%" catalogExpr="'response_type'" SOURCE="Ps.response_type_id" requireExpr="false" xqueryQualExpr="
+
+                    	var teApplication = tools_app.get_application('websoft_continuous_feedback');
+						arrResponseTypeIDs = ArrayMerge(ParseJson(teApplication.wvars.GetOptChildByKey( 'response_types' ).value.Value), 'This.response_type_id', ',').split(',');
+                    	return 'MatchSome($elem/id, ( ' + ArrayMerge( arrResponseTypeIDs, 'This', ',' ) + '))';
+                        
+                    "/>
+                    <!-- 
+                        Подразделение (необязательно) – единичный выбор из каталога подразделений. Если выбрано, то из отчет собирается только по сотрудникам этого подразделения;
+
+                        Учитывать дочерние подразделения вниз по иерархии (необязательно) – флаг. Если включено, то к сотрудникам из указанного подразделения добавляются все нижележащие по структуре подразделения.
+                    -->
+                    <IF EXPR="! Ps.person_id.HasValue">
+                        <ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+                            if(oModelRoles.type != '')
+                            {
+                                switch( oModelRoles.type )
+                                {
+                                    case 'admin':
+                                    case 'manager':
+                                    case 'expert':
+                                    {
+                                        return '';
+                                    }
+                                    case 'hr':
+                                    {
+                                        arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+                                    }
+                                    case 'observer':
+                                    {
+                                        arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+                                    }
+                                    case 'reject':
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                    default:
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                }
+                            }
+                        "/>
+                        <CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+                    </IF>
+                </WITH>
+            </PANEL>
+        </IF>
+
+    </PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+    task = new BackgroundTask;
+    task.RunOnServer = true;
+    task.ShowProgress = true;
+
+    var curUserID = tools.cur_user_id;
+    var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+
+    oRes = tools.call_code_library_method( 'libContinuousFeedback', 'getReportFeedbackResult', [ Ps, curUserID, sApplicationID ] );
+
+    if ( oRes != null || oRes.error != 1 )
+    {
+        TopElem.count_arr = ArrayCount( oRes.feedback_results );
+
+        iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+        Ps.columns.Clear();
+        for ( oColumn in oRes.columns )
+        {
+        	_column = Ps.columns.AddChild();
+        	_column.id = oColumn.id;
+        	_column.name = oColumn.name;
+        }
+
+        Ps.feedback_results.Clear();
+
+        for ( oFeedbackResult in oRes.feedback_results )
+        {
+            oItem = Ps.feedback_results.AddChild();
+            oItem.id = oFeedbackResult.id;
+
+            oItem.person_fullname = oFeedbackResult.person_fullname;
+            oItem.person_position_name = oFeedbackResult.person_position_name;
+            oItem.person_subdivision_name = oFeedbackResult.person_subdivision_name;
+            oItem.person_org_name = oFeedbackResult.person_org_name;
+
+            if ( ArrayOptFirstElem(oFeedbackResult.response_types) != undefined )
+			{
+				for ( oResponseType in oFeedbackResult.response_types )
+				{
+					_response_type = oItem.response_types.AddChild();
+					_response_type.id = oResponseType.id;
+					_response_type.task_count = oResponseType.task_count;
+					_response_type.assessment_count = oResponseType.assessment_count;
+				}
+			}
+        }
+
+        if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+        {
+            if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+            {
+                arrColumns = [
+                    { 'name': 'demo', 'title': ms_tools.get_const('c_coll') }
+                ];
+
+                _str = EvalCodePageUrl( 'x-local://components/continuous_feedback/spxml/templates/feedback_report.html' );
+
+                sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), oRes.feedback_results ] );
+
+                if ( ! System.IsWebClient )
+                {
+                    sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+                    CopyUrl( sReportUrl, sReportFilePath );
+                    sReportFilePath = UrlToFilePath( sReportUrl );
+                }
+
+                ShellExecute( 'open', sReportFilePath );
+
+            }
+        }
+    }
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+    arrColumns = [
+        { 'name': 'demo', 'title': ms_tools.get_const('c_coll') }
+    ];
+
+    task = new BackgroundTask;
+    task.RunOnServer = true;
+    task.ShowProgress = true;
+
+    _str = EvalCodePageUrl( 'x-local://components/continuous_feedback/spxml/templates/feedback_report.html' );
+
+    sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), Ps ] );
+
+    if ( ! System.IsWebClient )
+    {
+        sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+        CopyUrl( sReportUrl, sReportFilePath );
+        sReportFilePath = UrlToFilePath( sReportUrl );
+    }
+
+    ShellExecute( 'open', sReportFilePath );
+    
+"/>
+
+</SPXML-SCREEN>

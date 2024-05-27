@@ -1,0 +1,459 @@
+﻿<SPXMLScreen>
+<%
+	// const_start
+	var oBirthdayConst = ({
+		"date": tools_web.get_web_const("c_date", curLngWeb),
+		"photo": tools_web.get_web_const("foto", curLngWeb),
+		"name": tools_web.get_web_const("c_fio", curLngWeb),
+		"position": tools_web.get_web_const("c_position", curLngWeb),
+		"subdivision": tools_web.get_web_const("c_subd", curLngWeb),
+		"age": tools_web.get_web_const("vrb_age", curLngWeb),
+		"desc": tools_web.get_web_const("c_desc", curLngWeb),
+		"no_data": tools_web.get_web_const("netdannyh", curLngWeb)
+	});
+	// const_end
+
+	var bThinMode = (curDevice.disp_type == "mobile");
+
+	var bShowPhoto, bShowLastname, bShowName, bShowPosition, bShowSubdivision, bShowAge, bShowDesc, aElemsShowList, sAppearenceType, iCategoryMode = 0;
+
+	var bDateShowYear = tools_web.is_true(tools_web.get_web_param(curParams, "birthday.date_show_year", true, true));
+	var iPageSize = tools_web.get_web_param(curParams, "birthday.page_size", "", true);
+
+	if (bThinMode)
+	{
+		bShowPhoto = false;
+		bShowLastname = true;
+		bShowName = true;
+		bShowPosition = false;
+		bShowSubdivision = false;
+		bShowAge = false;
+		bShowDesc = false;
+
+		iRandomRange = OptInt(tools_web.get_web_param(curParams, "birthday.random_range", 0, true), 0);
+
+		sAppearenceType = "list";
+	}
+	else
+	{
+		aElemsShowList = String(tools_web.get_web_param(curParams, "birthday.persons_tab.list_elems", "photo;lastname;name", true)).split(";");
+
+		bShowPhoto = (ArrayOptFind(aElemsShowList, "This == 'photo'") != undefined);
+		bShowLastname = (ArrayOptFind(aElemsShowList, "This == 'lastname'") != undefined);
+		bShowName = (ArrayOptFind(aElemsShowList, "This == 'name'") != undefined);
+		bShowPosition = (ArrayOptFind(aElemsShowList, "This == 'position'") != undefined);
+		bShowSubdivision = (ArrayOptFind(aElemsShowList, "This == 'subdivision'") != undefined);
+		bShowAge = (ArrayOptFind(aElemsShowList, "This == 'age'") != undefined);
+		bShowDesc = (ArrayOptFind(aElemsShowList, "This == 'desc'") != undefined);
+
+		iRandomRange = OptInt(tools_web.get_web_param(curParams, "birthday.random_range", 0, true), 0);
+		sRandomMode = tools_web.get_web_param(curParams, "birthday.random_range.way", "random", true);
+
+
+		switch (tools_web.get_web_param(curParams, "birthday.categorize", "", false))
+		{
+			case "date": iCategoryMode = 1; break;
+			case "sub": iCategoryMode = 2; break;
+			case "month": iCategoryMode = 3; break;
+		}
+
+		sAppearenceType = tools_web.get_web_param(curParams, "birthday.mode", "list", true);
+	}
+
+	if (iCategoryMode > 0)
+	{
+		var aCategoryDatesPack = Array();
+
+		if (iCategoryMode == 3)
+		{
+			var aMonthNames = Array(tools_web.get_web_const('c_january', curLngWeb), tools_web.get_web_const('c_february', curLngWeb), tools_web.get_web_const('c_march', curLngWeb), tools_web.get_web_const('c_april', curLngWeb), tools_web.get_web_const('c_may', curLngWeb), tools_web.get_web_const('c_june', curLngWeb), tools_web.get_web_const('c_july', curLngWeb), tools_web.get_web_const('c_august', curLngWeb), tools_web.get_web_const('c_september', curLngWeb), tools_web.get_web_const('c_october', curLngWeb), tools_web.get_web_const('c_november', curLngWeb), tools_web.get_web_const('c_december', curLngWeb));
+		}
+	}
+	function comingDateString(dNowDate, dBirthday)
+	{
+		var dComingDate = DateNewTime(Date(Year(dNowDate), Month(dBirthday), Day(dBirthday)));
+		var sComingString, iDiff;
+
+		if (dNowDate == dComingDate)
+			sComingString = tools_web.get_web_const( 'nhwau6dslm', curLngWeb );
+		else if ((iDiff = DateDiff(dComingDate,dNowDate)) > 86400)
+			sComingString = String(dComingDate);
+		else if (iDiff < 0)
+		{
+			dComingDate = Date(Year(dComingDate) + 1, Month(dComingDate), Day(dComingDate));
+			sComingString = String(dComingDate);
+		}
+		else
+			sComingString = tools_web.get_web_const( 'jbvlah50qx', curLngWeb );
+
+		if (!bDateShowYear)
+			sComingString = sComingString.slice(0, sComingString.lastIndexOf("."));
+
+		var oReturn = ({"title": sComingString, "date": dComingDate});
+
+		return oReturn;
+	}
+
+	var sCatalog = "collaborator";
+	var xarrPeopleToCelebrate, bShowDismissed = tools_web.is_true(tools_web.get_web_param(curParams, "birthday.show_dismissed", 0, true));
+
+	var sGetArrayScript = Trim(tools_web.get_web_param(curParams, "birthday.get_array_script", "", true));
+	if (sGetArrayScript != "")
+	{
+		xarrPeopleToCelebrate = tools.safe_execution(sGetArrayScript);
+	}
+	else
+	{
+		var iDaysAhead = OptInt(tools_web.get_web_param(curParams, "birthday.days_ahead", 0, true), 0);
+		if ((tools.sys_db_capability & tools.UNI_CAP_BASIC) != 0)
+		{
+			tools.spxml_unibridge.Object.provider.SetSecurityContext('dbo',0,null);
+			if ((tools.sys_db_capability & tools.UNI_CAP_ORACLE) != 0)
+			{
+				xarrPeopleToCelebrate = XQuery('sql: SELECT c."id", c."fullname", c."pict_url",c."position_name", c."birth_date", c."position_parent_name", c."birth_date_rest_days_num" FROM (SELECT CAST(c."id" AS varchar2(40)) as "id", c."fullname", c."pict_url",c."position_name", c."birth_date", c."position_parent_name", mod((ADD_MONTHS(c."birth_date" ,12 * GREATEST ((EXTRACT (YEAR FROM SYSDATE) - EXTRACT (YEAR FROM c."birth_date")),1))- TRUNC(SYSDATE)) + 365, 365) birth_date_rest_days_num FROM "collaborators" c WHERE c."birth_date" IS NOT NULL ' +(bShowDismissed ? '' : 'and c."is_dismiss" != 1')+ ') c WHERE c.birth_date_rest_days_num <= ' + iDaysAhead + ' order by c."fullname"' );
+			}
+			else
+			{
+				if (tools.os_type == "linux")
+					xarrPeopleToCelebrate = XQuery("sql: select c.id, c.fullname, c.pict_url,c.position_name, c.birth_date, c.position_parent_name, c.birth_date_rest_days_num from (select /*+ALL_ROWS*/ c.id, c.fullname, c.pict_url,c.position_name, c.birth_date, c.position_parent_name, MOD((DATE_PART('day', (c.birth_date + (DATE_PART('year',now()) - DATE_PART('year', c.birth_date)) * INTERVAL '1 year' ) - now()) + 365)::numeric , 365) birth_date_rest_days_num from collaborators as c where c.birth_date IS NOT NULL" +(bShowDismissed ? "" :" and c.is_dismiss != true")+ ") c where c.birth_date_rest_days_num <= " +iDaysAhead+ " order by c.fullname");
+				else
+					xarrPeopleToCelebrate = XQuery("sql: select c.* from (select /*+ALL_ROWS*/ c.id, c.fullname, c.pict_url,c.position_name, c.birth_date, c.position_parent_name, ((DATEDIFF(day, getdate(), dateadd(year, datepart(year,getdate()) - datepart(year, c.birth_date),c.birth_date)) + 365) % 365) birth_date_rest_days_num from collaborators as c where c.birth_date IS NOT NULL" +(bShowDismissed ? "" :" and c.is_dismiss != 1")+ ") c where c.birth_date_rest_days_num <= " +iDaysAhead+ " order by c.fullname;");
+			}
+			tools.spxml_unibridge.Object.provider.ReleaseSecurityContext();
+		}
+		else
+			xarrPeopleToCelebrate = XQuery("for $elem in collaborators where $elem/birth_date_rest_days_num >= 0 and $elem/birth_date_rest_days_num <= " + iDaysAhead + (bShowDismissed ? "" : " and $elem/is_dismiss != true()") + " order by $elem/fullname return $elem");
+	}
+
+	if (sAppearenceType == "tile")
+		var sTileElemsStr = (bShowPhoto ? 1 : 0) + "_" + (bShowLastname || bShowName ? 1 : 0) + "_" + (bShowPosition ? 1 : 0) + "_" + (bShowSubdivision ? 1 : 0) + "_" + (bShowAge ? 1 : 0) + "_" + (bShowDesc ? 1 : 0);
+	var dToday = DateNewTime(Date());
+	var catBirthdayEmployee, sString, iInt, vSomeData, oRowObject, aDataRows = Array();
+	var sPhotoPlacement = tools_web.get_web_param(curParams, "birthday.photo_placement", "", true);
+	var iPhotoWidth = OptInt(tools_web.get_web_param(curParams, "birthday.photo_width", "", true), "");
+
+	if (iRandomRange > 0 && iRandomRange < ArrayCount(xarrPeopleToCelebrate))
+	{
+		switch(sRandomMode)
+		{
+			case "first":
+				xarrPeopleToCelebrate = ArraySort(xarrPeopleToCelebrate, "StrInt(This.birth_date_rest_days_num, 3) + This.fullname", "+");
+				xarrPeopleToCelebrate = ArrayRange(xarrPeopleToCelebrate, 0, iRandomRange);
+				break;
+			default:
+				xarrPeopleToCelebrate = ArrayRange(ArraySort(xarrPeopleToCelebrate, "Random(0, 100)", "+"), 0, iRandomRange);
+				break;
+		}
+	}
+
+	for (catBirthdayEmployee in xarrPeopleToCelebrate)
+	{
+		oRowObject = ({"id": catBirthdayEmployee.id.Value});
+		dBirthDay = catBirthdayEmployee.birth_date.Value;
+
+		if (catBirthdayEmployee.birth_date.Type != "date")
+		{
+			dBirthDay = OptDate(String(dBirthDay));
+			if (dBirthDay == undefined)
+				continue;
+		}
+		sString = comingDateString(dToday, dBirthDay);
+		oRowObject._upcoming = sString.date;
+
+		if (iCategoryMode == 1)
+			aCategoryDatesPack.push(sString);
+
+
+		if (iCategoryMode != 1)
+			oRowObject.category = sString.title;
+		else
+		{
+			oRowObject.category = " ";
+			oRowObject.date = sString.title;
+		}
+
+		if (bShowPhoto) oRowObject.pict_url = (catBirthdayEmployee.pict_url.HasValue ? catBirthdayEmployee.pict_url.Value : "/pics/nophoto.jpg");
+		if (bShowLastname && bShowName)
+			oRowObject.fullname = catBirthdayEmployee.fullname.Value;
+		else
+		{
+			sString = Trim(catBirthdayEmployee.fullname.Value);
+			iInt = sString.indexOf(" ");
+			if (sString > 0)
+			{
+				if (bShowLastname)
+					oRowObject.fullname = sString.slice(0, iInt);
+				else if (bShowName)
+					oRowObject.fullname = sString.slice(iInt + 1);
+			}
+			else
+			{
+				if (bShowLastname)
+					oRowObject.fullname = sString;
+				else if (bShowName)
+					oRowObject.fullname = "";
+			}
+		}
+		if (bShowPosition) oRowObject.position = tools_web.get_cur_lng_name(catBirthdayEmployee.position_name.Value, curLng.short_id);
+		if (bShowSubdivision || iCategoryMode == 2) oRowObject.subdivision = tools_web.get_cur_lng_name(catBirthdayEmployee.position_parent_name.Value, curLng.short_id);
+
+		if (bShowAge)
+		{
+			iInt = Year(dToday) - Year(dBirthDay);
+			vSomeData = Month(dToday);
+			sString = Month(dBirthDay);
+			if (sString < vSomeData)
+				iInt = iInt - 1;
+			else (sString == vSomeData)
+			{
+				if (Day(dBirthDay) <= Day(dToday))
+					iInt = iInt - 1;
+			}
+			if (iInt < 0)
+				oRowObject.age = "-" + (0 - iInt);
+			else
+				oRowObject.age = iInt;
+		}
+
+		if (iCategoryMode == 3)
+			oRowObject.month_name = aMonthNames[Month(dBirthDay) - 1];
+
+		if (bShowDesc)
+		{
+			try
+			{
+				oRowObject.desc = catBirthdayEmployee.desc;
+			}
+			catch(_x_)
+			{}
+		}
+		aDataRows.push(oRowObject);
+	}
+
+	aDataRows = ArraySort(aDataRows, "StrXmlDate(This._upcoming) + This.fullname", "+");
+
+	if (iCategoryMode > 0)
+	{
+		if (iCategoryMode == 1)
+		{
+			aCategoryDatesPack = ArraySort(ArraySelectDistinct(aCategoryDatesPack, "This.title"), "This.date", "+");
+		}
+		else if (iCategoryMode == 2)
+		{
+			aCategoryDatesPack = ArrayExtract(ArraySelectDistinct(aDataRows, "This.subdivision"), '({"title": This.subdivision, "date": null})');
+		}
+		else if (iCategoryMode == 3)
+		{
+			for(sString in ArraySort(ArraySelectDistinct(ArrayExtract(aDataRows, "Month(This._upcoming) - 1"), "This"), "(This >= " + (Month(Date()) - 1) + "? This : This + 12)", "+"))
+			{
+				aCategoryDatesPack.push(({"title": aMonthNames[sString], "date": sString}));
+			}
+		}
+
+		for (vSomeData in aCategoryDatesPack)
+		{
+			oRowObject = new Object;
+			oRowObject.category = vSomeData.title;
+			if (bShowPhoto)
+				oRowObject.pict_url = "";
+			if (bShowLastname || bShowName)
+				oRowObject.fullname = "";
+			if (bShowPosition)
+				oRowObject.position = "";
+			if (bShowSubdivision)
+				oRowObject.subdivision = "";
+			if (bShowAge)
+				oRowObject.age = "";
+			oRowObject.date = "";
+			oRowObject.month_name = "";
+			aDataRows.push(oRowObject);
+		}
+	}
+
+	if (sAppearenceType == "tile" && iCategoryMode > 0)
+	{
+		for (iInt = 0; iInt < aCategoryDatesPack.length; iInt++)
+		{
+
+%>
+	<Collection Name="PeopleToCelebrateBy_<%=iInt%>">
+		<Data>
+<%
+		switch (iCategoryMode)
+		{
+			case 2: sString = "subdivision"; break;
+			case 3: sString = "month_name"; break;
+			default: sString = "date"; break;
+		}
+		for (oRowObject in ArraySelectByKey(aDataRows, aCategoryDatesPack[iInt].title, sString))
+		{
+			Response.Write('<Row>');
+			for (sString in oRowObject)
+				if (!StrBegins(sString, "_"))
+					Response.Write('<Cell Id="' +sString+ '" Value="' +XmlAttrEncode(oRowObject.GetProperty(sString))+ '"/>');
+			Response.Write('<Cell Id="pht_fnm_pos_sbd_age" Value="' +sTileElemsStr+ '"/>');
+			Response.Write('</Row>');
+		}
+%>
+		</Data>
+	</Collection>
+<%
+		}
+	}
+	else
+	{
+%>
+	<Collection Name="PeopleToCelebrate">
+		<Data>
+<%
+		for (oRowObject in aDataRows)
+		{
+			Response.Write('<Row>');
+			for (sString in oRowObject)
+				if (!StrBegins(sString, "_"))
+					Response.Write('<Cell Id="' +sString+ '" Value="' +XmlAttrEncode(oRowObject.GetProperty(sString))+ '"/>');
+			if (sAppearenceType == "tile")
+				Response.Write('<Cell Id="pht_fnm_pos_sbd_age" Value="' +sTileElemsStr+ '"/>');
+			Response.Write('</Row>');
+		}
+%>
+		</Data>
+	</Collection>
+<%
+	}
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+	<GridRow>
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_param(curParams, "birthday.persons_tab", tools_web.get_web_const( "vpb_birthdays", curLngWeb ), true)%></Label>
+	</GridRow>
+	<GridRow>
+		<StackPanel Class="XAML-stack-container">
+<%
+	if (sAppearenceType == "tile")
+	{
+		var iTileWidth = OptInt(tools_web.get_web_param(curParams, "birthday.tile_width", null, true), "");
+		var iTileHeight = OptInt(tools_web.get_web_param(curParams, "birthday.tile_height", 250, true), "");
+
+
+		var iTileColumns = OptInt(tools_web.get_web_param(curParams, "birthday.tile_columns", 3, true), 3);
+
+
+
+
+		if (iCategoryMode > 0)
+		{
+			if (aCategoryDatesPack.length == 0)
+			{
+%>
+			<Label><%=HtmlEncode(oBirthdayConst.no_data)%></Label>
+<%
+			}
+			else
+			{
+				for (iInt = 0; iInt < aCategoryDatesPack.length; iInt++)
+				{
+%>
+		<Panel Title="<%=aCategoryDatesPack[iInt].title%>" Expanded="0">
+			<TileView Name="PersonsTile<%=iInt%>" Width="100%" Height_="400" DataSource="{PeopleToCelebrateBy_<%=iInt%>}" TemplateSource="birthday_tile" TileWidth="<%=iTileWidth%>" TileHeight="<%=iTileHeight%>" Columns="<%=iTileColumns%>" Rows="2" PageSize="<%=iPageSize%>">
+				<Param Name="catalog" Value="<%=sCatalog%>"/>
+				<Param Name="photo_placement" Value="<%=sPhotoPlacement%>"/>
+				<Param Name="photo_width" Value="<%=iPhotoWidth%>"/>
+<%
+	if (tools_web.is_true(tools_web.get_web_param(curParams, "birthday.tile_button", 0, true)))
+	{
+%>
+				<Param Name="tile_button" Value="<%=tools_web.get_web_param(curParams, "birthday.tile_button.title", 0, true)%>"/>
+				<Param Name="tile_button_link" Value="<%=tools_web.get_web_param(curParams, "birthday.tile_button.url", 0, true)%>"/>
+<%
+	}
+%>
+			</TileView>
+		</Panel>
+<%
+				}
+			}
+		}
+		else
+		{
+%>
+		<TileView Name="PersonsTile" Width="100%" DataSource="{PeopleToCelebrate}" TemplateSource="birthday_tile" Columns="<%=iTileColumns%>" Rows="2" TileWidth="<%=iTileWidth%>" TileHeight="<%=iTileHeight%>" PageSize="<%=iPageSize%>">
+			<Param Name="catalog" Value="<%=sCatalog%>"/>
+			<Param Name="photo_placement" Value="<%=sPhotoPlacement%>"/>
+			<Param Name="photo_width" Value="<%=iPhotoWidth%>"/>
+<%
+	if (tools_web.is_true(tools_web.get_web_param(curParams, "birthday.tile_button", 0, true)))
+	{
+%>
+			<Param Name="tile_button" Value="<%=tools_web.get_web_param(curParams, "birthday.tile_button.title", 0, true)%>"/>
+			<Param Name="tile_button_link" Value="<%=tools_web.get_web_param(curParams, "birthday.tile_button.url", 0, true)%>"/>
+<%
+	}
+%>
+		</TileView>
+<%
+		}
+	}
+	else
+	{
+%>
+		<DataGrid Name="BirthdayGrid" Title="" Source="{PeopleToCelebrate}" PageSize="<%=iPageSize%>" Categorized="<%=(iCategoryMode == 1 ? "category:date" : (iCategoryMode == 2 ? "category:subdivision" : (iCategoryMode == 3 ? "category:month_name" : "")))%>" Class="XAML-DataGrid-Flex-Images">
+			<DataGridColumn Title="<%=oBirthdayConst.date%>" Value="category" Width="100"/>
+<%
+		if (bShowPhoto)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.photo%>" Value="pict_url" Width="<%=(iPhotoWidth != "" ? iPhotoWidth : 50)%>" Type="image"/>
+<%
+		}
+		if (bShowLastname || bShowName)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.name%>" Value="fullname" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", ({"doc_id": curDocID}))%>"/>
+<%
+		}
+		if (bShowPosition)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.position%>" Value="position" Width="200" Type="string"/>
+<%
+		}
+		if (bShowSubdivision)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.subdivision%>" Value="subdivision" Width="200" Type="string"/>
+<%
+		}
+		if (bShowAge)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.age%>" Value="age" Width="200" Type="string"/>
+<%
+		}
+		if (bShowDesc)
+		{
+%>
+			<DataGridColumn Title="<%=oBirthdayConst.desc%>" Value="desc" Width="200" Type="string"/>
+<%
+		}
+%>
+
+		</DataGrid>
+<%
+	}
+
+	if (tools_web.is_true(tools_web.get_web_param(curParams, "birthday.goto_button", 0, true)))
+	{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-news-all-link">
+		<Link Click="OPENURL=<%=XmlAttrEncode(tools_web.get_web_param(curParams, "birthday.goto_button.url", "", true))%>"><![CDATA[  <%=tools_web.get_web_param(curParams, "birthday.goto_button.title", "", true)%>  ]]></Link>
+	</StackPanel>
+<%
+	}
+%>
+		</StackPanel>
+	</GridRow>
+	</Grid>
+</SPXMLScreen>

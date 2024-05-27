@@ -1,0 +1,163 @@
+﻿<SPXMLScreen>
+
+<Action Name="UserChangeAction" Source="user_change" Success="OPENURL=<%=tools_web.get_mode_clean_url( null, curUserID, { doc_id: curDocID } )%>" Failure="ALERT={messageText}">
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Toolbar Class="XAML-toolbar">
+	<Button Class="XAML-button XAML-button-save" Click="ACTION=UserChangeAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+xarrOperations = tools.get_current_user_operations();
+arrPriveleges = ArraySelectByKey( xarrOperations, 1, "operation_type" );
+if ( ArrayOptFind( arrPriveleges, "action=='show_all'||action=='show_resume'" ) != undefined )
+{
+%>
+	<Button Class="XAML-button XAML-button-plus" Click="OPENURL=<%=tools_web.get_mode_clean_url( "resume", null, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( 'redaktirovatre', curLngWeb )%></Button>
+<%
+}
+%>
+</Toolbar>
+<%
+arrTabListParam = String( tools_web.get_web_param( curParams, "personal_data.tab_list", "main;photo;custom;desc", true ) ).split( ";" );
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == "main" )
+{
+	arrMainFields = [
+		{ "name": "lastname", "title": tools_web.get_web_const( 'uf_last_name', curLngWeb ) },
+		{ "name": "firstname", "title": tools_web.get_web_const( 'uf_name', curLngWeb ) },
+		{ "name": "middlename", "title": tools_web.get_web_const( 'uf_s_name', curLngWeb ) },
+		{ "name": "sex", "title": tools_web.get_web_const( 'vpb_sex', curLngWeb ) },
+		{ "name": "birth_date", "title": tools_web.get_web_const( 'vpb_birthday', curLngWeb ) },
+		{ "name": "email", "title": tools_web.get_web_const( 'uf_email', curLngWeb ) },
+		{ "name": "phone", "title": tools_web.get_web_const( 'uf_phone', curLngWeb ) }
+	];
+	arrMainDispFields = tools_web.get_web_param( curParams, "personal_data.tab_list.main_tab.disp_fields", "", true );
+	arrMainDispFields = arrMainDispFields == "" ? ArrayExtract( arrMainFields, "This.name" ) : String( arrMainDispFields ).split( ";" );
+	arrMainRequiredFields = String( tools_web.get_web_param( curParams, "personal_data.tab_list.main_tab.required_fields", "", true ) ).split( ";" );
+
+	sTabTitle = tools_web.get_web_param( curParams, "personal_data.tab_list.main_tab", "", true );
+%>
+<Panel Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'lichnyedannye', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="250" Align="right"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+	for ( sDispFieldElem in arrMainDispFields )
+	{
+		oField = ArrayOptFindByKey( arrMainFields, sDispFieldElem, "name" );
+		fldField = curUser.Child( sDispFieldElem );
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=( ArrayOptFind( arrMainRequiredFields, "This=='" + sDispFieldElem + "'" ) == undefined ? "" : "* " )%><%=oField.title%>:</Label>
+<%
+		switch ( fldField.Type )
+		{
+			case "string":
+				if ( sDispFieldElem == "sex" )
+				{
+%>
+			<StackPanel Orientation="Horizontal">
+				<RadioButton Name="sex" Value="m" Checked="<%=( fldField.Value == "m" ? 1 : 0 )%>"><%=tools_web.get_web_const( 'vpb_m', curLngWeb )%></RadioButton>
+				<Label Width="20"/>
+				<RadioButton Name="sex" Value="w" Checked="<%=( fldField.Value == "w" ? 1 : 0 )%>"><%=tools_web.get_web_const( 'vpb_w', curLngWeb )%></RadioButton>
+			</StackPanel>
+<%
+				}
+				else
+				{
+%>
+			<Edit Name="<%=sDispFieldElem%>" Width="200"><%=HtmlEncode( fldField.Value )%></Edit>
+<%
+				}
+				break;
+			case "date":
+%>
+			<DatePicker Name="<%=sDispFieldElem%>"><%=StrDate( fldField.Value, false )%></DatePicker>
+<%
+				break;
+		}
+%>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<Label><%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%></Label>
+</Panel>
+<%
+}
+
+
+
+///////////////////////////////////////////////   PHOTO TAB   /////////////////////////////////////////////
+if ( sTabListParam == "photo" )
+{
+	sTabTitle = tools_web.get_web_param( curParams, "personal_data.tab_list.photo_tab", "", true );
+%>
+<Panel Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'foto', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="250" Align="right"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'zagruzitizobra', curLngWeb )%>:</Label>
+			<File/>
+		</GridRow>
+	</Grid>
+</Panel>
+<%
+}
+
+
+
+///////////////////////////////////////////////   CUSTOM TAB   /////////////////////////////////////////////
+if ( sTabListParam == "custom" )
+{
+	sCustomDispFields = tools_web.get_web_param( curParams, "personal_data.tab_list.custom_tab.disp_fields", "", true );
+	arrCustomDispFields = String( sCustomDispFields ).split( ";" );
+	arrCustomRequiredFields = tools_web.get_web_param( curParams, "personal_data.tab_list.custom_tab.required_fields", "null", true );
+	arrCustomRequiredFields = arrCustomRequiredFields == "null" ? null : ( arrCustomRequiredFields == "" ? [] : String( arrCustomRequiredFields ).split( ";" ) );
+
+	sTabTitle = tools_web.get_web_param( curParams, "personal_data.tab_list.photo_tab", "", true );
+%>
+<Panel Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'dopolnitelnyed', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	fldCustomElems = tools.get_custom_template( 'collaborator' );
+	fldCustomElems = sCustomDispFields == "" ? ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ) : ArrayExtract( arrCustomDispFields, "fldCustomElems.fields.GetChildByKey(This)" );
+	if ( fldCustomElems != null )
+	{
+		curCustomFields = {
+			"id": "User",
+			"fields": fldCustomElems,
+			"source": curUser.custom_elems,
+			"modify_eval": true,
+			"required_fields": arrCustomRequiredFields
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+	}
+%>
+	<Label><%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%></Label>
+</Panel>
+<%
+}
+
+
+///////////////////////////////////////////////   DESC TAB   /////////////////////////////////////////////
+if ( sTabListParam == "desc" )
+{
+	sTabTitle = tools_web.get_web_param( curParams, "personal_data.tab_list.photo_tab", "", true );
+%>
+<Panel Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'biografiya', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+	<RichEdit/>
+</Panel>
+<%
+}
+
+}
+%>
+</SPXMLScreen>

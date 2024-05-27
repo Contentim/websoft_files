@@ -1,0 +1,24 @@
+﻿<SPXMLScreen>
+
+	<StackPanel Orientation="Vertical" Class="XAML-user-tile FAQ-tile">
+		<Link Class="FAQ-question" Click="SET=AnswerExspertDialog/iQuestionId,<%=PARAMETERS.GetOptProperty("id")%>;OPENDIALOG=AnswerExspertDialog;"><%=PARAMETERS.GetOptProperty("question")%></Link>
+	</StackPanel>		
+<!--
+	<StackPanel Orientation="Vertical" Class="XAML-user-tile">
+		<StackPanel Orientation="Horizontal">
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_question", curLngWeb )%>:</Label>
+			<Label><%=PARAMETERS.GetOptProperty("question")%></Label>
+		</StackPanel>
+		
+		<Grid Width="100%">
+			<GridColumns>
+				<GridColumn Align="Left"/>
+			</GridColumns>
+			
+			<GridRow>
+				<Button Name="<%=PARAMETERS.GetOptProperty("id")%>_AnswerShowButton" Class="XAML-button XAML-button-ok" Click="SET=AnswerExspertDialog/iQuestionId,<%=PARAMETERS.GetOptProperty("id")%>;OPENDIALOG=AnswerExspertDialog;"><%=HtmlEncode(tools_web.get_web_const( 'pokazatotvet', curLngWeb ))%></Button>
+			</GridRow>
+		</Grid>	
+		
+	</StackPanel>	-->	
+</SPXMLScreen>

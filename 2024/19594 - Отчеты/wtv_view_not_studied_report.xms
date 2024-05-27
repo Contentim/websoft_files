@@ -1,0 +1,352 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_not_studied_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="-32vpx" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" LOOP-EXPR="
+					if ( Ps.disp_date )
+					{
+						switch( List.GetCurSortColumnIndex() )
+						{
+							case 0:
+								return ArraySort( Ps.persons, 'fullname', List.GetCurSortDir() );
+								break;
+
+							case 1:
+									return ArraySort( Ps.persons, 'last_usage_date', List.GetCurSortDir() );
+									break;
+
+							case 2:
+									return ArraySort( Ps.persons, 'code', List.GetCurSortDir() );
+									break;
+							case 3:
+									return ArraySort( Ps.persons, 'position_name', List.GetCurSortDir() );
+									break;
+
+							case 4:
+									return ArraySort( Ps.persons, 'position_parent_name', List.GetCurSortDir() );
+									break;
+						}
+					}
+					else
+					{
+						switch( List.GetCurSortColumnIndex() )
+						{
+							case 0:
+								return ArraySort( Ps.persons, 'fullname', List.GetCurSortDir() );
+								break;
+
+							case 1:
+									return ArraySort( Ps.persons, 'code', List.GetCurSortDir() );
+									break;
+
+							case 2:
+									return ArraySort( Ps.persons, 'position_name', List.GetCurSortDir() );
+									break;
+
+							case 3:
+									return ArraySort( Ps.persons, 'position_parent_name', List.GetCurSortDir() );
+									break;
+						}
+					}" ON-SEL-CHANGE="
+						if ( TopElem.ChildExists( 'count_sel' ) )
+						{
+							TopElem.set_sel_action( List );
+						}
+				">
+
+				<ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.person_id ) )" IMAGE-URL="ico/collaborator.ico">
+					<COL WIDTH="25%" COL-TITLE-EXPR="ms_tools.get_const('wrm4ebg7c9')" TITLE-EXPR="ListElem.fullname" ORDER="fullname"/>
+					<IF EXPR="Ps.disp_date">
+						<COL WIDTH="14%" COL-TITLE-EXPR="ms_tools.get_const('yr7l3dy23x')" TITLE-EXPR="StrDate( ListElem.last_usage_date, true, false )" ORDER="last_usage_date"/>
+					</IF>
+					<COL WIDTH="10%" COL-TITLE-EXPR="ms_tools.get_const('c_code')" TITLE-EXPR="ListElem.code" ORDER="code"/>
+					<COL WIDTH="30%" COL-TITLE-EXPR="ms_tools.get_const('c_position')" TITLE-EXPR="ListElem.position_name" ORDER="position_name"/>
+					<COL WIDTH="35zr" COL-TITLE-EXPR="ms_tools.get_const('c_subd')" TITLE-EXPR="ListElem.position_parent_name" ORDER="position_parent_name"/>
+				</ROW>
+
+			<MENU>
+				<INHERIT TYPE="activate_course_test_base"/>
+				<MENU-ENTRY SEPARATOR="1"/>
+				<INHERIT TYPE="actions_groups_collaborators_base"/>
+			</MENU>
+		</LIST>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<TitleLabel ALIGN="left" TITLE-EXPR="'Тип активности'" WIDTH="100%">
+					<COMBO SOURCE="Ps.learning_type" WIDTH="100%">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'c_course' )" VALUE="course"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'c_test' )" VALUE="assessment"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'c_edu_method' )" VALUE="education_method"/>
+					</COMBO>
+				</TitleLabel>
+
+				<IF EXPR="Ps.learning_type == 'course'">
+					<ITEM TYPE="ms_object_selector" requireExpr="true" catalogExpr="'course'" SOURCE="Ps.course_id" titleExpr="'Выбрать электронный курс'"/>
+				</IF>
+				<ELSE>
+					<IF EXPR="Ps.learning_type == 'education_method'">
+						<ITEM TYPE="ms_object_selector" requireExpr="true" SOURCE="Ps.education_method_id" catalogExpr="'education_method'" titleExpr="'Выбрать учебную программу'"/>
+					</IF>
+					<ELSE>
+						<ITEM TYPE="ms_object_selector" requireExpr="true" SOURCE="Ps.assessment_id" catalogExpr="'assessment'" titleExpr="'Выбрать тест'"/>
+					</ELSE>
+				</ELSE>
+
+				<IF EXPR="! Ps.group_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id"/>
+				</IF>
+
+				<IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue">
+					<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				</IF>
+
+				<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'g89skt4yui' )" WIDTH="316vpx">
+					<EDIT SOURCE="Ps.position_name"/>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.hire_date_start" TITLE-EXPR="'Дата приема с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.hire_date_finish" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+				
+				<COMBO SOURCE="Ps.disp_study" WIDTH="100%">
+					<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('4fj7402m85')" VALUE="yes"/>
+					<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('q2iv0imu10')" VALUE="no"/>
+				</COMBO>
+
+				<TitleLabel TITLE-EXPR="ms_tools.get_const('xj5pbcalx6')" WIDTH="100%">
+					<COMBO SOURCE="Ps.disp_learning_type" WIDTH="100%">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('eyyo8z5j57')" VALUE="finished"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('rgni7sf3i4')" VALUE="active"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="(active, finished)"/>
+					</COMBO>
+				</TitleLabel>
+
+				<BR/>
+
+				<CHECK SOURCE="Ps.disp_date" TITLE-EXPR="ms_tools.get_const('oj8zdh2kxk')" MULTILINE="1" SET-VALUE-ACTION="
+						Ps.disp_date = NewValue;
+				"/>
+
+				<CHECK SOURCE="Ps.disp_person_list_staff" TITLE-EXPR="ms_tools.get_const('ef2trjd7i5')" MULTILINE="1"/>
+
+				<CHECK SOURCE="Ps.show_dismiss" TITLE-EXPR="ms_tools.get_const('c_disp_dismiss')" MULTILINE="1"/>
+
+			</PANEL>
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( ! Ps.Child( Ps.learning_type + '_id' ).HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'jqznxwz8gw' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	iMethodID = Ps.Child( Ps.learning_type + '_id' ).Value;
+
+	if ( Ps.learning_type == 'education_method' &amp;&amp; ArrayOptFirstElem( XQuery( 'for $elem in events where $elem/education_method_id = ' + iMethodID + ' return $elem' ) ) == undefined )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'poukazannoyuche' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	arrSettings = [
+				{ 'name' : 'learning_type', 'value' : TopElem.learning_type.Value },
+				{ 'name' : 'course_id', 'value' : TopElem.course_id.Value },
+				{ 'name' : 'education_method_id', 'value' : TopElem.education_method_id.Value },
+				{ 'name' : 'assessment_id', 'value' : TopElem.assessment_id.Value },
+				{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+				{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+				{ 'name' : 'group_id', 'value' : TopElem.group_id.Value },
+				{ 'name' : 'position_name', 'value' : TopElem.position_name.Value },
+				{ 'name' : 'hire_date_start', 'value' : TopElem.hire_date_start.Value },
+				{ 'name' : 'hire_date_finish', 'value' : TopElem.hire_date_finish.Value },
+				{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+				{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value },
+				{ 'name' : 'disp_study', 'value' : TopElem.disp_study.Value },
+				{ 'name' : 'disp_learning_type', 'value' : TopElem.disp_learning_type.Value },
+				{ 'name' : 'disp_date', 'value' : TopElem.disp_date.Value },
+				{ 'name' : 'disp_person_list_staff', 'value' : TopElem.disp_person_list_staff.Value },
+				{ 'name' : 'show_dismiss', 'value' : TopElem.show_dismiss.Value }
+			]
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	curUser = tools.get_cur_user();
+
+	Ps.persons.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+
+	oParams.method_id = iMethodID;
+	oParams.APPLICATION = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().code.Value );
+
+	iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+	
+	oParams.SetProperty( 'max_visible_rows', iMaxReportVisibleRows );
+	oParams.SetProperty( 'report_name', TopElem.report_name );
+	oParams.SetProperty( 'bIsWebClient', System.IsWebClient );
+
+	arrColumns = new Array();
+	arrColumns.push( { 'name': 'fullname', 'title': ms_tools.get_const('wrm4ebg7c9') } );
+	if ( Ps.disp_date )
+	{
+		arrColumns.push( { 'name': 'last_usage_date', 'title': ms_tools.get_const('yr7l3dy23x') } );
+	}
+	arrColumns.push( { 'name': 'code', 'title': ms_tools.get_const('c_code') } );
+	arrColumns.push( { 'name': 'position_name', 'title': ms_tools.get_const('c_position') } );
+	arrColumns.push( { 'name': 'position_parent_name', 'title': ms_tools.get_const('c_subd') } );
+
+	oParams.SetProperty( 'columns', EncodeJson( arrColumns ) );
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	oResult = task.CallMethod( 'tools_report', 'not_studied_report', [ oParams ] );
+
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount( oResult.persons );
+		TopElem.exported_file_link = oResult.exported_file_link;
+
+		function getReport(Ps, oResult){
+			for ( oPerson in oResult.persons )
+			{
+				if ( oPerson != undefined && oPerson != null )
+				{
+					_child = Ps.persons.AddChild();
+					_child.person_id = oPerson.person_id;
+					_child.fullname = oPerson.fullname;
+					_child.code = oPerson.code;
+					_child.position_name = oPerson.position_name;
+					_child.position_parent_name = oPerson.position_parent_name;
+					_child.last_usage_date = oPerson.last_usage_date;
+				}
+			}
+			return Ps;
+		}
+
+		if ( oResult.immediate_export )
+		{
+			if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+			{
+				if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', TopElem.count_arr), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+				{ // Выгрузка отчета в Excel
+
+					if ( ! System.IsWebClient )
+					{
+						sReportUrl = ObtainSessionTempFile( UrlPathSuffix( oResult.exported_file_link ) );
+						CopyUrl( sReportUrl, oResult.exported_file_link );
+						sReportFilePath = UrlToFilePath( sReportUrl );
+					}
+					else
+					{
+						sReportFilePath = oResult.exported_file_link;
+					}
+
+					ShellExecute( 'open', sReportFilePath );
+					
+				} else { // Открыть отчет сейчас? Да
+					
+					getReport(Ps, oResult);
+				}
+			}
+		}
+		else
+		{
+			getReport(Ps, oResult)
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	arrColumns = new Array();
+	arrColumns.push( { 'name': 'fullname', 'title': ms_tools.get_const('wrm4ebg7c9') } );
+	if ( Ps.disp_date )
+	{
+		arrColumns.push( { 'name': 'last_usage_date', 'title': ms_tools.get_const('yr7l3dy23x') } );
+	}
+	arrColumns.push( { 'name': 'code', 'title': ms_tools.get_const('c_code') } );
+	arrColumns.push( { 'name': 'position_name', 'title': ms_tools.get_const('c_position') } );
+	arrColumns.push( { 'name': 'position_parent_name', 'title': ms_tools.get_const('c_subd') } );
+
+	if ( TopElem.exported_file_link.HasValue )
+	{
+		if ( TopElem.export_type == 'xlsx' )
+		{
+			sReportFilePath = TopElem.exported_file_link;
+		}
+		else
+		{
+			sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ '', TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), TopElem.persons ] );
+		}
+
+		if ( ! System.IsWebClient )
+		{
+			sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+			CopyUrl( sReportUrl, sReportFilePath );
+			sReportFilePath = UrlToFilePath( sReportUrl );
+		}
+	
+		ShellExecute( 'open', sReportFilePath );
+	}
+	else
+	{
+		Screen.MsgBox( 'Нет данных для экспорта.', ms_tools.get_const( 'c_info' ), 'info', 'ok' );
+	}
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

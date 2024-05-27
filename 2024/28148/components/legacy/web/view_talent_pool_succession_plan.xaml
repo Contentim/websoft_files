@@ -1,0 +1,652 @@
+﻿<%
+// const_start
+sConstAllStatuses = tools_web.get_web_const( 'vsestatusy', curLngWeb );
+sConstAllCareerReserveTypes = tools_web.get_web_const( 'vsetipykadrovo', curLngWeb );
+sConstAllBudgetPeriods = tools_web.get_web_const( 'vsebyudzhetnyepe', curLngWeb );
+sConstAllRiskPerspectives = tools_web.get_web_const( 'vseurovniriska', curLngWeb );
+sConstAllKeyPositionThreats = tools_web.get_web_const( 'vseugrozyklyuche', curLngWeb );
+sConstAllReadinessLevels = tools_web.get_web_const( 'vseurovnigotov', curLngWeb );
+sConstAllDevelopmentPotentials = tools_web.get_web_const( 'vsepotencialyr', curLngWeb );
+sConstAllEfficiencyEstimations = tools_web.get_web_const( 'vseocenkieffek', curLngWeb );
+sConstFilters = tools_web.get_web_const( 'c_filter', curLngWeb );
+
+// const_end
+%>
+<SPXMLScreen>
+<%
+/*
+for (elem in CONTEXT)
+{
+	alert(elem+'='+CONTEXT.GetProperty(elem))
+}*/
+
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+curUrlQuery = tools_web.get_url_query( PAGEURL );
+
+arrTabListParam = String( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list", "key_positions;successors", true ) ).split( ";" );
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'KeyPositionsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+bShowBudgetPeriodSelection=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.bShowBudgetPeriodSelection", "1", true ))
+
+bShowCareerReserveTypeSelection=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.bShowCareerReserveTypeSelection", "1", true ))
+iSelectedCareerReserveType=OptInt(CONTEXT.GetOptProperty( 'career_reserve_type_id', null),null)
+
+bShowKeyPositionColors=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.bShowKeyPositionColors", "1", true ))
+bShowWithSubordinate = tools_web.is_true( tools_web.get_web_param(curParams, "talent_pool_succession_plan.bShowWithSubordinatFlag", "0", true ))
+
+
+//--key_position tab
+iKeyPositionsPageSize = OptInt( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.iKeyPositionsPageSize", "25", true ),25)
+//-colors
+strKeyPositionPlanColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.plan_color", "#ffac3e", true );
+strKeyPositionActiveColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.active_color", "#8ed100", true );
+strKeyPositionAgreementColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.agreement_color", "#adb1b9", true );
+strKeyPositionApprovedColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.approved_color", "#8c80c8", true );
+strKeyPositionArchiveColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.archive_color", "#fff59b", true );
+
+
+sStatuses=String( tools_web.get_web_param( curParams,"talent_pool_succession_plan.key_positions_tab.statuses", "plan;active;agreement;approved;archive", true ) )
+arrStatusList = sStatuses.split( ";" );
+bUseKeyPositionFilters = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.use_filters", "0", true ));
+bUseKeyPositionFiltersPanelExpanded = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.use_filters.show_expanded", "0", true ));
+strKeyPositionOpenLinkType = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.key_position_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;dialog
+strKeyPositionCollaboratorOpenLinkType= tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.collaborator_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;
+
+bCanAddDeleteKeyPosition=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition", "1", true ))
+iKeyPositionCreatorsGroupID=OptInt( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition.iKeyPositionCreatorsGroupID", null, true ) ,null)
+bLimitKeyPositionCreationByBosses=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition.bLimitKeyPositionCreationByBosses", "0", true ))
+iKeyPositionCreatorsBossTypeID=OptInt( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition.iKeyPositionCreatorsBossTypeID", null, true ) ,null)
+iKeyPositionCreatorsCareerReserveTypeID=OptInt( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition.iKeyPositionCreatorsCareerReserveTypeID", null, true ) ,null)
+bCanAddPositionFromAllCollaboratorsList=tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCanAddDeleteKeyPosition.bCanAddPositionFromAllCollaboratorsList", "0", true ))
+
+bCountSuccessors= tools_web.is_true( tools_web.get_web_param(curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.bCountSuccessors", "0", true ))
+
+
+//-- successor tab
+iSuccessorsPageSize=OptInt( tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.iSuccessorsPageSize", "25", true ),25)
+sSuccessorStatuses=String( tools_web.get_web_param( curParams,"talent_pool_succession_plan.tab_list.successors_tab.statuses", "active;approved;rejected;archive", true ) )
+arrSuccessorStatusList = sSuccessorStatuses.split( ";" );
+//-colors
+strSuccessorActiveColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.active_color", "#8ed100", true );
+strSuccessorRejectedColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.rejected_color", "#b98533", true );
+strSuccessorApprovedColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.approved_color", "#8c80c8", true );
+strSuccessorArchiveColor = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.archive_color", "#fff59b", true );
+bUseSuccessorFilters = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.use_filters", "0", true ));
+bUseSuccessorFiltersPanelExpanded = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.use_filters.show_expanded", "0", true ));
+strSuccessorOpenLinkType = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.successor_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;dialog
+var sDefaultSuccessorView = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.sDefaultView", "list", true );
+strPPMSuccessorOpenLinkObject = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.ppm_successor_open_link_object", "collaborator", true );
+bShowUpdatePPMMatrixButton = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.bShowUpdatePPMMatrixButton", "0", true ));
+
+var iKeyPositionsCollectionID = OptInt(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.key_positions_tab.key_positions_collection", "", true ), 0);
+var iSuccessorsCollectionID   = OptInt(tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list.successors_tab.successors_collection", "", true ), 0);
+var xarrCollectionsCodes      = XQuery("for $elem in remote_collections where MatchSome($elem/id, (" + iKeyPositionsCollectionID + ", " + iSuccessorsCollectionID + ")) return $elem/Fields('id','code')");
+var catKeyPositionsCollection = ArrayOptFind(xarrCollectionsCodes, "This.id == iKeyPositionsCollectionID");
+var catSuccessorsCollection   = ArrayOptFind(xarrCollectionsCodes, "This.id == iSuccessorsCollectionID");
+
+if (iSelectedCareerReserveType==null)
+{
+	iSelectedCareerReserveType=OptInt(tools_web.get_web_param(curParams, "talent_pool_succession_plan.iCareerReserveTypeID", "", false), null);
+}
+iSelectedBudgetPeriod=OptInt(CONTEXT.GetOptProperty( 'SelectedBudgetPeriod', null),null)
+if (iSelectedBudgetPeriod==null)
+{
+	iSelectedBudgetPeriod=OptInt(tools_web.get_web_param(curParams, "talent_pool_succession_plan.iBudgetPeriodID", "", false), null);
+}
+
+strUpdateList=''
+if (ArrayOptFind(arrTabListParam,"This=='key_positions'")!=undefined)
+{
+	strUpdateList=strUpdateList+'KeyPositionsDataGrid,'
+}
+if (ArrayOptFind(arrTabListParam,"This=='successors'")!=undefined)
+{
+	strUpdateList=strUpdateList+'{UpdateObjectName},'
+}
+if (StrLen(strUpdateList)>0)
+{
+	strUpdateList=StrLeftRange(strUpdateList, StrLen(strUpdateList)-1)
+}
+
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+if (!bDesctop)
+{
+	sDefaultSuccessorView='list'
+}
+
+strSuccessorsTabClickDefaultAction='STOP'
+switch(strKeyPositionOpenLinkType)
+{
+	case "OPENWINDOW":
+	case "OPENURL":
+	{
+		//strKeyPositionOpenAction=strKeyPositionOpenLinkType + '=' + tools_web.get_mode_clean_url( "talent_pool_key_position", "{id}", { doc_id: curDocID } )
+		strKeyPositionOpenAction=strKeyPositionOpenLinkType + '=' + tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID } )
+		break;
+	}
+	case "DIALOG":
+	{
+		strKeyPositionOpenAction='SET=SuccessorsTabClickAction,'+UrlEncode("UPDATE={UpdateObjectName}")+';SET=KeyPositionDialog/iObjectId,{id};SET=KeyPositionDialogCloseAction,'+UrlEncode("ACTION=TalentPoolKeyPositionAction")+';OPENDIALOG=KeyPositionDialog'
+		break;
+	}
+}
+
+sDefaultAddSuccessAction='ACTION=TalentPoolKeyPositionAction;'+strKeyPositionOpenAction+';'
+sDefaultDeleteSuccessAction='ALERT={messageText};ACTION=TalentPoolKeyPositionAction'
+
+%>
+
+<Action Name="TalentPoolKeyPositionAction" Source="talent_pool_update_key_positions" Success="UPDATE=<%=strUpdateList%>" Failure="ALERT={messageText};">
+</Action>
+<Edit Name="UpdateObjectName" Hidden="1"><%=(sDefaultSuccessorView != "matrix"?"SuccessorsDataGrid":"SuccessorsPPM")%></Edit>
+<Edit Name="TalentPoolKeyPositionAddDeleteSuccessAction" Hidden="1"><%=sDefaultAddSuccessAction%></Edit>
+<Action Name="TalentPoolKeyPositionAddDeleteAction" Source="talent_pool_delete_add_key_positions" Success="{!TalentPoolKeyPositionAddDeleteSuccessAction}" Failure="ALERT={messageText};">
+	<Param Name="iObjectId" Value=""/>
+	<Param Name="sAction" Value=""/>
+	<Param Name="iBudgetPeriodId" Value="{SelectedBudgetPeriod}"/>
+	<Param Name="iCareerReserveTypeId" Value="{SelectedCareerReserveType}"/>
+</Action>
+
+<Edit Name="SelectDialogCloseAction" Hidden="1"></Edit>
+<Dialog Name="SelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!SelectDialogCloseAction}">
+	<Param Name="catalog_name" Value=""/>
+	<Param Name="multi_select" Value=""/>
+	<Param Name="view_type" Value=""/>
+	<Param Name="xquery_qual" Value=""/>
+	<Param Name="check_access" Value="false"/>
+	<Param Name="selected_object_ids" Value=""/>
+	<Param Name="display_object_ids" Value=""/>
+	<Param Name="disp_filter" Value="true"/>
+	<Param Name="filter_id" Value=""/>
+	<Param Name="list_columns" Value="position_name;position_parent_name;fullname"/>
+	<Param Name="can_be_empty" Value="false"/>
+	<Param Name="show_all" Value=""/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+
+<%
+sTitleCSS = "XAML-object-title-label";
+sTitle = (curDoc != null) ?tools_web.get_cur_lng_name( curDoc.name, curLng.short_id ) : tools_web.get_web_const( "kadrovyyrezerv_1", curLngWeb );
+%>
+
+<Label Class="<%=sTitleCSS%>"><%=sTitle%></Label>
+<%
+if (!bShowBudgetPeriodSelection)
+{
+%>
+<Edit Name="SelectedBudgetPeriod" Hidden="0"><%=iSelectedBudgetPeriod%></Edit>
+<%
+}
+%>
+<Edit Name="SelectedCareerReserveType" Hidden="1"><%=iSelectedCareerReserveType%></Edit>
+<Edit Name="SuccessorsTabClickAction" Hidden="1"><%=strSuccessorsTabClickDefaultAction%></Edit>
+
+<TabControl Name="KeyPositionsBodyTab" Class="XAML-tabcontrol-filter" ActiveTab="<%=iDefaultTab%>" Preservable="1" TabsWidth="200" Width="100%" Adapt="true">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		sIconClass = "";
+		switch(sTabListParam)
+		{
+			case "key_positions":
+			{
+				sName="KeyPositions"
+				sTabTitle = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list."+sTabListParam+"_tab", "", true );
+				if (Trim(sTabTitle)=="")
+				{
+					sTabTitle=tools_web.get_web_const( 'klyuchevyedolzhno', curLngWeb )
+				}
+%>
+				<TabItem Title="<%=sTabTitle%>" Name="<%=sName%>Tab">
+<%
+
+					if (iKeyPositionCreatorsGroupID!=null||bLimitKeyPositionCreationByBosses||iKeyPositionCreatorsBossTypeID!=null||iKeyPositionCreatorsCareerReserveTypeID!=null)
+					{
+						bCanAddDeleteKeyPosition=false
+						if (iKeyPositionCreatorsGroupID!=null)
+						{
+							bCanAddDeleteKeyPosition=(ArrayOptFirstElem(XQuery("for $elem in group_collaborators where $elem/group_id="+iKeyPositionCreatorsGroupID+" and $elem/collaborator_id="+curUserID+" return $elem"))!=undefined)
+						}
+
+						if (bLimitKeyPositionCreationByBosses)
+						{
+							bCanAddDeleteKeyPosition=!bCanAddDeleteKeyPosition?(ArrayOptFirstElem(XQuery("for $elem in func_managers where $elem/is_native=true() and $elem/person_id="+curUserID+" return $elem"))!=undefined):bCanAddDeleteKeyPosition
+						}
+
+						if (iKeyPositionCreatorsBossTypeID!=null)
+						{
+
+							bCanAddDeleteKeyPosition=!bCanAddDeleteKeyPosition?(ArrayOptFirstElem(XQuery("for $elem in talent_pool_func_managers where $elem/boss_type_id="+iKeyPositionCreatorsBossTypeID+" and $elem/person_id="+curUserID+" return $elem"))!=undefined):bCanAddDeleteKeyPosition
+						}
+						if (iKeyPositionCreatorsCareerReserveTypeID!=null)
+						{
+							bCanAddDeleteKeyPosition=!bCanAddDeleteKeyPosition?(ArrayOptFirstElem(XQuery('for $elem in talent_pool_func_managers where $elem/catalog=\'career_reserve_type\' and $elem/person_id=' + curUserID + ' and $elem/object_id='+iKeyPositionCreatorsCareerReserveTypeID+' return $elem'))!=undefined):bCanAddDeleteKeyPosition
+						}
+					}
+
+					sUpdateAction="UPDATE="+sName+"DataGrid"
+					arrItems = [];
+					arrRowFilters=[]
+					
+					curFilter = {
+						"id": sName+"FiltersPanelNew",
+						"action": sUpdateAction,
+						"disp_search": true,
+						"search_field": sName+"SearchField",
+						"search_value": "",
+						"search_width": "200",
+						"filters":arrItems,
+						"row_filters": arrRowFilters,
+						"buttons": []
+					};
+					
+
+					//Add filter with drop-down selection to main panel		
+					
+					if (bShowCareerReserveTypeSelection)
+					{
+						sCatalogName="career_reserve_type"
+						sDispName=common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name
+						arrObjects=XQuery("for $elem in "+sCatalogName+"s order by $elem/"+sDispName+" return $elem")
+						
+						arrComboItems=[]
+						arrComboItems.push( {"value":"all", "title":sConstAllCareerReserveTypes, "change":"Set=SelectedCareerReserveType,;ACTION=TalentPoolKeyPositionAction"})
+						for (fldObject in arrObjects)
+						{
+							arrComboItems.push( {"value":fldObject.PrimaryKey, "title":XmlAttrEncode(tools_web.get_cur_lng_name( fldObject.Child(sDispName).Value, curLng.short_id )),"change":"Set=SelectedCareerReserveType,{career_reserve_type_id};ACTION=TalentPoolKeyPositionAction"} )
+						}
+						arrItems.push( {"name":"career_reserve_type_id", "default":OptInt(iSelectedCareerReserveType,"all"), "type":"combo", "items": arrComboItems,"width":"250"} );
+					}
+					
+					arrComboItems=[]
+					arrComboItems.push( {"value":"all", "title":sConstAllStatuses})
+					for(fldStatus in curLngCommon.key_position_status_types)
+								{
+						arrComboItems.push( {"value":fldStatus.PrimaryKey, "title":XmlAttrEncode(fldStatus.name)} )
+								}
+					arrItems.push( {"name":"SelectStatus"+sName, "type":"combo", "items": arrComboItems,"width":"200", "change":sUpdateAction} );
+					
+					if (bCanAddDeleteKeyPosition)
+								{
+						curFilter.buttons.push( { "title": tools_web.get_web_const( 'veb_add', curLngWeb ), "click": ( "SET=SelectDialog/multi_select,false;SET=SelectDialog/xquery_qual,"+UrlEncode('$elem/position_id!=null() and $elem/is_dismiss=false()')+";SET=SelectDialog/show_all,"+bCanAddPositionFromAllCollaboratorsList+";SET=SelectDialog/catalog_name,collaborator;SET=SelectDialogCloseAction,"+UrlEncode('SET=TalentPoolKeyPositionAddDeleteSuccessAction,'+UrlEncode(sDefaultAddSuccessAction)+';SET=TalentPoolKeyPositionAddDeleteAction/iObjectId,{CatalogListDataGridFullList:^/id};SET=TalentPoolKeyPositionAddDeleteAction/sAction,add;ACTION=TalentPoolKeyPositionAddDeleteAction')+";OPENDIALOG=SelectDialog" ) } );
+						
+						curFilter.buttons.push( { "title": tools_web.get_web_const( 'c_delete', curLngWeb ), "click": ( "SET=SET=TalentPoolKeyPositionAddDeleteSuccessAction,"+UrlEncode(sDefaultDeleteSuccessAction)+";SET=TalentPoolKeyPositionAddDeleteAction/iObjectId,{KeyPositionsDataGrid:^/id};SET=TalentPoolKeyPositionAddDeleteAction/sAction,delete;ACTION=TalentPoolKeyPositionAddDeleteAction" ) } );
+								}
+					
+					if(bUseKeyPositionFilters)
+					{
+						arrRowFiltersRow=[]
+						arrRowFiltersRow.push({"name":"risk_perspective_id", "type":"foreign_elem","catalog_name": "risk_perspective", "title": tools_web.get_web_const( "urovenriska", curLngWeb ),"value":"" })
+						arrRowFiltersRow.push({"name":"key_position_threat_id", "type":"foreign_elem","catalog_name": "key_position_threat", "title": tools_web.get_web_const( "ugrozaklyuchevoy", curLngWeb ),"value":"" })
+					if (bShowBudgetPeriodSelection)
+					{
+							arrRowFiltersRow.push({"name":"SelectedBudgetPeriod", "type":"foreign_elem","catalog_name": "budget_period", "title": tools_web.get_web_const( "c_budget_period", curLngWeb ),"value":OptInt(iSelectedBudgetPeriod,"") })
+							}
+						
+						arrRowFilters.push(arrRowFiltersRow)
+							}
+
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );		
+
+				// Вызов универсального меню
+				curCollectionMenu = {
+					"catalog_name": "key_position"
+				};
+				curCollectionMenu.SetProperty("data_grid_id", sName+"DataGrid");
+				curCollectionMenu.SetProperty("selected_data", "{"+sName+"DataGrid}");
+				curCollectionMenu.SetProperty("id", sName+"DataGrid");
+				Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list_menu.xaml"));
+
+
+					strDefaultKeyPositionDialogCloseAction=('SET=SuccessorsTabClickAction,'+UrlEncode(strSuccessorsTabClickDefaultAction)+';ACTION=TalentPoolKeyPositionAction');
+%>
+					<Edit Name="KeyPositionDialogCloseAction" Hidden="1"><%=strDefaultKeyPositionDialogCloseAction%></Edit>
+					<Dialog Name="KeyPositionDialog" Source="talent_pool_key_position" Width="80%" Heigth="60%" Close="{!KeyPositionDialogCloseAction}">
+						<Param Name="iObjectId" Value=""/>
+					</Dialog>
+					<Collection Name="<%=sName%>Collection" Source="<%=(catKeyPositionsCollection != undefined ? catKeyPositionsCollection.code : 'talent_pool_key_positions')%>">
+						<Param Name="iCareerReserveTypeID" Value="{SelectedCareerReserveType}"/>
+						<Param Name="iBudgetPeriodID" Value="{SelectedBudgetPeriod}"/>
+						<Param Name="bShowKeyPositionColors" Value="<%=bShowKeyPositionColors%>"/>
+						<Param Name="bShowWithSubordinate" Value="<%=bShowWithSubordinate%>"/>
+						<Param Name="sPlanColor" Value="<%=strKeyPositionPlanColor%>"/>
+						<Param Name="sActiveColor" Value="<%=strKeyPositionActiveColor%>"/>
+						<Param Name="sAgreementColor" Value="<%=strKeyPositionAgreementColor%>"/>
+						<Param Name="sApprovedColor" Value="<%=strKeyPositionApprovedColor%>"/>
+						<Param Name="sArchiveColor" Value="<%=strKeyPositionArchiveColor%>"/>
+						<Param Name="sStatuses" Value="<%=sStatuses%>"/>
+						<Param Name="sSelectedStatus" Value="{SelectStatus<%=sName%>}"/>
+						<Param Name="iRiskPerspectiveID" Value="{risk_perspective_id}"/>
+						<Param Name="iKeyPositionThreatID" Value="{key_position_threat_id}"/>
+						<Param Name="sSearchWord" Value="{<%=sName%>SearchField}"/>
+						<Param Name="bCountSuccessors" Value="<%=bCountSuccessors%>"/>
+					</Collection>
+					<DataGrid Name="<%=sName%>DataGrid" Source="{<%=sName%>Collection}" PageSize="<%=iKeyPositionsPageSize%>" Selection="single">
+						<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>"  Value="name" Type="link" Sortable="True" Click="<%=strKeyPositionOpenAction%>" Hidden="false" Ghost="false" ColorSource="bg_color"/>
+<%
+					if (bDesctop)
+					{
+%>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'hkjld9msys', curLngWeb )%>"  Value="person_fullname" Type="link" Sortable="True" Click="<%=strKeyPositionCollaboratorOpenLinkType%>=<%= tools_web.get_mode_clean_url( null, "{person_id}", { doc_id: curDocID } ) %>" Hidden="false" Ghost="false" Width="100%" ColorSource="bg_color"/>
+<%
+					}
+%>
+						<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="120" Type="string"  Sortable="True" ColorSource="color"/>
+<%
+					if (bDesctop)
+					{
+%>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_budget_period', curLngWeb )%>" Width="130" Value="budget_period_name" Type="string" Sortable="True" Hidden="false" Ghost="false" ColorSource="bg_color"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'tipkadrovogore', curLngWeb )%>"  Width="140" Value="career_reserve_type_name" Type="string" Sortable="True" Hidden="false" Ghost="false" ColorSource="bg_color"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'urovenriska', curLngWeb )%>"  Width="120" Value="risk_perspective_name" Type="string" Sortable="True" Hidden="false" Ghost="false" ColorSource="bg_color"/>
+						<DataGridColumn Width="130" Title="<%=tools_web.get_web_const( 'ugrozaklyuchevoy', curLngWeb )%>"  Value="key_position_threat_name" Type="string" Sortable="True" Hidden="false" Ghost="false" ColorSource="bg_color"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'preemniki', curLngWeb )%>"  Width="100" Value="successors_count" Type="string" Sortable="True" Hidden="<%=!bCountSuccessors%>" Ghost="false" ColorSource="bg_color"/>
+<%
+					}
+%>
+						<Menu Source="{CatalogListMenu<%=sName%>DataGrid}"/>
+					</DataGrid>
+					<HTMLBox>
+						<![CDATA[
+							<table border="0" cellpadding="4" cellspacing="10">
+								<tr>
+<%
+					if(ArrayOptFind(arrStatusList, "This == 'plan'") != undefined)
+					{
+%>
+									<td style="width: 20px; background-color: <%=strKeyPositionPlanColor%>">&nbsp;</td>
+									<td><%=tools_web.get_web_const( "planiruetsya", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrStatusList, "This == 'active'") != undefined)
+					{
+%>
+									<td style="width: 20px; background-color: <%=strKeyPositionActiveColor%>">&nbsp;</td>
+									<td><%=tools_web.get_web_const( "vppb_state_working", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrStatusList, "This == 'agreement'") != undefined)
+					{
+%>
+									<td style="width: 20px; background-color: <%=strKeyPositionAgreementColor%>">&nbsp;</td>
+									<td><%=tools_web.get_web_const( "nasoglasovanii", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrStatusList, "This == 'approved'") != undefined)
+					{
+%>
+									<td style="width: 20px; background-color: <%=strKeyPositionApprovedColor%>">&nbsp;</td>
+									<td><%=tools_web.get_web_const( "prinyata", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrStatusList, "This == 'archive'") != undefined)
+					{
+%>
+									<td style="width: 20px; background-color: <%=strKeyPositionArchiveColor%>">&nbsp;</td>
+									<td><%=tools_web.get_web_const( "vmkpb_archive", curLngWeb )%></td>
+<%
+					}
+%>
+								</tr>
+							</table>
+						]]>
+					</HTMLBox>
+				</TabItem>
+<%
+			}
+			break;
+			case "successors":
+			{
+				sName="Successors"
+				sTabTitle = tools_web.get_web_param( curParams, "talent_pool_succession_plan.tab_list."+sTabListParam+"_tab", "", true );
+				if (Trim(sTabTitle)=="")
+				{
+					sTabTitle=tools_web.get_web_const( 'preemniki', curLngWeb )
+				}
+
+%>
+				<TabItem Title="<%=sTabTitle%>" Name="<%=sTabListParam%>Tab" Click="{!SuccessorsTabClickAction};SET=SuccessorsTabClickAction,<%=UrlEncode(strSuccessorsTabClickDefaultAction)%>;">
+				
+					<Action Name="<%=sName%>listAction" Initialize="HIDE=<%=sName%>PPMStackPanel;Set=<%=sName%>Collection/sView,list;SHOW=<%=sName%>DataGridStackPanel;SET=UpdateObjectName,<%=sName%>DataGrid;UPDATE=<%=sName%>DataGrid"/>
+					<Action Name="<%=sName%>tileAction" Initialize="SHOW=<%=sName%>PPMStackPanel;Set=<%=sName%>Collection/sView,matrix;HIDE=<%=sName%>DataGridStackPanel;SET=UpdateObjectName,<%=sName%>PPM;UPDATE=<%=sName%>PPM"/>
+
+					<Edit Name="<%=sName%>Toggle" Hidden="1"></Edit>
+					<Edit Name="<%=sName%>ToggleAction" Hidden="1"></Edit>
+
+
+<%
+				sUpdateAction="UPDATE={UpdateObjectName}"
+				arrItems = [];
+				arrRowFilters=[]
+				
+				curFilter = {
+					"id": sName+"FiltersPanelNew",
+					"action": sUpdateAction,
+					"disp_search": true,
+					"search_field": sName+"SearchField",
+					"search_value": "",
+					"search_width": "200",
+					"filters":arrItems,
+					"row_filters": arrRowFilters,
+					"buttons": []
+				};
+				
+				if (bDesctop)
+				{
+					curFilter.SetProperty("selectors","list;tile")
+					curFilter.SetProperty("selectors_field",sName+"ViewType")
+					curFilter.SetProperty("selectors_value",(sDefaultSuccessorView != "matrix"?"list":"tile"))
+					curFilter.SetProperty("selectors_action","SET="+sName+"Toggle,"+sName+"{"+sName+"ViewType}Action;SET="+sName+"ToggleAction,"+UrlEncode("ACTION=")+"{"+sName+"Toggle}"+UrlEncode("")+";{!"+sName+"ToggleAction}")
+					if (bShowUpdatePPMMatrixButton )
+					{
+						curFilter.buttons.push({"title":tools_web.get_web_const( 'c_refresh', curLngWeb ),"click":sUpdateAction}),
+					}
+				}
+
+				//Add filter with drop-down selection to main panel		
+				
+				arrComboItems=[]
+				arrComboItems.push( {"value":"all", "title":sConstAllStatuses})
+							for(fldStatus in curLngCommon.successor_status_types)
+							{
+					arrComboItems.push( {"value":fldStatus.PrimaryKey, "title":XmlAttrEncode(fldStatus.name)} )
+								}
+				arrItems.push( {"name":"SelectStatus"+sName, "type":"combo", "items": arrComboItems,"width":"200", "change":sUpdateAction} );
+				
+				arrRowFiltersRow=[]
+				arrRowFiltersRow.push({"name":"readiness_level_id", "type":"foreign_elem","catalog_name": "readiness_level", "title": tools_web.get_web_const( "urovengotovnos", curLngWeb ),"value":"" })
+				arrRowFiltersRow.push({"name":"development_potential_id", "type":"foreign_elem","catalog_name": "development_potential", "title": tools_web.get_web_const( "potencialrazvi_9", curLngWeb ),"value":"" })
+				arrRowFiltersRow.push({"name":"efficiency_estimation_id", "type":"foreign_elem","catalog_name": "efficiency_estimation", "title": tools_web.get_web_const( "ocenkaeffektiv", curLngWeb ),"value":"" })
+
+				
+				arrRowFilters.push(arrRowFiltersRow)
+				
+
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );				
+
+						// Вызов универсального меню
+						curCollectionMenu = {
+							"catalog_name": "successor"
+						};
+						curCollectionMenu.SetProperty("data_grid_id", sName+"DataGrid");
+						curCollectionMenu.SetProperty("selected_data", "{"+sName+"DataGrid}");
+						curCollectionMenu.SetProperty("id", sName+"DataGrid");
+						Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list_menu.xaml"));
+
+						switch(strSuccessorOpenLinkType)
+						{
+							case "OPENWINDOW":
+							case "OPENURL":
+							{
+								//strSuccessorOpenAction = strSuccessorOpenLinkType + '=' + tools_web.get_mode_clean_url( "talent_pool_successor", "{id}", { doc_id: curDocID } );
+								strSuccessorOpenAction = strSuccessorOpenLinkType + '=' + tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID } );
+								break;
+							}
+							case "DIALOG":
+							{
+								strSuccessorOpenAction = 'SET=SuccessorDialog/iObjectId,{id};OPENDIALOG=SuccessorDialog'
+								break;
+							}
+						}
+					strDefaultSuccessorDialogCloseAction='UPDATE='+sName+'DataGrid'
+%>
+					<Edit Name="SuccessorDialogCloseAction" Hidden="1"><%=strDefaultSuccessorDialogCloseAction%></Edit>
+					<Dialog Name="SuccessorDialog" Source="talent_pool_successor" Width="80%" Heigth="60%" MinHeight="600" Close="{!SuccessorDialogCloseAction}">
+						<Param Name="iObjectId" Value=""/>
+					</Dialog>
+					<Collection Name="<%=sName%>Collection" Source="<%=(catSuccessorsCollection != undefined ? catSuccessorsCollection.code : 'talent_pool_successors')%>">
+						<Param Name="iCareerReserveTypeID" Value="{SelectedCareerReserveType}"/>
+						<Param Name="iBudgetPeriodID" Value="{SelectedBudgetPeriod}"/>
+						<Param Name="bShowWithSubordinate" Value="<%=bShowWithSubordinate%>"/>
+						<Param Name="sStatuses" Value="<%=sStatuses%>"/>
+						<Param Name="sActiveColor" Value="<%=strSuccessorActiveColor%>"/>
+						<Param Name="sRejectedColor" Value="<%=strSuccessorRejectedColor%>"/>
+						<Param Name="sApprovedColor" Value="<%=strSuccessorApprovedColor%>"/>
+						<Param Name="sArchiveColor" Value="<%=strSuccessorArchiveColor%>"/>
+						<Param Name="sSuccessorStatuses" Value="<%=sSuccessorStatuses%>"/>
+						<Param Name="sSelectedStatus" Value="{SelectStatus<%=sName%>}"/>
+						<Param Name="iReadinessLevelID" Value="{readiness_level_id}"/>
+						<Param Name="iDevelopmentPotentialID" Value="{development_potential_id}"/>
+						<Param Name="iEfficiencyEstimationID" Value="{efficiency_estimation_id}"/>
+						<Param Name="sSearchWord" Value="{<%=sName%>SearchField}"/>
+						<Param Name="bCountSuccessors" Value="<%=bCountSuccessors%>"/>
+						<Param Name="sView" Value="<%=(sDefaultSuccessorView)%>"/>
+						<Param Name="OpenLinkObject" Value="<%=strPPMSuccessorOpenLinkObject%>"/>
+					</Collection>
+					<StackPanel Class="XAML-stack-container" Name="<%=sName%>PPMStackPanel" Hidden="<%=(sDefaultSuccessorView != "matrix")%>">
+						<WTMatrix Name="<%=sName%>PPM" Source="{<%=sName%>Collection}"/>
+					</StackPanel>
+					<StackPanel Class="XAML-stack-container" Name="<%=sName%>DataGridStackPanel" Hidden="<%=(sDefaultSuccessorView != "list")%>">
+						<DataGrid Name="<%=sName%>DataGrid" Source="{<%=sName%>Collection}" PageSize="<%=iSuccessorsPageSize%>" Selection="single">
+							<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+							<DataGridColumn Title="PersonID" Value="person_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_fio', curLngWeb )%>" Value="fullname" Type="link" Click="<%=strSuccessorOpenAction%>" Sortable="True"/>
+<%
+						if (bDesctop)
+						{
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'klyuchevayadolzhno', curLngWeb )%>" Value="key_position_name" Type="string" Sortable="True"/>
+<%
+						}
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="100" Type="string"  Sortable="True" ColorSource="color"/>
+<%
+						if (bDesctop)
+						{
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'urovengotovnos', curLngWeb )%>"  Value="readiness_level_name" Type="string" Sortable="True" Hidden="false" Ghost="false"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'potencialrazvi_9', curLngWeb )%>"  Value="development_potential_name" Type="string" Sortable="True" Hidden="false" Ghost="false"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'ocenkaeffektiv', curLngWeb )%>"  Value="efficiency_estimation_name" Type="string" Sortable="True" Hidden="false" Ghost="false"/>
+<%
+						}
+%>
+							<Menu Source="{CatalogListMenu<%=sName%>DataGrid}"/>
+						</DataGrid>
+						<HTMLBox>
+							<![CDATA[
+								<table border="0" cellpadding="4" cellspacing="10">
+									<tr>
+<%
+					if(ArrayOptFind(arrSuccessorStatusList, "This == 'active'") != undefined)
+					{
+%>
+										<td style="width: 20px; background-color: <%=strSuccessorActiveColor%>">&nbsp;</td>
+										<td><%=tools_web.get_web_const( "vppb_state_working", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrSuccessorStatusList, "This == 'approved'") != undefined)
+					{
+%>
+										<td style="width: 20px; background-color: <%=strSuccessorApprovedColor%>">&nbsp;</td>
+										<td><%=tools_web.get_web_const( "prinyat", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrSuccessorStatusList, "This == 'rejected'") != undefined)
+					{
+%>
+										<td style="width: 20px; background-color: <%=strSuccessorRejectedColor%>">&nbsp;</td>
+										<td><%=tools_web.get_web_const( "otklonen", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+					if(ArrayOptFind(arrSuccessorStatusList, "This == 'archive'") != undefined)
+					{
+%>
+										<td style="width: 20px; background-color: <%=strSuccessorArchiveColor%>">&nbsp;</td>
+										<td><%=tools_web.get_web_const( "vmkpb_archive", curLngWeb )%></td>
+<%
+						if (!bDesctop)
+						{
+%>
+								</tr>
+								<tr>
+<%
+						}
+					}
+%>
+									</tr>
+								</table>
+							]]>
+						</HTMLBox>
+					</StackPanel>
+				</TabItem>
+<%
+			}
+			break;
+		}
+	}
+%>
+</TabControl>
+
+</SPXMLScreen>
+ 

@@ -1,0 +1,77 @@
+﻿<SPXMLScreen>
+<%
+
+iPageItemsCount = Int( tools_web.get_web_param( curParams, "iPageItemsCount", "10", true ));
+
+catChat = ArrayOptFirstElem(XQuery("for $elem in personal_chats where $elem/person_id=" + curUserID + " and $elem/partner_id=" + curObjectID + " order by $elem/last_message_date descending return $elem"));
+if(catChat != undefined)
+{
+	docChat = OpenDoc( UrlFromDocID( catChat.chat_id ) );
+	docChat.TopElem.collaborators.GetChildByKey(curUserID).last_view_date = new Date();
+	docChat.Save();
+	dDateDelta = DateOffset( CurDate, 0 - ( 60 ) );
+	curSessionArray = ArraySelectDistinct( ArraySelect( Request.AllSessions, "HasProperty( 'cur_user_id' ) && HasProperty( 'cur_user_fullname' ) && HasProperty( 'cur_date' ) && Date( cur_date ) > dDateDelta" ), "cur_user_id" );	
+	bUserIsOnline = (ArrayOptFind( curSessionArray, "This.cur_user_id==" + catChat.partner_id ) != undefined);
+%>
+<!-------------------------------------- Actions -------------------------------------------->
+<Action Name="CreateMessageAction" Source="communication_create_message" Success="UPDATE=MessagesTileView;SET=MessageText,;">
+  <Param Name="sMessageText" Value="{MessageText}"/>
+  <Param Name="iRecipientId" Value="<%=curObjectID%>"/>
+</Action>
+<Collection Name="CommunicationMessagesCollection" Source="communication_messages_collection">
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+	<Param Name="cur_user_id" Value="<%=curUserID%>"/>
+</Collection>
+<!-------------------------------------- Collections -------------------------------------------->
+
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "moyaperepiskass", curLngWeb )%>: <%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>	
+
+<%
+		if(!catChat.prohibited && !catChat.partner_prohibited && catChat.confirmed && catChat.partner_confirmed)
+		{
+%>
+			<Panel Title="<%=tools_web.get_web_const( "vfb_submit2", curLngWeb )%>" Expanded="1" Width="100%">
+				<StackPanel Orientation="Vertical" Class="XAML-chat-form" >	
+					<EditBox Name="MessageText" Width="100%" Height="70"></EditBox>
+					<StackPanel Orientation="Horizontal" Class="XAML-chat-form-buttons">	
+						<Button Class="XAML-button XAML-button-comment" Click="ACTION=CreateMessageAction" Width="150"><%=tools_web.get_web_const( "vcb_submit", curLngWeb )%></Button>
+<%
+			if( bUserIsOnline && false )
+			{
+%>
+						<Button Class="XAML-button XAML-button-chat" Click="OPENURL=<%=tools_web.get_mode_clean_url( "personal_chat", null, { doc_id: curDocID } )%>#<%=catChat.partner_id%>" Width="150"><%=tools_web.get_web_const( "pereytivperson", curLngWeb )%></Button>
+<%
+			}
+%>
+					</StackPanel>
+				</StackPanel>
+			</Panel>
+
+	<TileView Name="MessagesTileView" Width="100%" Columns="1" Height="" Class="XAML-tileview-list" PageSize="<%=iPageItemsCount%>" DataSource="{CommunicationMessagesCollection}" TemplateSource="communication_message_tile"/>
+<%
+		}
+		else
+		{
+			sMessage = "";
+			if(catChat.prohibited)			
+				sMessage = tools_web.get_web_const( "vyotkazalisoto", curLngWeb );
+			else if(catChat.partner_prohibited)
+				sMessage = tools_web.get_web_const( "dannyysotrudni", curLngWeb );
+			else if(!catChat.confirmed)
+				sMessage = tools_web.get_web_const( "vynepodtverdil", curLngWeb );
+			else if(!catChat.partner_confirmed)
+				sMessage = tools_web.get_web_const( "dannyysotrudni_1", curLngWeb );
+			
+%>
+	<Label><%=sMessage%></Label>	
+<%
+		}
+	}
+	else
+	{
+%>
+	<Label ><%=tools_web.get_web_const( "perepiskanenay", curLngWeb )%></Label>	
+<%
+	}
+%>
+</SPXMLScreen>

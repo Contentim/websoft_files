@@ -1,0 +1,394 @@
+﻿<SPXMLScreen>
+<%
+	var iRequestTypeId = tools_web.get_web_param(curParams, "education_method_map.request_type_id", "", true);
+	var aInfoBlocks = String( tools_web.get_web_param(curParams, "education_method_map.info_block", "", true )).split(";");
+	var bExpanded = tools_web.is_true(tools_web.get_web_param(curParams, "education_method_map.expanded", true, true )) ? 1 : 0;
+	var bRecommendedOnly = tools_web.is_true(tools_web.get_web_param(curParams, "education_method_map.show_recommended_only", "0", true ));
+	var bShowOpenEduMethod = tools_web.is_true(tools_web.get_web_param(curParams, "education_method_map.show_open_edu_method", "0", true ))
+	
+	var sCategoryExpandedClass = String( tools_web.get_web_param(curParams, "education_method_map.design.category_icon_expanded_class", "icon-minus", true ));
+	var sCategoryCollapsedClass = String( tools_web.get_web_param(curParams, "education_method_map.design.category_icon_collapsed_class", "icon-plus", true ));	var sCheckIconClass = String( tools_web.get_web_param(curParams, "education_method_map.design.check_icon_class", "icon-checkmark", true ));
+	
+	var sURLCategoryExpanded = String( tools_web.get_web_param(curParams, "education_method_map.design.info_icon_expanded", "pics/block_arrow_up.png", true ));
+	var sURLCategoryCollapsed = String( tools_web.get_web_param(curParams, "education_method_map.design.info_icon_collapsed", "pics/block_arrow_down.png", true ));
+	
+	var sRatingFormula = String( tools_web.get_web_param(curParams, "education_method_map.rating_formula", "", true ));
+	var bRatingFormulaAspEvalType = tools_web.is_true(tools_web.get_web_param(curParams, "education_method_map.rating_formula.js_eval_type", "", true ));
+	var bShowNearestEvents = tools_web.is_true(tools_web.get_web_param(curParams, "education_method_map.show_nearest_events", "1", true ));
+	
+	//var bShowDesc = ( ArrayOptFind( aInfoBlocks, "This == 'desc'" ) != undefined );
+	var bShowEduPrograms = ( ArrayOptFind( aInfoBlocks, "This == 'edu_programs'" ) != undefined );
+	var bShowType = ( ArrayOptFind( aInfoBlocks, "This == 'type'" ) != undefined );
+	var bShowRating = ( ArrayOptFind( aInfoBlocks, "This == 'rating'" ) != undefined );
+	var bShowSimilar = ( ArrayOptFind( aInfoBlocks, "This == 'similar'" ) != undefined );
+	var bShowPlace = ( ArrayOptFind( aInfoBlocks, "This == 'place'" ) != undefined );
+	var sColumnsList = String( tools_web.get_web_param( curParams, "education_method_map.columns", "is_open;duration", true ) )
+	var aColumnsList = sColumnsList == "" ? [] : sColumnsList.split( ";" );
+	var sFiltersList = String( tools_web.get_web_param( curParams, "education_method_map.filters", "", true ) )
+	var aFiltersList = sFiltersList == "" ? [] : sFiltersList.split( ";" );
+	
+	var bUserIsBoss = (ArrayOptFirstElem(XQuery("for $elem in func_managers where $elem/person_id = " + curUserID + " and $elem/is_native = true() return $elem")) != undefined);
+	if (!bUserIsBoss)
+	{
+		bUserIsBoss = curUser.position_id.OptForeignElem;
+		if (bUserIsBoss != undefined)
+			bUserIsBoss = bUserIsBoss.is_boss.Value;
+		else
+			bUserIsBoss = false;
+	}
+	
+	
+	var bShowAllEducation = (bUserIsBoss && !bRecommendedOnly && CONTEXT.GetOptProperty("education_method_boss_recommended_or_all", "-") == "-");
+	function get_value( catElem, name )
+	{
+		if( !catElem.ChildExists( name ) )
+			return "";
+		switch( name )
+		{
+			case "event_form":
+			case "education_org_id":
+					feElem = catElem.Child( name ).OptForeignElem;
+					if( feElem != undefined )
+						return feElem.name.Value;
+					
+					break;
+			default:
+				return catElem.Child( name ).Value;
+		}
+		return "";
+	}
+	function get_type( name )
+	{
+		switch( name )
+		{
+			case "is_open":
+				return "checkbox";
+			default:
+				return "string";
+		}
+		return "string";
+	}
+	function get_title( name )
+	{
+		switch( name )
+		{
+			case "is_open":
+				return tools_web.get_web_const( "verb_title", curLngWeb );
+			case "duration":
+				return tools_web.get_web_const( "c_hour_duration", curLngWeb );
+			case "cost":
+				return tools_web.get_web_const( "c_cost", curLngWeb );
+			case "person_num":
+				return tools_web.get_web_const( "1mdaw3bfgd", curLngWeb );
+			case "event_form":
+				return tools_web.get_web_const( "c_event_form", curLngWeb );
+			case "education_org_id":
+				return tools_web.get_web_const( "8ep5fzi6uu", curLngWeb );
+			case "tag_id":
+				return tools_web.get_web_const( "vkmb_tag", curLngWeb );
+			case "knowledge_part_id":
+				return tools_web.get_web_const( "c_knowledge_part", curLngWeb );
+			case "role_id":
+				return tools_web.get_web_const( "4egocnh7uc", curLngWeb );
+			default:
+				return "";
+		}
+		return "";
+	}
+	function write_role( role, parent_role_id )
+	{
+		if( !tools_web.check_access( role.PrimaryKey, curUserID, curUser, Session ) )
+			return;
+		sAction = "EXPAND";
+		objRole = new Object();
+		objRole.id = role.id.Value;
+		objRole.parent_id = parent_role_id;
+		objRole.education_method_id = "";
+		for( _field in aColumnsList )
+			objRole.SetProperty( _field, "" )
+		objRole.name = tools_web.get_cur_lng_name( role.name.Value, curLng.short_id );
+		objRole.click = sAction;
+		arrResult.push( objRole );
+		
+		for (catChildRole in ArraySelect(aRoles, "This.parent_role_id == " + role.PrimaryKey))
+			write_role( catChildRole, role.id.Value );
+
+		for ( catEduMethodElem in ArraySelect( xarrEduMethods, "ArrayOptFind( This.role_id, 'This == " + role.PrimaryKey + "') != undefined"))
+		{
+			objEduMethod = new Object();
+			for( _field in aColumnsList )
+				objEduMethod.SetProperty( _field, get_value( catEduMethodElem, _field ) )
+			objEduMethod.id = catEduMethodElem.id.Value + "_" + role.id.Value;
+			objEduMethod.education_method_id = catEduMethodElem.id.Value;
+			objEduMethod.parent_id = role.id.Value;
+			objEduMethod.name = tools_web.get_cur_lng_name( catEduMethodElem.name.Value, curLng.short_id );
+			objEduMethod.click = "SET=EducationMethodDesc/EducationMethodId," + catEduMethodElem.PrimaryKey + ";OPENDIALOG=EducationMethodDesc;";
+			arrResult.push( objEduMethod );
+		}
+	}
+	
+	arrResult = new Array();
+	var sRolesCodes = String(tools_web.get_web_param(curParams, "education_method_map.role_codes", "", true ));
+	
+	conds = new Array();
+	
+	if ( sRolesCodes != "" )
+	{
+		aRolesIDs = XQuery("for $elem in roles where $elem/catalog_name = 'education_method' and MatchSome($elem/code, (" + ArrayMerge( sRolesCodes.split(",") , "XQueryLiteral(This)", ",") + ")) return $elem");
+		
+		if (ArrayOptFirstElem(aRolesIDs) != undefined)
+		{
+			conds.push( " MatchSome($elem/role_id, (" + ArrayMerge( aRolesIDs, "This.PrimaryKey", ",") + "))" );
+		}
+	}
+	user_conds = new Array();
+	if ( (!bUserIsBoss && bRecommendedOnly) || (!bShowAllEducation) )
+	{
+		aEduMethodIDs = tools_web.get_user_recommended_learning(curUserID, curUser);
+		user_conds.push( " MatchSome( $elem/id, (" + ArrayMerge( aEduMethodIDs, "This.id", "," ) + " ) )" );
+		if( bShowOpenEduMethod )
+			user_conds.push( "$elem/is_open = true()" )
+	}
+	if( ArrayOptFirstElem( user_conds ) != undefined )
+		conds.push( "( " + ArrayMerge( user_conds, "This", " or " ) + " )" )
+	//alert( tools.object_to_text( CONTEXT, "json" ) )
+	if (CONTEXT.GetOptProperty("education_method_common_search_field", "") != "")
+	{
+		bExpanded = true;
+		conds.push( " doc-contains($elem/id, 'wt_data', '" + CONTEXT.GetProperty( "education_method_common_search_field" ) + "')" );
+	}
+		
+	if ( CONTEXT.GetOptProperty("education_method_education_org_id", "") != "" )
+	{
+		bExpanded = true;
+		conds.push( " $elem/education_org_id = " + CONTEXT.GetOptProperty("education_method_education_org_id", "") );
+	}
+		
+	if ( CONTEXT.GetOptProperty("education_method_event_form", "") != "" )
+	{
+		bExpanded = true;
+		conds.push( " $elem/event_form = " + XQueryLiteral( String( CONTEXT.GetOptProperty("education_method_event_form", "") ) ) );
+	}
+	if ( CONTEXT.GetOptProperty("education_method_tag_id", "") != "" )
+	{
+		bExpanded = true;
+		conds.push( " contains( $elem/tags, " + XQueryLiteral( String( CONTEXT.GetOptProperty("education_method_tag_id", "") ) ) + " )" );
+	}
+	if ( CONTEXT.GetOptProperty("education_method_knowledge_part_id", "") != "" )
+	{
+		bExpanded = true;
+		conds.push( " contains( $elem/knowledge_parts, " + XQueryLiteral( String( CONTEXT.GetOptProperty("education_method_knowledge_part_id", "") ) ) + " )" );
+	}
+		
+	if ( CONTEXT.GetOptProperty("education_method_role_id", "") != "" )
+	{
+		bExpanded = true;
+		conds.push( " MatchSome( $elem/role_id, " + CONTEXT.GetOptProperty( "education_method_role_id", "") + " )" );
+	}
+
+	if ( CONTEXT.GetOptProperty( "education_method_type_search_field", "-") != "-" )
+		conds.push( " $elem/type = '" + CONTEXT.GetProperty("education_method_type_search_field") + "'" );
+	
+
+	var catEduMethod, xarrEduMethods = XQuery( "for $elem in education_methods " + ( ArrayOptFirstElem( conds ) != undefined ? " where " + ArrayMerge( conds, "This", " and " ) : "" ) + " return $elem" );
+	var aRoles = Array();
+	for (catEduMethod in xarrEduMethods)
+	{
+		for (x in catEduMethod.role_id)
+			aRoles.push(x.Value);
+	}
+	aRoles = ArraySelectAll(QueryCatalogByKeys("roles", "id", ArraySelectDistinct(aRoles, "This")));
+		
+	var catRole, catParentRole;
+	for (catRole in ArraySelectAll(aRoles))
+	{
+		catParentRole = catRole.parent_role_id.OptForeignElem;
+		while (catParentRole != undefined)
+		{
+			if (ArrayOptFind(aRoles, "This.PrimaryKey == " + catParentRole.PrimaryKey) == undefined)
+			{
+				aRoles.push(catParentRole);
+				catParentRole = catParentRole.parent_role_id.OptForeignElem;
+			}
+			else
+				catParentRole = undefined;
+		}
+	}
+	
+	var sRoleOrder = String(tools_web.get_web_param(curParams, "education_method_map.role_order", "", true ));
+	if (sRoleOrder != "")
+		aRoles = ArraySort(aRoles, "This." + sRoleOrder, "+");
+		
+	xarrWithoutRolesEduMethods = ArraySelect( xarrEduMethods, "ArrayOptFirstElem( This.role_id ) == undefined" )
+	
+	if( ArrayOptFirstElem( xarrWithoutRolesEduMethods ) != undefined )
+	{
+		sAction = "EXPAND";
+		objRole = new Object();
+		objRole.id = "without_role";
+		objRole.parent_id = "";
+		objRole.education_method_id = "";
+		for( _field in aColumnsList )
+			objRole.SetProperty( _field, "" )
+		objRole.name = "- " + tools_web.get_web_const( "bezkategorii", curLngWeb ) + " -";
+		objRole.click = sAction;
+		arrResult.push( objRole );
+
+		for ( catEduMethodElem in xarrWithoutRolesEduMethods )
+		{
+			objEduMethod = new Object();
+			for( _field in aColumnsList )
+				objEduMethod.SetProperty( _field, get_value( catEduMethodElem, _field ) )
+			objEduMethod.id = catEduMethodElem.id.Value + "_" + objRole.id;
+			objEduMethod.education_method_id = catEduMethodElem.id.Value;
+			objEduMethod.parent_id = objRole.id;
+			objEduMethod.name = tools_web.get_cur_lng_name( catEduMethodElem.name.Value, curLng.short_id );
+			objEduMethod.click = "SET=EducationMethodDesc/EducationMethodId," + catEduMethodElem.PrimaryKey + ";OPENDIALOG=EducationMethodDesc;";
+			arrResult.push( objEduMethod );
+		}
+	}
+	
+	for (catRole in ArraySelect(aRoles, "!This.parent_role_id.HasValue"))
+		write_role( catRole, null );
+	
+%>
+	<Dialog Name="EducationMethodDesc" Source="dlg_education_method_desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_edu_method", curLngWeb ) )%>">
+		<Param Name="EducationMethodId" Value=""/>
+		<Param Name="bShowEduPrograms" Value="<%=bShowEduPrograms%>"/>
+		<Param Name="bShowType" Value="<%=bShowType%>"/>
+		<Param Name="bShowRating" Value="<%=bShowRating%>"/>
+		<Param Name="bRatingFormulaAspEvalType" Value="<%=bRatingFormulaAspEvalType%>"/>
+		<Param Name="sRatingFormula" Value="<%=UrlEncode( sRatingFormula )%>"/>
+		<Param Name="bShowSimilar" Value="<%=bShowSimilar%>"/>
+		<Param Name="iRequestTypeId" Value="<%=iRequestTypeId%>"/>
+	</Dialog>
+	<Collection Name="EduMethodMapCollection">
+		<Data>
+<%
+	
+	for( elem in arrResult )
+	{
+%>
+			<Row>
+				<Cell Id="name" Value="<%=XmlAttrEncode( elem.name )%>"/>
+				<Cell Id="id" Value="<%=elem.id%>"/>
+				<Cell Id="parent_id" Value="<%=elem.parent_id%>"/>
+				<Cell Id="click" Value="<%=elem.click%>"/>
+				<Cell Id="isExpanded" Value="true"/>
+<%
+		for( _field in aColumnsList )
+		{
+%>
+				<Cell Id="<%=_field%>" Value="<%=elem.GetOptProperty( _field, "" )%>"/>
+<%
+		}
+%>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<%
+
+	function add_filter( sName, is_main )
+	{
+		obj_filter = new Object();
+		obj_filter.name = "education_method_" + sName;
+		sDefault = "";
+		switch( sName )
+		{
+			case "method_boss_recommended_or_all":
+				obj_filter.type = "combo";
+				obj_filter.items = new Array();
+				obj_filter.items.push( { value: "-", title: tools_web.get_web_const( "vseobuchenie", curLngWeb ) } );
+				obj_filter.items.push( { value: "recommended", title: tools_web.get_web_const( "rekomendovanno", curLngWeb ) } );
+				break;
+				
+			case "type_search_field":
+				obj_filter.type = "combo";
+				obj_filter.items = new Array();
+				obj_filter.items.push( { value: "-", title: tools_web.get_web_const( "f0j4vfoxrb", curLngWeb ) } );
+				obj_filter.items.push( { value: "org", title: tools_web.get_web_const( "vagb_dist", curLngWeb ) } );
+				obj_filter.items.push( { value: "course", title: tools_web.get_web_const( "elektronnoeobu", curLngWeb ) } );
+				break;
+			case "role_id":
+				obj_filter.xquery_qual = "$elem/catalog_name = 'education_method'";
+			case "education_org_id":
+			case "tag_id":
+			case "knowledge_part_id":
+				obj_filter.type = "foreign_elem";
+				obj_filter.catalog_name = StrReplace( sName, "_id", "" );
+				break;
+				
+			case "event_form":
+				obj_filter.type = "combo";
+				obj_filter.items = new Array();
+				obj_filter.items.push( { value: "", title: tools_web.get_web_const( "f0j4vfoxrb", curLngWeb ) } );
+				for( _ef in lists.event_forms )
+					obj_filter.items.push( { value: _ef.id.Value, title: _ef.name.Value } );
+				break;
+				
+			case "boss_recommended_or_all":
+				obj_filter.items = new Array();
+				obj_filter.type = "combo";
+				obj_filter.width = 250;
+				sDefault = "-";
+				obj_filter.items.push( { value: "-", title: tools_web.get_web_const( "vseobuchenie", curLngWeb ) } );
+				obj_filter.items.push( { value: "recommended", title: tools_web.get_web_const( "rekomendovanno", curLngWeb ) } );
+				break;
+		}
+		if( !is_main )
+			obj_filter.title = get_title( sName )
+		//obj_filter.SetProperty( "value", CONTEXT.GetOptProperty( obj_filter.name, sDefault ) )
+		return obj_filter;
+	}
+
+	arr_filters = new Array();
+	row_filters = new Array();
+	for( _filter in aFiltersList )
+	{
+		if( ArrayCount( arr_filters ) >= 3 )
+		{
+			row_filters.push( arr_filters )
+			arr_filters = new Array();
+		}
+		arr_filters.push( add_filter( _filter ) )
+	}
+	if( ArrayCount( arr_filters ) > 0 )
+		row_filters.push( arr_filters )
+	
+	arr_filters = new Array();
+	if ( !bRecommendedOnly && bUserIsBoss )
+		arr_filters.push( add_filter( "boss_recommended_or_all", true ) )
+	arr_filters.push( add_filter( "type_search_field", true ) )
+
+	curFilter = {
+		'id': 'EduMethodMap',
+		'search_width': 150,
+		'search_field': 'education_method_common_search_field',
+		'search_action': "REFRESH;",
+		'action': "REFRESH;",
+		'filters': arr_filters,
+		'row_filters': row_filters
+	};
+	//alert(  tools.object_to_text( curFilter, 'json' ) )
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<DataGrid Name="EduMethodMapDataGrid" Source="{EduMethodMapCollection}" Categorized="id:parent_id" Expanded="<%=bExpanded%>">
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Width="100%" Click="{!click}"/>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+
+		for( _field in aColumnsList )
+		{
+%>
+			<DataGridColumn Title="<%=get_title( _field )%>" Value="<%=_field%>" Type="<%=get_type( _field )%>" Width="100"/>
+<%
+		}
+	}
+%>
+	</DataGrid>
+
+</SPXMLScreen>

@@ -1,0 +1,14 @@
+﻿<SPXMLScreen>
+	<Edit Name="CntValue" Width="185" KeyPress="#13:CLOSEDIALOG"/>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Click="CLOSEDIALOG" Width="100">OK</Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

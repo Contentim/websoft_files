@@ -1,0 +1,166 @@
+﻿<SPXMLScreen>
+<%
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'GroupsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab_groups' ), 0 ) );
+iCurTab = 0-1;
+
+
+arrMainTabs = [
+	{ "id": "main", "title": tools_web.get_web_const( 'yauchastnik', curLngWeb ) },
+	{ "id": "owner", "title": tools_web.get_web_const( 'yavladelec', curLngWeb ) },
+	{ "id": "search", "title": tools_web.get_web_const( 'poiskgrupp', curLngWeb ) }
+];
+sTabListParam = tools_web.get_web_param( curParams, 'groups_body.tab_list', 'main;owner;search', true );
+arrTabListParam = String( sTabListParam ).split( ';' );
+arrTabs = [];
+for ( oTabElem in arrMainTabs )
+{
+	if ( ! StrContains( sTabListParam, oTabElem.id ) )
+		continue;
+	arrTabs.push( oTabElem );
+}
+%>
+<TabControl Name="GroupsBodyTab" TabsHidden="false" ActiveTab="<%=iDefaultTab%>" Width="100%" Class="XAML-tabcontrol-filter">
+<%
+for ( oTabElem in arrTabs )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'groups_body.tab_list.main_tab.block_list', 'main', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "groups_body.tab_list.main_tab", "", true );
+%>
+		<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? oTabElem.title : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'main' )
+		{
+			curView = ({
+				'id': 'Groups',
+				'catalog_name': 'group',
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				'disp_link': 'true',
+				"disp_array": true,
+				"array": ArrayMerge( XQuery( "for $elem in group_collaborators where $elem/collaborator_id = " + curUserID + " and $elem/is_hidden = false() return $elem" ), "group_id", ';' ),
+				//"tabs": arrTabs,
+				//"tab_control_name": "GroupsBodyTab",
+				//"sel_tab": iDefaultTab
+			});
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+		</TabItem>
+<%
+}
+
+
+
+
+///////////////////////////////////////////////   OWNER TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'owner' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'groups_body.tab_list.owner_tab.block_list', 'main', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "groups_body.tab_list.owner_tab", "", true );
+%>
+		<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? oTabElem.title : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'main' )
+		{
+			curView = ({
+				'id': 'GroupsOwner',
+				'catalog_name': 'group',
+				'disp_link': 'true',
+				"disp_array": true,
+				"array": ArrayMerge( XQuery( "for $elem in func_managers where $elem/person_id = " + curUserID + " and $elem/catalog = \'group\' return $elem" ), "object_id", ';' ),
+				//"tabs": arrTabs,
+				//"tab_control_name": "GroupsBodyTab",
+				//"sel_tab": iDefaultTab
+			});
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+		</TabItem>
+<%
+}
+
+
+
+
+
+///////////////////////////////////////////////   SEARCH TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'search' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'groups_body.tab_list.search_tab.block_list', 'tags;main', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "groups_body.tab_list.search_tab", "", true );
+%>
+		<TabItem Reload="true" Title="<%=XmlAttrEncode( sTabTitle == "" ? oTabElem.title : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	if ( iDefaultTab == iCurTab )
+	{
+
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'tags' )
+		{
+			iCurTagID = OptInt( CONTEXT.GetOptProperty( 'tag_id' ), OptInt( curUrlQuery.GetOptProperty( 'tag_id' ), null ) );
+%>
+		<Edit Name="tag_id" Hidden="1"><%=iCurTagID%></Edit>
+<%
+			curTagCloud = ({
+				'id': 'GroupsSearch',
+				'catalog_name': 'group',
+				'tag_id': iCurTagID,
+				'xquery_qual': '$elem/join_mode != \'close\' and $elem/is_hidden = false()',
+				'url_query': ( 'tab_groups=' +iCurTab )
+			});
+		}
+
+		if ( sTabElem == 'main' )
+		{
+			curView = ({
+				'id': 'GroupsSearch',
+				'catalog_name': 'group',
+				'disp_link': 'true',
+				"xquery_qual": ( iCurTagID == null ? "$elem/is_hidden = false()" : " some $to in tagged_objects satisfies ( $elem/id = $to/object_id and $to/tag_id = " + iCurTagID + " ) and $elem/join_mode != 'close' and $elem/is_hidden = false()" ),
+				"filter_mode": "custom",
+				"filter_items": [
+					{ "field": "join_mode" }   //, "name": tools_web.get_web_const( 'vppb_state', curLngWeb ), "default": "#empty#", "type": "integer" }
+				]
+				//"tabs": arrTabs,
+				//"tab_control_name": "GroupsBodyTab",
+				//"sel_tab": iDefaultTab
+			});
+			if ( ArrayOptFind( arrBlockListParam, "This=='tags'" ) != undefined )
+			{
+				curView.SetProperty( "add_templates", [
+					{ "id": "tag_cloud" }
+				] );
+			}
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+
+	}
+%>
+		</TabItem>
+<%
+}
+
+}
+%>
+	</TabControl>
+
+</SPXMLScreen>

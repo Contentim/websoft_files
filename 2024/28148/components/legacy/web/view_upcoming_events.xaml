@@ -1,0 +1,86 @@
+﻿<SPXMLScreen Class="Upcoming-Events">
+<%
+function write_link( title )
+{
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="200" Align="right"/>
+		</GridColumns>
+		<GridRow>
+<%
+	if( title == "" )
+	{
+%>
+			<Label/>
+<%
+	}
+	else
+	{
+%>
+			<Label Class="XAML-label-header-2"><%=XmlAttrEncode( title )%></Label>
+<%
+	}
+%>
+			<Link Click="OPENURL=<%=sLinkUrl%>"><%=XmlAttrEncode( sLinkText )%></Link>
+		</GridRow>
+	</Grid>
+<%
+}
+sTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "upcoming_events.title", "", true ), curLng.short_id );
+sPlaceLink = tools_web.get_web_param( curParams, "upcoming_events.place_link", "down", true )
+if( sTitle == "" )
+	sTitle = tools_web.get_web_const( 'blizhayshiemerop', curLngWeb );
+	
+sLinkText = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "upcoming_events.link_text", "", true ), curLng.short_id );
+if( sLinkText == "" )
+	sLinkText = tools_web.get_web_const( 'vsemeropriyatiya', curLngWeb );
+	
+sLinkUrl = tools_web.get_web_param( curParams, "upcoming_events.link_url", tools_web.get_mode_clean_url( "event_calendar" ), true );
+
+sViewType = tools_web.get_web_param( curParams, "upcoming_events.view_type", "tile", true );
+sCollectionCode = tools_web.get_web_param( curParams, "upcoming_events.remote_collection", "", true );
+if( sCollectionCode == "" )
+	sCollectionCode = "upcoming_events_collection";
+	
+sCustomTileCode = tools_web.get_web_param( curParams, "upcoming_events.custom_web_tile", "", true );
+if( sCustomTileCode == "" )
+	sCustomTileCode = "event_tile";
+%>
+	<Collection Name="UpcomingEventsCollection" Source="<%=sCollectionCode%>">
+		<Param Name="iMaxCnt" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.max_cnt", 10, true )%>"/>
+		<Param Name="iDays" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.days", 30, true )%>"/>
+		<Param Name="sEventTypes" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.event_types", "assessment;case;compound_program;compound_program_elem;dist_test;education_method;education_method_from_program;one_time;webinar", true )%>"/>
+		<Param Name="sType" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.type", "all", true )%>"/>
+		<Param Name="bCheckUserPlace" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.check_user_place", false, true )%>"/>
+		<Param Name="sViewType" Value="<%=sViewType%>"/>
+		<Param Name="sXQueryQual" Value="<%=tools_web.get_web_param( curParams, "upcoming_events.xquery_qual", "", true )%>"/>
+	</Collection>
+<%
+if( sPlaceLink == "up" )
+	write_link( sTitle )
+else
+{
+%>
+	<Label Class="XAML-label-header-2"><%=XmlAttrEncode( sTitle )%></Label>
+<%
+}
+switch( sViewType )
+{
+	case "tile":
+%>
+	<TileView Name="UpcomingEvents" PageSize="<%=OptInt( tools_web.get_web_param( curParams, "upcoming_events.tile_page_size", "", true ), 8 )%>" Rows="<%=tools_web.get_web_param( curParams, "upcoming_events.tile_rows", "", true )%>" Columns="<%=tools_web.get_web_param( curParams, "upcoming_events.tile_columns", "", true )%>" TileHeight="<%=tools_web.get_web_param( curParams, "upcoming_events.tile_height", 300, true )%>" DataSource="{UpcomingEventsCollection}" TemplateSource="<%=sCustomTileCode%>"/>
+<%
+		break;
+	case "list":
+%>
+	<DataGrid Name="UpcomingEvents" Title="" Source="{UpcomingEventsCollection}" PageSize="100"/>
+<%
+		break;
+
+}
+if( sPlaceLink == "down" )
+	write_link( "" )
+%>
+</SPXMLScreen>

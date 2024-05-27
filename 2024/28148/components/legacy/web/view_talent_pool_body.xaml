@@ -1,0 +1,681 @@
+﻿<%
+sConstAllStatuses = tools_web.get_web_const( 'vsestatusy', curLngWeb );
+sConstAllCareerReserveTypes = tools_web.get_web_const( 'vsetipykadrovo', curLngWeb );
+sConstAllNominations = tools_web.get_web_const( 'vsesposobyvydv', curLngWeb );
+sConstAllExclusionReasons = tools_web.get_web_const( 'vseosnovaniyadl', curLngWeb );
+sConstAllCareerReserves=tools_web.get_web_const( 'vseetapyrazvit', curLngWeb )
+sConstFilters = tools_web.get_web_const( 'c_filter', curLngWeb );
+
+%>
+<SPXMLScreen>
+
+<%
+Env = Request.Session.Env;
+curUrlQuery = tools_web.get_url_query( PAGEURL );
+strUpdateList=''
+
+bCacheObjects = tools_web.get_web_param( curParams, "talent_pool.bCacheObjects", "1", true ) == "1";
+bFlush=(OptInt( curUrlQuery.GetOptProperty( "flush" ), OptInt(CONTEXT.GetOptProperty( "flush" ) , 0 ) ,0)==1);
+iGridHeight = tools_web.get_web_param( curParams, "talent_pool.iGridHeight", "100%", true );
+iPageSize=OptInt( tools_web.get_web_param( curParams, "talent_pool.iPageSize", "25", true ),25)
+
+iTasksGridHeight= tools_web.get_web_param( curParams, "talent_pool.iTasksGridHeight", "100%", true );
+iTasksPageSize=OptInt( tools_web.get_web_param( curParams, "talent_pool.iTasksPageSize", "25", true ),25)
+
+strTabList=String( tools_web.get_web_param( curParams, "talent_pool.tab_list", "candidates;reservists;not_passed;excluded_from_reserve;adaptation;all_tasks", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"TalentPoolBodyTab\"");
+
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'TalentPoolBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+	
+bFlush=(OptInt( curUrlQuery.GetOptProperty( "flush" ), OptInt(CONTEXT.GetOptProperty( "flush" ) , 0 ) ,0)==1);
+bHideDismissed = tools_web.get_web_param( curParams, "talent_pool.bHideDismissed", "1", true ) == "1";
+bShowHideDismissedFlag = tools_web.get_web_param( curParams, "talent_pool.bShowHideDismissedFlag", "0", true ) == "1";
+bAddFuncSubordinates = tools_web.get_web_param( curParams, "talent_pool.bAddFuncSubordinates", "1", true ) == "1";
+bShowClearCacheButton=tools_web.get_web_param( curParams, "talent_pool.bShowClearCacheButton", "1", true ) == "1";
+bShowPersonnelReserveTasks=tools_web.get_web_param( curParams, "talent_pool.bShowPersonnelReserveTasks", "1", true ) == "1";
+sCalendarDefaultView = String( tools_web.get_web_param( curParams, 'talent_pool.sCalendarDefaultView', 'category', true ) );
+sTasksDefaultView = tools_web.get_web_param( curParams,'talent_pool.sTasksDefaultView', "list", true );
+bUsePersonnelReserveFilters = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool.use_personnel_reserve_filters", "0", true ));
+bUsePersonnelReserveFiltersPanelExpanded = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool.use_personnel_reserve_filters.show_expanded", "0", true ))
+strPersonnelReserveOpenLinkType = tools_web.get_web_param( curParams, "talent_pool.personnel_reserve_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;dialog
+
+strCareerReserveOpenLinkType = tools_web.get_web_param( curParams, "talent_pool.adaptation_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;dialog
+
+sStatuses=String( tools_web.get_web_param( curParams,"talent_pool.career_reserve_statuses", "plan;active;passed;failed;cancel", true ) )
+arrStatusList = sStatuses.split( ";" );
+bUseCareerReserveStatusesFilters = tools_web.is_true(tools_web.get_web_param( curParams, "talent_pool.use_career_reserve_statuses_filters", "0", true ));
+arrVisibleStatuses=[]
+				
+for(fldStatus in curLngCommon.career_reserve_status_types)
+{
+	try
+	{
+		if(ArrayOptFind(arrStatusList, "This == '" + fldStatus.id + "'") != undefined)
+		{
+			arrVisibleStatuses.push({"id":fldStatus.id,"name":fldStatus.name})
+		}
+	}
+	catch(ex)
+	{
+		alert(ex)
+	}
+}
+
+
+sDefaultViewParam = tools_web.get_web_param( curParams, "talent_pool.sDefaultView", "grid", true ); //tiles,grid
+
+var sTileCode = tools_web.get_web_param( curParams, "talent_pool.talent_pool_tile_code", "collaborator_tile", true );
+
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+
+sPrimaryKey = "talent_pool_" + Request.Session.sid;
+oUserData=null
+bBuildAgain=false
+if (bCacheObjects)
+{
+	try
+	{
+		oUserData = tools_web.get_user_data( sPrimaryKey);
+		if(bFlush||oUserData==null)
+		{
+			throw "update cache";
+		}
+	}
+	catch(ex)
+	{
+		bBuildAgain=true
+	}
+}
+else
+{
+	bBuildAgain=true
+}
+if (bBuildAgain)
+{
+	if (bCacheObjects)
+	{
+		arrTPObj=tools_web.GetTalentPoolObjectsList(curUserID,bAddFuncSubordinates,bHideDismissed);
+		tools_web.set_user_data( sPrimaryKey,({'arrResult':arrTPObj}),86400);
+	}
+}
+
+for ( sTabListParam in arrTabListParam )
+{
+	if (sTabListParam!='all_tasks')
+		strUpdateList=strUpdateList+StrTitleCase(sTabListParam)+'DataGrid,'
+}
+
+if (StrLen(strUpdateList)>0)
+{
+	strUpdateList=StrLeftRange(strUpdateList, StrLen(strUpdateList)-1)
+}
+
+function fnBuildDataGrid(strTabNameParam)
+{
+
+	curCollectionMenu = {
+		"id": StrTitleCase(strTabNameParam),
+		};
+		curCollectionMenu.SetProperty( "catalog_name", "{"+StrTitleCase(strTabNameParam)+"DataGrid:^/obj_type}");
+		curCollectionMenu.SetProperty( "data_grid_id", StrTitleCase(strTabNameParam)+"DataGrid");
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+		
+		sUpdateAction="UPDATE={TalentPool"+StrTitleCase(strTabNameParam)+"UpdateObjectName};"
+		arrItems = [];
+		arrRowFilters=[]
+		if(bUsePersonnelReserveFilters)
+		{
+			
+			/*
+			//Add filter with dialog catalog selection to main panel
+			//arrItems.push( {"name":StrTitleCase(strTabNameParam)+"career_reserve_type_id", "type":"foreign_elem","catalog_name": "career_reserve_type", "title": tools_web.get_web_const( "tipkadrovogore", curLngWeb ),"default":"", "change":sUpdateAction } );
+			
+			//Add filter with drop-down catalog selection to main panel
+			sCatalogName="career_reserve_type"
+			sDispName=common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name
+			arrObjects=XQuery("for $elem in "+sCatalogName+"s order by $elem/"+sDispName+" return $elem")
+			
+			arrComboItems=[]
+			arrComboItems.push( {"value":"", "title":sConstAllCareerReserveTypes})
+			for (fldObject in arrObjects)
+			{
+				arrComboItems.push( {"value":fldObject.PrimaryKey, "title":XmlAttrEncode(tools_web.get_cur_lng_name( fldObject.Child(sDispName).Value, curLng.short_id ))} )
+			}
+			arrItems.push( {"name":StrTitleCase(strTabNameParam)+"career_reserve_type_id", "type":"combo", "items": arrComboItems,"width":"250", "change":sUpdateAction} );
+			*/
+			
+				
+			arrRowFiltersRow=[]
+			arrRowFiltersRow.push({"name":StrTitleCase(strTabNameParam)+"career_reserve_type_id", "type":"foreign_elem","catalog_name": "career_reserve_type", "title": tools_web.get_web_const( "tipkadrovogore", curLngWeb ),"value":"" })
+
+			if (strTabNameParam=='candidates'||strTabNameParam=='excluded_from_reserve')
+			{
+				if (strTabNameParam=='candidates')
+				{
+					arrRowFiltersRow.push({"name":StrTitleCase(strTabNameParam)+"talent_pool_nomination_id", "type":"foreign_elem","catalog_name": "talent_pool_nomination", "title": tools_web.get_web_const( "sposobvydvizhen", curLngWeb ),"value":"" })
+				}
+				else
+				{
+					arrRowFiltersRow.push({"name":StrTitleCase(strTabNameParam)+"exclusion_reason_id", "type":"foreign_elem","catalog_name": "exclusion_reason", "title": tools_web.get_web_const( "osnovaniedlyais", curLngWeb ),"value":"" })
+				}
+			}
+					
+			arrRowFilters.push(arrRowFiltersRow)
+		}
+%>
+	<Action Name="TalentPoolTabPanel<%=StrTitleCase(strTabNameParam)%>listAction" Initialize="HIDE=<%=StrTitleCase(strTabNameParam)%>TileView;SHOW=<%=StrTitleCase(strTabNameParam)%>DataGrid;Set=TalentPool<%=StrTitleCase(strTabNameParam)%>UpdateObjectName,<%=StrTitleCase(strTabNameParam)%>DataGrid;<%=sUpdateAction%>"/>
+	<Action Name="TalentPoolTabPanel<%=StrTitleCase(strTabNameParam)%>tileAction" Initialize="SHOW=<%=StrTitleCase(strTabNameParam)%>TileView;HIDE=<%=StrTitleCase(strTabNameParam)%>DataGrid;Set=TalentPool<%=StrTitleCase(strTabNameParam)%>UpdateObjectName,<%=StrTitleCase(strTabNameParam)%>TileView;<%=sUpdateAction%>"/>
+
+	<Edit Name="TalentPoolTabPanel<%=StrTitleCase(strTabNameParam)%>Toggle" Hidden="1"></Edit>
+	<Edit Name="TalentPoolTabPanel<%=StrTitleCase(strTabNameParam)%>ToggleAction" Hidden="1"></Edit>
+
+<%
+		curFilter = {
+			"id": StrTitleCase(strTabNameParam)+"FiltersPanelNew",
+			"action": sUpdateAction,
+			"disp_search": true,
+			"search_field": StrTitleCase(strTabNameParam)+"SearchField",
+			"search_value": "",
+			"search_width": "200",
+			"selectors": "list;tile",
+			"selectors_field": StrTitleCase(strTabNameParam)+"ViewType",
+			"selectors_value": (sDefaultViewParam != "tiles"?"list":"tile"),
+			"selectors_action": "SET=TalentPoolTabPanel"+StrTitleCase(strTabNameParam)+"Toggle,TalentPoolTabPanel"+StrTitleCase(strTabNameParam)+"{"+StrTitleCase(strTabNameParam)+"ViewType}Action;SET=TalentPoolTabPanel"+StrTitleCase(strTabNameParam)+"ToggleAction,"+UrlEncode("ACTION=")+"{TalentPoolTabPanel"+StrTitleCase(strTabNameParam)+"Toggle}"+UrlEncode("")+";{!TalentPoolTabPanel"+StrTitleCase(strTabNameParam)+"ToggleAction}",
+			"buttons": [],
+			"filters":arrItems,
+			"row_filters": arrRowFilters
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<Collection Name="TalentPool<%=StrTitleCase(strTabNameParam)%>Collection" Source="talent_pool_personnel_reserve_collection">
+<%
+		strSetValue='{CheckBoxHideDismissed}'
+		if (bShowHideDismissedFlag)
+		{
+			strSetValue=bHideDismissed
+		}
+
+		sStatus="candidate"
+		switch(strTabNameParam)
+		{
+			case "candidates":
+				sStatus = "candidate";
+				break;
+			case "reservists":
+				sStatus = "in_reserve";
+				break;
+			case "not_passed":
+				sStatus = "failed";
+				break;
+			case "excluded_from_reserve":
+				sStatus = "left_reserve";
+				break;
+		}
+		
+		switch(strPersonnelReserveOpenLinkType)
+		{
+			case "OPENWINDOW":
+			case "OPENURL":
+			{
+				//strPersonnelReserveOpenAction = strPersonnelReserveOpenLinkType + "=" + tools_web.get_mode_clean_url( "talent_pool_{obj_name}_card", "{id}", { doc_id: curDocID }); 
+				strPersonnelReserveOpenAction = strPersonnelReserveOpenLinkType + "=" + tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID }); 
+				break;
+			}
+			case "DIALOG":
+			{
+				strPersonnelReserveOpenAction='SET=PersonnelReserveDialogCloseAction,'+UrlEncode('ACTION=UpdateTalentPoolCache;UPDATE='+StrTitleCase(strTabNameParam)+'DataGrid')+';SET=PersonnelReserveDialog/iObjectId,{id};OPENDIALOG=PersonnelReserveDialog'
+				break;
+			}
+		}
+%>	
+		<Param Name="bHideDismissed" Value="<%=strSetValue%>"/>
+		<Param Name="bAddFuncSubordinates" Value="<%=XmlAttrEncode(bAddFuncSubordinates)%>"/>		
+	  	<Param Name="iUserID" Value="<%=curUserID%>"/>
+		<Param Name="bCacheObjects" Value="<%=bCacheObjects%>"/>
+		<Param Name="sSelectedStatus" Value="<%=sStatus%>"/>
+		<Param Name="sSearchWord" Value="{<%=StrTitleCase(strTabNameParam)%>SearchField}"/>
+		<Param Name="iCareerReserveTypeId" Value="{<%=StrTitleCase(strTabNameParam)%>career_reserve_type_id}"/>
+		<Param Name="iNominationId" Value="{<%=StrTitleCase(strTabNameParam)%>talent_pool_nomination_id}"/>
+		<Param Name="iExclusionReasonId" Value="{<%=StrTitleCase(strTabNameParam)%>exclusion_reason_id}"/>
+		<Param Name="ViewType" Value="{<%=StrTitleCase(strTabNameParam)%>ViewType}"/>
+	</Collection>
+	<Edit Name="TalentPool<%=StrTitleCase(strTabNameParam)%>UpdateObjectName" Hidden="1"><%=(sDefaultViewParam == "tiles"?StrTitleCase(strTabNameParam)+"TileView":StrTitleCase(strTabNameParam)+"DataGrid")%></Edit>
+	<TileView Width="100%" PageSize="<%=iPageSize%>" TileHeight="350" DataSource="{TalentPool<%=StrTitleCase(strTabNameParam)%>Collection}" TemplateSource="<%=sTileCode%>" Name="<%=StrTitleCase(strTabNameParam)%>TileView" Hidden="<%=(sDefaultViewParam != "tiles")%>"/>
+	<DataGrid Name="<%=StrTitleCase(strTabNameParam)%>DataGrid" Source="{TalentPool<%=StrTitleCase(strTabNameParam)%>Collection}" Height="<%=iGridHeight%>" Selection="multiple" PageSize="<%=iPageSize%>" Hidden="<%=(sDefaultViewParam != "grid")%>">
+		<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+		<DataGridColumn Title="obj_type" Value="obj_type" Width="50" Type="string" Hidden="true" Ghost="false"/>	
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="<%=bDesctop?"100%":"200"%>" Type="link" Click="<%=strPersonnelReserveOpenAction%>" Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "tiprezerva", curLngWeb )%>" Value="career_reserve_type_name" Width="<%=bDesctop?"200":"100"%>" Type="string" Sortable="True"/>
+<%
+    if (bDesctop)
+	{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_subd", curLngWeb )%>" Value="position_parent_name" Width="200" Type="string" Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_position", curLngWeb )%>" Value="position_name" Width="200" Type="string" Sortable="True"/>
+<%
+		if (strTabNameParam=="candidates")
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "qpltbj1sg1", curLngWeb )%>" Value="start_date" Width="150" Type="string" Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "sposobvydvizhen", curLngWeb )%>" Value="nomination" Width="250" Type="string" Sortable="True"/>
+<%
+		}
+		else if (strTabNameParam=="reservists")
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "datavklyucheniyav", curLngWeb )%>" Value="include_reserve_date" Width="150" Type="string" Sortable="True"/>
+<%
+		}
+		else if (strTabNameParam=="excluded_from_reserve")
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "dataisklyucheniya", curLngWeb )%>" Value="finish_date" Width="120" Type="string" Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "osnovaniedlyais", curLngWeb )%>" Value="exclusion_reason" Width="250" Type="string" Sortable="True"/>
+<%
+		}
+	}
+%>	
+		<Menu Source="{CatalogListMenu<%=StrTitleCase(strTabNameParam)%>}"/>		
+	</DataGrid>
+<%
+}
+%>
+<Edit Name="PersonnelReserveDialogCloseAction" Hidden="1"></Edit>
+<Dialog Name="PersonnelReserveDialog" Source="talent_pool_pr_card" Width="80%" Heigth="60%" Close="{!PersonnelReserveDialogCloseAction}">
+	<Param Name="iObjectId" Value=""/>
+</Dialog>
+
+<Edit Name="CareerReserveDialogCloseAction" Hidden="1"></Edit>
+<Dialog Name="CareerReserveDialog" Source="talent_pool_cr_card" Width="80%" Heigth="60%" Close="{!CareerReserveDialogCloseAction}">
+	<Param Name="iObjectId" Value=""/>
+</Dialog>
+
+<Dialog Name="AddPRFileDialog" Source="dlg_talent_pool_add_file" Title="<%=tools_web.get_web_const( "vdb_add_file", curLngWeb )%>" Width="350">
+  <Param Name="iObjectId" Value=""/>
+  <Param Name="task_id" Value=""/>
+</Dialog>
+
+<Action Name="UpdateTalentPoolCache" Source="talent_pool_update_cache" Success="UPDATE=<%=strUpdateList%>" Failure="ALERT={messageText}">	
+<%
+	strSetValue="{CheckBoxHideDismissed}"
+	if (bShowHideDismissedFlag)
+	{
+		strSetValue=bHideDismissed
+	}
+%>	
+	<Param Name="bHideDismissed" Value="<%=strSetValue%>"/>
+	<Param Name="bAddFuncSubordinates" Value="<%=XmlAttrEncode(bAddFuncSubordinates)%>"/>		
+  	<Param Name="curUserID" Value="<%=curUserID%>"/>
+	<Param Name="bCacheObjects" Value="<%=bCacheObjects%>"/>
+</Action>
+<%
+sTitleCSS = "XAML-object-title-label";
+sTitle = (curDoc != null) ?tools_web.get_cur_lng_name( curDoc.name, curLng.short_id ) : tools_web.get_web_const( "interfeysuprav", curLngWeb );
+%>
+
+<Label Class="<%=sTitleCSS%>"><%=sTitle%></Label>
+<%
+bShowTabs=ArrayCount(arrTabListParam)>1
+if (bShowTabs)
+{
+%>
+<TabControl Name="TalentPoolBodyTab" Class="XAML-tabcontrol-filter" Preservable="1" TabsWidth="200" Width="100%" <%=paramListViewTab!=0?'ActiveTab="'+paramListViewTab+'"':""%> Adapt="true">
+<%
+}
+	for ( sTabListParam in arrTabListParam )
+	{		
+		if (sTabListParam=="candidates"||sTabListParam=="reservists"||sTabListParam=="not_passed"||sTabListParam=="excluded_from_reserve")
+		{
+			strTabNameParam=sTabListParam
+		switch(sTabListParam)
+		{
+			case "candidates":
+			{
+				sTabTitle=tools_web.get_web_const( "kandidatyvreze", curLngWeb )
+				break;
+			}
+			case "reservists":
+			{
+				sTabTitle=tools_web.get_web_const( "rezervisty", curLngWeb )
+				break;
+			}
+			case "not_passed":
+			{
+				sTabTitle=tools_web.get_web_const( "neproshliispyta", curLngWeb )
+				break;
+			}
+			case "excluded_from_reserve":
+			{
+				sTabTitle=tools_web.get_web_const( "isklyuchenyizrez", curLngWeb )
+				break;
+			}
+		}
+			if (bShowTabs)
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(sTabTitle)%>">
+<%
+			}
+			
+		fnBuildDataGrid(sTabListParam)
+		
+			if (bShowTabs)
+			{
+%>
+	</TabItem>
+<%
+			}
+
+		}
+		else if (sTabListParam=="adaptation")
+		{
+			strTabNameParam=sTabListParam
+			if (bShowTabs)
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "vcrb_adaptation", curLngWeb ))%>">
+<%
+			}
+		
+
+	curCollectionMenu = {
+		"id": "AdaptationMenu",
+		};
+		curCollectionMenu.SetProperty( "catalog_name", "{AdaptationDataGrid:^/obj_type}");
+		curCollectionMenu.SetProperty( "data_grid_id", "AdaptationDataGrid");
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+
+		sUpdateAction="UPDATE={AdaptationUpdateObjectName};"
+		arrItems = [];
+		arrRowFilters=[]
+
+				
+		//Add filter with drop-down selection to main panel		
+		arrComboItems=[]
+		arrComboItems.push( {"value":"all", "title":sConstAllStatuses})
+		for(fldStatus in arrVisibleStatuses)
+				{
+			arrComboItems.push( {"value":fldStatus.id, "title":XmlAttrEncode(fldStatus.name)} )
+				}
+		arrItems.push( {"name":"SelectStatusAdaptation", "type":"combo", "items": arrComboItems,"width":"200", "change":sUpdateAction} );
+				
+%>
+	<Action Name="TalentPoolTabPanelAdaptationlistAction" Initialize="HIDE=AdaptationTileView;SHOW=AdaptationDataGrid;Set=AdaptationUpdateObjectName,AdaptationDataGrid;<%=sUpdateAction%>"/>
+	<Action Name="TalentPoolTabPanelAdaptationtileAction" Initialize="SHOW=AdaptationTileView;HIDE=AdaptationDataGrid;Set=AdaptationUpdateObjectName,AdaptationTileView;<%=sUpdateAction%>"/>
+
+	<Edit Name="TalentPoolTabPanelAdaptationToggle" Hidden="1"></Edit>
+	<Edit Name="TalentPoolTabPanelAdaptationToggleAction" Hidden="1"></Edit>
+		
+<%
+		curFilter = {
+			"id": "AdaptationFiltersPanelNew",
+			"action": sUpdateAction,
+			"disp_search": true,
+			"search_field": "AdaptationSearchField",
+			"search_value": "",
+			"search_width": "200",
+			"selectors": "list;tile",
+			"selectors_field": "AdaptationViewType",
+			"selectors_value": (sDefaultViewParam != "tiles"?"list":"tile"),
+			"selectors_action": "SET=TalentPoolTabPanelAdaptationToggle,TalentPoolTabPanelAdaptation{AdaptationViewType}Action;SET=TalentPoolTabPanelAdaptationToggleAction,"+UrlEncode("ACTION=")+"{TalentPoolTabPanelAdaptationToggle}"+UrlEncode("")+";{!TalentPoolTabPanelAdaptationToggleAction}",
+			"buttons": [],
+			"filters":arrItems,
+			"row_filters": arrRowFilters
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );		
+%>
+		<Collection Name="TalentPoolAdaptationCollection" Source="talent_pool_adaptation">
+<%
+		strSetValue="{CheckBoxHideDismissed}"
+		if (bShowHideDismissedFlag)
+		{
+			strSetValue=bHideDismissed
+		}
+		
+		switch(strCareerReserveOpenLinkType)
+		{
+			case "OPENWINDOW":
+			case "OPENURL":
+			{
+				//strCareerReserveOpenAction = strCareerReserveOpenLinkType + "=" + tools_web.get_mode_clean_url( "talent_pool_cr_card", "{id}", { doc_id: curDocID });
+				strCareerReserveOpenAction = strCareerReserveOpenLinkType + "=" + tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID });
+				break;
+			}
+			case "DIALOG":
+			{
+				strCareerReserveOpenAction="SET=CareerReserveDialogCloseAction,"+UrlEncode("ACTION=UpdateTalentPoolCache")+";SET=CareerReserveDialog/iObjectId,{id};OPENDIALOG=CareerReserveDialog"
+				break;
+			}
+		}
+%>	
+			<Param Name="bHideDismissed" Value="<%=strSetValue%>"/>
+			<Param Name="bAddFuncSubordinates" Value="<%=XmlAttrEncode(bAddFuncSubordinates)%>"/>		
+		  	<Param Name="iUserID" Value="<%=curUserID%>"/>
+			<Param Name="bCacheObjects" Value="<%=bCacheObjects%>"/>
+			<Param Name="sSelectedStatus" Value="{SelectStatusAdaptation}"/>
+			<Param Name="sSearchWord" Value="{AdaptationSearchField}"/>
+			<Param Name="ViewType" Value="{AdaptationViewType}"/>
+			<Param Name="sStatuses" Value="<%=sStatuses%>"/>
+		</Collection>
+		<Edit Name="AdaptationUpdateObjectName" Hidden="1"><%=(sDefaultViewParam == "tiles"?"AdaptationTileView":"AdaptationDataGrid")%></Edit>
+		<TileView Width="100%" PageSize="<%=iPageSize%>" TileHeight="350" DataSource="{TalentPoolAdaptationCollection}" TemplateSource="<%=sTileCode%>" Name="AdaptationTileView" Hidden="<%=(sDefaultViewParam != "tiles")%>"/>
+		<DataGrid Name="AdaptationDataGrid" Source="{TalentPoolAdaptationCollection}" Height="<%=iGridHeight%>" Selection="multiple" PageSize="<%=iPageSize%>" Hidden="<%=(sDefaultViewParam != "grid")%>">
+			<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Title="obj_type" Value="obj_type" Width="50" Type="string" Hidden="true" Ghost="false"/>
+
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="100%" Type="link" Click="<%=strCareerReserveOpenAction%>" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vcrb_target_position", curLngWeb )%>" Value="adaptation_name" Width="200" Type="string" Sortable="True"/>
+<%
+    if (bDesctop)
+	{
+%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="100" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "qpltbj1sg1", curLngWeb )%>" Value="start_date" Width="150" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_plan_readiness_date", curLngWeb )%>" Value="plan_readiness_date" Width="150" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "datafaktichesko", curLngWeb )%>" Value="finish_date" Width="150" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_readiness_percent", curLngWeb )%>" Value="readiness_percent" Width="120" Type="string" Sortable="True"/>
+<%
+	}
+%>
+			<Menu Source="{CatalogListMenuAdaptation}"/>		
+		</DataGrid>
+<%
+			if (bShowTabs)
+			{
+%>
+	</TabItem>
+<%
+			}
+		}
+		else if (sTabListParam=="all_tasks")
+			{
+				if (bShowTabs)
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "vsezadachi", curLngWeb ))%>">
+<%
+				}
+%>
+		<Action Name="AllRunAction" Source="talent_pool_all_tasks_actions" Success="ALERT={messageText};UPDATE=TalentPoolAllTaskDataGrid;UPDATE=AllTasksCalendar;" Failure="ALERT={messageText}">
+		  <Param Name="sAction" Value=""/>
+		  <Param Name="sSelectedObjects" Value=""/>
+		  <Param Name="sSetSelectedObjects" Value=""/>
+		</Action>
+		
+		<Dialog Name="AllEditTask" Source="<%=tools_web.get_web_param( curParams, "talent_pool_cr_task_edit_template_code", "talent_pool_all_task_edit", true )%>" Close="UPDATE=TalentPoolAllTaskDataGrid;UPDATE=AllTasksCalendar;">
+			<Param Name="iObjectId" Value=""/>
+			<Param Name="task_id" Value=""/>
+			<Param Name="catalog" Value=""/>
+		</Dialog>
+		
+		<Dialog Name="AllSetTaskStatus"  Width="30%" Source="<%=tools_web.get_web_param( curParams, "talent_pool_cr_set_task_status_template_code", "talent_pool_cr_set_task_status", true )%>" Close="SET=AllRunAction/sAction,set_task_status;SET=AllRunAction/sSelectedObjects,{TalentPoolAllTaskDataGrid};SET=AllRunAction/sSetSelectedObjects,{status};ACTION=AllRunAction;">
+		</Dialog>
+<%
+		sUpdateAction="UPDATE=AllTasksCalendar,TalentPoolAllTaskDataGrid"
+		arrItems = [];
+		arrRowFilters=[]
+		//Add filter with drop-down selection to main panel		
+			if (bUseCareerReserveStatusesFilters)
+			{
+			arrComboItems=[]
+			arrComboItems.push( {"value":"all", "title":sConstAllCareerReserves})
+			for(fldStatus in arrVisibleStatuses)
+				{
+				arrComboItems.push( {"value":fldStatus.id, "title":XmlAttrEncode(fldStatus.name)} )
+						}
+			arrItems.push( {"name":"SelectStatus", "type":"combo", "items": arrComboItems,"width":"250", "change":sUpdateAction} );
+					}
+				
+		arrComboItems=[]
+		arrComboItems.push( {"value":"all", "title":sConstAllStatuses})
+		for(fldStatus in arrVisibleStatuses)
+				{
+			arrComboItems.push( {"value":fldStatus.id, "title":XmlAttrEncode(fldStatus.name)} )
+				}
+		arrItems.push( {"name":"SelectTaskStatus", "type":"combo", "items": arrComboItems,"width":"200", "change":sUpdateAction} );
+						
+%>
+	<Action Name="TalentPoolTabPanelAllTasklistAction" Initialize="SET=TalentPoolAllTaskCollection/sViewType,grid;HIDE=AllTasksCalendar;SHOW=TalentPoolAllTaskDataGrid;UPDATE=TalentPoolAllTaskDataGrid;HIDE=CategoryPanel"/>
+	<Action Name="TalentPoolTabPanelAllTasktileAction" Initialize="SET=TalentPoolAllTaskCollection/sViewType,calendar;HIDE=TalentPoolAllTaskDataGrid;SHOW=AllTasksCalendar;UPDATE=AllTasksCalendar;SHOW=CategoryPanel"/>
+
+	<Edit Name="TalentPoolTabPanelAllTaskToggle" Hidden="1"></Edit>
+	<Edit Name="TalentPoolTabPanelAllTaskToggleAction" Hidden="1"></Edit>
+
+<%
+		curFilter = {
+			"id": "TasksFiltersPanelNew",
+			"action": sUpdateAction,
+			"disp_search": true,
+			"search_field": "TasksSearchField",
+			"search_value": "",
+			"search_width": "200",
+			"selectors": "list;tile",
+			"selectors_field": "AllTaskViewType",
+			"selectors_value": (sTasksDefaultView != "tiles"?"list":"tile"),
+			"selectors_action": "SET=TalentPoolTabPanelAllTaskToggle,TalentPoolTabPanelAllTask{AllTaskViewType}Action;SET=TalentPoolTabPanelAllTaskToggleAction,"+UrlEncode("ACTION=")+"{TalentPoolTabPanelAllTaskToggle}"+UrlEncode("")+";{!TalentPoolTabPanelAllTaskToggleAction}",
+			"buttons": [],
+			"filters":arrItems,
+			"row_filters": arrRowFilters
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );		
+%>
+	
+		<Collection Name="TalentPoolAllTaskCollection" Source="talent_pool_all_tasks">
+			<Param Name="sSelectedStatus" Value="{SelectStatus}"/>
+			<Param Name="sSelectedTaskStatus" Value="{SelectTaskStatus}"/>
+			<Param Name="sSelectedCategory" Value="{SelectCategory}"/>
+			<Param Name="sViewType" Value="<%=(sTasksDefaultView=="calendar"?"calendar":"grid")%>"/>
+			<Param Name="bShowPersonnelReserveTasks" Value="<%=bShowPersonnelReserveTasks%>"/>
+			<Param Name="sSearchWord" Value="{TasksSearchField}"/>
+			<Param Name="sStatuses" Value="<%=sStatuses%>"/>
+		</Collection>
+
+		<Collection Name="TalentPoolAllTaskMenu" Source="talent_pool_all_tasks_menu">
+			<Param Name="selected_data" Value="{TalentPoolAllTaskDataGrid}"/>
+			<Param Name="name_id" Value="TalentPoolAllTask"/>
+			<Param Name="id_field_name" Value="obj_id"/>
+			<Param Name="catalog_name_field" Value="catalog"/>
+		</Collection>
+		
+		<Calendar Name="AllTasksCalendar" Width="100%" CategoryWidth="300" Height="500" DataTitle="name" Hidden="<%=(sTasksDefaultView!="calendar")%>"
+			DataStart="start_date" DataEnd="finish_date" DataFormat="formatfld" Source="{TalentPoolAllTaskCollection}"
+				DataCategory="category" SelectedView="<%=sCalendarDefaultView%>" MonthCategoryClick="SHOW=CategoryPanel"
+				DayClick="HIDE=CategoryPanel" WeekClick="HIDE=CategoryPanel" MonthClick="HIDE=CategoryPanel" Modes="day,month,week,category"
+				EventClick="SET=AllEditTask/iObjectId,{obj_id};SET=AllEditTask/task_id,{task_id};SET=AllEditTask/catalog,{catalog};OPENDIALOG=AllEditTask"
+				DataColor="color"/>
+
+		<DataGrid Name="TalentPoolAllTaskDataGrid" Source="{TalentPoolAllTaskCollection}" Height="<%=iTasksGridHeight%>" Selection="multiple" Hidden="<%=(sTasksDefaultView!="list")%>" PageSize="<%=iTasksPageSize%>">
+			<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="true"/>
+			<DataGridColumn Value="obj_id" DataID="obj_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Value="catalog" DataID="catalog" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Value="task_id" DataID="task_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn DataID="open_url" Title="OpenUrl" Value="open_url" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="250" Type="link" Sortable="True" Click="OPENWINDOW=<%= (tools_web.get_mode_clean_url( null, "{person_id}", { doc_id: curDocID })) %>"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Width="100%" Type="link" Click="SET=AllEditTask/iObjectId,{obj_id};SET=AllEditTask/task_id,{task_id};SET=AllEditTask/catalog,{catalog};OPENDIALOG=AllEditTask" Sortable="True"/>
+			
+<%
+    if (bDesctop)
+	{
+%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_type", curLngWeb )%>" Value="type" Width="250" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="150" Type="string" Sortable="True" ColorSource="color"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_plan_date", curLngWeb )%>" Value="plan_date" Width="120" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_fact_date", curLngWeb )%>" Value="fact_date" Width="120" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vdb_aim_value", curLngWeb )%>" Value="score" Width="100" Type="string" Sortable="True"/>
+<%
+	}
+%>
+			<Menu Source="{TalentPoolAllTaskMenu}"/>
+		</DataGrid>		
+<%
+    if (bDesctop)
+	{
+%>
+		<HTMLBox>
+			<![CDATA[
+				<table border="0" cellpadding="4" cellspacing="10">
+					<tr>
+<%
+					for (fldStatus in arrVisibleStatuses)
+					{
+						sDataColor="#FFFFFF";
+						switch(fldStatus.id)
+						{
+							case "plan":
+								sDataColor = "#ffac3e";
+								break;
+							case "active":
+								sDataColor = "#8ed100";
+								break;
+							case "passed":
+								sDataColor = "#8c80c8";
+								break;	
+							case "failed":
+								sDataColor = "#b98533";
+								break;
+							case "cancel":
+								sDataColor = "#ff606f";
+								break;
+						}
+%>
+						<td style="width: 20px; background-color: <%=sDataColor%>">&nbsp;</td>
+						<td><%=fldStatus.name%></td>
+<%
+					}
+%>
+					</tr>
+				</table>
+			]]>
+		</HTMLBox> 
+<%
+	}
+			if (bShowTabs)
+			{
+%>
+	</TabItem>
+<%
+			}
+		}
+	}
+if (bShowTabs)
+{
+%>
+</TabControl>
+<%
+}
+if (bShowHideDismissedFlag)
+{
+%>
+<CheckBox Class="XAML-checkbox" Name="CheckBoxHideDismissed" Checked="<%=bHideDismissed%>" Change="ACTION=UpdateTalentPoolCache" ><%=XmlAttrEncode(  tools_web.get_web_const( "c_no_disp_dismiss", curLngWeb ) )%></CheckBox>
+<%
+}
+if (bShowClearCacheButton&&bCacheObjects)
+{
+%>
+<Button Class="XAML-button XAML-button-refresh" Click="ACTION=UpdateTalentPoolCache"><%=HtmlEncode(tools_web.get_web_const( "c_refresh", curLngWeb ))%></Button>
+<%
+}
+%>
+</SPXMLScreen>

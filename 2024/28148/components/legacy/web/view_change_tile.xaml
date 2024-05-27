@@ -1,0 +1,41 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iObjectID != undefined )
+{
+	sName = PARAMETERS.GetOptProperty( "comment", "" );
+	sDesc = ""
+	if( PARAMETERS.GetOptProperty( "person_fullname", "" ) != "" )
+		sDesc = PARAMETERS.GetOptProperty( "person_fullname", "" );
+	if( PARAMETERS.GetOptProperty( "create_date", "" ) != "" )
+		sDesc += ( sDesc != "" ? ", " : "" ) + PARAMETERS.GetOptProperty( "create_date", "" );
+%>
+
+<Grid Width="100%" Class="XAML-grid-list-item" Adapt="1">
+	<GridColumns>
+		<GridColumn Width="100%"/>	
+	</GridColumns>
+	<GridRow>
+		<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+			<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="1">
+				<HTMLBox Class="XAML-label-header-4"><![CDATA[<%=tools_web.convert_bbcode_to_html( sName )%>]]></HTMLBox>					
+			</StackPanel>
+<%
+		if(sDesc != "")
+		{
+%>
+			<Label Class="XAML-label-tile-desc">
+				<![CDATA[<%=sDesc%>]]>
+			</Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+%>
+	</GridRow>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

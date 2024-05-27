@@ -1,0 +1,227 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bEditQuestion = tools_web.is_true( oParamSource.GetOptProperty( ISDIALOG ? "bEditQuestion" : "beditquestion" ) );
+iQuestionId = Int( oParamSource.GetOptProperty( ISDIALOG ? "iQuestionId" : "iquestionid" ) );
+dQues = OpenDoc( UrlFromDocID( iQuestionId ) ).TopElem;
+StatusQuestion = dQues.status;
+pers = dQues.person_id.OptForeignElem;
+tmpCode = tools.random_string( 8 ); 
+%>
+	<Edit Name="TempExpertID" Hidden="1"></Edit>
+	<Dialog Name="SelectDialogForwardExpert" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vyberiteeksper", curLngWeb ) )%>" Close="SET=TempExpertID,{CatalogListDataGridFullList:^/id};SET=AnswerQuestion/action,forward;ACTION=AnswerQuestion;">
+		<Param Name="catalog_name" Value="expert"/>
+	</Dialog>
+	<Action Name="AnswerQuestion" Source="AnswerQuestion" Success="ALERT={messageText};<%=ISDIALOG ? "CLOSEDIALOG" : "REFRESH"%>;" Failure="ALERT={messageText}">
+		<Param Name="action" Value=""/>
+		<Param Name="question_id" Value="<%=iQuestionId%>"/>
+		<Param Name="answer" Value=""/>
+		<Param Name="kp_id" Value=""/>
+		<Param Name="faq" Value=""/>
+		<Param Name="main_tab" Value=""/>
+		<Param Name="open" Value=""/>
+		<Param Name="doc_id" Value="<%=curDocID%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+	<Edit Name="TempCode" Hidden="1"><%=tmpCode%></Edit>
+
+	<Grid Class="XAML-grid-info-table" Adapt="true">	
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vepb_person_asked_question", curLngWeb )%>*:</Label>
+<%											
+if( pers == undefined )
+{
+%>
+			<HTMLBox Class="XAML-answer"><![CDATA[<%=tools_web.get_web_const( "gmk3t7zeoc", curLngWeb )%>]]></HTMLBox> 
+<%
+}
+else
+{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, dQues.person_id )%>"><%=HtmlEncode( pers.fullname )%></Link>	
+<%
+}
+%>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_question", curLngWeb )%>*:</Label>
+<%
+if( bEditQuestion && StatusQuestion )
+{
+%>
+			<EditBox Width="100%" Height="60" Name="question<%=iQuestionId%>"><![CDATA[<%=dQues.question%>]]></EditBox>
+<%
+}
+else
+{
+%>
+			<Label Width="100%"><![CDATA[<%=dQues.question%>]]></Label>
+<%
+}
+%>
+		</GridRow>
+<%
+if( dQues.question_file_id.HasValue )
+{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Файл, прикрепленный к вопросу"%>:</Label>
+			<Link Class="XAML-label-infoblock-header" Click="OPENWINDOW=download_file.html?file_id=<%=dQues.question_file_id%>&sid=<%=tools_web.get_sum_sid( dQues.question_file_id, Session.sid )%>"><![CDATA[<%=dQues.question_file_id.ForeignElem.file_name%>]]></Link>
+		</GridRow>
+								
+<%
+}
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_answer", curLngWeb )%>*:</Label>
+<%			
+if( StatusQuestion )
+{
+%>
+			<HTMLBox Class="XAML-answer"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( iQuestionId ), "expert_question.answer" )%>]]></HTMLBox> 
+<%
+}
+else
+{
+%>
+			<RichEdit Name="answer<%=iQuestionId%>" Class="" Width="<%=curDevice.disp_type != "mobile" ? "100%" : "90%"%>" Height="200" BBCode="0"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( iQuestionId ), "expert_question.answer" )%>]]></RichEdit>
+<%
+}
+%>
+		</GridRow>
+<%
+if( StatusQuestion && dQues.answer_file_id.HasValue )
+{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Файл, прикрепленный к ответу"%>:</Label>
+<%
+	if( StatusQuestion )
+	{
+%>
+			<Link Click="OPENWINDOW=download_file.html?file_id=<%=dQues.answer_file_id%>&sid=<%=tools_web.get_sum_sid( dQues.answer_file_id, Session.sid )%>"><![CDATA[<%=dQues.answer_file_id.ForeignElem.file_name%>]]></Link>
+<%		
+	}
+	else
+	{
+%>
+			<ResourceField Name="FileAttchID<%=iQuestionId%>" Width="200" Source="resources" CurrentValue="" CanCreate="true" CanSelect="false" CanDownload="true"/>
+<%				
+	}			
+%>
+		</GridRow>
+<%
+}
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vfb_subject", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+curSelectorList = {
+	"id": 'KnowledgePart' + iQuestionId + tmpCode,
+	"title": "",
+	"selected_object_ids": ArrayMerge( dQues.knowledge_parts, "This.PrimaryKey", ";" ),
+	"height": "",
+	"catalog_name": "knowledge_part",
+	"disp_search": "false",
+	"disp_filter": "false",
+	"sort_direct": "-",
+	"disp_array": "true",
+	"disp_link": "true",
+	"show_all": true,
+	"list_columns": "name",
+	"is_data_grid": "true",
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>					
+				<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogKnowledgePart<%=iQuestionId%><%=tmpCode%>"><%=tools_web.get_web_const( "izmenit", curLngWeb )%></Button>
+			</StackPanel>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "pe82k7en9s", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+curSelectorList = {
+	"id": 'Tags' + iQuestionId + tmpCode,
+	"title": "",
+	"selected_object_ids": ArrayMerge( dQues.tags, "This.PrimaryKey", ";" ),
+	"height": "",			
+	"catalog_name": "tag",
+	"disp_search": "false",
+	"disp_filter": "false",
+	"sort_direct": "-",
+	"disp_array": "true",
+	"disp_link": "true",
+	"show_all": true,
+	"list_columns": "name",
+	"is_data_grid": "true",
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>					
+				<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogTags<%=iQuestionId%><%=tmpCode%>"><%=tools_web.get_web_const( "izmenit", curLngWeb )%></Button>
+			</StackPanel>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "veb_faq", curLngWeb )%>:</Label>
+			<CheckBox Name="faq<%=iQuestionId%><%=tmpCode%>" Checked="<%=dQues.is_faq%>"></CheckBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vcb_open", curLngWeb )%>:</Label>
+			<CheckBox Name="open<%=iQuestionId%><%=tmpCode%>" Checked="<%=dQues.is_disclosed%>"></CheckBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_create_date", curLngWeb )%>:</Label>
+			<Label><%=( StrDate( dQues.date, false ) )%></Label>
+		</GridRow>
+<%
+if ( dQues.normative_date.HasValue )
+{
+	diff = DateDiff( dQues.normative_date, Date() );
+%>				
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vtr_last_time", curLngWeb )%>:</Label>
+			<Label><%=diff < 0 ? tools_web.get_web_const( "vkmb_expired", curLngWeb ) : Int( diff/86400 ) + " " + tools_web.get_web_const( "vtlpb_message2", curLngWeb )%></Label>	
+		</GridRow>
+<%
+}
+%>	
+	</Grid>
+	<Label/>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" Adapt="1">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+<%
+if ( !StatusQuestion )
+{
+%>
+			<GridColumn Width="100"/>
+<%
+}
+%>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+<%
+if ( StatusQuestion )
+{
+%>	
+			<Button Class="XAML-button XAML-button-save" Click="SET=AnswerQuestion/action,update;ACTION=AnswerQuestion"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+}
+else
+{
+%>
+			<Button Class="XAML-button XAML-button-save" Click="CONFIRM=<%=tools_web.get_web_const( "vepb_expert_mess", curLngWeb )%>;SET=AnswerQuestion/action,answer;SET=AnswerQuestion/answer,{answer<%=iQuestionId%>};ACTION=AnswerQuestion"><%=tools_web.get_web_const( "vfb_submit", curLngWeb )%></Button>
+			<Button Class="XAML-button XAML-button-save" Click="SET=TempQuestionID,<%=iQuestionId%>;OPENDIALOG=SelectDialogForwardExpert"><%=tools_web.get_web_const( "perenapravitvo", curLngWeb )%></Button>
+<%
+}
+%>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

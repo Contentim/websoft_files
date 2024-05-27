@@ -1,0 +1,360 @@
+﻿<SPXMLScreen>
+<%
+/*-----------------------------------------------------------------------------------------------------------*/
+bShowAsDialog = PARAMETERS.HasProperty( 'iPersonId');
+arrTabListParam = String( tools_web.get_web_param( curParams, "event_result.tab_list", "info;materials", true ) ).split( ";" );
+
+if ( curObjectID == null || bShowAsDialog)
+{
+	iEventId = OptInt( curUrlQuery.GetOptProperty( "event_id" ), OptInt(CONTEXT.GetOptProperty( "event_id" ) , 0 ) ,0);
+	iPersonId = OptInt( curUrlQuery.GetOptProperty( "person_id" ), OptInt(CONTEXT.GetOptProperty( "person_id" ) , 0 ) ,0);
+	if(bShowAsDialog)
+	{
+		iEventId = Int(PARAMETERS.GetProperty( 'iEventId'));
+		iPersonId = Int(PARAMETERS.GetProperty( 'iPersonId'));
+	}
+	else
+	{
+		teEventResult = curObject;
+		docEventResult = curObjectDoc;
+	}
+	eventResultArrayFirstElem = ArrayOptFirstElem(XQuery( "for $elem in event_results where $elem/event_id = " + iEventId + " and  $elem/person_id = " + iPersonId + " return $elem" ));	
+	if ( eventResultArrayFirstElem != undefined )
+	{
+		iEventResultId = eventResultArrayFirstElem.id;
+		teEventResult = OpenDoc( UrlFromDocID( iEventResultId ) ).TopElem;
+	}
+	else
+	{
+		docEventResult = OpenNewDoc( "x-local://wtv/wtv_event_result.xmd" );
+		teEventResult = docEventResult.TopElem;
+		teEventResult.person_id = Int( iPersonId );
+		teEventResult.event_id = Int( iEventId );
+		tools.common_filling( "collaborator", teEventResult, teEventResult.person_id );
+		tools.common_filling( "event", teEventResult, teEventResult.event_id );
+		docEventResult.BindToDb( DefaultDb );
+		docEventResult.Save();
+		iEventResultId = docEventResult.DocID;
+	}
+}
+else
+{
+	iPersonId = teEventResult.person_id.Value;
+}
+
+xarrOperations = ArrayUnion(tools.get_object_relative_operations(curUserID, teEventResult.event_id), tools.get_object_relative_operations(curUserID, teEventResult.person_id));
+xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',event,') || StrContains(','+This.operation_catalog_list.Value+',', ',event_result,'))");
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+curEvent = OpenDoc( UrlFromDocID( teEventResult.event_id ) ).TopElem;
+
+if(tools.check_operation_rights(xarrOperations, curUser, "event_result_edit_right") || tools.check_operation_rights(xarrOperations, curUser, "event_result_view_right"))
+{
+	bReadOnly = !tools.check_operation_rights(xarrOperations, curUser, "event_result_edit_right");
+	if(!bReadOnly)
+	{
+%>
+
+	<Action Name="SaveEventResult" Source="event_result_change" Success="ALERT={messageText};<%=(bShowAsDialog ? "REFRESH;CLOSEDIALOG;" : "")%>" Failure="ALERT={messageText}">		
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="iObjectId" Value="<%=iEventResultId%>"/>
+	</Action>
+<%
+		if(!bShowAsDialog)
+		{
+			curTitle = new Object();
+			curTitle.object = curEvent;
+			curTitle.object_title = tools_web.get_web_const( "uchastnikmeropr", curLngWeb );
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+		}
+	}
+%>
+	<TabControl TabsLocation="w" Adapt="1">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		switch(sTabListParam)
+		{
+			case "info":
+			{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>
+				
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_coll")%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teEventResult.person_id, { doc_id: curDocID } )%>"><![CDATA[<%=teEventResult.person_fullname%>]]></Link>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_event")%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teEventResult.event_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( curEvent.name , curLng.short_id )%>]]></Link>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("veresb_exist")%>:</Label>
+					<%
+						if(bReadOnly)
+						{
+					%>
+						<Label><%=( teEventResult.is_assist ? tools.get_web_str("c_yes") : tools.get_web_str("c_no") )%></Label>
+					<%
+						}
+						else
+						{
+					%>
+						<CheckBox Name="is_assist" Checked="<%=( teEventResult.is_assist ? "True" : "False" )%>"/>					
+					<%
+						}
+					%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("veb_tip_exist_confirm")%>:</Label>
+					<%
+						if(bReadOnly)
+						{
+					%>
+						<Label><%=( teEventResult.is_confirm ? tools.get_web_str("c_yes") : tools.get_web_str("c_no") )%></Label>
+					<%
+						}
+						else
+						{
+					%>
+						<CheckBox Name="is_confirm" Checked="<%=( teEventResult.is_confirm ? "True" : "False" )%>"/>					
+					<%
+						}
+					%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "esae2w45hq", curLngWeb )%>:</Label>
+					<%
+						if(bReadOnly)
+						{
+					%>
+						<Label><%=( teEventResult.is_open ? tools.get_web_str("c_yes") : tools.get_web_str("c_no") )%></Label>
+					<%
+						}
+						else
+						{
+					%>
+						<CheckBox Name="is_open" Checked="<%=( teEventResult.is_open ? "True" : "False" )%>"/>					
+					<%
+						}
+					%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("veresb_score")%>:</Label>
+					<%
+						if(bReadOnly)
+						{
+					%>
+						<Label><![CDATA[<%=teEventResult.score%>]]></Label>
+					<%
+						}
+						else
+						{
+					%>
+						<Edit Name="score" Width="40"><![CDATA[<%=teEventResult.score%>]]></Edit>
+					<%
+						}
+					%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools.get_web_str("veresb_t_comment")%>:</Label>
+					<%
+						if(bReadOnly)
+						{
+					%>
+						<Label><![CDATA[<%=teEventResult.tutor_comment%>]]></Label>
+					<%
+						}
+						else
+						{
+					%>
+						<EditBox Name="tutor_comment" Width="100%" Height="50"><%=teEventResult.tutor_comment%></EditBox>
+					<%
+						}
+					%>
+				</GridRow>
+					<%
+						if(teEventResult.collaborator_comment.HasValue)
+						{
+					%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=curEvent.type_id == "case" ? tools.get_web_str("veresb_case_answer") : tools.get_web_str("veresb_p_comment") %>:</Label>						
+					<HTMLBox><![CDATA[<%=teEventResult.collaborator_comment%>]]></HTMLBox>
+				</GridRow>
+				<%
+						}
+				%>
+			</Grid>
+			<%
+
+					arrCustomFieldNames = Array();
+					fldCustomElems = tools.get_custom_template( teEventResult.Name, iEventResultId, teEventResult );
+					if ( fldCustomElems != null )
+					{
+						curCustomFields = {
+							"id": "customFieldsViewGrid",
+							"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+							"source": teEventResult.custom_elems,
+							"modify_eval": !bReadOnly
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					}
+			if(!bReadOnly)
+			{
+			%>			
+			<Button Class="XAML-button XAML-button-content" Click="ACTION=SaveEventResult;"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>	
+			<%
+			}
+			%>
+		</TabItem>
+<%
+			break;
+		}
+		case "materials":
+		{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_materials", curLngWeb )%>">
+		<%
+			arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list.responsibles_tab.block_list", "files;test_learnings;active_test_learnings;assessment_plans;responses", true ) ).split( ";" );
+
+			for ( sTabElem in arrBlockListParam )
+			{
+				if ( sTabElem == "files" && ArrayOptFirstElem(teEventResult.files) != undefined)
+				{
+		%>
+		<Panel Title="<%=tools_web.get_web_const( "vdb_files", curLngWeb )%>">
+			<%
+					dummyObject = teEventResult;
+					dummyObjectID = iEventId;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+			%>
+		</Panel>
+		<%
+				}
+				else if ( sTabElem == "test_learnings" )
+				{
+					curView = {
+						"id": "TestLearnings",
+						"height": "",
+						"title": tools_web.get_web_const( 'po577oo63s', curLngWeb ),
+						"catalog_name": "test_learning",
+						"xquery_qual": ( "$elem/event_id = " + teEventResult.event_id + " and $elem/person_id = " + teEventResult.person_id ),
+						"disp_link": "true",
+						"disp_type": "data_grid",
+						"link_mode": "test_learning_proc",
+						"link_prop": ("='&assessment_id=' + ListElem.assessment_id"),
+						"list_columns": ((curDevice.disp_type != "mobile") ? "assessment_name;score;state_id" : "assessment_name;state_id"),
+						"link_field_index": 0,
+						"sort_index": 3,
+						"sort_direct": "-",
+						"disp_filter": "false",
+						"disp_search": "false"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				}				
+				else if ( sTabElem == "active_test_learnings")
+				{
+					curView = {
+						"id": "TestActiveLearnings",
+						"title": tools_web.get_web_const( 'nezakonchennyet', curLngWeb ),
+						"height": "",
+						"catalog_name": "active_test_learning",
+						"xquery_qual": ( "$elem/event_id = " + teEventResult.event_id + " and $elem/person_id = " + teEventResult.person_id ),
+						"disp_link": "true",
+						"disp_type": "data_grid",
+						"link_mode": "test_learning_proc",
+						"link_prop": ("='&assessment_id=' + ListElem.assessment_id"),
+						"list_columns": ((curDevice.disp_type != "mobile") ? "assessment_name;score;state_id" : "assessment_name;state_id"),
+						"link_field_index": 0,
+						"sort_index": 3,
+						"sort_direct": "-",
+						"disp_filter": "false",
+						"disp_search": "false"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				}				
+				else if ( sTabElem == "assessment_plans")
+				{
+					curView = {
+						"id": "eventAssessmentPlans",
+						"title": tools_web.get_web_const( 'af9p1e3vcg', curLngWeb ),
+						"height": "400",
+						"catalog_name": "event_assessment_plan",
+						"xquery_qual": ("$elem/person_id=" + iPersonId + " and $elem/event_id = " + iEventId +  " and $elem/expert_person_id = " + curUserID + " and $elem/date_start <= date('" + DateNewTime( Date() ) + "')"),
+						"disp_search": "false",
+						"disp_filter": "false",
+						"sort_direct": "-",
+						"list_columns": "person_fullname;is_done"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				
+				}				
+				else if ( sTabElem == "responses")
+				{		
+					catResponse = ArrayOptFirstElem(XQuery( "for $elem in responses where $elem/object_id = " + teEventResult.event_id + " and $elem/person_id = " + iPersonId + " return $elem" ));	
+					if(catResponse != undefined)
+					{
+						teResponse = OpenDoc( UrlFromDocID( catResponse.PrimaryKey ) ).TopElem;
+%>
+		<Label Class="XAML-label-header-4"><%=tools_web.get_web_const( "otzyvsotrudnika", curLngWeb )%>"</Label>
+<%
+						fldCustomElems = tools.get_custom_template( teResponse.Name, teResponse.response_type_id, teResponse );
+						if( fldCustomElems != null )
+						{
+							curCustomFields = {
+								"id": "Response",
+								"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+								"source": teResponse.custom_elems,
+								"modify_eval": false
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+						}
+					}
+				}
+			}
+%>
+		</TabItem>
+<%
+				break;
+			}
+		}
+	}
+%>		
+	</TabControl>
+<%
+	if(bShowAsDialog)
+	{
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=SaveEventResult">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+
+<%
+	}
+}
+else
+{	
+	curMessageBox = {
+		"type": "error",
+		"text": tools_web.get_web_const( "vap_message", curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

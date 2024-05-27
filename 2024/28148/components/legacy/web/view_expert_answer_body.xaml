@@ -1,0 +1,150 @@
+﻿<%
+var bShowAsDialog = ISDIALOG;
+sTextWidth = tools_web.get_web_param( curParams,"expert_answer.text_width", "", true );
+
+if(bShowAsDialog)
+{
+	iQuestionId = Int( PARAMETERS.GetOptProperty( 'iQuestionId' ) );
+		
+	teQuestion = OpenDoc( UrlFromDocID(iQuestionId) ).TopElem
+}
+else
+{
+	teQuestion = curObject;
+	iQuestionId = curObjectID;
+}
+fldExpert = undefined;
+if( teQuestion.expert_id.HasValue )
+	fldExpert = ArrayOptFirstElem( XQuery( "for $elem in experts where $elem/id=" + teQuestion.expert_id + " return $elem" ) );
+	
+colExpert = undefined;
+if( fldExpert != undefined && fldExpert.type == "collaborator" )
+{
+	colExpert = fldExpert.person_id.OptForeignElem;
+}
+
+pers = undefined;
+if( teQuestion.person_id.HasValue )
+	pers = ArrayOptFirstElem( XQuery( "for $elem in collaborators where $elem/id = " + teQuestion.person_id + " return $elem" ) );
+
+%>
+
+<SPXMLScreen Width="100%">
+<%
+curTitle = {
+	"object": teQuestion,
+	"title": teQuestion.question,
+	"image_url": ( pers != undefined && pers.pict_url.HasValue ? pers.pict_url : "/images/collaborator.png" ),
+	"disp_image": true
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+%>
+	<Grid Class="XAML-grid-info-table" Adapt="true">	
+		<GridColumns>
+			<GridColumn Width="150"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vepb_person_asked_question", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teQuestion.person_id )%>"><![CDATA[<%=pers != undefined ? pers.fullname : ""%>]]></Link>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_date", curLngWeb )%>:</Label>
+			<Label><![CDATA[<%=teQuestion.date.HasValue ? StrDate( teQuestion.date, false ) : ""%>]]></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_expert", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teQuestion.expert_id )%>"><![CDATA[<%=fldExpert != undefined ? fldExpert.name : ""%>]]></Link>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<Label><![CDATA[<%=teQuestion.status ? tools_web.get_web_const( "veqb_is_answered", curLngWeb ) : tools_web.get_web_const( "veqb_is_not_answered", curLngWeb )%>]]></Label>
+		</GridRow>
+	</Grid>
+	<Grid Class="XAML-grid-info-table" Adapt="true">	
+		<GridColumns>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+<%
+if( teQuestion.answer.HasValue )
+{
+%>
+			<HTMLBox Dynamic="true"><![CDATA[
+				<style>
+					div.s-h-contaner
+					{
+						font-size: medium;
+						width: 100%;
+					}
+					.s-h-contaner a
+					{
+						word-wrap: break-word;
+					}
+					div.s-h-toolbar
+					{
+						word-wrap: break-word;
+					}
+					img.s-h-img
+					{
+						max-width: 100%;
+						max-height: 100%;
+					}
+					span.s-h-b
+					{
+						font-weight: bold;
+						word-wrap: break-word;
+					}
+					p.s-h-p
+					{
+						word-wrap: break-word;
+					}
+				</style>
+				<div class="s-h-contaner">
+<%
+	Request.Session.Env.SetProperty( 'curDescObjectID', iQuestionId );
+	Response.Write( tools_library.convert_to_simple_html( tools_web.get_web_desc( teQuestion.Child( "answer" ), UrlFromDocID( iQuestionId ), teQuestion.Name + ".answer" ) ) );
+%>
+				</div>
+<%
+	if( curDevice.disp_type == "mobile" )
+	{
+%>
+				<script type="text/javascript">
+					$("div.s-h-contaner").css('max-width', $(document).width()*0.75 + 'px' );
+				</script>
+<%
+	}
+%>		
+			]]></HTMLBox>
+<%
+}
+else
+{
+%>
+			<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_web_const( "netdannyh", curLngWeb )%>]]></Label>
+<%
+}
+%>
+		</GridRow>
+	</Grid>
+<%
+	if( bShowAsDialog )
+	{
+%>
+	<Grid Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons"> 
+		<GridColumns>
+			<GridColumn/>
+		    <GridColumn Width="200"/>
+			<GridColumn Width="100"/>
+		</GridColumns>		
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button XAML-button-page-go" Width="200" Click="OPENWINDOW=<%=tools_web.get_mode_clean_url( "expert_answer", iQuestionId )%>"><%=HtmlEncode(tools_web.get_web_const( 'otkrytvnovomok', curLngWeb ))%></Button>
+			<Button Class="XAML-button XAML-button-cancel" Width="100" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_close', curLngWeb ))%></Button>
+		</GridRow>	
+	</Grid>			
+<%
+	}
+%>
+</SPXMLScreen>

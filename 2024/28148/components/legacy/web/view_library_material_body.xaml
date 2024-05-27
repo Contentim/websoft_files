@@ -1,0 +1,601 @@
+﻿<%
+	var bPlayerMode = true; //MULTIMEDIA PLAYER ON!
+
+	var bThinMode = curDevice.disp_type == "mobile";
+
+	curUrlQuery = UrlQuery( tools_web.transform_fancy_url(PAGEURL) );
+	
+	var tabElem, strTabList = String( tools_web.get_web_param( curParams, "library_material.tab_list", "general;response;subordinates;desc;contents,cover;multimedia", true ) );
+	bAutoplayVideo = tools_web.is_true(tools_web.get_web_param( curParams, "library_material.autoplay_video", "1", true ));
+	arrTabListParam = strTabList.split( ";" );
+	var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"LibraryMaterialBodyTab\"");
+	paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( "LibraryMaterialBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) ));
+	
+	bShowAnnotation = tools_web.is_true(tools_web.get_web_param( curParams, "library_material.show_annotations", "1", true ) );
+	aRequestTypeIDs = ArrayExtract(XQuery( "for $elem in requests where $elem/person_id = " + curUserID + " and $elem/object_id = " + curObjectID + " return $elem/Fields('id','request_type_id')" ), "This.request_type_id.Value");
+	
+	sOnReady = "";
+	catViewing = ArrayOptFirstElem(XQuery( "for $elem in library_material_viewings where $elem/person_id = " + curUserID + " and $elem/material_id=" + curObjectID + " return $elem" ));
+	bIsViewing = (catViewing != undefined);
+	arrDisplayedTabs = new Array();
+	bHasMultimedia=false;
+	bIsOnlineVideo = false;
+	for(fldFormat in curObject.library_material_formats)
+	{
+		catFormat = fldFormat.library_material_format_id.OptForeignElem;
+		catResource = curObject.file_name.OptForeignElem;
+		if(catFormat != undefined && (catFormat.format_type_id == "digital" || catFormat.format_type_id == "online_video") && curObject.file_name.HasValue&&catResource != undefined && (catResource.type == "audio"||catResource.type=="video"||catResource.type == "flv"))
+		{
+			bHasMultimedia=true;
+			bIsOnlineVideo = catFormat.format_type_id == "online_video";
+			break;
+		}
+	}
+	var mainTabs = String( tools_web.get_web_param( curParams, "library_material.tab_list.main_tab.block_list", "image;author;type;year;isbn;section;format;desc", true ) );
+	
+	var xarrOverrideWebTemplates, blockList = String( tools_web.get_web_param( curParams, "library_material.block_list", "object_header;object_buttons;object_tabs", true ) );
+	
+	if (StrContains(blockList, "object_custom_block") || StrContains(strTabList, "custom") || StrContains(mainTabs, "custom"))
+	{
+		xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+	}
+	if (bThinMode)
+		sTabsDispType = "n";
+	else
+		sTabsDispType = tools_web.get_web_param( curParams, 'library_material.tab_list.tabs_disp_type', 'w', true );
+%>
+<SPXMLScreen>
+
+<Action Name="AddFavouriteMaterialAction" Source="library_material_add_favourite" Success="ALERT={messageText};REFRESH" Failure="ALERT={messageText}">
+	<Param Name="iUserID" Value="<%=curUserID%>"/>
+	<Param Name="iLibraryMaterialID" Value="<%=curObjectID%>"/>
+</Action>
+
+<Action Name="SaveMaterial" Source="library_material_change" Success="REFRESH" Failure="ALERT={messageText}">
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	<Param Name="sSelectedFormats" Value=""/>
+</Action>
+<Action Name="PageRefreshFinish" Initialize="OPENURL=<%=tools_web.get_query_string_from_url( PAGEURL, true, "object_id" )%>object_id=<%=curObjectID%>"/>
+<%
+
+	if(ArrayCount(aRequestTypeIDs) > 0)
+	{
+		curMessageBox = {
+			"type": "info",
+			"text": tools_web.get_web_const( "vypodalizayavku_1", curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	
+	
+	
+for (sBlockName in blockList.split(";"))
+switch(sBlockName)
+{
+	case "object_header":
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	break;
+	case "object_buttons":
+%>
+<StackPanel>
+	<Toolbar Class="XAML-toolbar-actions" Adapt="true">
+		
+	
+<%
+	sReaderUrl = "/view_play_resource.html?info=1&object_id=" + curObjectID;
+	
+	if( ( ( curObject.file_name.HasValue && curObject.file_name != "" ) || curObject.library_system_id != 6408848138843285368 ) && sReaderUrl != "" && ( curObject.allow_self_viewing || ArrayOptFirstElem( XQuery( "for $elem in library_material_viewings where $elem/person_id = " + curUserID + " and $elem/state_id != 'finished' and $elem/material_id = " + curObjectID + " return $elem/Fields('id')" ) ) != undefined ) )
+	{
+%>
+		<Button Click="OPENWINDOW=<%=UrlEncode(sReaderUrl)%>" Class="XAML-button XAML-button-important"><%=HtmlEncode(tools_web.get_web_const( "vlmb_view_doc", curLngWeb ))%></Button>
+<%
+	}
+	if(curObject.file_name.HasValue && curObject.file_name != "" && curObject.allow_download)
+	{
+%>
+	<Button Click="OPENURL=/download_file.html?file_id=<%=curObject.file_name%>&sid=<%=tools_web.get_sum_sid( curObject.file_name, Session.sid )%>" Class="XAML-button XAML-button-save"><%=HtmlEncode(tools_web.get_web_const( "skachatprikrepl", curLngWeb ))%></Button>
+<%
+	}
+	
+	if(!bIsViewing)
+	{
+%>
+		<Button Class="XAML-button XAML-button-plus" Click="ACTION=AddFavouriteMaterialAction;"><%=HtmlEncode(tools_web.get_web_const( "dobavitvmoimat", curLngWeb ))%></Button>
+<%
+	}
+	if ( curObject.default_response_type_id.HasValue && !curObject.is_closed )
+	{
+		catResponse = ArrayOptFirstElem(XQuery( "for $elem in responses where $elem/object_id = " + curObjectID + " and $elem/person_id=" + curUserID + " return $elem" ))
+		if(catResponse == undefined)
+		{
+%>
+		<Button Class="XAML-button XAML-button-course-card" Click="OPENURL=<%=tools_web.get_mode_clean_url("response", null, ({"response_object_id": curObjectID, "response_type_id": curObject.default_response_type_id, "doc_id": curDocID}))%>"><%=HtmlEncode(tools_web.get_web_const( "c_text_create_response", curLngWeb ))%></Button>
+<%
+		}
+	}
+	
+	
+	arrRequestTypes = XQuery( "for $elem in request_types where $elem/object_type = 'library_material' return $elem" )
+	for ( catRequestType in arrRequestTypes )
+	{
+		if (aRequestTypeIDs.indexOf(catRequestType.PrimaryKey) < 0)
+		{
+%>
+			<Button Class="XAML-button XAML-button-request" Click="OPENURL=<%=tools_web.get_mode_clean_url("request_create", null, ({"request_object_id": curObjectID, "request_type_id": catRequestType.PrimaryKey, "new": "1", "doc_id": curDocID}))%>"><%=HtmlEncode(tools_web.get_cur_lng_name( catRequestType.name, curLng.short_id ))%></Button>
+<%
+		}
+	}
+%>
+	
+	</Toolbar>
+</StackPanel>
+
+<%
+	break;
+	case "object_tabs":
+%>
+
+
+
+<%
+if (ArrayCount(arrTabListParam) > 0)
+{
+%>
+
+<Grid Width="100%" Class="XAML-grid-content-hor-container">
+	<GridColumns>
+		<GridColumn/>
+<%
+	if(curDevice.disp_type != "mobile")
+	{
+%>
+		<GridColumn Width="230"/>
+<%
+	}
+%>
+	
+	</GridColumns>
+<GridRow>
+
+<TabControl Name="LibraryMaterialBodyTab" ActiveTab="<%=paramListViewTab%>" Width="100%" TabsLocation="<%=sTabsDispType%>" TabsWidth="216">
+<%
+for ( sTabListParam in arrTabListParam )
+{		
+	switch(sTabListParam)
+	{
+		case "general":
+		{
+			arrDisplayedTabs.push(sTabListParam);
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "cavr3d3iwk", curLngWeb ))%>" Class="icon-info2">
+<%
+		if(curObject.image.HasValue && StrContains(mainTabs, "image"))
+		{
+%>
+
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="300"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Image MaxWidth="300" UpdateOnLoad="1" Source="download_file.html?file_id=<%=curObject.image%>&sid=<%=tools_web.get_sum_sid( curObject.image, Session.sid )%>"/>
+<%
+		}
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="1">
+			<GridColumns>
+				<GridColumn Width="50%"/>
+				<GridColumn/>
+			</GridColumns>	
+<%
+		for (tabElem in mainTabs.split(";"))
+		{
+			if(tabElem == "author" && curObject.author.HasValue)
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( "vfb_author", curLngWeb ))%>:</Label>
+				<Label><%=HtmlEncode(curObject.author)%></Label>
+			</GridRow>
+<%
+			}
+			else if (tabElem == "type")
+			{
+				catMatType = curObject.library_material_type_id.OptForeignElem;
+				if(catMatType != undefined)
+				{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( "vlmb_book_view", curLngWeb ))%>:</Label>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name( catMatType.name, curLng.short_id ))%></Label>
+			</GridRow>	
+<%
+				}
+			}
+			else if(tabElem == "year" && curObject.year.HasValue)
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( "c_imprint_date", curLngWeb ))%>:</Label>
+				<Label><%=HtmlEncode(curObject.year)%></Label>
+			</GridRow>	
+<%
+			}
+			else if(tabElem == "isbn" && curObject.isbn.HasValue)
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode("ISSN/ISBN:")%></Label>
+				<Label><%=HtmlEncode(curObject.isbn)%></Label>
+			</GridRow>	
+<%
+			}
+			else if(tabElem == "section" && curObject.section_id.HasValue && curObject.section_id.OptForeignElem != undefined)
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("razdelbibliote")%>:</Label>					
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url("library", null, ({"section_id": curObject.section_id.Value, "doc_id": curDocID}))%>" ><%=curObject.section_id.ForeignElem.name%></Link>
+			</GridRow>
+<%
+			}
+			else if (tabElem == "format")
+			{
+				xarrFormats = QueryCatalogByKeys("library_material_formats", "id", ArrayExtract(curObject.library_material_formats, "PrimaryKey"));	
+				if(ArrayOptFirstElem(xarrFormats)!=undefined)
+				{
+%>
+			<GridRow Class="<%=ArrayCount(xarrFormats) > 1 ? "XAML-gridrow-multiline" : ""%>">
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( "c_format", curLngWeb ))%>:</Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+					for (fldFormat in xarrFormats)
+					{
+%>
+					<Label><%=HtmlEncode(tools_web.get_cur_lng_name( fldFormat.name, curLng.short_id ))%></Label>
+<%
+					}
+%>
+				</StackPanel>
+			</GridRow>	
+<%
+				}
+			}
+			else if (tabElem == "custom")
+			{
+				for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_main', 'zone' ) )
+				{
+					docCWT = tools.open_doc(catOverrideWebTemplateElem.custom_web_template_id);
+					if (docCWT != undefined && docCWT.TopElem.cwt_type == "default" && docCWT.TopElem.out_type == "xaml")
+					{
+						sTitle = tools_web.get_web_param( curParams, "library_material.tab_list.custom_tab", "", true );
+						if (sTitle == "")
+							sTitle = docCWT.TopElem.name.Value;
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(sTitle)%>:</Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<%=tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value, docCWT.TopElem )%>
+				</StackPanel>
+			</GridRow>	
+<%
+					}
+				}
+			}
+		}
+%>
+		</Grid>
+<%
+		if(curObject.image.HasValue && StrContains(mainTabs, "image"))
+		{
+%>
+			</GridRow>	
+		</Grid>
+<%
+		}
+		if(curObject.description.HasValue && bShowAnnotation && StrContains(mainTabs, "desc"))
+		{
+%>
+			<StackPanel Class="XAML-stack-description">
+				<HTMLBox>
+					<%=HtmlEncode( tools_web.get_web_desc( curObject.description, UrlFromDocID( curObjectID ), curObject.Name + ".description" ))%>
+				</HTMLBox>
+			</StackPanel>	
+<%
+		}
+%>
+	</TabItem>
+<%
+			break;
+		}
+		case "response":
+		{
+			xarrResponse = XQuery( "for $elem in responses where $elem/is_public = true() and $elem/object_id="+curObjectID+" order by $elem/create_date descending return $elem" );
+			if (ArrayOptFirstElem(xarrResponse)!=undefined)
+			{
+%>
+			<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "9pllz8peh0", curLngWeb ))%>">
+<%
+		
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_response_list.xaml" ) );
+%>
+			</TabItem>
+<%
+				arrDisplayedTabs.push(sTabListParam);
+			}
+			break;		
+		}
+		case "subordinates":
+		{
+			xarrFuncManagers = XQuery( "for $elem in func_managers where $elem/person_id = " + curUserID + " return $elem" );
+			if ( ArrayOptFirstElem( xarrFuncManagers ) != undefined )
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "podchinennye", curLngWeb ))%>" Class="icon-group">
+<%
+				arrDisplayedTabs.push(sTabListParam);
+				curCollectionMenu = {
+					"id": "SubPerson",
+					"catalog_name": "collaborator",
+					"data_grid_id": "SubUsersDataGrid"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+		<Collection Name="LibraryMaterialSubUsersCollection" Source="library_material_sub_users">
+			<Param Name="iUserID" Value="<%=curUserID%>"/>
+			<Param Name="iLibraryMaterialID" Value="<%=curObjectID%>"/>
+		</Collection>
+		<DataGrid Name="SubUsersDataGrid" Source="{LibraryMaterialSubUsersCollection}" Width="100%" PageSize="15" Selection="single">
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url("collaborator", "{id}", ({"doc_id": curDocID}))%>"/>
+			
+<%
+			if (!bThinMode)
+			{
+%>
+			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "rekomendovan", curLngWeb )%>" Value="recommended" Width="120" Type="string" Sortable="False"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="100" ColorSource="color" Type="string" Sortable="False"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vtlpb_last_use", curLngWeb )%>" Value="last_visit_date" Width="140" Type="string" Sortable="False"/>
+<%
+			}
+%>
+			<DataGridColumn Value="id" Hidden="1" Ghost="0"/>
+			<Menu Source="{CatalogListMenuSubPerson}"/>			
+		</DataGrid>	
+	</TabItem>
+<%
+			}
+			break;
+		}
+		case "contents":
+		{
+			if(curObject.contents.HasValue && curObject.contents != "")
+			{
+%>
+		<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_content", curLngWeb ))%>" Class="icon-list2">		
+			<HTMLBox>
+				<%=HtmlEncode( tools_web.get_web_desc( curObject.contents, UrlFromDocID( curObjectID ), curObject.Name + ".contents" ))%>
+			</HTMLBox>
+		</TabItem>
+<%
+				arrDisplayedTabs.push(sTabListParam);
+			}
+			break;
+		}
+		case "multimedia":
+		{
+			if(bHasMultimedia)
+			{
+%>
+		<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "multimedia", curLngWeb ))%>" Class="icon-film2">		
+			<HTMLBox><![CDATA[<iframe src="/view_play_resource.html?object_id=<%=curObjectID%>&info=1" width="100%" height="500" frameborder="0"></iframe>]]></HTMLBox>
+		</TabItem>		
+<%
+				arrDisplayedTabs.push(sTabListParam);
+			}
+			break;		
+		}
+		case "custom":
+			for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_tab", "zone" ) )
+			{
+				docCWT = tools.open_doc(catOverrideWebTemplateElem.custom_web_template_id);
+				if (docCWT != undefined && docCWT.TopElem.cwt_type == "default" && docCWT.TopElem.out_type == "xaml")
+				{
+%>
+		<TabItem Title="<%=XmlAttrEncode(docCWT.TopElem.name)%>">
+			<%=tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value, docCWT.TopElem )%>
+		</TabItem>		
+<%
+				}
+			}
+			break;
+	}
+}
+bAllowEdit = false;
+if(curObject.section_id.HasValue && curObject.section_id.OptForeignElem != undefined)
+{
+	teSection = OpenDoc(UrlFromDocID(curObject.section_id)).TopElem;
+	bAllowEdit = teSection.administrators.ChildByKeyExists(curUserID);
+}
+if(bAllowEdit)
+{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "vj2v1bhf5z", curLngWeb ))%>" Class="icon-pencil">					
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="50%" Align="Right"/>
+				<GridColumn/>
+			</GridColumns>				
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_code")%>:</Label>					
+				<Edit Name="code" Width="300"><%=curObject.code%></Edit>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_name")%>:</Label>					
+				<Edit Name="name" Width="300"><%=curObject.name%></Edit>
+			</GridRow>
+			<%
+				if(curObject.section_id.HasValue && curObject.section_id.OptForeignElem != undefined)
+				{
+			%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("razdelbibliote")%>:</Label>					
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url("library", null, ({"section_id": curObject.section_id.Value, "doc_id": curDocID}))%>" ><%=curObject.section_id.ForeignElem.name%></Link>
+			</GridRow>
+			<%
+				}
+				if(curObject.file_name.HasValue)
+				{
+			%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("razreshitskachiv")%>:</Label>					
+				<CheckBox Name="allow_download" Checked="<%=curObject.allow_download%>"/>	
+			</GridRow>
+				<%
+					if(bIsOnlineVideo)
+					{
+				%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("videoskonverti")%>:</Label>					
+				<CheckBox Name="online_video_prepared" Checked="<%=curObject.online_video_prepared%>"/>	
+			</GridRow>
+			<%
+					}
+				}
+				sFilename = "";
+				if(curObject.file_name.HasValue && curObject.file_name.OptForeignElem != undefined)
+					sFilename = curObject.file_name.ForeignElem.name;
+			%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_file")%>:</Label>					
+				<ResourceField Name="file_name" Width="200" Source="resources" CurrentValue="<%=curObject.file_name%>" CanCreate="true" CanSelect="true" CanDownload="true"><%=sFilename%></ResourceField>												
+			</GridRow>
+			<%				
+				sCoverFilename = "";
+				if(curObject.image.HasValue && curObject.image.OptForeignElem != undefined)
+				{
+					sCoverFilename = curObject.image.ForeignElem.name;
+				}
+			%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools.get_web_str("oblozhka")%>:</Label>					
+				<ResourceField Name="image" TitleName="<%=sCoverFilename%>" Width="200" Source="resources" CurrentValue="<%=curObject.image%>" CanCreate="true" CanSelect="true" CanDownload="true"><%=sCoverFilename%></ResourceField>												
+			</GridRow>				
+					
+		</Grid>		
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_annatatsiya", curLngWeb ) )%>" Expanded="0" Width="100%">	
+			<RichEdit Name="description" Width="100%" Height="300">
+				<![CDATA[<%=curObject.description%>]]>
+			</RichEdit>
+		</Panel>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_content", curLngWeb ) )%>" Expanded="0" Width="100%">	
+			<RichEdit Name="contents" Width="100%" Height="400">
+				<![CDATA[<%=curObject.contents%>]]>
+			</RichEdit>
+		</Panel>
+%>
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-content" Click="OPENDIALOG=SelectDialogmaterialFormat"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+		</Toolbar>
+<%
+		sID = "materialFormat";
+		sDispNameEditName = "TempDestinationEdit" + sID;
+
+		curSelectorList = {
+			"id": sID,
+			"title": tools_web.get_web_const( "formaty", curLngWeb ),
+			"selected_object_ids": ArrayMerge( ArrayExtract( curObject.library_material_formats, "PrimaryKey" ), "This", ";" ),
+			"height": "200",
+			"catalog_name": "library_material_format",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"disp_link": false,
+			"sort_direct": "-",
+			"disp_array": "true",
+			"show_all": true,
+			"cur_object_type": "library_material_format",
+			"array": ( "{" + sDispNameEditName + "}" ),
+			"list_columns": "name",
+			"is_data_grid": "true",
+			"close_action": "SET=SaveMaterial/sSelectedFormats,{CatalogListDataGridSelList:*/id};"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );		
+%>
+
+		<Button Class="XAML-button XAML-button-content" Click="Action=SaveMaterial"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+	</TabItem>
+<%
+	arrDisplayedTabs.push("editor");
+}
+/*
+	var sCurTab = (ArrayCount(arrDisplayedTabs) > paramListViewTab) ? arrDisplayedTabs[paramListViewTab] : ArrayOptFirstElem(arrDisplayedTabs );
+	if(sCurTab == "multimedia" && (curObject.file_name.ForeignElem.type == "flv" || curObject.file_name.ForeignElem.type == "video"))
+	{
+		if(catViewing == undefined)
+		{
+			docViewing = OpenNewDoc( "x-local://wtv/wtv_library_material_viewing.xmd" );
+			docViewing.BindToDb( DefaultDb );			
+			docViewing.TopElem.state_id = "finished";	
+			docViewing.TopElem.material_id = curObjectID;
+			docViewing.TopElem.person_id = curUserID;
+			docViewing.TopElem.start_viewing_date = CurDate;
+			docViewing.TopElem.last_viewing_date = CurDate;
+			docViewing.TopElem.finish_viewing_date = CurDate;		
+			tools.common_filling( 'collaborator', docViewing.TopElem, curUserID);
+			docViewing.Save();
+		}
+		else 
+		{
+			docViewing = OpenDoc(UrlFromDocID(catViewing.id));
+			if(catViewing.state_id != "finished")
+			{
+				docViewing.TopElem.state_id = "finished";	
+				docViewing.TopElem.finish_viewing_date = CurDate;
+			}
+			docViewing.TopElem.last_viewing_date = CurDate;
+			docViewing.Save();
+		}
+	}
+*/
+%>
+</TabControl>
+
+	</GridRow>
+</Grid>
+<%
+}
+%>
+
+<%
+	break;
+
+	case "object_custom_block":
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			docCWT = tools.open_doc(catOverrideWebTemplateElem.custom_web_template_id);
+			if (docCWT != undefined && docCWT.TopElem.cwt_type == "default" && docCWT.TopElem.out_type == "xaml")
+				Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value, docCWT.TopElem ) );
+		}
+		break;
+	}
+	case "object_desc":
+	{
+		if ( curObject.description.HasValue || curObject.comment.HasValue )
+		{
+			if ( ! curObject.description.HasValue )
+			{
+				curDesc = {
+					"text": curObject.comment.Value
+				};
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+
+		}
+	}
+
+}
+%>
+
+</SPXMLScreen>

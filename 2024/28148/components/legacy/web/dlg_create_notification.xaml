@@ -1,0 +1,27 @@
+﻿<SPXMLScreen>
+<%
+sID = PARAMETERS.GetOptProperty( "name_id", "" );
+%>
+<Edit Name="ParamDlgCloseAction" Hidden="1">SET=CatalogListMenuAction<%=sID%>/values_data,subject={CreateNotificationSubject}|body={CreateNotificationBody};ACTION=CatalogListMenuAction<%=sID%></Edit>
+
+<Label><%=tools_web.get_web_const( 'vfb_subject', curLngWeb )%>:</Label>
+<Edit Name="CreateNotificationSubject" Width="100%"></Edit>
+
+<Label><%=tools_web.get_web_const( '7zen195nnp', curLngWeb )%>:</Label>
+<EditBox Name="CreateNotificationBody" Width="100%" Height="200"></EditBox>
+
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100"/>
+		<GridColumn Width="100"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+		<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+		<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</GridRow>
+</Grid>
+
+</SPXMLScreen>

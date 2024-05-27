@@ -1,0 +1,120 @@
+﻿<SPXMLScreen>
+
+<%
+
+try
+{
+	curPersonID=curDigitalSignatureTemplate.GetProperty( 'person_id', '' );
+}
+catch(ex)
+{
+	curPersonID=curUserID
+}
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+
+strTabList=String( tools_web.get_web_param( curParams, "my_digital_signatures.tab_list", "in_process;signed", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'MyDigitalSignaturesBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+strTabView=String( tools_web.get_web_param( curParams, "my_digital_signatures.tab_view", "tabs", true ) )
+
+
+function fnDrawTags(strNameParam,strTabViewParam,strTypeParam)
+{
+		if (strTabViewParam=='tabs')
+		{
+			if (strTypeParam=='start')
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode(strNameParam)%>">
+<%
+			}
+			else
+			{
+%>
+				</TabItem>
+<%			
+			}
+		}
+		else
+		{
+			if (strTypeParam=='start')
+			{
+%>
+				<Panel Title="<%=XmlAttrEncode(strNameParam)%>">
+<%			}
+			else
+			{
+%>
+				</Panel>
+<%			
+			}
+		}	
+}
+if (strTabView=='tabs')
+{
+%>
+<TabControl Name="MyDigitalSignaturesBodyTab" ActiveTab="<%=paramListViewTab%>" Width="100%">
+<%
+}
+
+for ( sTabListParam in arrTabListParam )
+{	
+	switch(sTabListParam)
+	{
+		case "in_process":
+		{
+		
+			fnDrawTags(tools_web.get_web_const( 'dokumentynapod', curLngWeb ),strTabView,'start')
+			curView = {
+					"id": "DigitalSignatureInProcess",
+					"height": "400",
+					"catalog_name": "digital_signature",
+					"disp_search": "false",
+					"link_object_field": "id",
+					"disp_filter": "false",
+					"list_columns": "object_name;object_type;create_date",
+					"sort_direct": "-",
+					"sort_index": 2,
+					"disp_array": "false",
+					"link_action": ( "OPENURL=view_doc.html?mode=digital_signature&doc_id=" + curDocID + "&object_id=%7Bid%7D")
+				};
+			curView.SetProperty("xquery_qual","$elem/person_id="+curPersonID+" and $elem/is_signed=false()")
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+			fnDrawTags(null,strTabView,'end')	
+			break;
+		}
+		case "signed":
+		{
+			fnDrawTags(tools_web.get_web_const( 'podpisannye', curLngWeb ),strTabView,'start')
+			curView = {
+				"id": "DigitalSignatureSigned",
+				"height": "400",
+				"catalog_name": "digital_signature",
+				"disp_search": "false",
+				"link_object_field": "id",
+				"disp_filter": "false",
+				"list_columns": "object_name;object_type;create_date;sign_date",
+				"sort_direct": "-",
+				"sort_index": 3,
+				"disp_array": "false",
+				"link_action": ( "OPENURL=view_doc.html?mode=digital_signature&doc_id=" + curDocID + "&object_id=%7Bid%7D")
+			};
+			curView.SetProperty("xquery_qual","$elem/person_id="+curPersonID+" and $elem/is_signed=true()")
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );				
+			fnDrawTags(null,strTabView,'end')
+			break;		
+		}
+	}
+}
+
+if (strTabView=='tabs')
+{
+%>
+</TabControl>
+<%
+}
+%>
+</SPXMLScreen>

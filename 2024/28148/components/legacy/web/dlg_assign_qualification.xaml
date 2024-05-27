@@ -1,0 +1,49 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if ( ISDIALOG )
+{
+	bShowAssignmentType=oParamSource.GetOptProperty( 'bShowAssignmentType', "true" ) == "true";
+%>
+	<Edit Name="ParamDialogCloseAction" Hidden="1">1</Edit>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="50%" Align="left"/>
+			<GridColumn Width="50%" Align="left"/>
+		</GridColumns>
+<%
+		if (bShowAssignmentType)	
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'h070yenms5', curLngWeb ))%>:</Label>				
+			<StackPanel Orientation="Vertical">
+				<RadioButton Name="use_position_common" Value="true" Change="SET=ParamDialogCloseAction,"><%=HtmlEncode(tools_web.get_web_const( 'potrebuemymkva', curLngWeb ))%></RadioButton>
+				<RadioButton Name="use_position_common" Value="false" Checked="1"><%=HtmlEncode(tools_web.get_web_const( '0mzyraf76u', curLngWeb ))%></RadioButton>
+			</StackPanel>	
+		</GridRow>
+<%
+		}
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"></Label>				
+			<CheckBox Name="assign_new"><%=HtmlEncode(tools_web.get_web_const( 'nachinatispytan', curLngWeb ))%></CheckBox>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button XAML-button-ok" Width="100" Click="CLOSEDIALOG">OK</Button>
+			<Button Class="XAML-button XAML-button-cancel" Width="100" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_cancel', curLngWeb ))%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

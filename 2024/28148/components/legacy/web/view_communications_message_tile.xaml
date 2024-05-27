@@ -1,0 +1,99 @@
+﻿<SPXMLScreen>
+<Action Name="RunAction" Source="communication_users_actions" Success="ALERT={messageText};REFRESH">
+  <Param Name="iUserId" Value=""/>
+  <Param Name="sAction" Value=""/>
+</Action>
+<%
+	switch(PARAMETERS.GetOptProperty("itemType"))
+	{
+		case "chatter":
+		{
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container chat-tile">
+		<Image Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+			<BackgroundImage Source="<%=PARAMETERS.GetOptProperty("photoUrl")%>"/>
+		</Image>	
+		<StackPanel Orientation="Vertical">	
+			<Link Class="XAML-person-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( "communication", PARAMETERS.GetOptProperty("partnerId"), { doc_id: curDocID } )%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+			
+		<%
+			if(PARAMETERS.GetOptProperty("timePast") != "")
+			{
+		%>
+			<Label Class="XAML-chat-date"><%=PARAMETERS.GetOptProperty("timePast")%>
+				<HTMLTip Class="XAML-chat-html">
+					<![CDATA[
+						<%=PARAMETERS.GetOptProperty("date")%>
+					]]>
+				</HTMLTip>
+			</Label>
+		<%
+			}
+		%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-small">
+				<Label Class="XAML-chat-date <%=(PARAMETERS.GetOptProperty("senderId")==String(curUserID) ? "icon-arrow-right-ico" : "icon-arrow-left-ico")%>"/>
+				<HTMLBox Class="XAML-chat-html">
+					<![CDATA[
+						<%=PARAMETERS.GetOptProperty("text")%>
+					]]>
+				</HTMLBox> 
+			</StackPanel>
+		</StackPanel>											
+	</StackPanel>			
+<%
+		}
+		break;
+		case "new_invites":
+		{
+			sConfirmAction = "SET=RunAction/iUserId," + PARAMETERS.GetOptProperty("partnerId") + ";SET=RunAction/sAction,confirm;ACTION=RunAction;";
+			sDenyAction = "SET=RunAction/iUserId," + PARAMETERS.GetOptProperty("partnerId") + ";SET=RunAction/sAction,deny;ACTION=RunAction;";			
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container communication-tile">
+		<Image Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+			<BackgroundImage Source="<%=PARAMETERS.GetOptProperty("photoUrl")%>"/>
+		</Image>
+		<StackPanel Orientation="Vertical">	
+			<Link Class="XAML-person-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, PARAMETERS.GetOptProperty("partnerId"), { doc_id: curDocID } )%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+			<StackPanel Orientation="Horizontal" Adapt="1" Align="Right" Class="XAML-toolbar">
+				<Button Class="XAML-button XAML-button-confirm" Click="<%=sConfirmAction%>"><%=tools_web.get_web_const( "c_confirm", curLngWeb )%></Button>
+				<Button Class="XAML-button XAML-button-deny" Click="<%=sDenyAction%>"><%=tools_web.get_web_const( "c_reject", curLngWeb )%></Button>	
+			</StackPanel>	
+		</StackPanel>											
+	</StackPanel>			
+<%		}
+		break;
+		
+		case "my_invites":
+		{
+			sConfirmAction = "SET=RunAction/iUserId," + PARAMETERS.GetOptProperty("partnerId") + ";SET=RunAction/sAction,confirm;ACTION=RunAction;";
+			sDenyAction = "SET=RunAction/iUserId," + PARAMETERS.GetOptProperty("partnerId") + ";SET=RunAction/sAction,deny;ACTION=RunAction;";
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container chat-tile">
+		<Image Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+			<BackgroundImage Source="<%=PARAMETERS.GetOptProperty("photoUrl")%>"/>
+		</Image>	
+		<Link Class="XAML-person-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, PARAMETERS.GetOptProperty("partnerId"), { doc_id: curDocID } )%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+	</StackPanel>			
+<%		}
+		break;
+		
+		case "cur_user_prohibited":
+		{
+			sConfirmAction = "SET=RunAction/iUserId," + PARAMETERS.GetOptProperty("partnerId") + ";SET=RunAction/sAction,confirm;ACTION=RunAction;";
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container chat-tile">
+		<Image Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="32" Height="32">
+			<BackgroundImage Source="<%=PARAMETERS.GetOptProperty("photoUrl")%>"/>
+		</Image>	
+		<StackPanel Orientation="Vertical">	
+			<Link Class="XAML-person-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, PARAMETERS.GetOptProperty("partnerId"), { doc_id: curDocID } )%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+			<StackPanel Orientation="Horizontal" Align="Right">
+				<Button Class="XAML-button XAML-button-confirm" Click="<%=sConfirmAction%>"><%=tools_web.get_web_const( "c_confirm", curLngWeb )%></Button>
+			</StackPanel>	
+		</StackPanel>											
+	</StackPanel>			
+<%		}
+		break;
+	}
+%>
+</SPXMLScreen>

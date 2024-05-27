@@ -1,0 +1,34 @@
+﻿<%
+try
+{
+	curLearningTutors;
+}
+catch ( err )
+{
+	curLearningTutors = curObject.persons;
+}
+if ( ArrayCount( curLearningTutors ) != 0 )
+{
+%>
+<Grid Width="100%" Class="XAML-grid-filter">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-label-filters-title"><![CDATA[<%=tools_web.get_web_const( "vkpb_experts", curLngWeb )%>]]></Label>
+		<Label/>
+	</GridRow>
+</Grid>
+<%
+	curPersonsList = {
+		"persons": curLearningTutors,
+		"primary_key": "person_id",
+		"array_fields": [
+			{ "field_name": "type" }
+		]
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+}
+%>

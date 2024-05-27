@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>ouqhv5nab8</id>
+		<create_date>2024-02-02T18:36:36+00:00</create_date>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<server_agents>
+		<server_agent>
+			<id>0x65C2269F7E469202</id>
+			<code>websoft_continuous_feedback_processing_requests</code>
+			<name lang-ru:VALUE="##'Обрабатывать запросы обратной связи'##"/>
+			<trigger_type>daily</trigger_type>
+			<period>1</period>
+			<start_time>01:00</start_time>
+			<finish_time>24:00</finish_time>
+			<all_day>true</all_day>
+			<start_day>1</start_day>
+			<start_week_day>1</start_week_day>
+			<last_run_date>2024-02-09T12:41:04Z</last_run_date>
+			<type>code</type>
+			<wvars>
+				<wvar>
+					<name>remind_requests</name>
+					<value>1</value>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Напоминать о сроке запросов обратной связи'##"/>
+					<silent>false</silent>
+					<position>1</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>remind_request_type</name>
+					<value>6992802252619773800</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений с напоминанием'##"/>
+					<silent>false</silent>
+					<position>2</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>delete_request</name>
+					<value>cancel</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>nothing</id>
+							<name lang-ru:VALUE="##'Ничего не делать'##"/>
+						</entry>
+						<entry>
+							<id>cancel</id>
+							<name lang-ru:VALUE="##'Отменять'##"/>
+						</entry>
+						<entry>
+							<id>delete</id>
+							<name lang-ru:VALUE="##'Удалять'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Что делать с запросами с истекшим сроком'##"/>
+					<silent>false</silent>
+					<position>3</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>delete_notify</name>
+					<value>1</value>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Уведомлять инициатор об отмене запроса'##"/>
+					<silent>false</silent>
+					<position>4</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>remind_request_delete_type</name>
+					<value>6992803538906266396</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<silent>false</silent>
+					<position>5</position>
+					<required>false</required>
+				</wvar>
+			</wvars>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/agents/websoft_continuous_feedback_processing_requests.bs</code_url>
+			</exec_code>
+			<run_code_url>x-local://components/continuous_feedback/spxml/agents/websoft_continuous_feedback_processing_requests.bs</run_code_url>
+			<is_std>1</is_std>
+		</server_agent>
+	</server_agents>
+</data>

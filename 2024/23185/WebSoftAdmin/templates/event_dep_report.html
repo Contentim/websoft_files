@@ -1,0 +1,96 @@
+﻿<%
+function add_subs( _subs )
+{
+	for ( _org in _subs )
+	{
+		_hl = ArrayOptFind( arrHierLevels, "This.id == _org.id" );
+%>
+	  <TR valign="top">
+			<TD colspan="<%=_hl.hier_level%>" style="border-right-style:none">&nbsp;</TD>
+			<TD colspan="<%=max_length-_hl.hier_level%>" style="border-left-style:none"><%=_org.name%></TD>				
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.total_person_count)%>"><%=(_org.total_person_count)%></TD>
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.down_levels_collabor_in_event_count)%>"><%=(_org.down_levels_collabor_in_event_count)%></TD>
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.down_levels_collabor_in_event_count_unique)%>"><%=(_org.down_levels_collabor_in_event_count_unique)%></TD>
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.percent_total)%>"><%=(_org.percent_total)%></TD>
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.days_count_total)%>"><%=(_org.days_count_total)%></TD>
+			<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.average_days_total)%>"><%=(_org.average_days_total)%></TD>
+	  </TR>
+<%
+		_sub_array=ArraySelect( Ps.data.subdivisions, 'parent_id == _org.id' );
+		add_subs(_sub_array)
+	}
+%>
+	
+<%
+}	
+max_length=0;
+arrHierLevels = new Array()
+for (_elem in Ps.data.subdivisions)
+{
+	t_len = 0;
+	tElem = _elem
+	while( tElem != undefined && tElem.parent_id.HasValue )
+	{
+		tElem = ArrayOptFind( Ps.data.subdivisions, "This.id == tElem.parent_id" );
+		t_len++;
+	}
+	arrHierLevels.push( {id: _elem.id.Value, hier_level: t_len} )
+	if (t_len>max_length)
+	{
+		max_length=t_len;
+	}
+}
+max_length=max_length+1;
+%>
+<HTML xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+	<HEAD>
+		<META http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	</HEAD>
+	<BODY>
+		<TABLE BORDER="1" CELLPADDING="2" CELLSPACING="0">
+			<TR valign="top" align="center">
+				<TD WIDTH="40%" BGCOLOR="#FFCC99" colspan="<%=max_length%>"><%=ms_tools.get_const('c_name')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('vtmb_coll_num')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('tjayod7uhd')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('mof1qdsf0s')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('njxj2n9v2o')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('6srayprg8n')%></TD>
+				<TD WIDTH="10%" BGCOLOR="#FFCC99"><%=ms_tools.get_const('np8qv1yo5t')%></TD>
+			</TR>
+		<%
+			for ( _org in ArraySelect( Ps.data.subdivisions, 'parent_id == null || Ps.data.subdivisions.GetOptChildByKey( This.parent_id, \'id\' ) == undefined' ) )
+			{
+				//_org.flag_expanded = true;
+		%>
+			  <TR valign="top">
+				<TD bgcolor="#FF9966" colspan="<%=max_length%>" align="left"><%=_org.name%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.total_person_count)%>"><%=(_org.total_person_count)%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.down_levels_collabor_in_event_count)%>"><%=(_org.down_levels_collabor_in_event_count)%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.down_levels_collabor_in_event_count_unique)%>"><%=(_org.down_levels_collabor_in_event_count_unique)%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.percent_total)%>"><%=(_org.percent_total)%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.days_count_total)%>"><%=(_org.days_count_total)%></TD>
+				<TD bgcolor="#FF9966" align="right" x:num="<%=(_org.average_days_total)%>"><%=(_org.average_days_total)%></TD>
+			  </TR>
+		<%
+				_sub_array=ArraySelect( Ps.data.subdivisions, 'parent_id == _org.id' );
+				add_subs(_sub_array)
+				
+			}
+			for ( _org in Ps.data.total_subdivisions )
+			{
+		%>
+			  <TR valign="top">
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" colspan="<%=max_length%>"><%=_org.name%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_person_count%>"><%=_org.total_person_count%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_collabor%>"><%=_org.total_collabor%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_collabor_unique%>"><%=_org.total_collabor_unique%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_percent%>"><%=_org.total_percent%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_days_count%>"><%=_org.total_days_count%></TD>
+				<TD bgcolor="#<%=StrHexColor('124,252,0')%>" align="right" x:num="<%=_org.total_average_days%>"><%=_org.total_average_days%></TD>
+			  </TR>
+		<%
+			}
+		%>
+		</TABLE>
+	</BODY>
+</HTML>

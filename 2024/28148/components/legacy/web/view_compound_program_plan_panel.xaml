@@ -1,0 +1,590 @@
+﻿<SPXMLScreen Class="View-Compound-Program-Plan-Panel">
+<%
+iProgramID = OptInt( PARAMETERS.GetOptProperty( 'progpam_id' ) );
+if ( iProgramID == undefined )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+iEventID = OptInt( PARAMETERS.GetOptProperty( 'event_id' ) );
+teEvent = OpenDoc( UrlFromDocID( iEventID ) ).TopElem;
+
+fldStage = teEvent.stages.GetOptChildByKey( iProgramID );
+if ( fldStage != undefined )
+{
+	if ( ! fldStage.is_active )
+	{
+		curMessageBox = {
+			"id": "ActiveInfo",
+			"type": "warning",
+			"text": "Доступ к данному разделу закрыт."
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+
+iCompoundProgramID = OptInt( PARAMETERS.GetOptProperty( 'compound_program_id' ) );
+teCompoundProgram = OpenDoc( UrlFromDocID( iCompoundProgramID ) ).TopElem;
+
+iEducationPlanID = OptInt( PARAMETERS.GetOptProperty( 'education_plan_id' ) );
+teEducationPlan = OpenDoc( UrlFromDocID( iEducationPlanID ) ).TopElem;
+
+fldProgram = teEducationPlan.programs.GetOptChildByKey( iProgramID );
+fldCompoundProgram = teCompoundProgram.programs.GetOptChildByKey( iProgramID );
+
+arrLists = [];
+%>
+<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+if ( fldProgram == undefined )
+{
+}
+else
+{
+	fldCourseProgram = ArrayOptFirstElem( ArraySelect( teEducationPlan.programs, "type=='course'&&parent_progpam_id==" + fldProgram.PrimaryKey ) );
+	bDispTab = fldCourseProgram != undefined;
+%>
+<Action Name="PageRefreshFinish" Initialize="REFRESH"/>
+<Action Name="EducationPlanProgramAction" Source="education_plan_launch" Success="{!OpenAction}" Failure="ALERT={messageText}">
+	<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+	<Param Name="progpam_id" Value=""/>
+	<Param Name="task_id" Value=""/>
+	<Param Name="task_type" Value=""/>
+	<Param Name="doc_id" Value="<%=curDocID%>"/>
+	<Param Name="activate" Value="true"/>
+</Action>
+<Dialog Name="LearningTaskResultDialog" Source="dlg_learning_task_result" Title="<%='Выполнение задания'%>" Width="750" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="learning_task_id" Value=""/>
+	<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+</Dialog>
+<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%='Просмотр материала'%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="object_id" Value=""/>
+</Dialog>
+
+	<Label Class="XAML-object-title-name title-2"><%=fldProgram.name%></Label>
+<%
+	if ( fldProgram.finish_date.HasValue )
+	{
+		curMessageBox = {
+			"id": "ProgramInfo",
+			"type": "info",
+			"text": ( 'Срок сдачи' + ': ' + StrDate( fldProgram.finish_date, false ) )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+
+	if ( fldCompoundProgram != undefined && fldCompoundProgram.comment.HasValue )
+	{
+		curDesc = {
+			"text": StrReplace(fldCompoundProgram.comment.Value,"\n","]]></Label><Label><![CDATA[")
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+	}
+
+	function get_program_class( sTypeParam )
+	{
+		sClass = 'icon-link';
+		switch ( sTypeParam )
+		{
+			case 'assessment':
+				sClass = 'icon-question-circle-o';
+				break;
+			case 'course':
+				sClass = 'icon-laptop';
+				break;
+			case 'education_method':
+			case 'event':
+				sClass = 'icon-graduation-cap';
+				break;
+			case 'blog':
+				sClass = 'icon-comment';
+				break;
+			case 'chat':
+				sClass = 'icon-comments';
+				break;
+			case 'forum':
+				sClass = 'icon-messages';
+				break;
+			case 'library_material':
+				sClass = 'icon-book';
+				break;
+			case 'document':
+				sClass = 'icon-document-text';
+				break;
+			case 'poll':
+				sClass = 'icon-question-circle';
+				break;
+ 		}
+		return sClass;
+	}
+
+
+	bStartComplete = true;
+	xarrTestLearning = undefined;
+	xarrLearningTaskResult = undefined;
+	if ( fldProgram.start_assessments.ChildNum != 0 )
+	{
+		xarrTestLearning = ArraySelectAll( XQuery( "for $elem in test_learnings where $elem/person_id = " + curUserID + " and MatchSome( $elem/assessment_id, (" + ArrayMerge( fldProgram.start_assessments, 'assessment_id', ',' ) + ") ) and $elem/state_id = 4 return $elem/Fields('id','assessment_id')" ) );
+		for ( fldStartAssessmentElem in fldProgram.start_assessments )
+			if ( ArrayOptFindByKey( xarrTestLearning, fldStartAssessmentElem.PrimaryKey, 'assessment_id' ) == undefined )
+			{
+				bStartComplete = false;
+				break;
+			}
+	}
+	if ( bStartComplete && fldProgram.start_learning_tasks.ChildNum != 0 )
+	{
+		xarrLearningTaskResult = ArraySelectAll( XQuery( "for $elem in learning_task_results where $elem/person_id = " + curUserID + " and MatchSome( $elem/learning_task_id, (" + ArrayMerge( fldProgram.start_learning_tasks, 'learning_task_id', ',' ) + ") ) and $elem/status_id != 'process' return $elem/Fields('learning_task_id','status_id')" ) );
+		for ( fldStartLearningTasktElem in fldProgram.start_learning_tasks )
+			if ( ArrayOptFindByKey( xarrLearningTaskResult, fldStartLearningTasktElem.PrimaryKey, 'learning_task_id' ) == undefined )
+			{
+				bStartComplete = false;
+				break;
+			}
+	}
+
+
+	if ( ! bStartComplete )
+	{
+		curMessageBox = {
+			"id": "StartComplete",
+			"type": "warning",
+			"text": "Для доступа к материалам раздела необходимо выполнить входные задания и сдать тесты."
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+
+	iCounter = 0;
+	for ( sFieldNameElem in ['start_assessments','start_learning_tasks'] )
+	{
+		fldPrograms = fldProgram.Child( sFieldNameElem );
+		if ( ArrayCount( fldPrograms ) == 0 )
+			continue;
+
+		arrLists.push( {
+			"title": ( iCounter == 0 ? 'Вводные задания' : '' ),
+			"class": 'icon-exclamation-circle',
+			"programs": fldPrograms,
+			"program": fldProgram,
+			"count": null,
+			"max_count": null,
+			"type": sFieldNameElem,
+			"test_learnings": xarrTestLearning,
+			"task_learnings": xarrLearningTaskResult,
+			"disp_type": sFieldNameElem
+		} );
+		iCounter++;
+	}
+
+	if ( bStartComplete )
+	{
+		arrSubPrograms = ArraySelect( teEducationPlan.programs, "type!='folder'&&state_id!=6&&parent_progpam_id==" + fldProgram.PrimaryKey );
+		arrSubProgramTypes = ArraySelectDistinct( arrSubPrograms, 'type' );
+		arrCustomMaterials = [{
+			"catalog": "resource",
+			"field": "type",
+			"selects": [{
+				"query": "type=='audio'||type=='video'||type=='img'",
+				"title": tools_web.get_web_const( "multimedia", curLngWeb ),
+				"class": "icon-file-play",
+				"disp_type": "resource_media"
+			},{
+				"query": "type!='audio'&&type!='video'&&type!='img'",
+				"title": tools_web.get_web_const( "vsb_docs", curLngWeb ),
+				"class": "icon-file-text-o",
+				"disp_type": "resource"
+			}]
+		},{
+			"catalog": "document",
+			"field": "is_link",
+			"selects": [{
+				"query": "is_link==true",
+				"title": "Внешние ресурсы",
+				"class": "icon-link",
+				"disp_type": "document_link"
+			},{
+				"query": "is_link==false",
+				"title": tools_web.get_web_const( "c_materials", curLngWeb ),
+				"class": "icon-file-image-o",
+				"disp_type": "document"
+			}]
+		}]
+
+		for ( fldSubProgramTypeElem in arrSubProgramTypes )
+		{
+			arrSubTypePrograms = ArraySelectByKey( arrSubPrograms, fldSubProgramTypeElem.type, "type" );
+			if ( fldSubProgramTypeElem.type == 'material' )
+			{
+				arrMaterialProgramTypes = ArraySelectDistinct( arrSubTypePrograms, 'catalog_name' );
+				for ( fldMaterialProgramTypeElem in arrMaterialProgramTypes )
+				{
+					arrMaterialPrograms = ArraySelectByKey( arrSubTypePrograms, fldMaterialProgramTypeElem.catalog_name, "catalog_name" );
+
+					oListMaterialElem = ArrayOptFindByKey( arrCustomMaterials, fldMaterialProgramTypeElem.catalog_name, 'catalog' );
+					if ( oListMaterialElem == undefined )
+					{
+						arrLists.push( {
+							"title": curLngCommon.exchange_object_types.GetChildByKey( fldMaterialProgramTypeElem.catalog_name ).web_title,
+							"class": get_program_class( fldMaterialProgramTypeElem.catalog_name ),
+							"programs": arrMaterialPrograms,
+							"type": "program",
+							"primary_key": "object_id",
+							"disp_type": fldMaterialProgramTypeElem.catalog_name.Value
+						} );
+					}
+					else
+					{
+						xarrProgramObjects = XQuery( "for $elem in " + oListMaterialElem.catalog + "s where MatchSome( $elem/id, (" + ArrayMerge( arrMaterialPrograms, 'object_id', ',' ) + ") ) return $elem/Fields('id','" + oListMaterialElem.field + "')" );
+						for ( oSelectElem in oListMaterialElem.selects )
+						{
+							arrTypeObjects = ArraySelect( xarrProgramObjects, oSelectElem.query );
+							if ( ArrayCount( arrTypeObjects ) == 0 )
+								continue;
+
+							arrProgramFieldObjects = ArraySelect( arrMaterialPrograms, "ArrayOptFindByKey(arrTypeObjects,This.object_id,'id')!=undefined" );
+
+							arrLists.push( {
+								"title": oSelectElem.title,
+								"class": oSelectElem.class,
+								"programs": arrProgramFieldObjects,
+								"type": "program",
+								"primary_key": "object_id",
+								"disp_type": oSelectElem.disp_type
+							} );
+						}
+					}
+				}
+			}
+			else
+			{
+				if ( bDispTab )
+					arrSubTypePrograms = ArraySelect( arrSubTypePrograms, "This.object_id!=" + fldCourseProgram.object_id );
+
+				if ( ArrayCount( arrSubTypePrograms ) == 0 )
+					continue;
+
+				arrLists.push( {
+					"title": curLngCommon.exchange_object_types.GetChildByKey( fldSubProgramTypeElem.type ).web_title,
+					"class": get_program_class( fldSubProgramTypeElem.type ),
+					"programs": arrSubTypePrograms,
+					"type": "program",
+					"primary_key": "object_id",
+					"disp_type": fldSubProgramTypeElem.type.Value
+				} );
+			}
+		}
+
+		if ( fldProgram.finish_assessments.ChildNum != 0 || fldProgram.finish_learning_tasks.ChildNum != 0 )
+		{
+			iMaxCount = ArrayCount( fldProgram.finish_assessments ) + ArrayCount( fldProgram.finish_learning_tasks );
+			iCount = 0;
+			xarrTestLearning = undefined;
+			xarrLearningTaskResult = undefined;
+			if ( fldProgram.finish_assessments.ChildNum != 0 )
+			{
+				xarrTestLearning = ArraySelectAll( XQuery( "for $elem in test_learnings where $elem/person_id = " + curUserID + " and $elem/education_plan_id = " + iEducationPlanID + " and MatchSome( $elem/assessment_id, (" + ArrayMerge( fldProgram.finish_assessments, 'assessment_id', ',' ) + ") ) and $elem/state_id = 4 return $elem/Fields('id','assessment_id')" ) );
+				for ( fldLearningElem in fldProgram.finish_assessments )
+					if ( ArrayOptFindByKey( xarrTestLearning, fldLearningElem.PrimaryKey, 'assessment_id' ) != undefined )
+						iCount++;
+			}
+			if ( fldProgram.finish_learning_tasks.ChildNum != 0 )
+			{
+				xarrLearningTaskResult = ArraySelectAll( XQuery( "for $elem in learning_task_results where $elem/person_id = " + curUserID + " and $elem/education_plan_id = " + iEducationPlanID + " and MatchSome( $elem/learning_task_id, (" + ArrayMerge( fldProgram.finish_learning_tasks, 'learning_task_id', ',' ) + ") ) and $elem/status_id != 'process' return $elem/Fields('id','learning_task_id','status_id')" ) );
+				for ( fldLearningElem in fldProgram.finish_learning_tasks )
+					if ( ArrayOptFindByKey( xarrLearningTaskResult, fldLearningElem.PrimaryKey, 'learning_task_id' ) != undefined )
+						iCount++;
+			}
+
+			iCounter = 0;
+			for ( sFieldNameElem in ['finish_assessments','finish_learning_tasks'] )
+			{
+				fldPrograms = fldProgram.Child( sFieldNameElem );
+				if ( ArrayCount( fldPrograms ) == 0 )
+					continue;
+
+				arrLists.push( {
+					"title": ( iCounter == 0 ? 'Контрольные задания' : '' ),
+					"class": 'icon-exclamation-circle',
+					"programs": fldPrograms,
+					"program": fldProgram,
+					"count": iCount,
+					"max_count": iMaxCount,
+					"type": sFieldNameElem,
+					"test_learnings": xarrTestLearning,
+					"task_learnings": xarrLearningTaskResult,
+					"disp_type": sFieldNameElem
+				} );
+				iCounter++;
+			}
+		}
+	}
+
+}
+
+
+if ( bDispTab )
+{
+	iDefaultTab = OptInt( PARAMETERS.GetOptProperty( 'tab_id', 0 ) );
+	teCourse = OpenDoc( UrlFromDocID( fldCourseProgram.object_id ) ).TopElem;
+%>
+	<TabControl ActiveTab="<%=iDefaultTab%>" Width="100%" Class="XAML-simple-tab-control">
+		<TabItem Title="<%='Учебный материал'%>" Click="SET=CompoundTabID,0">
+			<StackPanel Orientation="Vertical" Height="20"/>
+			<HTMLBox>
+				<![CDATA[
+					<iframe name="course_frame" src="course_activate.html?course_id=<%=fldCourseProgram.object_id%>&sid=<%=tools.get_sum_sid( fldCourseProgram.object_id, Request.Session.sid )%>&launch=1" width="100%" height="<%=teCourse.Height()%>" style="border: none;"></iframe>
+				]]>
+			</HTMLBox>
+		</TabItem>
+
+		<TabItem Title="<%='Библиотека'%>" Click="SET=CompoundTabID,1">
+			<StackPanel Orientation="Vertical" Height="20"/>
+<%
+}
+	sDispType = "grid";
+	arrTileProgramTypes = String( tools_web.get_web_param( curParams, "compound_program_plan_panel.tile_program_types", "", true ) ).split( ";" );
+	//start_assessments;start_learning_tasks;course;assessment;event;education_method;library_material;resource;resource_media;document;document_link;forum;blog;chat;poll;finish_assessments;finish_learning_tasks
+
+	for ( oListElem in arrLists )
+	{
+		sType = oListElem.GetOptProperty( "type", "program" );
+		sDispType = oListElem.GetOptProperty( "disp_type" );
+		sClass = oListElem.GetOptProperty( "class", "icon-link" );
+		sPrimaryKey = oListElem.GetOptProperty( 'primary_key', '' );
+		arrTestLearnings = oListElem.GetOptProperty( 'test_learnings' );
+		arrLearningTasks = oListElem.GetOptProperty( 'task_learnings' );
+
+		if ( ArrayOptFind( arrTileProgramTypes, "This=='" + sDispType + "'" ) != undefined )
+			sDispType = "tile";
+
+		if ( oListElem.title != '' )
+		{
+%>
+	<Grid>
+		<GridColumns>
+			<GridColumn Width="16"/>
+			<GridColumn Width="100%"/>
+			<GridColumn Width="70"/>
+		</GridColumns>
+
+		<GridRow Class="XAML-Header-Row">
+			<Label Class="<%=sClass%> Icon-valign" Width="16"/>
+			<Label Class="XAML-object-title-name title-3"><%=oListElem.title%></Label>
+<%
+			oCount = oListElem.GetOptProperty( "count" );
+			if ( oCount == null )
+			{
+%>
+			<Label/>
+<%
+			}
+			else
+			{
+				if ( oCount == undefined )
+				{
+//alert('oCount == undefined')
+//for(oP in oListElem.programs) alert( 'state_id = '+oP.state_id+'    required = '+oP.required);
+					iCount = ArrayCount( ArraySelect( oListElem.programs, 'state_id>1&&required' ) );
+					iMaxCount = ArrayCount( ArraySelectByKey( oListElem.programs, true, 'required' ) );
+				}
+				else
+				{
+					iCount = oListElem.count;
+					iMaxCount = oListElem.max_count;
+				}
+//alert('iMaxCount = '+iMaxCount)
+//alert('iCount = '+iCount)
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+				<ProgressBar FullScale="<%=iMaxCount%>" Value="<%=iCount%>" Title="<%=( iCount + ' ' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + ' ' + iMaxCount )%>" Size="80" Vertical="false" FitContainer="false" Class="wt-course-status"/>
+				<Label Class="Progress-Bar-Nums"><%=( Int( ( Real( iCount ) / Real( iMaxCount ) ) * 100.0 ) + '%' )%></Label>
+			</StackPanel>
+<%
+			}
+%>
+		</GridRow>
+	</Grid>
+<%
+		}
+
+		if ( sDispType == 'tile' )
+		{
+			sRnd = tools.random_string( 6 );
+%>
+<Collection Name="ListCatalogCollection<%=sRnd%>">
+<Data>
+<%
+			iCount = 0;
+		}
+		else
+		{
+%>
+	<Grid Class="XAML-grid-container XAML-grid-list-container">
+		<GridColumns>
+			<GridColumn Width="100%"/>
+		</GridColumns>
+<%
+		}
+
+		for ( fldListProgramElem in oListElem.programs )
+		{
+			fldPrimaryKey = sPrimaryKey == '' ? fldListProgramElem.PrimaryKey : fldListProgramElem.Child( sPrimaryKey );
+			fldListProgram = oListElem.GetOptProperty( 'program', fldListProgramElem );
+
+			if ( sType == 'program' && fldPrimaryKey.Parent.type == 'material' )
+				catLearningObject = ArrayOptFirstElem( XQuery( "for $elem in " + fldPrimaryKey.Parent.catalog_name + "s where $elem/id = " + fldPrimaryKey.Value + " return $elem" ) );
+			else if ( sType == 'program' && fldPrimaryKey.Parent.type == 'education_method' )
+				catLearningObject = ArrayOptFirstElem( XQuery( "for $elem in events where $elem/id = " + fldPrimaryKey.Value + " return $elem" ) );
+			else
+				catLearningObject = fldPrimaryKey.OptForeignElem;
+
+			if ( catLearningObject == undefined )
+				continue;
+
+			bLaunch = true;
+			iState = 0;
+			if ( sType == 'program' )
+			{
+				sName = fldListProgramElem.name;
+				iState = fldListProgramElem.state_id;
+			}
+			else
+			{
+				sName = catLearningObject.ChildExists( "name" ) ? catLearningObject.name : catLearningObject.title;
+			}
+			sOpenAction = "SET=EducationPlanProgramAction/task_id," + fldPrimaryKey.Value + ";SET=EducationPlanProgramAction/task_type," + sType + ";SET=EducationPlanProgramAction/progpam_id," + fldListProgram.PrimaryKey + ";ACTION=EducationPlanProgramAction";
+			switch ( catLearningObject.Name )
+			{
+				case 'learning_task':
+					iState = 0;
+					sOpenAction = "SET=LearningTaskResultDialog/learning_task_id," + catLearningObject.id + ";OPENDIALOG=LearningTaskResultDialog";
+
+					if ( arrLearningTasks == undefined )
+						catLearningTaskResult = ArrayOptFirstElem( XQuery( "for $elem in learning_task_results where $elem/person_id = " + curUserID + " and $elem/learning_task_id = " + catLearningObject.id + " and $elem/education_plan_id = " + iEducationPlanID + " and $elem/status_id != 'process' return $elem/Fields('learning_task_id','status_id')" ) );
+					else
+						catLearningTaskResult = ArrayOptFindByKey( arrLearningTasks, fldPrimaryKey.Value, 'learning_task_id' );
+					if ( catLearningTaskResult != undefined && catLearningTaskResult.status_id != 'progress' )
+						iState = catLearningTaskResult.status_id == 'evaluated' ? 2 : 1 ;
+					break;
+
+				case 'assessment':
+					if ( arrTestLearnings == undefined )
+						catLaunchLearning = ArrayOptFirstElem( XQuery( "for $elem in test_learnings where $elem/person_id = " + curUserID + " and $elem/assessment_id = " + catLearningObject.id + " and $elem/education_plan_id = " + iEducationPlanID + " and $elem/state_id = 4 return $elem/Fields('id')" ) );
+					else
+						catLaunchLearning = ArrayOptFindByKey( arrTestLearnings, fldPrimaryKey.Value, 'assessment_id' );
+
+					if ( catLaunchLearning == undefined )
+					{
+						catActiveTestLearning = ArrayOptFirstElem( XQuery( "for $elem in active_test_learnings where $elem/person_id = " + curUserID + " and $elem/assessment_id = " + catLearningObject.id + " and $elem/education_plan_id = " + iEducationPlanID + " return $elem/Fields('state_id')" ) );
+						if ( catActiveTestLearning != undefined )
+							iState = catActiveTestLearning.state_id;
+					}
+					else
+					{
+						iState = 4;
+					}
+					if ( iState > 1 )
+						bLaunch = false;
+					break;
+			}
+
+			sName = tools_web.get_cur_lng_name( sName, curLng.short_id );
+			sIconUrl = '/asou/lstate' + iState + '.png';
+
+			if ( sDispType == 'tile' )
+			{
+				if ( catLearningObject.ChildExists( 'resource_id' ) && catLearningObject.resource_id.HasValue )
+					sObjectImageUrl = tools_web.get_object_source_url( 'resource', catLearningObject.resource_id );
+				else
+					sObjectImageUrl = '/images/' + catLearningObject.Name + '.png';
+%>
+<Row>
+<Cell Id="id" Value="<%=fldPrimaryKey.Value%>"/>
+<Cell Id="name" Value="<%=XmlAttrEncode( sName )%>"/>
+<Cell Id="img" Value="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+<Cell Id="icon" Value="<%=XmlAttrEncode( sIconUrl )%>"/>
+<Cell Id="action" Value="<%=XmlAttrEncode( sOpenAction )%>"/>
+<Cell Id="education_plan_id" Value="<%=iEducationPlanID%>"/>
+</Row>
+<%
+			}
+			else
+			{
+				sStateName = curLngCommon.education_learning_states.GetChildByKey( iState ).name;
+%>
+		<GridRow>
+			<Grid Class="XAML-grid-container XAML-grid-list-item">
+				<GridColumns>
+					<GridColumn Width="24"/>
+					<GridColumn Width="100%"/>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Image Source="<%=XmlAttrEncode( sIconUrl )%>" Width="24" Height="24">
+						<HTMLTip><%=sStateName%></HTMLTip>
+					</Image>
+					<Label><![CDATA[<%=sName%>]]></Label>
+<%
+				if ( bLaunch )
+				{
+%>
+				<Button Class="XAML-button icon-play-circle-o" Click="<%=sOpenAction%>"><![CDATA[<%='Открыть'%>]]></Button>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=sStateName%></Label>
+<%
+					if(catLearningObject.Name == "assessment" && catLaunchLearning != undefined)
+					{
+%>
+				<Button Class="XAML-button icon-file-text-o" Click="OPENWINDOW=<%=tools_web.get_mode_clean_url( null, catLaunchLearning.id )%>"/>
+<%						
+					}
+				}
+%>
+				</GridRow>
+			</Grid>
+		</GridRow>
+<%
+			}
+		}
+
+		if ( sDispType == 'tile' )
+		{
+%>
+</Data>
+</Collection>
+	<TileView Width="100%" TileHeight="210" TileWidth="220" DataSource="{ListCatalogCollection<%=sRnd%>}" TemplateSource="program_tile"/>
+	<StackPanel Orientation="Vertical" Height="20"/>
+<%
+		}
+		else
+		{
+%>
+	</Grid>
+<%
+		}
+	}
+
+if ( bDispTab )
+{
+%>
+		</TabItem>
+	</TabControl>
+<%
+}
+%>
+</StackPanel>
+
+</SPXMLScreen>

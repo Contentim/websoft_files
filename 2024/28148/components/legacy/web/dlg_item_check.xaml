@@ -1,0 +1,122 @@
+﻿<SPXMLScreen>
+<%
+function write_question()
+{
+	switch( teItem.type_id )
+	{
+		case 'numerical_fill_in_blank':
+		case 'gap_fill':
+%>
+		<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+			<GridColumns>
+				<GridColumn Width="200"/>
+				<GridColumn/>
+			</GridColumns>
+<%
+			for( answer in teItem.answers )
+			{
+%>
+			<GridRow>
+				<Label><%=HtmlEncode( answer.text )%></Label>
+				<Edit Name="Answer<%=answer.id%>a" Width="300"></Edit>
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+<%
+		return true;
+
+		case 'text':
+%>
+		<EditBox Name="Answer"/>
+<%
+		return true;
+		
+		case 'multiple_choice':
+		case 'combo':
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+			for( answer in ArraySort( teItem.answers, "Random( 1, 9999 )", "+" ) )
+			{
+%>
+			<RadioButton Name="Answer" Value="a<%=answer.id%>a"><%=HtmlEncode( answer.text )%></RadioButton>
+<%
+			}
+%>
+		</StackPanel>
+<%
+		return true;
+
+		case 'multiple_response':
+%>
+			<StackPanel Class="XAML-stack-container">
+<%
+				for( answer in ArraySort( teItem.answers, "Random( 1, 9999 )", "+" ) )
+				{
+%>
+					<CheckBox Name="a<%=answer.id%>a"><%=HtmlEncode( answer.text )%></CheckBox>
+<%
+				}
+%>
+			</StackPanel>
+<%
+		return true;
+	}
+	return false;
+}
+item_id = OptInt( PARAMETERS.GetOptProperty( "item_id" ) );
+
+teItem = OpenDoc( UrlFromDocID( item_id ) ).TopElem;
+			
+%>
+	<Action Name="CheckAnswer" Source="check_answer_item" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="item_id" Value="<%=item_id%>"/>
+		<Param Name="action" Value=""/>
+	</Action>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="100%"/>
+		</GridColumns>	
+		<GridRow>
+			<Label Class="XAML-label-header-1"><%=XmlAttrEncode( teItem.title )%>:</Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-label-header-3"><%=XmlAttrEncode( teItem.question_text )%>:</Label>
+		</GridRow>
+		<GridRow>
+<%
+is_write = write_question();
+if( is_write )
+{
+%>
+		</GridRow>	
+		<GridRow>
+			<Toolbar>
+				<Button Class="XAML-button"  Click="SET=CheckAnswer/action,check_answer;ACTION=CheckAnswer;">Проверить ответ</Button>
+			</Toolbar>
+<%
+}
+else
+{
+%>
+			<Label Class="XAML-label-header-3"><%=XmlAttrEncode( "Для данного типа вопроса не настроено отображение" )%>:</Label>
+<%
+}
+%>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

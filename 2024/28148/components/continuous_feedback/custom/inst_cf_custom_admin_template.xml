@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>9wqtpdchs0</id>
+		<server_version>3.0.0.3 (2013-12-13)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x610149DB7B8FE78B</id>
+			<code>cf_response_preview</code>
+			<name VALUE="##'Непрерывная обратная связь / Карточка отзыва'##"/>
+			<form_name>cf_response_preview</form_name>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/ui_forms/cf_response_preview.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

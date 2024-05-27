@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>3sdoqry261</id>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x60F3BB941FB777C6</id>
+			<code>TaskAssessmentAppraiseAddChange</code>
+			<name VALUE="##'Создать/изменить процедуру проектной оценки'##"/>
+			<type>eval</type>
+			<catalog_name>assessment_appraise</catalog_name>
+			<link_name>assessment_appraise</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://components/task_assessment/spxml/remote_actions/TaskAssessmentAppraiseAddChange.bs</code_url>
+			</exec_code>
+			<url>x-local://components/task_assessment/spxml/remote_actions/TaskAssessmentAppraiseAddChange.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+	<notifications>
+		<notification>
+			<id>0x60F3BB941FB777DD</id>
+			<code>websoft_task_assessment_appraise_start_boss</code>
+			<name VALUE="##'Управление проектной оценкой / Уведомление администратора о начале проектной оценки'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x60F3BB941FB777DC</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+		<notification>
+			<id>0x60F3BB941FB777FB</id>
+			<code>websoft_task_assessment_appraise_start_member</code>
+			<name VALUE="##'Управление проектной оценкой / Уведомление участника о начале проектной оценки'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x60F3BB941FB777FA</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+	<notification_templates>
+		<notification_template>
+			<id>0x60F3BB941FB777DC</id>
+			<code>websoft_task_assessment_appraise_start_boss</code>
+			<name VALUE="##'Управление проектной оценкой / Уведомление администратора о начале проектной оценки'##"/>
+			<subject VALUE="##'Начинается процесс проектной оценки'##"/>
+			<body>&lt;%sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.fullname%&gt;!&#10;&#10;Начинается процесс проектной оценки по процедуре «&lt;%=objDocSec.name%&gt;». &#10;Срок проведения: &lt;%=StrDate(objDocSec.start_date, false)%&gt; – &lt;%=StrDate(objDocSec.end_date, false)%&gt;.&#10;Бюджетный период:  &lt;%=Text.bp_name%&gt;.&#10;&#10;Рекомендуем убедиться в корректности параметров процедуры и состава участников, перейдя по следующему адресу: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, '/spxml_web/main.htm?application_id=' + Text.app_id)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x60F3BB941FB777FA</id>
+			<code>websoft_task_assessment_appraise_start_member</code>
+			<name VALUE="##'Управление проектной оценкой / Уведомление участника о начале проектной оценки'##"/>
+			<subject VALUE="##'Начинается процесс проектной оценки'##"/>
+			<body>&lt;%sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.fullname%&gt;!&#10;&#10;Начинается процесс проектной оценки, которая будет подсчитываться по итогам выполнения вами различных задач.</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

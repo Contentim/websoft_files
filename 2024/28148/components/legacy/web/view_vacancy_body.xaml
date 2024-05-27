@@ -1,0 +1,181 @@
+﻿<%
+    oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+    sURL = ( StrBegins( global_settings.settings.recruitment.estaff_server_url, "http://" ) || StrBegins( global_settings.settings.recruitment.estaff_server_url, "https://" ) ? "" : tools_web.get_url_protocol( Request.Url ) ) + global_settings.settings.recruitment.estaff_server_url;
+
+    curVacancyEID = oParamSource.GetOptProperty( "eid" );
+    oResponse = HttpRequest( UrlAppendPath( sURL, "/active_position.xml?eid=" + oParamSource.GetOptProperty( "eid" ) ), "get" );
+
+    teResponse = OpenDocFromStr( DecodeCharset( oResponse.Body, "windows-1251" ), "form=x-local://wtv/estaff/active_position.xmd" ).TopElem;
+
+    sSubdivisionName = '';
+
+    if ( teResponse.subdivision_data.disp_name.HasValue || teResponse.subdivision_data.name.HasValue )
+    {
+        sSubdivisionName = teResponse.subdivision_data.disp_name.HasValue ? teResponse.subdivision_data.disp_name : teResponse.subdivision_data.name;
+        sSubdivisionName = ( ( StrLen( sSubdivisionName ) > StrCharCount( sSubdivisionName ) ) ? EncodeCharset( sSubdivisionName, 'windows-1251' ) : sSubdivisionName );
+    }
+    else
+    {
+        if ( teResponse.eid.HasValue )
+        {
+            fldRequest = ArrayOptFirstElem( XQuery( "for $elem in requests where $elem/id = " + teResponse.eid + " return $elem" ) );
+
+            if ( fldRequest != undefined )
+            {
+                try
+                {
+                    teRequest = OpenDoc( UrlFromDocID ( fldRequest.id ) ).TopElem;
+                    sSubdivisionName = ( ( StrLen( teResponse.person_subdivision_name ) > StrCharCount( teResponse.person_subdivision_name ) ) ? EncodeCharset( teResponse.person_subdivision_name, 'windows-1251' ) : teResponse.person_subdivision_name );
+                }
+                catch(ex)
+                {
+                }
+            }
+        }
+    }
+    
+    try
+    {
+        catRequest = ArrayOptFirstElem( XQuery( "for $elem in requests where $elem/id = " + teResponse.eid + " return $elem" ) );
+        curRequestID = catRequest.id.Value;
+        requestDoc = OpenDoc( UrlFromDocID( curRequestID ) ).TopElem;
+        curRequestName = requestDoc.custom_elems.ObtainChildByKey("position_name").value.Value;
+
+        if ( curRequestName == "" )
+            curRequestName = "----";
+    }
+    catch(err)
+    {
+        curRequestID = "";
+        requestDoc = undefined;
+        curRequestName = "";
+    }
+
+    arrTabListParam = String( tools_web.get_web_param( curParams, "tab_list", "main;candidates", true ) ).split( ";" );
+    strActiveTab = OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 );
+
+%>
+
+<SPXMLScreen>
+
+<%
+    curTitle = {
+        "object": null,
+        "object_title": teResponse.name,
+        "title": tools_web.get_web_const( "c_vacancy", curLngWeb ),
+        "type": "simple"
+    }
+    Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+%>
+
+    <!-- ========= Actions ============= -->
+    <TabControl Name="AssessmentBodyTab" ActiveTab="<%=strActiveTab%>" Width="100%" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>">
+
+<%
+    for ( sTabListParam in arrTabListParam )
+    {
+        if ( sTabListParam == "main" )
+        {
+            arrBlockListParam = String( tools_web.get_web_param( curParams, "main_tab_block_list", "main;from_request", true ) ).split( ";" );
+%>
+            <TabItem Title="<%=tools_web.get_web_const( "osnovnyesveden", curLngWeb )%>" Class="icon-info2">
+<%
+            for ( sTabElem in arrBlockListParam )
+            {
+                if ( sTabElem == "main" )
+                {
+%>	
+                    <Grid Width="100%" Class="XAML-grid-info-table">
+                        <GridColumns>
+                            <GridColumn Width="250"/>
+                            <GridColumn/>
+                        </GridColumns>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+                            <Label><%=( ( StrLen( teResponse.name ) > StrCharCount( teResponse.name ) ) ? EncodeCharset( teResponse.name, 'windows-1251' ) : teResponse.name )%></Label>
+                        </GridRow>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_customer", curLngWeb )%>:</Label>
+                            <Label><%=( ( StrLen( teResponse.person_data.fullname ) > StrCharCount( teResponse.person_data.fullname ) ) ? EncodeCharset( teResponse.person_data.fullname, 'windows-1251' ) : teResponse.person_data.fullname )%></Label>
+                        </GridRow>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+                            <Label><%=tools_web.get_cur_lng_name( sSubdivisionName, curLng.short_id ) %></Label>
+                        </GridRow>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+                            <Label><%=( ( StrLen( teResponse.state_name ) > StrCharCount( teResponse.state_name ) ) ? EncodeCharset( teResponse.state_name, 'windows-1251' ) : teResponse.state_name )%></Label>
+                        </GridRow>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_comment", curLngWeb )%>:</Label>
+                            <Label><%=( ( StrLen( teResponse.comment ) > StrCharCount( teResponse.comment ) ) ? EncodeCharset( teResponse.comment, 'windows-1251' ) : teResponse.comment )%></Label>
+                        </GridRow>
+                        <GridRow>
+                            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_request", curLngWeb )%>:</Label>
+                            <Link Click="OPENURL=<%=( requestDoc != undefined ? tools_web.get_mode_clean_url( null, curRequestID, { doc_id : curDocID } ) : "" )%>"><%=curRequestName%></Link>
+                        </GridRow>
+                    </Grid>
+<%
+                }
+                if ( sTabElem == "from_request" && requestDoc != undefined )
+                {
+                    arrCustomFieldNames = Array();
+                    fldCustomElems = tools.get_custom_template( requestDoc.Name, curRequestID, requestDoc );
+                    if ( fldCustomElems != null )
+                    {
+                        curCustomFields = {
+                            "fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+                            "source": requestDoc.custom_elems,
+                            "modify_eval": false
+                        };
+                        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+                    }
+                }
+            }
+%>
+            </TabItem>
+<%
+        }
+
+        if ( sTabListParam == "candidates" )
+        {
+            sTabNameParam = "Candidates";
+            sUpdateAction = "UPDATE=VacCandidateGrid";
+%>	
+            <Collection Name="VacancyCandidateCollection" Source="VacancyCandidateCollection">
+                <Param Name="context" Value="{CONTEXT}"/>
+                <Param Name="find_str" Value="{SearchField<%=sTabNameParam%>}"/>
+                <Param Name="vacancy_eid" Value="<%=curVacancyEID%>"/>
+            </Collection>
+
+            <TabItem Title="<%=tools_web.get_web_const( "c_candidates", curLngWeb )%>" Class="icon-users2">
+                <StackPanel Align="right" Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+                    <StackPanel Adapt="1"  Orientation="Horizontal" Class="XAML-stack-filter">
+                        <Label Class="XAML-label-divider"></Label>
+                        <StackPanel Orientation="Horizontal" Class="XAML-panel-search">
+                            <StackPanel Name="<%=sTabNameParam%>SearchStackPanel" Hidden="1" Orientation="Horizontal">
+                                <Edit Name="SearchField<%=sTabNameParam%>" EmptyText="<%=tools_web.get_web_const( "vkpb_search", curLngWeb )%>" KeyPress="#13:<%=sUpdateAction%>"></Edit>
+                                <Button Class="XAML-button-view icon-arrow-right" Click="<%=sUpdateAction%>"></Button>
+                            </StackPanel>
+                            <Button Class="XAML-button-view icon-search" Click="TOGGLE=<%=sTabNameParam%>SearchStackPanel"></Button>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+                        
+                <DataGrid Name="VacCandidateGrid" Source="{VacancyCandidateCollection}" Height="" Selection="single" PageSize="15" Width="100%">
+                    <DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fio" Width__="200" Type="link" Sortable="true" Click="OPENURL={url_name}"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="start_date" Width="200" Type="string" Sortable="true"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>" Value="finish_date" Width="200" Type="string" Sortable="true"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "vppb_state", curLngWeb )%>" Value="state" Width="200" Type="string" Sortable="true"/>
+                </DataGrid>
+                
+            </TabItem>
+<%
+        }
+    }
+%>
+    </TabControl>
+
+</SPXMLScreen>

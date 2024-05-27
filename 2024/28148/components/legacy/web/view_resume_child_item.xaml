@@ -1,0 +1,731 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+
+var sConstPublicationTitle = "Публикация";
+var sConstNoObjectWarning = "Сессия устарела. Пожалуйста, обновите страницу";
+
+// const_end
+
+//--functions
+function fnBuildObjectSelector (oSourceObjectParams)
+{
+	strSelectorType=oSourceObjectParams.GetOptProperty("selector_type","selector")
+	if (strSelectorType=="selector")
+	{
+		curSelector = {
+		"id": oSourceObjectParams.GetOptProperty("id",""),
+		"object_id": oSourceObjectParams.GetOptProperty("object_id",""),
+		"object_id_item_name": oSourceObjectParams.GetOptProperty("object_id_item_name",""),
+		"multi_select": "false",
+		"display_object_ids":  oSourceObjectParams.GetOptProperty("display_object_ids",""),
+		"object_name":  oSourceObjectParams.GetOptProperty("object_name",""),
+		"width":oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth ),
+		"catalog_name": oSourceObjectParams.GetOptProperty("catalog_name","")
+		}
+	
+		curSelector.SetProperty("close_action",oSourceObjectParams.GetOptProperty("close_action","STOP"))
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+	}
+	else
+	{	
+		sCatalogName=oSourceObjectParams.GetOptProperty("catalog_name","place")
+		sDispName=common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name
+		arrObjects=XQuery("for $elem in "+sCatalogName+"s order by $elem/"+sDispName+" return $elem")
+		iDefaultId=oSourceObjectParams.GetOptProperty("object_id",null)
+		strDefaultValue=oSourceObjectParams.GetOptProperty("default_value",tools_web.get_web_const( 'pusto', curLngWeb ))
+%>
+		<ComboBox Name="<%=oSourceObjectParams.GetOptProperty("id","")%>" Width="<%=oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth )%>" Change="<%=oSourceObjectParams.GetOptProperty("close_action","STOP")%>">								
+			<ComboBoxItem Value="" <%=(iDefaultId == null ? "Selected=\"true\"" : "")%>><%=(iDefaultId == null ? "" : XmlAttrEncode(strDefaultValue))%></ComboBoxItem>
+<%
+			for(catObject in arrObjects)
+			{
+%>
+			<ComboBoxItem Value="<%=catObject.PrimaryKey%>" Selected="<%=(catObject.PrimaryKey == iDefaultId)%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( catObject.Child(sDispName).Value, curLng.short_id ))%></ComboBoxItem>
+<%
+			}
+%>
+		</ComboBox>	
+<%
+	}
+}
+
+function getFieldNameById(sFieldIdParam)
+{
+	var sReturn=""
+	switch (sFieldIdParam)
+	{
+		case "we_start_date":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_start', curLngWeb )
+			break;
+		}
+		case "we_finish_date":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_finish', curLngWeb )
+			break;
+		}
+		case "we_org_name":
+		{
+			sReturn=tools_web.get_web_const( 'c_org', curLngWeb )
+			break;
+		}	
+		case "we_position_name":
+		{
+			sReturn=tools_web.get_web_const( 'c_position', curLngWeb )
+			break;
+		}
+		case "we_desc":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_functions', curLngWeb )
+			break;
+		}
+		case "we_region_id":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_region', curLngWeb )
+			break;
+		}
+		case "we_profession_area_id":
+		{
+			sReturn=tools_web.get_web_const( 'sferadeyatelnos', curLngWeb )
+			break;
+		}               
+		case "we_org_phone":
+		{
+			sReturn=tools_web.get_web_const( 'rabochiytelefon', curLngWeb )
+			break;
+		}	
+		case "we_org_fax":
+		{
+			sReturn=tools_web.get_web_const( 'faksorganizacii', curLngWeb )
+			break;
+		}	
+		case "we_org_email":
+		{
+			sReturn=tools_web.get_web_const( 'emailorganizac', curLngWeb )
+			break;
+		}	
+		case "we_org_address":
+		{
+			sReturn=tools_web.get_web_const( 'pochtovyyadreso', curLngWeb )
+			break;
+		}	
+		case "we_org_site":
+		{
+			sReturn=tools_web.get_web_const( 'saytorganizacii', curLngWeb )
+			break;
+		}	                
+		case "edu_name":
+		{
+			sReturn=tools_web.get_web_const( 'c_name', curLngWeb )
+			break;
+		}	
+		case "edu_specialisation":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_faculty', curLngWeb )
+			break;
+		}		
+		case "edu_type":
+		{
+			sReturn=tools_web.get_web_const( 'c_type', curLngWeb )
+			break;
+		}		
+		case "edu_result":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_result', curLngWeb )
+			break;
+		}		              	
+		case "edu_year":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_finish_year', curLngWeb )
+			break;
+		}		              	
+		case "edu_site":
+		{
+			sReturn=tools_web.get_web_const( 'saytvuza', curLngWeb )
+			break;
+		}	
+		case "project_sphere":
+		{
+			sReturn=tools_web.get_web_const( 'predmetnayaobla', curLngWeb )
+			break;
+		}
+		case "project_type":
+		{
+			sReturn=tools_web.get_web_const( 'tipproekta', curLngWeb )
+			break;
+		}
+		case "project_examination_year":
+		{
+			sReturn=tools_web.get_web_const( 'godprovedeniyae', curLngWeb )
+			break;
+		}
+		case "project_year":
+		{
+			sReturn=tools_web.get_web_const( 'godprovedeniya', curLngWeb )
+			break;
+		}
+		case "project_desc":
+		{
+			sReturn=tools_web.get_web_const( 'opisanieproekta', curLngWeb )
+			break;
+		}                
+		case "pub_name":
+		{
+			sReturn=tools_web.get_web_const( 'c_name', curLngWeb )
+			break;
+		}	
+		case "pub_publisher":
+		{
+			sReturn=tools_web.get_web_const( 'izdanie', curLngWeb )
+			break;
+		}	
+		case "pub_date":
+		{
+			sReturn=tools_web.get_web_const( 'datapublikacii', curLngWeb )
+			break;
+		}	
+		case "pub_link":
+		{
+			sReturn=tools_web.get_web_const( 'q0laxmdm5w', curLngWeb )
+			break;
+		}	
+		case "lng_lng_id":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_lng_foreign', curLngWeb )
+			break;
+		}
+		case "lng_level":
+		{
+			sReturn=tools_web.get_web_const( 'vrb_lng_level', curLngWeb )
+			break;
+		}		
+	}
+	return sReturn
+}
+
+function updateField(strFieldCodeParam,fldChildElemParam,bRequiredParam,bUpdate,strPrefixParam)
+{
+	var oField=undefined;
+	if (Trim(strFieldCodeParam)!='')
+	{
+		oField=ArrayOptFindByKey(arrFields,strFieldCodeParam,"id")
+		if (oField==undefined)
+		{	
+			strObjectFieldName=strFieldCodeParam
+			if (strPrefixParam!="")
+			{
+				strObjectFieldName=StrReplaceOne(strObjectFieldName, strPrefixParam+"_", ''); 
+			}
+			oField=new Object;
+			oField.id=strFieldCodeParam;
+			oField.Title=getFieldNameById(oField.id)
+			oField.object_field_id=strObjectFieldName
+			oField.type="input"
+			oField.name=""
+			oField.value=""
+			oField.foreign_elem=""
+			
+			switch (strObjectFieldName)
+			{
+				case "date":
+				{
+					oField.type="date"
+					break;
+				}
+				case "dominant_skills":
+				{
+					oField.type="text"
+					break;
+				}
+				case "photo":
+				{
+					oField.object_field_id="resource_id"
+					break;
+				}
+				case "currency_type":
+				{
+					oField.object_field_id="currency_type_id"
+					break;
+				}
+				case "profession_area_id":
+				{
+					oField.object_field_id="profession_id"
+					break;
+				}
+				case "desc":
+				{
+					oField.type="text"
+					break;
+				}
+				case "year":
+				{
+					if (oField.id=="edu_year")
+						oField.object_field_id="date"
+					break;
+				}
+			}
+			bUpdate=true;
+		}
+		
+		if (oField!=undefined)
+		{
+			oField.bRequired=bRequiredParam;
+			if (bUpdate)
+			{
+				if (fldChildElemParam.ChildExists(oField.object_field_id))
+				{
+					fldObjectField=fldChildElemParam.Child(oField.object_field_id)
+					oField.SetProperty("value",fldObjectField);
+					sForeign=fldObjectField.ForeignArrayCodeStr;
+					if (sForeign!="")
+					{
+						if (StrContains(  sForeign, '.' ))
+						{
+							oField.SetProperty("foreign_elem",sForeign.split(".")[1]);
+							oField.SetProperty("type",sForeign.split(".")[0]);
+						}
+						else
+						{
+							if (  StrEnds(  sForeign, 's' ) )
+							{
+								sForeign = StrLeftRange(  sForeign, StrLen(  sForeign ) - 1 );
+								
+							}
+							
+							oField.SetProperty("foreign_elem",sForeign);
+							oField.SetProperty("type","catalog");
+							fldForeignObject=fldObjectField.OptForeignElem
+							if (fldForeignObject!=undefined)
+							{
+								oField.SetProperty("name",tools_web.get_cur_lng_name( fldForeignObject.name, curLng.short_id ))
+							}
+							else if (oField.value!=""&&oField.value!=null&&oField.value!=undefined)
+							{
+								oField.SetProperty("name",tools_web.get_web_str('c_deleted'))
+							}
+						}
+					}
+				}
+				else if (oField.id=='photo')
+				{	
+					oField.type="photo"
+				}
+				
+				if ((oField.id=='we_finish_date'||oField.id=='we_start_date'))
+				{	
+					oField.type="input"
+					oField.value=(oField.value.HasValue ? (StrInt( Month( oField.value.Value ), 2 ) + "." + Year( oField.value.Value )):"")
+				}
+			
+			}
+			else
+			{
+				oField=undefined
+			}
+		}
+	}
+	return oField
+}
+
+function updateFieldsArray(arrCodesParam,fldChildElemParam,bRequiredParam,strPrefixParam)
+{
+	
+	for (strFieldCode in arrCodesParam)
+	{
+		oField=updateField(strFieldCode,fldChildElemParam,bRequiredParam,false,strPrefixParam)
+		if (oField!=undefined)
+		{
+			
+			arrFields.push(oField)
+		}
+	}
+}
+
+function buildElem(oFieldParam,oElemParam)
+{
+	var strKey=oFieldParam.id+"_"+oElemParam.PrimaryKey;
+	var oField=updateField(oFieldParam.id,oElemParam,oFieldParam.bRequired,true,strPrefix)
+%>
+	<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(oField.Title+(oField.bRequired?'*':''))%>:</Label>
+<%
+	if (oField.type=="catalog")
+	{
+		if ( !bReadOnly )
+		{
+			oSourceObject = {
+				"id": strKey,
+				"object_id": oField.value,
+				"object_id_item_name": strKey,
+				"multi_select": "false",
+				"catalog_name": oField.foreign_elem,
+				"selector_type": strCatalogTypeSelector
+			};
+			oSourceObject.SetProperty("close_action","")
+			fnBuildObjectSelector (oSourceObject)
+
+		}
+		else
+		{
+%>
+			<Label><%=XmlAttrEncode(oField.name)%></Label>
+<%
+		}
+	}
+	else if (oField.type=="common"||oField.type=="lists")
+	{
+		if (oField.type=="common")
+			arrElems=curLngCommon.EvalPath(oField.foreign_elem)
+		else
+			arrElems=lists.EvalPath(oField.foreign_elem)
+			
+		if ( !bReadOnly )
+		{
+%>
+			<ComboBox Name="<%=strKey%>" Width="<%=iDefaultWidth%>">
+<%
+				
+					
+				for( fldElem in arrElems)
+				{
+					strSelected=""
+					if (oField.value==fldElem.id)
+					{
+						strSelected=' Selected="True"'
+					}
+
+					try
+					{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>" Change=""<%=strSelected%>><%=XmlAttrEncode(tools_web.get_cur_lng_name( arrElems.GetChildByKey( fldElem.id).name, curLng.short_id ))%></ComboBoxItem>
+<%
+					}
+					catch(ex)
+					{
+						//alert(ex)
+					}
+				}
+%>
+			</ComboBox>
+<%
+
+		}
+		else
+		{	
+				sText=""
+				fldElem=arrElems.GetOptChildByKey( oField.value )
+				if (fldElem!=undefined)
+				{
+					sText=tools_web.get_cur_lng_name( fldElem.name, curLng.short_id )
+				}
+%>
+				<Label><%=XmlAttrEncode(sText)%></Label>
+<%
+		}
+	}
+	else if (oField.type=="text")
+	{	
+
+			sValue=oField.value;
+			if ( bReadOnly )
+			{
+%>
+				<HTMLBox><![CDATA[<%=HtmlEncode(sValue)%>]]></HTMLBox>
+<%
+			}
+			else
+			{
+%>							
+				<EditBox Name="<%=strKey%>" Width="100%"><%=sValue%></EditBox>
+<%
+			}
+	}	
+	else if (oField.type=="date")
+	{	
+
+			sValue=oField.value;
+			if (sValue!="")
+			{
+				sValue=StrDate(sValue, false, false)
+			}
+			if ( bReadOnly )
+			{
+%>
+				<Label><%=XmlAttrEncode(sValue)%></Label>
+<%
+			}
+			else
+			{
+%>							
+				<DatePicker Name="<%=strKey%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=sValue%></DatePicker>
+<%
+			}
+	}
+	else
+	{	
+
+		sValue=oField.value;
+		if ( bReadOnly )
+		{
+%>
+			<Label><%=XmlAttrEncode(sValue)%></Label>
+<%
+		}
+		else
+		{
+%>							
+			<Edit Name="<%=strKey%>" Width="<%=iDefaultWidth%>"><%=sValue%></Edit>
+<%
+		}
+	}
+	return strKey	
+}
+
+
+//--functions end
+var arrFields=[];
+var strChildName=PARAMETERS.GetOptProperty( 'sChildElem');
+var sFieldNames=PARAMETERS.GetOptProperty( 'sFieldNames');
+var sRequiredFieldNames=PARAMETERS.GetOptProperty( 'sRequiredFieldNames');
+var iDefaultWidth=PARAMETERS.GetOptProperty( 'iDefaultWidth');
+var iDatePickerWidth=PARAMETERS.GetOptProperty( 'iDatePickerWidth');
+var bReadOnly=tools_web.is_true(PARAMETERS.GetOptProperty( 'bReadOnly'));
+var iElemsInRow=OptInt(PARAMETERS.GetOptProperty( 'iElemsInRow',3),3);
+var strCatalogTypeSelector = PARAMETERS.GetOptProperty( 'strCatalogTypeSelector',"dropdown")
+var	bShowButtonIcon=true;
+var	bShowButtonTitle=false;
+
+//alert(sFieldNames)
+bHasErrors=false
+if (curObject==null||curObject==undefined)
+{
+	bHasErrors=true
+}
+else if (curObject.Name!='resume')
+{
+	curObject = Env.GetOptProperty( 'curResume', null );
+}
+
+if (curObject==null||curObject==undefined)
+{
+%>
+	<Label><![CDATA[<%=sConstNoObjectWarning%>]]></Label>
+<%
+}
+
+if (!bHasErrors&&strChildName!=undefined)
+{
+	var strPrefix = "";
+	var arrChildElems=[];
+	var strChildTitle=""
+	if (strChildName=="prof_area")
+	{
+		strChildTitle=tools_web.get_web_const( 'opytraboty', curLngWeb )
+		strPrefix="we"
+		arrChildElems=curObject.work_experiences
+	}
+	else if (strChildName=="projects")
+	{
+		strChildTitle=tools_web.get_web_const( 'c_project', curLngWeb )
+		strPrefix="project"
+		arrChildElems=curObject.projects
+	}
+	else if (strChildName=="publications")
+	{
+		strChildTitle=sConstPublicationTitle
+		strPrefix="pub"
+		arrChildElems=curObject.publications
+	}
+	else if (strChildName=="edu")
+	{
+		strChildTitle=tools_web.get_web_const( 'vrb_education', curLngWeb )
+		strPrefix="edu"
+		arrChildElems=curObject.educations
+	}
+	else if (strChildName=="lngs")
+	{
+		strChildTitle=tools_web.get_web_const( 'vrb_lng_is', curLngWeb )
+		strPrefix="lng"
+		arrChildElems=curObject.lngs
+	}
+	
+	bHasElems=(ArrayOptFirstElem(arrChildElems)!=undefined)
+	sCommonActionStart='SET=ResumeAction/iObjectId,'+curObjectID+';SET=ResumeSuccessAction,'+UrlEncode('UPDATE='+strChildName+'_panel')+';SET=ResumeObjectChildrenName,'+strChildName+';'
+	sCommonActionMiddle='SET=ResumeObjectChildID,;SET=sFieldNames,;SET=sRequiredFieldNames,;'
+	sCommonActionEnd='CONTEXT=ResumeObjectContextGroup'+strChildName+';SET=ResumeAction/CONTEXT,{CONTEXT};ACTION=ResumeAction;'
+	var arrFieldKeys=[]
+	if (!bReadOnly||bHasElems)
+	{
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="true">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+<%	
+		if (bHasElems)
+		{
+			fldChildElem=arrChildElems.Clone().AddChild()
+			arrVisibleFieldCodes=sFieldNames.split( ";" )
+			updateFieldsArray(arrVisibleFieldCodes,fldChildElem,false,strPrefix)
+			arrRequiredFieldCodes=sRequiredFieldNames.split( ";" )
+			updateFieldsArray(arrRequiredFieldCodes,fldChildElem,true,strPrefix)
+			fldChildElem.Delete();
+				
+			arrNoDesc=ArraySelect(arrFields,"This.type!='text'")
+			arrDescs=ArraySelect(arrFields,"This.type=='text'")
+			iElemCount=ArrayCount(arrNoDesc)
+			bHasDescs=(ArrayOptFirstElem(arrDescs)!=undefined)
+			
+			sFieldNames=ArrayMerge(arrFields,"This.id",";")
+			sRequiredFieldNames=ArrayMerge(ArraySelect(arrFields,"This.bRequired"),"This.id",";")
+
+			if (iElemCount>0)
+			{
+				iColumnCount=iElemCount
+				if (iElemCount>iElemsInRow)
+				{
+					iColumnCount=iElemsInRow
+					while (iElemCount%iElemsInRow!=0)
+					{
+						arrNoDesc.push({"id":null})
+						iElemCount=ArrayCount(arrNoDesc)
+					}
+				}
+			}
+
+			for (fldChildElem in arrChildElems)
+			{
+%>
+				<GridRow>
+					<StackPanel Orientation="Vertical" Adapt="true">
+						<Label Class="XAML-label-header-4"><%=XmlAttrEncode(strChildTitle +" "+(fldChildElem.ChildIndex+1))%>.</Label>
+<%
+					if ( !bReadOnly )
+					{
+						sCommonActionMiddle='SET=ResumeObjectChildID,'+fldChildElem.PrimaryKey+';SET=sFieldNames,'+UrlEncode(sFieldNames)+';SET=sRequiredFieldNames,'+UrlEncode(sRequiredFieldNames)+';'
+						sCommonAction=sCommonActionStart+sCommonActionMiddle+sCommonActionEnd
+%>
+						<Toolbar Class="XAML-nomargin XAML-Toolbar-btn-icons" Adapt="true">
+							<Button Class="XAML-button <%=(bShowButtonIcon?"icon-remove":"")%>" Click="SET=ResumeAction/sAction,delete_child;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_delete")):"")%></Button>
+							<Button Class="XAML-button <%=(bShowButtonIcon?"icon-arrow-down":"")%>" Click="SET=ResumeAction/sAction,move_child_up;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_move_down")):"")%></Button>
+							<Button Class="XAML-button <%=(bShowButtonIcon?"icon-arrow-up":"")%>" Click="SET=ResumeAction/sAction,move_child_down;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_move_up")):"")%></Button>
+						</Toolbar>
+
+<%
+					}
+%>
+					</StackPanel>
+				</GridRow>
+<%
+				if (iElemCount>0||bHasDescs)
+				{
+%>
+				<GridRow>
+					<StackPanel Orientation="Vertical" Adapt="true">
+<%
+					if (iElemCount>0)
+					{
+%>
+					<Grid Width="100%" Class="XAML-compound-grid" Adapt="true">
+						<GridColumns>
+<%
+						for (i=0;i<iColumnCount;i++)
+						{
+%>					
+							<GridColumn/>
+<%
+						}
+%>
+						</GridColumns>
+<%
+						i=1
+						for (oField in arrNoDesc)
+						{
+							
+							if (i==1)
+							{
+%>
+							<GridRow>
+<%
+							}
+%>
+							<StackPanel Orientation="Vertical" Adapt="true">
+<%
+							if (oField.id!=null)
+							{
+								arrFieldKeys.push(buildElem(oField,fldChildElem))
+							}
+%>
+							</StackPanel>
+<%
+						
+							if (i==iColumnCount)
+							{
+%>
+							</GridRow>
+<%
+								i=1
+							}
+							else
+							{
+								i++
+							}					
+							
+						}
+%>
+					</Grid>
+<%		
+					}
+		
+					if (bHasDescs)
+					{
+%>
+					<Grid Width="100%" Adapt="true">
+						<GridColumns>
+							<GridColumn/>
+						</GridColumns>
+<%
+						for (oField in arrDescs)
+						{
+%>
+						<GridRow>
+							<StackPanel Orientation="Vertical" Adapt="true">
+<%
+								if (oField.id!=null)
+								{
+									arrFieldKeys.push(buildElem(oField,fldChildElem))
+								}
+%>
+							</StackPanel>
+						</GridRow>
+<%
+						}
+%>
+						</Grid>
+<%
+					}
+%>
+					</StackPanel>
+				</GridRow>
+<%		
+				}
+			}
+		}
+		
+		if ( !bReadOnly )
+		{
+%>
+		<GridRow>
+			<Button Class="XAML-button <%=(bShowButtonIcon?"icon-plus":"")%>" Click="SET=ResumeAction/sAction,add_child;<%=sCommonActionStart+sCommonActionMiddle+sCommonActionEnd%>"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("veb_add")):"")%></Button>
+		</GridRow>
+<%
+		}
+%>
+	</Grid>
+	<ContextGroup Name="ResumeObjectContextGroup<%=strChildName%>" Items="<%='ResumeObjectChildrenName,ResumeObjectChildID,'+ArrayMerge(arrFieldKeys,"This",",")%>"/>	
+<%
+	}
+}
+
+%>
+</SPXMLScreen>

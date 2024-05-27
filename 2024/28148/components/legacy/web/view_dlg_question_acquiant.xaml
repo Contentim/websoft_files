@@ -1,0 +1,155 @@
+﻿<%
+Width = "100%";
+AcquaintAssignID = PARAMETERS.GetOptProperty('AcquaintAssignID') ;
+enable = 1;
+docAcquaintAssign = OpenDoc( UrlFromDocID( Int( AcquaintAssignID ) ) ).TopElem;
+if( docAcquaintAssign.acquaint_id.HasValue )
+	teCheckedObject = OpenDoc( UrlFromDocID( docAcquaintAssign.acquaint_id ) ).TopElem;
+else
+	teCheckedObject = OpenDoc( UrlFromDocID( docAcquaintAssign.object_id ) ).TopElem;
+function question( ques, item )
+{
+	bItem = false
+	switch( ques.type_id )
+	{
+		case "gap_fill":
+		case "numerical_fill_in_blank":
+			bItem = true;
+		case 'number':
+		case 'string':
+		
+%>
+		<Label Class="XAML-info-grid-title-column" Width="<%=Width%>"><%=HtmlEncode( ques.title )%></Label>
+		<Edit Name="q<%=AcquaintAssignID%>p<%=item.id%>" Width="100%" Enabled="<%=enable%>"></Edit>
+<%
+			break;
+
+		case 'text':
+%>
+		<Label Class="XAML-info-grid-title-column" Width="<%=Width%>"><%=HtmlEncode( ques.title )%></Label>
+		<EditBox Name="q<%=AcquaintAssignID%>p<%=item.id%>" Width="<%=Width%>" Enabled="<%=enable%>"/>
+<%
+			break;
+		case "multiple_choice":
+			bItem = true;
+		case 'choice':
+		case 'combo':
+		
+		
+%>
+		<Label Class="XAML-info-grid-title-column" Width="<%=Width%>"><%=HtmlEncode( ques.title )%></Label>
+		<ComboBox Enabled="<%=enable%>" Name="q<%=AcquaintAssignID%>p<%=item.id%>" Width="<%=Width%>" SelectedItem="">
+<%
+			for( entrie in ( bItem ? ques.answers : ques.entries ) )
+			{
+				
+%>
+  				<ComboBoxItem Value="<%=entrie.id%>"><%=HtmlEncode( ( bItem ? entrie.text : entrie.value ) )%></ComboBoxItem>
+<%
+			}
+%>
+		</ComboBox>
+<%
+			break;
+
+		case "multiple_response":
+			bItem = true;
+		case 'select':
+		
+%>
+		<Label Class="XAML-info-grid-title-column" Width="<%=Width%>"><%=HtmlEncode( ques.title )%></Label>
+		<StackPanel Width="<%=Width%>">
+<%
+				for( entrie in ( bItem ? ques.answers : ques.entries ) )
+				{
+				
+%>
+				<CheckBox Enabled="<%=enable%>" Name="q<%=AcquaintAssignID%>p<%=item.id%><%=entrie.id%>" Width="<%=Width%>"><%=HtmlEncode(( bItem ? entrie.text : entrie.value ) )%></CheckBox>
+<%
+				}
+%>
+		</StackPanel>
+<%
+			break;
+	}
+}
+
+function draw()
+{
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table XAML-question-table" Adapt="1">
+			<GridColumns>
+				<GridColumn Width="50%"/>
+				<GridColumn Width="50%"/>
+			</GridColumns>
+
+			<GridRow>
+<%
+		cnt = 0;
+		for( elem_ques in teCheckedObject.questions )
+		{
+			if( !elem_ques.is_custom && elem_ques.item_id.HasValue )
+				teItem = OpenDoc( UrlFromDocID( elem_ques.item_id ) ).TopElem;
+			else
+				teItem = elem_ques;
+			if( cnt == 2 || ( cnt > 0 && curDevice.disp_type == "mobile" ) )
+			{
+%>
+			</GridRow>
+			<GridRow>
+<%
+				cnt = 0;
+			}
+%>
+				<StackPanel Hidden="0" Width="100%" Height="100%" Orientation="Vertical" Class="XAML-stack-container">
+<%
+			question( teItem, elem_ques );
+
+%>
+				</StackPanel>
+<%
+			cnt++;
+		}
+		if( cnt == 1 && curDevice.disp_type != "mobile" )
+		{
+%>
+				<StackPanel Hidden="0" Width="100%" Height="100%" Orientation="Vertical" Class="XAML-stack-container"/>
+<%
+		}
+%>
+			</GridRow>
+		</Grid>
+<%
+}
+%>
+
+<SPXMLScreen>
+	<StackPanel Orientation="Vertical" Width="100%" Height="100%">
+		<Action Name="ConfirmAcquaintActionDlg" Source="ConfirmAcquaintAction" Success="{!messageText};CLOSEDIALOG;" Failure="{!messageText};CANCELDIALOG;">
+			<Param Name="curUserID" Value="<%=curUserID%>"/>
+			<Param Name="PAGEURL" Value=""/>
+			<Param Name="acquaintAssignID" Value="<%=AcquaintAssignID%>"/>
+			<Param Name="action" Value="save_question"/>
+			<Param Name="main_tab" Value=""/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+<%
+	draw();
+%>
+		<StackPanel Orientation="Vertical">
+		</StackPanel>
+		<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100"/>
+				<GridColumn Width="100"/>
+			</GridColumns>
+
+			<GridRow>
+				<Label/>
+				<Button Class="XAML-button" Width="100" Click="ACTION=ConfirmAcquaintActionDlg"><%=tools_web.get_web_const( "vfb_submit", curLngWeb )%></Button>
+				<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+</SPXMLScreen>

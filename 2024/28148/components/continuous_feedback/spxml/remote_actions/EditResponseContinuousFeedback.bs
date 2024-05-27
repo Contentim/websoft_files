@@ -1,0 +1,220 @@
+﻿try
+{
+	var iResponseID = Int( sResponseID );
+	var teResponse = OpenDoc( UrlFromDocID( iResponseID ) ).TopElem;
+	var iObjectID = teResponse.object_id.Value;
+
+	var sPersonFullname = teResponse.object_name.Value;
+	var catProject = undefined;
+	if ( teResponse.type == 'project_participant' )
+	{
+		catObject = teResponse.object_id.OptForeignElem;
+		sPersonFullname = catObject.object_name.Value;
+		catProject = catObject.project_id.OptForeignElem;
+		iObjectID = catObject.object_id.Value;
+	}
+
+	curUserID = Int( curUserID );
+	if ( teResponse.person_id != curUserID && iObjectID != curUserID && teResponse.owner_person_id != curUserID )
+	{
+		RESULT = {
+			command: "alert",
+			msg: "Вы не можете просмотреть эту обратную связь"
+		};
+		Cancel();
+	}
+
+	try
+	{
+		form_fields = ParseJson( form_fields );
+	}
+	catch ( err )
+	{
+		form_fields = [];
+	}
+
+
+	function get_form_fields_param( sFieldName )
+	{
+		var oField = ArrayOptFindByKey( form_fields, sFieldName, 'name' );
+		if ( oField == undefined )
+		{
+			return undefined;
+		}
+		return oField.value;
+	}
+
+
+	var sStep = get_form_fields_param( 'step' );
+	var bApplicationEval = false;
+	var bResponseDone = bCanChange && teResponse.status == "done" && ( teResponse.person_id == curUserID || bApplicationEval );
+	var bResponsePlan = teResponse.status == "plan" && ! bApplicationEval && teResponse.person_id == curUserID;
+
+	var iResponseTypeID = teResponse.response_type_id.Value;
+	var catResponseType = teResponse.response_type_id.OptForeignElem;
+
+	var fldCustomTemplate = tools.get_custom_template( "response_type", iResponseTypeID );
+	fldCustomTemplateFields = ArraySelect( fldCustomTemplate.fields, "This.disp_web&&This.type!='heading'&&This.type!='folder'" );
+
+	if ( sStep == "done" && ( bResponseDone || bResponsePlan ) )
+	{
+		var oRes = tools.call_code_library_method( "libContinuousFeedback", "EditResponseContinuousFeedback", [ iResponseID, form_fields ] );
+		if ( oRes.error != 0 )
+		{
+			RESULT = {
+				command: "alert",
+				msg: oRes.errorText
+			};
+			Cancel();
+		}
+
+		RESULT = {
+			command: "close_form",
+		};
+		Cancel();
+	}
+	else
+	{
+		RESULT = {
+			command: "display_form",
+			title: "Обратная связь",
+			form_fields: [
+				{
+					name: "object_fullname",
+					type: "paragraph",
+					value: ( "Оцениваемый" + ": " + sPersonFullname )
+				}
+			]
+		};
+		if ( catProject != undefined )
+		{
+			RESULT.form_fields.push( {
+				name: "project_name",
+				type: "paragraph",
+				value: ( "Проект" + ": " + catProject.name.Value )
+			} );
+		}
+
+		if ( bResponseDone || bResponsePlan )
+		{
+			if ( bResponseDone )
+			{
+				RESULT.form_fields.push( {
+					name: "done_date",
+					type: "paragraph",
+					value: ( "Дата оценки" + ": " + ( teResponse.done_date.HasValue ? StrDate( teResponse.done_date, true, false ) : '---' ) )
+				} );
+			}
+			else
+			{
+				RESULT.form_fields.push( {
+					name: "plan_date",
+					type: "paragraph",
+					value: ( "Оценить до" + ": " + ( teResponse.plan_date.HasValue ? StrDate( teResponse.plan_date, true, false ) : '---' ) )
+				} );
+			}
+
+			for ( fldFieldElem in fldCustomTemplateFields )
+			{
+				if ( catResponseType.basic_score_field == fldFieldElem.name && teResponse.status != "plan" && ! bCanChangeScore )
+				{
+					oFormField = {
+						name: fldFieldElem.name.Value,
+						type: "paragraph",
+						value: ( fldFieldElem.title + ": " + teResponse.custom_elems.ObtainChildByKey( fldFieldElem.name ).value )
+					};
+				}
+				else
+				{
+					oFormField = {
+						name: fldFieldElem.name.Value,
+						label: fldFieldElem.title.Value,
+						type: fldFieldElem.type.Value,
+						value: teResponse.custom_elems.ObtainChildByKey( fldFieldElem.name ).value.Value,
+						catalog: fldFieldElem.catalog.Value,
+						query_qual: fldFieldElem.xquery_qual.Value,
+						entries: [],
+						multiple: false,
+						mandatory: true,
+						validation: "nonempty"
+					};
+					if ( fldFieldElem.type == 'combo' )
+					{
+						oFormField.type = "select";
+					}
+					else if ( fldFieldElem.type == 'object' )
+					{
+						oFormField.type = "string";
+					}
+					for ( fldEntryElem in fldFieldElem.entries )
+					{
+						oFormField.entries.push( {
+							name: fldEntryElem.value.Value,
+							value: fldEntryElem.value.Value
+						} );
+					}
+				}
+				RESULT.form_fields.push( oFormField );
+			}
+
+			RESULT.form_fields.push( {
+				name: "step",
+				type: "hidden",
+				value: "done"
+			} );
+
+			RESULT.buttons = [
+				{
+					name: "cancel",
+					label: "Отменить",
+					type: "cancel"
+				},
+				{
+					name: "submit",
+					label: "Сохранить",
+					type: "submit"
+				}
+			];
+			RESULT.no_buttons = false;
+		}
+		else
+		{
+			RESULT.form_fields.push( {
+				name: "person_name",
+				type: "paragraph",
+				value: ( "Оценил" + ": " + teResponse.person_fullname.Value )
+			} );
+			RESULT.form_fields.push( {
+				name: "done_date",
+				type: "paragraph",
+				value: ( "Дата" + ": " + ( teResponse.done_date.HasValue ? StrDate( teResponse.done_date, true, false ) : '---' ) )
+			} );
+
+			for ( fldFieldElem in fldCustomTemplateFields )
+			{
+				RESULT.form_fields.push( {
+					name: fldFieldElem.name.Value,
+					type: "paragraph",
+					value: ( fldFieldElem.title + ": " + teResponse.custom_elems.ObtainChildByKey( fldFieldElem.name ).value )
+				} );
+			}
+
+			RESULT.buttons = [
+				{
+					name: "cancel",
+					label: "Закрыть",
+					type: "cancel"
+				}
+			];
+			RESULT.no_buttons = false;
+		}
+		Cancel();
+	}
+}
+catch ( g_err )
+{
+	if ( ! IsCancelError( g_err ) )
+	{
+		alert( "ERROR: RemoteAction: EditResponseContinuousFeedback:\r\n" + g_err );
+	}
+}

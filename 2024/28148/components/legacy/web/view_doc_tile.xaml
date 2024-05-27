@@ -1,0 +1,14 @@
+﻿<SPXMLScreen>
+<%
+iDocumentID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iDocumentID != undefined )
+{
+	teDocument = OpenDoc( UrlFromDocID( iDocumentID ) ).TopElem;
+%>
+<HTMLBox>
+	<%=HtmlEncode( tools_web.get_web_desc( teDocument.text_area, UrlFromDocID( iDocumentID ), 'document.text_area' ) )%>
+</HTMLBox>
+<%
+}
+%>
+</SPXMLScreen>

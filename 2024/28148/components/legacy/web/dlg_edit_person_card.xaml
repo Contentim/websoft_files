@@ -1,0 +1,236 @@
+﻿<SPXMLScreen>
+
+<%
+sSelectData = PARAMETERS.GetOptProperty( "select_data", "" );
+
+arrUserIds = ArrayExtract( tools.read_object(sSelectData), "id" );
+iCollaboratorId = (ArrayOptFirstElem(arrUserIds) != undefined ? Int(ArrayOptFirstElem(arrUserIds)) : undefined);
+try
+{
+	fldOperation = ArrayOptFirstElem(XQuery("for $elem in operations where $elem/action='edit_person_card' and $elem/operation_type=0 return $elem"));
+	teOperation = OpenDoc(UrlFromDocID(fldOperation.id)).TopElem;
+
+	teCollaborator = (iCollaboratorId != undefined ? OpenDoc(UrlFromDocID(iCollaboratorId)).TopElem : undefined);
+%>
+
+	<Action Name="EditPersonCardAction" Source="edit_person_card" Success="ALERT={messageText};CLOSEDIALOG">
+		<Param Name="OperationId" Value="<%=fldOperation.id%>"/>
+		<Param Name="CollaboratorId" Value="<%=iCollaboratorId%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+
+<%
+	if (teOperation != undefined && teCollaborator != undefined)
+   {
+	   if (ArrayOptFirstElem(teOperation.parameters) != undefined)
+      {
+%>
+
+			<Grid Class="XAML-grid-info-table" CellClass="XAML-info-grid-cell" Width="100%" Adapt="1">
+				<GridColumns>
+					<GridColumn Width="200" Align="Right"/>
+					<GridColumn Width="100%" Align="Left"/>
+				</GridColumns>
+<%
+				for (elemParam in teOperation.parameters)
+				{
+					if (!StrContains(elemParam.name, "PositCommon") && !StrContains(elemParam.name, StrLowerCase("PositCommon")))
+					{
+						try
+						{
+
+%>
+							<GridRow>
+								<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(elemParam.title)%>:</Label>
+<%
+								sFieldType = "";
+								strEnabled = (elemParam.is_mandatory == true ? "Enabled='1'" : "Enabled='0'");
+
+								switch(teCollaborator.Child(elemParam.name).Type)
+								{
+									case "date":
+%>
+										<DatePicker Name="dlg_person_<%=elemParam.name%>" Width="110" <%=strEnabled%>><%=(teCollaborator.Child(elemParam.name)!= undefined ? HtmlEncode(teCollaborator.Child(elemParam.name).Value) : "")%></DatePicker>
+<%
+									break;
+									case "string":
+%>
+										<Edit  Width="100%" Name="dlg_person_<%=elemParam.name%>" <%=strEnabled%>><%=(teCollaborator.Child(elemParam.name)!= undefined ? HtmlEncode(teCollaborator.Child(elemParam.name).Value) : "")%></Edit>
+<%
+									break;
+									case "integer":
+										/*alert("OptForeignElem: " + teCollaborator.Child(elemParam.name).OptForeignElem + " " + teCollaborator.Child(elemParam.name).ForeignElem.name);
+										if (teCollaborator.Child(elemParam.name).OptForeignElem != undefined)
+										{
+											try
+											{
+												//iObjectId = (teCollaborator.Child(elemParam.name)!= undefined ? Int(teCollaborator.Child(elemParam.name).Value) : null) ;
+												//strObjectName = OpenDoc(UrlFromDocID(iObjectId)).TopElem.Name;
+												iObjectId = Int(teCollaborator.Child(elemParam.name).Value);
+												strObjectName = teCollaborator.Child(elemParam.name).ForeignElem.name;
+												alert("iObjectId: " + iObjectId + " " + "strObjectName: " + strObjectName);
+											}
+											catch(ex)
+											{
+												iObjectId = "";
+												strObjectName = "";
+											}
+												curSelector = {
+												"id": "position_id",
+												"object_id": iObjectId,
+												"object_id_item_name": "position_id",
+												"multi_select": "false",
+												"display_object_ids":  "",
+												"object_name":  strObjectName,
+												"catalog_name": "position"
+											};
+											Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+										}*/
+									break;
+								}
+%>
+							</GridRow>
+<%
+						}
+						catch(err)
+						{
+							alert(err);
+						}
+					}
+					else
+					{
+
+					}
+				}
+
+				fldCollabCustomElems = tools.get_custom_template( "collaborator", iCollaboratorId);
+
+				if (fldCollabCustomElems != null && ArrayOptFirstElem(fldCollabCustomElems.fields ) != undefined)
+				//if (ArrayOptFirstElem(fldCollabCustomElems.fields ) != undefined)
+				{
+%>
+					<GridRow>
+						<Label/>
+						<Label Width="200" Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "wlcwah2eod", curLngWeb )%></Label>
+					</GridRow>
+<%
+					for( _field in ArraySelect(fldCollabCustomElems.fields, "This.disp_web == true" ))
+					{
+						fldCustomElemValue  = teCollaborator.custom_elems.ObtainChildByKey(_field.name).value;
+%>
+						<GridRow>
+<%
+							sFieldType = "";
+							switch(_field.type)
+							{
+								case "date":
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<DatePicker Name="dlg_person_cust_<%=_field.name%>"><%=(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value.HasValue ? HtmlEncode(ParseDate(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value.Value)) : "")%></DatePicker>
+<%
+								break;
+								case "string":
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<Edit  Width="100%" Name="dlg_person_cust_<%=_field.name%>"><%=(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value != "" ? HtmlEncode(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value) : "")%></Edit>
+<%
+								break;
+								case "bool":
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<CheckBox Name="dlg_person_cust_<%=_field.name%>" <%=((teCollaborator.custom_elems.ObtainChildByKey(_field.name).value != "" && teCollaborator.custom_elems.ObtainChildByKey(_field.name).value == "true") ? "Checked='1'" : "")%>></CheckBox>
+<%
+								break;
+								case "integer":
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<Edit  Width="50" Name="dlg_person_cust_<%=_field.name%>"><%=(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value != "" ? HtmlEncode(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value ): "")%></Edit>
+<%
+								break;
+								case "combo":
+								{
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<ComboBox Name="dlg_person_cust_<%=_field.name%>" SelectedItem="<%=(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value != "" ? HtmlEncode(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value ): "")%>">
+										<ComboBoxItem Value=""></ComboBoxItem>
+<%
+									for (elemEntry in _field.entries)
+									{
+%>
+										<ComboBoxItem Value="<%=elemEntry.value%>"><%=HtmlEncode(elemEntry.value)%></ComboBoxItem>
+<%
+									}
+%>
+									</ComboBox>
+<%
+									break;
+								}
+
+								case 'list':
+								{
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+										<Edit Name="dlg_person_cust_<%=_field.name%>IsObject" Hidden="true"/>
+										<Collection Name="<%=_field.name%>Collection">
+											<Data>
+<%
+									sValue = fldCustomElemValue.Value;
+									arrSelected = sValue == '' ? [] : ArrayExtract( String( sValue ).split( ";" ), "({'value':This})" );
+									for ( fldEntryElem in _field.entries )
+									{
+%>
+											<Row>
+												<Cell Id="checked" Value="<%=( ArrayOptFindByKey( arrSelected, fldEntryElem.value, 'value' ) != undefined )%>"/>
+												<Cell Id="value" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( fldEntryElem.value, curLng.short_id ) )%>"/>
+											</Row>
+<%
+									}
+%>
+											</Data>
+										</Collection>
+										<DataGrid Name="dlg_person_cust_<%=_field.name%>" Source="{<%=_field.name%>Collection}" ShowHeader="false">
+											<DataGridColumn Value="checked" Editable="true" Ghost="false" Width="60" Type="checkbox"/>
+											<DataGridColumn Value="value" Ghost="false" Width="100%" Type="string"/>
+										</DataGrid>
+									</StackPanel>
+<%
+									break;
+								}
+
+								case "text":
+%>
+									<Label Width="200" Class="XAML-info-grid-title-column"><%=HtmlEncode(_field.title)%>:</Label>
+									<EditBox Width="100%" Height="100" Name="dlg_person_cust_<%=_field.name%>"><%=(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value != "" ? HtmlEncode(teCollaborator.custom_elems.ObtainChildByKey(_field.name).value) : "")%></EditBox>
+<%
+								break;
+							}
+%>
+						</GridRow>
+<%
+					}
+				}
+%>
+
+			</Grid>
+<%
+		}
+		sCreateAction = "ACTION=EditPersonCardAction;";
+%>
+		<Label/>
+		<Toolbar Width="">
+				<Button Class="XAML-button XAML-button-save" Click="<%=sCreateAction%>"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+				<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</Toolbar>
+<%
+	}
+}
+catch(err)
+{
+	alert("Error dlg_edit_person_card: " + err);
+}
+%>
+
+
+
+</SPXMLScreen>

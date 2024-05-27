@@ -1,0 +1,111 @@
+﻿sLogName = "websoft_continuous_feedback_processing_requests";
+EnableLog(sLogName);
+LogEvent(sLogName, "Агент: Обрабатывать запросы обратной связи - начало");
+
+var curApplication = tools_app.get_cur_application( 'websoft_continuous_feedback' );
+
+var arrResponseTypes = tools_web.parse_multiple_parameter( curApplication.wvars.GetOptChildByKey( 'response_types' ).value.Value );
+
+var arrResponseTypeID = ArrayExtract( arrResponseTypes, "This.response_type_id" );
+
+sQuery = "for $elem in responses where MatchSome($elem/status, ('plan')) and MatchSome($elem/response_type_id, (" + ArrayMerge(arrResponseTypeID, 'This', ',') + ")) return $elem";
+
+// LogEvent(sLogName, alert(tools.object_to_text(sQuery,'json')))
+
+arrResponses = XQuery(sQuery);
+
+var X = 0; // Отправлено напоминаний 
+var Y = 0; // Отменено запросов на обратную связь
+
+if(ArrayOptFirstElem(arrResponses) != undefined)
+{
+	for(oResponse in arrResponses)
+	{
+		docResponse = tools.open_doc(oResponse.id.Value);
+		docResponseTE = docResponse.TopElem;
+
+		if(docResponseTE.plan_date.Value == null)
+		{
+			LogEvent(sLogName, alert('У карточки запроса, каталога response, отсутствует "Планируемая дата"'))
+			continue;
+		}
+
+		iDiff = DateDiff(docResponseTE.plan_date.Value, Date());
+
+		oResponseTypes = ArrayOptFind( arrResponseTypes, "This.response_type_id == '0x' + StrHexInt(oResponse.response_type_id.Value)")
+
+		iDayDiff = OptInt(iDiff / 86400);
+
+		if(tools_web.is_true(Param.GetOptProperty("remind_requests")))
+		{
+			if(iDayDiff == OptInt(oResponseTypes.notify_days)){
+				
+				iNotificationID = OptInt(Param.GetOptProperty('remind_request_type'));
+
+				if(iNotificationID == null)
+				{
+					LogEvent(sLogName, alert('У агента отсутствует значение параметра "remind_request_type". Отправить уведомление не представляется возможным'))
+					continue;
+				}
+
+				if(docResponseTE.plan_date.Value == null)
+				{
+					LogEvent(sLogName, alert('У карточки запроса, каталога response, отсутствует "Планируемая дата". Отправить уведомление не представляется возможным'))
+					continue;
+				}
+
+				if( !docResponseTE.owner_person_id.HasValue)
+				{
+					LogEvent(sLogName, alert('У карточки запроса, каталога response, отсутствует назначение "Инициатор". Отправить уведомление не представляется возможным'));
+					continue;
+				}
+
+				tools.create_notification(iNotificationID, oResponse.id.Value, '', null, docResponseTE);
+
+				X++;
+			}
+		}
+
+		if(Param.GetOptProperty("delete_request") == 'cancel' || Param.GetOptProperty("delete_request") == 'delete')
+		{
+			if(iDayDiff == OptInt(oResponseTypes.cancel_days))
+			{
+				switch(Param.GetOptProperty("delete_request"))
+				{
+					case 'cancel':
+						docResponseTE.status.Value = 'cancel';
+						docResponse.Save();
+						break;
+					case 'delete':
+						DeleteDoc( UrlFromDocID( docResponseTE.id.Value ), false);
+						break;
+				}
+				if(tools_web.is_true(Param.GetOptProperty("delete_notify")))
+				{
+					iNotificationID = OptInt(Param.GetOptProperty('remind_request_delete_type'));
+
+					if(iNotificationID == null)
+					{
+						LogEvent(sLogName, alert('У агента отсутствует значение параметра "remind_request_type". Отправить уведомление не представляется возможным'))
+						continue;
+					}
+
+					if( !docResponseTE.owner_person_id.HasValue)
+					{
+						LogEvent(sLogName, alert('У карточки запроса, каталога response, отсутствует назначение "Инициатор". Отправить уведомление не представляется возможным'));
+						continue;
+					}
+
+					tools.create_notification(iNotificationID, oResponse.id.Value, '', null, docResponseTE);
+
+					Y++;
+				}			
+			}
+		}
+	}
+}
+
+LogEvent(sLogName, "Отправлено напоминаний " + X)
+LogEvent(sLogName, "Отменено запросов на обратную связь " + Y)
+
+LogEvent(sLogName, "Агент: Обрабатывать запросы обратной связи - завершен")

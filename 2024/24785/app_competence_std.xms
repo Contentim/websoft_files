@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="
+	ms_tools.check_doc_screen_access( TopElem );
+	tools.admin_access_filling( TopElem );
+" BEFORE-SAVE-ACTION="	
+	TopElem.view.desc_save();
+" SAVE-ACTION="
+	UpdateScreens( '*', '*competence*' );
+" WINDOW-ICON-URL="//wtv/ico/competence.ico" TITLE-EXPR="TopElem.name + ' — ' + ms_tools.get_const('competence')" MAXIMIZED="1">
+
+	<USE FORM="//wtv/app_general.xms"/>
+
+	<WITH VAR="oRemoteAction" EXPR="ms_tools.get_remote_actions_by_cur_application( 'competence' )">
+		<AppCardContainer titleName="Ps.name" arrToolbarButtons="return ([])" fullBtnExpr="
+		_edit_action  = ArrayOptFirstElem( XQuery('for $elem in remote_actions where $elem/code = \'CompetenceOpenFull\' return $elem/Fields(\'id\')') );
+		if ( _edit_action == undefined )
+		{
+			return false;
+		}
+		else
+		{
+			return ( ArrayOptFind( oRemoteAction, 'This.remote_action_id == _edit_action.id') != undefined );
+		}		
+		">
+
+			<PAGE TITLE-EXPR="ms_tools.get_const('cavr3d3iwk')" IMAGE-URL="//wtv/ico/common.ico" VERT-SCROLL="1">
+
+				<PANEL HEIGHT="100%" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1">
+					<ITEM TYPE="ms_code_name_base"/>
+					
+					<ITEM TYPE="ms_object_selector" SOURCE="Ps.competence_block_id" titleExpr="ms_tools.get_const('c_block')" catalogExpr="'competence_block'"/>
+					
+					<TitleLine TITLE="##ms_tools.get_const('5z3iuqumsa')##" arrButtonsExpr="[{ image_url: '//wtv/svg/add.svg', cmd: '',  title: ( ms_tools.get_const('tv56wb4u5d') + '...' ) }]" HEIGHT="6gr">
+						<ITEM menuEntriesExpr="''" TYPE="ms_list_catalog_base" catalogExpr="'exercise'" xqueryQualExpr="
+							try
+							{
+								docCompetence = OpenDoc (UrlFromDocID ( Int(Ps.Doc.DocID)));
+							}
+							catch(ex)
+							{
+								continue;
+							}
+
+							arrCompetenceIDs = ArraySelect(ArrayExtract(docCompetence.TopElem.exercises, 'OptInt(This.exercise_id)'), 'This != undefined')
+							
+							return 'MatchSome($elem/id, (' + ArrayMerge(arrCompetenceIDs, 'This', ',') + '))'
+						" HEIGHT="100%"/>
+					</TitleLine>
+					
+					<TitleLine TITLE-EXPR="ms_tools.get_const('vci_scale') + ':'" arrButtonsExpr="[
+						{ title: ( ms_tools.get_const('xaea633tvs') + '...' ), image_url: '//wtv/svg/add.svg', action: '
+							Ps.scales.AddChild();
+							Ps.Doc.SetChanged( true );
+						' }
+					]">
+
+						<TABLE>
+							<COLUMNS>
+								<COL WIDTH="16vpx"/>
+								<COL WIDTH="316vpx"/>
+								<COL WIDTH="64vpx"/>
+								<COL WIDTH="100%"/>
+							</COLUMNS>
+
+							<LABEL TITLE="#" ALIGN="left" BOLD="1"/>
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_name')" ALIGN="left" BOLD="1"/>
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_percent')" ALIGN="left" BOLD="1"/>
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_desc')" ALIGN="left" BOLD="1"/>
+
+							<LOOP EXPR="Ps.scales" VAR="_scale" ALIGN="left">
+								<LABEL TITLE-EXPR="_scale.ChildIndex + 1" BOLD="1"/>
+								<LABEL TITLE-EXPR="_scale.name" ALIGN="left" BOLD="0"/>
+								<LABEL TITLE-EXPR="_scale.percent" ALIGN="left" BOLD="0"/>
+								<EDIT SOURCE="_scale.desc" MULTILINE="1" HEIGHT="2gr" VERT-SCROLL="1" READ-ONLY="1" BK-COLOR-EXPR=""/>
+							</LOOP>
+						</TABLE>
+						
+					</TitleLine>
+					
+					<LINE WIDTH="100%">
+						<TitleLabel TITLE-EXPR="ms_tools.get_const('ass_positive_mark')" WIDTH="50%">
+							<LABEL TITLE-EXPR="Ps.positive_comment" ALIGN="left" BOLD="0"/>
+						</TitleLabel>
+						<TitleLabel TITLE-EXPR="ms_tools.get_const('ass_negative_mark')" WIDTH="90%">
+							<LABEL TITLE-EXPR="Ps.negative_comment" ALIGN="left" BOLD="0"/>
+						</TitleLabel>
+					</LINE>
+
+					<ITEM TYPE="ms_custom_data_view" srcExpr="TopElem"/>
+					<ITEM TYPE="comment_base"/>
+
+				</PANEL>
+			</PAGE>
+
+			<PAGE TITLE-EXPR="ms_tools.get_const('zei3eba5tb')" IMAGE-URL="//wtv/ico/link.ico" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1" HORIZ-SCROLL="1">
+				
+				<TitleLine TITLE-EXPR="ms_tools.get_const('jaw754vpm1')" arrButtonsExpr="[
+					{ title: ( ms_tools.get_const('veb_add') + '...' ), image_url: '//wtv/svg/add.svg', action: '
+							Ps.levels.AddChild();
+							Ps.Doc.SetChanged( true );
+					' }
+				]"/>
+				
+					<TABLE BORDER="1">
+						<COLUMNS>
+							<COL WIDTH="16vpx"/>
+							<COL WIDTH="150vpx"/>
+							<COL WIDTH="316vpx"/>
+							<COL WIDTH="316vpx"/>
+							<COL WIDTH="316vpx"/>
+							<COL WIDTH="28vpx"/>
+						</COLUMNS>
+
+						<LABEL TITLE="#" BOLD="1"/>
+						<LABEL TITLE-EXPR="ms_tools.get_const('ela6vna8le')" BOLD="0"/>
+						<LABEL TITLE-EXPR="ms_tools.get_const('c_tests')" BOLD="0"/>
+						<LABEL TITLE-EXPR="ms_tools.get_const('gv1fz31tz7')" BOLD="0"/>
+						<LABEL TITLE-EXPR="ms_tools.get_const('vdb_development_method')" BOLD="0"/>
+						<LABEL/>
+
+
+						<LOOP EXPR="Ps.levels" VAR="_level">
+							<LABEL TITLE-EXPR="_level.ChildIndex + 1" BOLD="0"/>
+							<ComboLabel SOURCE="_level.scale_id" ELEM="ListElem.name"/>
+							<PANEL>
+								<ModeContainer>
+								<BUTTON IMAGE-URL="//wtv/svg/add.svg" TITLE-EXPR="ms_tools.get_const('mp8e31zuc6')" ACTION="
+										dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+										dlgDoc.TopElem.multi_select = true;
+										dlgDoc.TopElem.catalog_name = 'assessment';
+										dlgDoc.TopElem.value_array = _level.assessments;
+										Screen.ModalDlg( dlgDoc );
+
+										_level.assessments.DeleteChilds( '! dlgDoc.TopElem.values.ChildByKeyExists( \'\' + PrimaryKey.Value )' );
+										for ( _value in dlgDoc.TopElem.values )
+											_level.assessments.ObtainChildByKey( _value.key );
+
+										Ps.Doc.SetChanged( true );
+								"/>
+								</ModeContainer>
+								<TABLE>
+									<COLUMNS>
+										<COL WIDTH="100%"/>
+										<COL WIDTH="64vpx"/>
+										<COL WIDTH="28vpx"/>
+									</COLUMNS>
+									<LOOP EXPR="_level.assessments" VAR="_assessment">
+										<EDIT SOURCE="_assessment.PrimaryKey.ForeignElem.title" WIDTH="100%" READ-ONLY="1" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _assessment.PrimaryKey ) )"/>
+										<ITEM TYPE="ms_masked_edit_base" SOURCE="_assessment.assessment_score" typeExpr="'integer'"/>
+										<IF EXPR="Screen.EditMode">
+											<BUTTON IMAGE-URL="//wtv/svg/del.svg" HEIGHT="edit" ACTION="
+												_assessment.Delete();
+												Ps.Doc.SetChanged( true );
+											" TIP-TEXT-EXPR="ms_tools.get_const('dhmpr1cr2w') + ' - ' + _assessment.PrimaryKey.ForeignElem.title"/>
+										</IF>
+										<ELSE>
+											<LABEL/>
+										</ELSE>
+									</LOOP>
+								</TABLE>
+							</PANEL>
+
+							<PANEL>
+								<ModeContainer>
+									<BUTTON IMAGE-URL="//wtv/svg/add.svg" TITLE-EXPR="ms_tools.get_const('5l2ct9ymki')" ACTION="
+											dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+											dlgDoc.TopElem.multi_select = true;
+											dlgDoc.TopElem.catalog_name = 'education_method';
+											dlgDoc.TopElem.value_array = _level.education_methods;
+											Screen.ModalDlg( dlgDoc );
+
+											_level.education_methods.DeleteChilds( '! dlgDoc.TopElem.values.ChildByKeyExists( \'\' + PrimaryKey.Value )' );
+											for ( _value in dlgDoc.TopElem.values )
+												_level.education_methods.ObtainChildByKey( _value.key );
+
+											Ps.Doc.SetChanged( true );
+									"/>
+								</ModeContainer>
+								<TABLE>
+									<COLUMNS>
+										<COL WIDTH="100%"/>
+										<COL WIDTH="28vpx"/>
+									</COLUMNS>
+									<LOOP EXPR="_level.education_methods" VAR="_education_method">
+										<EDIT SOURCE="_education_method.PrimaryKey.ForeignElem.name" WIDTH="100%" READ-ONLY="1" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _education_method.PrimaryKey ) )"/>
+										<IF EXPR="Screen.EditMode">
+											<BUTTON IMAGE-URL="//wtv/svg/del.svg" HEIGHT="edit" ACTION="
+												_education_method.Delete();
+												Ps.Doc.SetChanged( true );
+											" TIP-TEXT-EXPR="ms_tools.get_const('ymkfckxxwm') + ' - ' + _education_method.PrimaryKey.ForeignElem.name"/>
+										</IF>
+										<ELSE>
+											<LABEL/>
+										</ELSE>
+									</LOOP>
+								</TABLE>
+							</PANEL>
+
+							<PANEL>
+								<ModeContainer>
+									<BUTTON IMAGE-URL="//wtv/svg/add.svg" TITLE-EXPR="ms_tools.get_const('cs19iffkhi')" ACTION="
+											dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+											dlgDoc.TopElem.multi_select = true;
+											dlgDoc.TopElem.catalog_name = 'development_method';
+											dlgDoc.TopElem.value_array = _level.development_methods;
+											Screen.ModalDlg( dlgDoc );
+
+											_level.development_methods.DeleteChilds( '! dlgDoc.TopElem.values.ChildByKeyExists( \'\' + PrimaryKey.Value )' );
+											for ( _value in dlgDoc.TopElem.values )
+												_level.development_methods.ObtainChildByKey( _value.key );
+
+											Ps.Doc.SetChanged( true );
+									"/>
+								</ModeContainer>
+								<TABLE>
+									<COLUMNS>
+										<COL WIDTH="100%"/>
+										<COL WIDTH="28vpx"/>
+									</COLUMNS>
+									<LOOP EXPR="_level.development_methods" VAR="_development_method">
+										<EDIT SOURCE="_development_method.PrimaryKey.ForeignElem.name" WIDTH="100%" READ-ONLY="1" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _development_method.PrimaryKey ) )"/>
+										<IF EXPR="Screen.EditMode">
+											<BUTTON IMAGE-URL="//wtv/svg/del.svg" HEIGHT="edit" ACTION="
+												_development_method.Delete();
+												Ps.Doc.SetChanged( true );
+											" TIP-TEXT-EXPR="ms_tools.get_const('ymkfckxxwm') + ' - ' + _development_method.PrimaryKey.ForeignElem.name"/>
+										</IF>
+										<ELSE>
+											<LABEL/>
+										</ELSE>
+									</LOOP>
+								</TABLE>
+							</PANEL>
+							<IF EXPR="Screen.EditMode">
+								<BUTTON IMAGE-URL="//wtv/svg/del.svg" HEIGHT="edit" ACTION="
+										_level.Delete();
+										Ps.Doc.SetChanged( true );
+								" TIP-TEXT-EXPR="ms_tools.get_const('cl_del_line') + (_level.ChildIndex + 1)"/>
+							</IF>
+							<ELSE>
+								<LABEL/>
+							</ELSE>
+						</LOOP>
+					</TABLE>
+
+			</PAGE>
+
+		</AppCardContainer>
+	</WITH>
+
+</SPXML-SCREEN>

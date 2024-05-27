@@ -1,0 +1,11 @@
+<SPXMLScreen><%
+
+sQuestionID = tools_web.get_web_param( PARAMETERS, "question_id", "", true );
+
+%>
+	<Panel Name="QuestionEditPanel" Source="panel_edit_question" ShowHeader="false">
+		<Param Name="questions_xml" Value="<%=UrlEncode( tools_web.get_web_param( PARAMETERS, "questions_xml", "", true ) )%>"/>
+		<Param Name="question_id" Value="<%=sQuestionID%>"/>
+	</Panel>
+
+</SPXMLScreen>

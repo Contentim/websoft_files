@@ -1,0 +1,203 @@
+﻿<SPXMLScreen>
+
+<HTMLBox Dynamic="1">
+	<![CDATA[
+
+		<link href="scripts/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script type="text/javascript" src="scripts/jquery-ui/jquery-ui.js" language="javascript"></script>
+
+	]]>
+</HTMLBox>
+
+<%
+dtStart = null;
+dtFinish = null;
+try
+{
+	dtStart = Date( PARAMETERS.GetProperty( 'summary_start_date' ) );
+}
+catch ( err )
+{
+}
+try
+{
+	dtFinish = Date( PARAMETERS.GetProperty( 'summary_finish_date' ) );
+}
+catch ( err )
+{
+}
+bDispPeriod = dtStart != null || dtFinish != null;
+bShowTimeline = PARAMETERS.GetProperty( 'b_show_timeline' );
+bShowTimeline = ( bShowTimeline != undefined ) ? tools_web.is_true( bShowTimeline ) : false;
+sCstmCollectionCode = PARAMETERS.GetProperty( 'code_collection_timeline', '' );
+sCstmCollectionCode = ( sCstmCollectionCode != '' ) ? sCstmCollectionCode : "uni_collection_timeline_collab";
+
+try
+{
+	curObjectID = OptInt( curObjectID );
+	if ( curObjectID == undefined )
+		throw "";
+}
+catch(e)
+{
+	curObjectID = curUserID;
+}
+
+
+arrAllLearning = XQuery( "for $elem in learnings where $elem/person_id = " + curObjectID + " return $elem" );
+arrAllTestLearning = XQuery( "for $elem in test_learnings where $elem/person_id = " + curObjectID + " return $elem" );
+arrAllEventResult = XQuery( "for $elem in event_results where $elem/person_id = " + curObjectID + " return $elem" );
+
+rAllSum = 0.0;
+iAllHours = 0;
+for ( catEventResultElem in arrAllEventResult )
+{
+	if ( ! catEventResultElem.not_pay && catEventResultElem.expense_sum.HasValue )
+		rAllSum += catEventResultElem.expense_sum;
+		
+	catEvent = catEventResultElem.event_id.OptForeignElem;
+	if ( catEvent != undefined )
+		iAllHours += ( catEvent.duration_fact.HasValue ? catEvent.duration_fact : ( catEvent.duration_days_fact.HasValue ? catEvent.duration_days_fact * 8 : 0 ) );
+}
+
+if ( bDispPeriod )
+{
+	sCond = dtStart == null ? "" : "last_usage_date>=dtStart";
+	sCond += ( dtFinish == null ? "" : ( sCond == "" ? "" : "&&" ) + "last_usage_date<=dtFinish" );
+	arrLearning = ArraySelect( arrAllLearning, sCond );
+	arrTestLearning = ArraySelect( arrAllTestLearning, sCond );
+	sCond = dtStart == null ? "" : "event_start_date>=dtStart";
+	sCond += ( dtFinish == null ? "" : ( sCond == "" ? "" : "&&" ) + "event_start_date<=dtFinish" );
+	arrEventResult = ArraySelect( arrAllEventResult, sCond );
+	
+	rSum = 0.0;
+	iHours = 0;
+	for ( catEventResultElem in arrEventResult )
+	{
+		if ( ! catEventResultElem.not_pay && catEventResultElem.expense_sum.HasValue )
+			rSum += catEventResultElem.expense_sum;
+				
+		catEvent = catEventResultElem.event_id.OptForeignElem;
+		if ( catEvent != undefined )
+			iHours += ( catEvent.duration_fact.HasValue ? catEvent.duration_fact : ( catEvent.duration_days_fact.HasValue ? catEvent.duration_days_fact * 8 : 0 ) );
+	}
+}
+%>
+<Grid Width="100%" Class="XAML-grid-info-table">
+	<GridColumns>
+		<GridColumn Width="250" Align="right"/>
+<%
+if ( bDispPeriod )
+{
+%>
+		<GridColumn Width="200"/>
+<%
+}
+%>
+		<GridColumn Width="200"/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow Class="XAML-gridrow-header">
+		<Label Class="XAML-grid-header-label">&nbsp;</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( 'c_period', curLngWeb )%></Label>
+<%
+}
+%>
+		<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( 'c_total', curLngWeb )%></Label>
+		<Label Class="XAML-grid-header-label"/>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vcb_courses_edu', curLngWeb )%>:</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrLearning )%></Label>
+<%
+}
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrAllLearning )%></Label>
+		<Label Class="XAML-info-grid-column"/>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vcb_test_finish', curLngWeb )%>:</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrTestLearning )%></Label>
+<%
+}
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrAllTestLearning )%></Label>
+		<Label Class="XAML-info-grid-column"/>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vcb_tran_finish', curLngWeb )%>:</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrEventResult )%></Label>
+<%
+}
+%>
+		<Label Class="XAML-info-grid-column"><%=ArrayCount( arrAllEventResult )%></Label>
+		<Label Class="XAML-info-grid-column"/>
+	</GridRow>
+	
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( '6xfmxm9w2u', curLngWeb )%>:</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-info-grid-column"><%=StrRealFixed( rSum, 2, true )%></Label>
+<%
+}
+%>
+		<Label Class="XAML-info-grid-column"><%=StrRealFixed( rAllSum, 2, true )%></Label>
+		<Label Class="XAML-info-grid-column"/>
+	</GridRow>
+	
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'kolichestvochaso', curLngWeb )%>:</Label>
+<%
+if ( bDispPeriod )
+{
+%>
+		<Label Class="XAML-info-grid-column"><%=iHours%></Label>
+<%
+}
+%>
+		<Label Class="XAML-info-grid-column"><%=iAllHours%></Label>
+		<Label Class="XAML-info-grid-column"/>
+	</GridRow>
+</Grid>
+
+<Collection Name="collection_timeline" Source="<%=sCstmCollectionCode%>">
+    <Param Name="dStartPeriod" Value="<%=dtStart%>"/>
+    <Param Name="dEndPeriod" Value="<%=dtFinish%>"/>
+</Collection>
+
+<%
+    if ( bShowTimeline )
+    {
+%>
+<StackPanel Adapt="1">
+    <Label Class="XAML-label-header-2" Align="center" Adapt="1"> Timeline </Label>
+    <Timeline Name="timelineForCollab" Height="500" Width="900" FntSzNameScale="11" Source="{collection_timeline}"/>
+</StackPanel>
+<%
+    }
+%>
+
+</SPXMLScreen>

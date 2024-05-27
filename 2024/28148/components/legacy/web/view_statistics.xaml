@@ -1,0 +1,31 @@
+﻿<SPXMLScreen>
+<%
+aRoles = tools_web.get_web_param( curParams, "statistics.role_id", [], true )
+curStatistics = {
+	type_visible: tools_web.get_web_param( curParams, "statistics.orientation", "horizontal", true ),
+	horizontal_cnt: tools_web.get_web_param( curParams, "statistics.horizontal_cnt", "", true ),
+	b_random_show: tools_web.get_web_param( curParams, "statistics.random_show", "false", true ),
+	max_cnt: tools_web.get_web_param( curParams, "statistics.max_cnt", 0, true ),
+	role_id: ( ArrayOptFirstElem( aRoles ) != undefined ? ArrayMerge( aRoles, "This.GetProperty( '__value', '' )", "," ) : "" ),
+	view_types: String( tools_web.get_web_param( curParams, "statistics.view_types", "tile", true ) ).split( ";" )
+};
+try
+{
+	sEval = tools_web.get_web_param( curParams, "statistics.eval_object", "", true )
+	if( sEval != "" )
+		curStatistics.SetProperty( "object_id", OptInt( eval( sEval ), "" ) );
+}
+catch( ex ){}
+sStatisticsCodes = tools_web.get_web_param( curParams, "statistics.codes", "", true )
+
+if( sStatisticsCodes != "" )
+{
+	arrStatistics = XQuery( "for $i in statistic_recs where MatchSome( $i/code, (" + ArrayMerge( String( sStatisticsCodes ).split( ";" ), "XQueryLiteral( This )", "," ) + ") ) return $i" );
+	arrStatRecs = new Array();
+	for( _sr in arrStatistics )
+		arrStatRecs.push( { id: _sr.id.Value } )
+	curStatistics.SetProperty( "statistics_recrs", arrStatRecs );
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_cur_statistics.xaml" ) );
+%>
+</SPXMLScreen>

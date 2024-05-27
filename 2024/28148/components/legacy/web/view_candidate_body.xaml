@@ -1,0 +1,594 @@
+﻿<SPXMLScreen>
+
+<%
+	var sConstInBlackList = tools_web.get_web_const( 'kandidatvcherno', curLngWeb );
+	
+	var oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+	if ( curObjectID != null && curObject.Name == 'collaborator' )
+	{
+		curTitle = {
+			'object'      : curObject,
+			'object_title': tools_web.get_web_const( 'c_candidate', curLngWeb )
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_object_title.xaml' ) );
+
+		function fnGetPartName(sPartCode)
+		{
+			var sReturn = '';
+			sReturn = Trim( String( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.block_list.' + sPartCode, '', true ) ) );
+			
+			if (sReturn == '')
+			{
+				if (sPartCode == 'main')
+				{
+					sReturn = tools_web.get_web_const( 'osnovnyesveden', curLngWeb );
+				}
+				else if (sPartCode == 'custom_fields')
+				{
+					sReturn = tools_web.get_web_const( 'wlcwah2eod', curLngWeb )
+				}
+				else if (sPartCode == 'vacancys')
+				{
+					sReturn = tools_web.get_web_const( 'otklikinavakan', curLngWeb )
+				}
+				else if (sPartCode == 'resumes')
+				{
+					sReturn = tools_web.get_web_const( 'c_resume', curLngWeb )
+				}
+				else
+				{
+					sReturn = tools_web.get_web_const( 'vrb_not_specified', curLngWeb )
+				}
+			}
+			else
+			{
+				sReturn = tools_web.get_cur_lng_name( sReturn, curLng.short_id )
+			}
+			return sReturn
+		}
+		
+		strCardStyleType = String( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.card_style', 'tabs', true ) );
+		arrParts 		 = String( tools_web.get_web_param( curParams,'candidate_body.wt_candidate.block_list', 'main;resumes;vacancys;custom_fields', true ) ).split( ';' );
+		iDefaultTab 	 = OptInt( CONTEXT.GetOptProperty( 'CandidateBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+		
+		strVacancyResponseFields = String( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.block_list.vacancys.disp_field_list', 'vacancy_name;date;date_invitation;status;comment_recruiter;resume_name', true ) );
+		arrVacancyResponseFields = strVacancyResponseFields.split( ';' );
+		
+		bBossCanEdit = tools_web.is_true(tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.allow_manager_edit', 'true', true ) );
+		iGroupID     = OptInt( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.group_id', null, true ), null );
+		bCanEdit     = ( bBossCanEdit && ArrayOptFind( tools.get_uni_user_bosses( curObjectID, { 'return_object_type': 'collaborator', 'return_object_value': 'id' }), 'This == ' + curUserID ) != undefined )
+		
+		if ( !bCanEdit && iGroupID != null )
+		{
+			bCanEdit = ( ArrayOptFirstElem( XQuery("for $elem in group_collaborators where $elem/group_id = " + iGroupID + " and $elem/collaborator_id = " + curUserID + " return $elem") ) != undefined )
+		}
+
+%>
+		<Action Name="SaveAction" Source="candidate_save" Success="{SuccessActions};ALERT=<%=tools_web.get_web_const( "dannyesohraneny", curLngWeb )%>" Failure="ALERT={messageText}">
+			<Param Name="iObjectId" Value=""/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			<Param Name="sAction" Value=""/>
+		</Action>
+
+		<Collection Name="CandidateResponsesCollection" Source="CandidateResponsesCollection">
+			<Param Name="iPersonID" Value="<%=curObjectID%>"/>
+			<Param Name="strFieldCodes" Value="<%=strVacancyResponseFields%>"/>
+			<Param Name="response_status" Value="{SelectStatus}"/>
+		</Collection>
+
+		<Toolbar Class="XAML-toolbar">
+<%
+		if (bCanEdit)
+		{
+%>
+			<Button Class="XAML-button XAML-button-save" Click="SET=SaveAction/sAction,save;SET=SaveAction/iObjectId,<%=curObjectID%>;Action=SaveAction"><%=HtmlEncode(tools.get_web_str("c_save"))%></Button>
+<%
+		}
+%>
+		</Toolbar>
+<%
+		if ( curObjectID != curUserID && curObject.in_request_black_list )
+		{
+			curMessageBox = {
+				"type": "warning",
+				"text": sConstInBlackList
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+		if ( strCardStyleType == 'tabs' )
+		{
+%>
+			<TabControl Name="CandidateBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+		}
+	
+		catResume = ArrayOptFirstElem( XQuery( "for $elem in resumes where $elem/person_id = " + curObjectID + " and $elem/is_archive = false() order by modification_date descending return $elem" ) );
+		teResume  = null;
+
+		if ( catResume != undefined )
+		{
+			try
+			{
+				teResume = OpenDoc( UrlFromDocID( catResume.id ) ).TopElem;
+			}
+			catch(ex)
+			{
+			}
+		}
+
+		for ( sPart in arrParts )
+		{
+			sTitle = fnGetPartName(sPart);
+
+			if ( strCardStyleType == 'tabs' )
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode( sTitle )%>">
+<%
+			}
+			else if ( strCardStyleType == 'blocks' )
+			{
+%>
+				<Panel Title="<%=XmlAttrEncode( sTitle )%>" Expanded="1" Width="100%">
+<%
+			}
+			if ( sPart == 'main' )
+			{
+				sDispFields   = String( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.block_list.main.disp_field_list', 'status;phone;birth_date;mobile_phone;address;email;creation_date;resume_link;sex;family_status;educ_type;academic_degree;professional_field;exp_years;region', false ));
+				sFamilyStatus = '';
+				if ( teResume != null )
+				{
+					switch ( teResume.family_status )
+					{
+						case 'married':
+							sFamilyStatus = tools_web.get_web_const( 'vrb_married', curLngWeb );
+							break;
+						case 'not_married':
+							sFamilyStatus = tools_web.get_web_const( 'vrb_unmarried', curLngWeb );
+							break;
+						case 'divorced':
+							sFamilyStatus = tools_web.get_web_const( 'vrb_divorcee', curLngWeb );
+							break;
+						default:
+							sFamilyStatus = '';
+							break;
+					}
+				}
+%>
+				<Grid Width="100%" Class="XAML-grid-info-table">
+					<GridColumns>
+						<GridColumn Width="250" Align="right"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_fio', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=tools_web.get_cur_lng_name( curObject.fullname, curLng.short_id )%>]]></Label>
+					</GridRow>
+<%
+				if ( StrContains( sDispFields, 'status' ) )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_status', curLngWeb )%>:</Label>
+<%
+						if ( !bCanEdit )
+						{
+%>
+							<Label><![CDATA[<%=( curObject.candidate_status_type_id.OptForeignElem != undefined ? tools_web.get_cur_lng_name( curObject.candidate_status_type_id.OptForeignElem.name, curLng.short_id ) : '')%>]]></Label>
+<%
+						}
+						else
+						{
+							strTagName  = 'candidate_status_type_id';
+							curSelector = {
+							'id'                 : strTagName,
+							'object_id'          : curObject.candidate_status_type_id,
+							'object_id_item_name': strTagName,
+							'object_name'        :  ( curObject.candidate_status_type_id.OptForeignElem != undefined ? tools_web.get_cur_lng_name( curObject.candidate_status_type_id.OptForeignElem.name, curLng.short_id ) : ''),
+							'multi_select'       : 'false',
+							'catalog_name'       : 'candidate_status_type',
+							'selected_object_ids': curObject.candidate_status_type_id
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector.xaml' ) );
+						}
+%>			
+					</GridRow>
+<%
+				}
+				if ( StrContains( sDispFields, 'birth_date' ) )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_birthday', curLngWeb )%>:</Label>
+						<Label><%=StrDate( ( teResume != null && teResume.birth_date.HasValue ? teResume.birth_date : curObject.birth_date ), false )%></Label>
+					</GridRow>
+<%
+				}
+				if ( StrContains( sDispFields, 'phone' ))
+				{
+%>		
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_phone', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=( teResume != null && teResume.phone.HasValue ? teResume.phone : curObject.phone )%>]]></Label>
+					</GridRow>
+<%
+				}
+				if ( StrContains( sDispFields, 'mobile_phone' ))
+				{
+%>		
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'org_telm', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=( teResume != null && teResume.mobile_phone.HasValue ? teResume.mobile_phone : curObject.mobile_phone )%>]]></Label>
+					</GridRow>
+<%
+				}
+				if ( StrContains( sDispFields, 'address' ))
+				{
+%>		
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_address', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=( teResume != null && teResume.address.HasValue ? teResume.address : curObject.address )%>]]></Label>
+					</GridRow>
+<%
+				}			
+				if ( StrContains( sDispFields, "email" ) )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_email', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=( teResume != null && teResume.email.HasValue ? teResume.email : curObject.email )%>]]></Label>
+					</GridRow>
+<%
+				}
+				if ( teResume != null )
+				{
+					if ( StrContains( sDispFields, 'sex' ) )
+					{
+						strSex = ( teResume != null && teResume.sex.HasValue ? teResume.sex : curObject.sex )
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_sex', curLngWeb )%>:</Label>
+							<Label><%=( strSex == 'm' ? tools_web.get_web_const( 'vpb_m', curLngWeb ) : tools_web.get_web_const( 'vpb_w', curLngWeb ) )%></Label>
+						</GridRow>
+<%
+					}
+					if ( StrContains( sDispFields, 'family_status' ) )
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_family_status', curLngWeb )%>:</Label>
+							<Label><%=sFamilyStatus%></Label>
+						</GridRow>
+<%
+					}
+					if ( StrContains( sDispFields, 'educ_type' ) )
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_education', curLngWeb )%>:</Label>
+							<Label><![CDATA[<%=( fldType = curLngCommon.educ_types.GetOptChildByKey( teResume.educ_type_id ), ( fldType == undefined ? '' : fldType.name ) )%>]]></Label>
+						</GridRow>
+<%
+					}
+					if ( StrContains( sDispFields, 'academic_degree' ) )
+					{
+						if ( teResume.academic_degree.HasValue )
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uchenayastepen', curLngWeb )%>:</Label>
+								<Label><![CDATA[<%=( teResume.academic_degree + ( teResume.academic_heading.HasValue ? ', ' +teResume.academic_heading : '' ) )%>]]></Label>
+							</GridRow>
+<%
+						}
+					}
+					if ( StrContains( sDispFields, 'professional_field' ) )
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_professional_field', curLngWeb )%>:</Label>
+							<Label><![CDATA[<%=( fldType = teResume.profession_id.OptForeignElem, ( fldType == undefined ? '' : fldType.name ) )%>]]></Label>
+						</GridRow>
+<%
+					}
+					if ( StrContains( sDispFields, 'region' ) )
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_region', curLngWeb )%>:</Label>
+							<Label><![CDATA[<%=( teResume.region_id.OptForeignElem == undefined ? '' : tools_web.get_cur_lng_name( teResume.region_id.OptForeignElem.name, curLng.short_id )) %>]]></Label>
+						</GridRow>
+<%
+					}
+					if ( StrContains( sDispFields, 'exp_years' ) )
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_service', curLngWeb )%>:</Label>
+							<Label><%=teResume.exp_years%></Label>
+						</GridRow>
+<%
+					}
+				}
+				if ( StrContains( sDispFields, 'creation_date' ))
+				{
+%>		
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>:</Label>
+						<Label><%=StrDate( curObject.doc_info.creation.date, true, true )%></Label>
+					</GridRow>
+<%
+				}
+				if (bCanEdit)
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_comment', curLngWeb )%>:</Label>
+						<EditBox Name="comment" Width="500" Height="80"><![CDATA[<%=( curObject.comment) %>]]></EditBox>
+					</GridRow>
+<%
+				}
+				if ( catResume != undefined )
+				{
+%>	
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_resume', curLngWeb )%>:</Label>
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catResume.PrimaryKey, { doc_id : curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catResume.name, curLng.short_id )%>]]></Link>
+					</GridRow>
+<%
+				}
+%>	
+				</Grid>
+<%
+			}
+			if ( sPart == 'resumes' )
+			{
+				sCoList = String( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.block_list.resumes.view_col_list', 'creation_date;modification_date;name;profession_area;education', true ) );
+				bShowCreateResumeButton = tools_web.is_true( tools_web.get_web_param( curParams, 'candidate_body.wt_candidate.block_list.resumes.show_create_resume_button', 'false', true ) );
+				
+				if ( bShowCreateResumeButton )
+				{
+					RedirectUrl = tools_web.get_mode_clean_url( "resume", null, { doc_id : curDocID } );
+%>
+					<Button Class="XAML-button XAML-button-new" Click="OPENURL=<%=RedirectUrl%>"><%=tools_web.get_web_str('vrb_create')%></Button>
+<%
+				}
+				curView = {
+					'id'          : 'ResumeActive',
+					'height'      : '400',
+					'catalog_name': 'resume',
+					'disp_search' : 'false',
+					'disp_filter' : 'false',
+					'sort_direct' : '-',
+					'list_columns': sCoList,
+					'disp_array'  : 'false',
+					"link_action": ( 'OPENURL=' + tools_web.get_mode_clean_url( 'resume', null, { resume_id : '%7Bid%7D', doc_id : curDocID } ) )
+				};
+				curView.SetProperty('xquery_qual','$elem/person_id = ' + curObjectID + ' and $elem/is_archive = false()');
+				Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_catalog_list.xaml' ) );
+			}
+			if ( sPart == 'vacancys' )
+			{
+%>		
+				<StackPanel Orientation="Horizontal" Height="50" Align="left" Adapt="true" Class="XAML-stack-filter">
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( 'c_status', curLngWeb )%>:</Label>
+					<StackPanel Orientation="Horizontal" Align="right" Class="XAML-stack-simple">
+						<ComboBox Name="SelectStatus" Width="170" Change="UPDATE=VacancyResponseGrid">
+							<ComboBoxItem Value="all" Selected="true"><%=tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb )%></ComboBoxItem>
+<%
+							for( fldStatus in curLngCommon.vacancy_response_status_types )
+							{
+								try
+								{
+%>
+									<ComboBoxItem Value="<%=fldStatus.id%>"><%=XmlAttrEncode(curLngCommon.vacancy_response_status_types.GetChildByKey(fldStatus.id).name)%></ComboBoxItem>
+<%
+								}
+								catch(ex){}
+							}
+%>
+						</ComboBox>
+					</StackPanel>
+				</StackPanel>
+
+				<DataGrid Name="VacancyResponseGrid" Source="{CandidateResponsesCollection}" Height="150" Selection="multiple" Width="100%" PageSize="20">
+<%
+				for (strDispFieldCode in arrVacancyResponseFields)
+				{
+					switch (strDispFieldCode)
+					{
+						case 'vacancy_name':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_vacancy', curLngWeb )%>" Value="vacancy_name" Width="200" Type="link" Click="OPENURL={url_vacancy}" Sortable="true" ColorSource="color"/>
+<%
+							break;
+						case 'date':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'dataotklika', curLngWeb )%>" Value="date" Width="170" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+<%
+							break;
+						case 'date_invitation':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'datapriglasheniya', curLngWeb )%>" Value="date_invitation" Width="170" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+<%
+							break;
+						case 'status':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_status', curLngWeb )%>" Value="status" Width="150" Type="string" Sortable="true" ColorSource="color"/>
+<%
+							break;
+						case 'comment_recruiter':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'kommentariyrek', curLngWeb )%>" Value="comment_recruiter" Type="string" Sortable="true" ColorSource="color"/>
+<%
+							break;
+						case 'resume_name':
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_resume', curLngWeb )%>" Value="resume_name" Width="120" Type="link" Sortable="true" Click="OPENURL={url_resume}" ColorSource="color"/>
+<%
+							break;
+						default:
+%>
+ 							<DataGridColumn Title="<%=tools_web.get_web_const( strDispFieldCode, curLngWeb )%>" Value="<%=strDispFieldCode%>" Width="10%" Type="string" Sortable="true"/>
+<%
+						break;
+					}
+				}
+%>
+				</DataGrid>
+<%
+			}
+			if ( sPart == 'custom_fields' )
+			{
+				arrCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				arrSourceElems = curObject.custom_elems
+				curCustomFields = {
+					'id'               : 'CollaboratorCustomFields',
+					'fields'           : ArraySelectByKey( arrCustomElems.fields, true, 'disp_web' ),
+					'source'           : arrSourceElems,
+					'modify_eval'      : bCanEdit,
+					'draw_grid_columns': true
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_custom_fields.xaml' ) );
+			}
+			
+			if ( strCardStyleType == 'tabs' )
+			{
+%>
+				</TabItem>
+<%
+			}
+			else if ( strCardStyleType == 'blocks')
+			{
+%>
+				</Panel>
+<%
+			}
+		}
+	
+		if ( strCardStyleType == 'tabs' )
+		{
+%>
+			</TabControl>
+<%
+		}
+	}
+	else
+	{
+		try
+		{
+			_url = ( StrBegins( global_settings.settings.recruitment.estaff_server_url, "http://" ) || StrBegins( global_settings.settings.recruitment.estaff_server_url, "https://" ) ? "" : tools_web.get_url_protocol( Request.Url ) ) + global_settings.settings.recruitment.estaff_server_url;
+			
+			curCandidateEID = oParamSource.GetOptProperty( 'eid' );
+			curVacancyEID = oParamSource.GetOptProperty( 'vacancy_eid' );
+			
+			resp = undefined;
+			resp = HttpRequest( ( UrlAppendPath( _url, '/candidate.xml?eid=' + curCandidateEID + '&vacancy_eid=' + curVacancyEID ) ) , 'get' );
+			
+			respDoc = OpenDocFromStr( resp.Body, 'form=x-local://wtv/estaff/candidate.xmd' ).TopElem;
+			
+			//alert(resp.Body  )
+%>
+			<!-- ========= Actions ============= -->
+
+<%
+			curTitle = {
+				'object'      : null,
+				'object_title': tools_web.get_web_const( 'c_candidate', curLngWeb ),
+				'title'       : tools_web.get_web_const( 'c_candidate', curLngWeb ),
+				'type'        : 'simple'
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_object_title.xaml' ) );
+			
+			arrBlockListParam = String( tools_web.get_web_param( curParams, 'block_list', 'main;actions;attachments', true ) ).split( ';' );
+			for ( sTabElem in arrBlockListParam )
+			{
+				if ( sTabElem == 'main' )
+				{
+%>
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn/>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_fio', curLngWeb )%>:</Label>
+							<Label><%=respDoc.lastname%>&nbsp;<%=respDoc.firstname%>&nbsp;<%=respDoc.middlename%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_birthday', curLngWeb )%>:</Label>
+							<Label><%=respDoc.birth_date%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_phone', curLngWeb )%>:</Label>
+							<Label><%=respDoc.phone%><%=( respDoc.work_phone.HasValue ? ( respDoc.phone.HasValue ? ', ' : '' ) + tools.get_web_str('org_telw') + ': ' + respDoc.work_phone : "" )%><%=( respDoc.mobile_phone.HasValue ? ( respDoc.phone.HasValue || respDoc.work_phone.HasValue ? ", " : "" ) + tools.get_web_str("org_telm") + ": " + respDoc.mobile_phone : "" )%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_email', curLngWeb )%>:</Label>
+							<Label><%=( respDoc.email.HasValue ? respDoc.email : '' )%><%=( respDoc.email2.HasValue ? ( respDoc.email.HasValue ? ', ' : '' ) + respDoc.email2 : '' )%></Label>
+						</GridRow>
+					</Grid>
+<%
+				}
+				if ( sTabElem == 'actions' )
+				{
+%>
+					<Collection Name="CandidateActionsGridCollection" Source="CandidateActionsGridCollection">
+						<Param Name="candidateID" Value="<%=curCandidateEID%>"/>
+						<Param Name="vacancyID" Value="<%=curVacancyEID%>"/>
+						<Param Name="context" Value="{CONTEXT}"/>
+						<Param Name="sid" Value="<%=Session.sid%>"/>
+					</Collection>
+
+					<Dialog Name="fill_comment" Source="dlg_candidate_record" Title="<%=tools_web.get_web_const( "zapolnenie", curLngWeb )%>" Width="450" Close="UPDATE=ActionGrid">
+						<Param Name="doc_id" Value="<%=oParamSource.GetOptProperty( "doc_id" )%>"/>
+						<Param Name="comment" Value=""/>
+						<Param Name="candidate_eid" Value="<%=curCandidateEID%>"/>
+						<Param Name="record_eid" Value=""/>
+					</Dialog>
+
+					<DataGrid Name="ActionGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vcb_events", curLngWeb ) )%>" Source="{CandidateActionsGridCollection}" Height="" Selection="single" PageSize="10">
+					 	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_type', curLngWeb )%>" Value="type" Width="200" Type="string" Sortable="true"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_start_date', curLngWeb )%>" Value="start_date" Width="150" Type="string" Sortable="true"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_finish_date', curLngWeb )%>" Value="finish_date" Width="150" Type="string" Sortable="true"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_vacancy', curLngWeb )%>" Value="vacancy" Type="link" Width="100%" Click="OPENURL={url_name}" Sortable="true"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'vkpb_comment', curLngWeb )%>" Value="comment" Width="200" Type="string" Sortable="true"/>
+						<DataGridColumn Title="<%=""%>" Value="action" Width="100" Type="link" Click="SET=fill_comment/record_eid,{id};SET=fill_comment/comment,{comment};OPENDIALOG=fill_comment;REFRESH"/>
+					</DataGrid>
+<%
+				}
+				if ( sTabElem == 'attachments' )
+				{
+%>
+					<Collection Name="CandidateAttachmentsGridCollection" Source="CandidateAttachmentsGridCollection">
+						<Param Name="candidateID" Value="<%=curCandidateEID%>"/>
+						<Param Name="vacancyID" Value="<%=curVacancyEID%>"/>
+						<Param Name="context" Value="{CONTEXT}"/>
+						<Param Name="sid" Value="<%=Session.sid%>"/>
+					</Collection>
+
+					<DataGrid Name="AttachmentsGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vcb_attachments", curLngWeb ) )%>" Source="{CandidateAttachmentsGridCollection}" Height="" Selection="single" PageSize="5">
+						<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+					 	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_type', curLngWeb )%>" Value="type_desc" Width="200" Type="link" Sortable="true" Click="OPENWINDOW={url_name}"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>" Value="name" Width_="200" Type="link" Click="OPENWINDOW={url_name}" Sortable="true"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_create_date', curLngWeb )%>" Value="create_date" Width="200" Type="link" Click="OPENWINDOW={url_name}" Sortable="true"/>
+					</DataGrid>
+<%
+				}
+			}
+		}
+		catch( err )
+		{
+
+			sMessageText = 'Invalid HttpRequest';
+			curMessageBox = {
+				"type": "",
+				"text": sMessageText
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+%>
+
+</SPXMLScreen>

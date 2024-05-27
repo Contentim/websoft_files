@@ -1,0 +1,54 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="50"/>
+			<GridColumn/>
+		</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( 'c_status', curLngWeb ) )%>:</Label>
+<%
+
+					strFieldName='status'
+%>
+		<ComboBox Class="" Name="<%=strFieldName%>" > 
+<%
+					for( fldElem in curLngCommon.career_reserve_status_types)
+					{
+						try
+						{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>"><%=XmlAttrEncode(curLngCommon.career_reserve_status_types.GetChildByKey( fldElem.id).name)%></ComboBoxItem>
+<%	
+						}
+						catch(ex)
+						{
+						}										
+					}
+%>
+		
+		</ComboBox>		
+	</GridRow>
+</Grid>
+<%
+if ( ISDIALOG )
+{
+%>
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+	<GridColumns>
+		<GridColumn Width="50%"/>
+		<GridColumn Width="50%"/>
+	</GridColumns>
+
+	<GridRow>
+		<Button Class="XAML-button XAML-button-ok" Width="165" Click="CLOSEDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_save', curLngWeb ))%></Button>
+		<Button Class="XAML-button XAML-button-cancel" Width="180" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_cancel', curLngWeb ))%></Button>
+	</GridRow>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

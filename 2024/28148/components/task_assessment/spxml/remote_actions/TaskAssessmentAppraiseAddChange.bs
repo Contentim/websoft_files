@@ -1,0 +1,13 @@
+﻿RESULT = {
+    command: "open_doc",
+    doc_id: OBJECT_ID,
+    is_dialog: true,
+    is_edit: true,
+    catalog_name: 'assessment_appraise',
+    form_url: "x-local://components/task_assessment/spxml/ui_forms/assessment_appraise.xms",
+    post_action: {
+        action: "lib",
+        lib: "libTaskAssessment",
+        method: "SaveAction"
+    }
+}

@@ -1,0 +1,54 @@
+﻿<SPXMLScreen>
+
+<%
+    sBtnThankLink = global_settings.settings.portal_base_url + tools_web.get_mode_clean_url( tools_web.get_web_param( curParams, 'code_transfer_points', 'tran_thanks_from_outlook', true ), curUserID )
+%>
+
+    <HTMLBox Dynamic="1">
+		<![CDATA[ 
+			
+            <style>
+                #dlg_transfer_link {
+                    width: 70%;
+                    margin-left: 15px;
+                }
+                .btn_say_thank {
+                    margin-bottom: 0;
+                }
+            </style>
+
+			<script>
+				$(document).ready(function() {
+
+					function copyData() {
+                        var copyText = document.querySelector("input[name='dlg_transfer_link']");
+                        copyText.select();
+                        copyText.setSelectionRange(0, 99999);
+                        document.execCommand("copy");
+                    }
+
+                    btn = document.querySelector("a.btn_say_thank");
+                    btn.addEventListener("click", copyData);
+
+				});
+			</script>
+
+		]]>
+	</HTMLBox>
+
+    <Label Class="XAML-label-header-3" Align="center"> Ссылка для кнопки "Сказать спасибо" </Label>
+
+    <StackPanel Adapt="1" Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector" Height="400">
+        <Grid>
+            <GridColumns>
+                <GridColumn Width="140"/>
+                <GridColumn/>
+            </GridColumns>
+            <GridRow Height="100">
+                <Button Name="btn_say_thank" Width="120" Class="XAML-button btn_say_thank"> <%=tools_web.get_web_const( 'hfekd109rv', curLngWeb )%> </Button>
+                <Edit Name="dlg_transfer_link" Width="100%" Class="XAML-input-selector"><%=sBtnThankLink%></Edit>
+            </GridRow>
+        </Grid>
+    </StackPanel>
+
+</SPXMLScreen>

@@ -1,0 +1,270 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+bIsMobile = curDevice.disp_type == "mobile";
+if ( iObjectID != undefined )
+{
+	var teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	var sName = PARAMETERS.GetOptProperty( "title", tools.get_disp_name_value( teObject ) );
+	var sSubtitle = PARAMETERS.GetOptProperty( "subtitle", "" );
+	var sStatus = PARAMETERS.GetOptProperty( "status", "" );
+	var sObjectImageUrl = PARAMETERS.GetOptProperty( "image" );
+	var sStatusColorClass = PARAMETERS.GetOptProperty( "status_class" );	
+	var sDesc = PARAMETERS.GetOptProperty( "desc" );
+	var sCustomClass = PARAMETERS.GetOptProperty( "custom_class" );
+	var sClickAction = PARAMETERS.GetOptProperty( "click" );
+	var sStatusColor;
+	var learningObject;
+	var curModeUrl;	
+
+	switch ( teObject.Name )
+	{
+		case 'learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.course_id ) ).TopElem;
+				sName = teObject.course_name;
+				curModeUrl = 'learning_stat';
+			break;
+			
+		case 'active_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.course_id ) ).TopElem;
+				sName = teObject.course_name;
+				curModeUrl = 'learning_proc';
+			break;
+
+		case 'test_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.assessment_id ) ).TopElem;
+				sName = teObject.assessment_name;
+				curModeUrl = 'test_learning_stat';
+			break;
+
+		case 'active_test_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.assessment_id ) ).TopElem;
+				sName = teObject.assessment_name;
+				curModeUrl = 'test_learning_proc';
+			break;			
+	}	
+	
+	if(sObjectImageUrl == undefined && learningObject != undefined)
+	{
+		if ( learningObject.ChildExists( 'resource_id' ) && learningObject.resource_id.HasValue )
+			sObjectImageUrl = tools_web.get_object_source_url( 'resource', learningObject.resource_id );
+		else
+			sObjectImageUrl = '/images/' + learningObject.Name + '.png';
+	}
+	else if(sObjectImageUrl == undefined)
+	{
+		switch( teObject.Name )
+		{
+			case "lector":
+				if( teObject.type == "collaborator" && teObject.person_id.HasValue )
+				{
+					sObjectImageUrl = tools_web.get_object_source_url( "person", teObject.person_id, "216x216" );
+					break;
+				}
+		
+			default:
+				if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+					sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+				else
+					sObjectImageUrl = '/images/' + teObject.Name + '.png';
+				break;
+		}
+	}
+
+	try {
+		sStatus = teObject.state_id.ForeignElem.name.Value;
+	}
+	catch (nostatus)
+	{
+		sStatus = '';
+	}
+
+	if ( sStatus != '' )
+	{	
+		switch ( teObject.state_id )
+		{	
+			case 0:
+				sStatusColor = 'color-plan';
+				break;
+			case 1:
+				sStatusColor = 'color-process';
+				break;
+			case 2:
+				sStatusColor = 'color-viewed';
+				break;
+			case 3:
+				sStatusColor = 'color-failed';
+				break;
+			case 4:
+				sStatusColor = 'color-finish';
+				break;			
+		}
+	}
+	
+	try {
+		sStartDate = teObject.start_learning_date;
+		sEndDate = teObject.last_usage_date;	
+		sScore = teObject.score;	
+	} 
+	catch (not_learning_obj)
+	{
+	}
+
+	if ( sClickAction == undefined )
+	{
+		sActionName = 'OPENURL';
+		if ( teObject.ChildExists( 'attributes' ) && StrContains( teObject.attributes.link_target, 'blank', true ) )
+			sActionName = 'OPENWINDOW';
+			if ( curModeUrl!='' && curModeUrl!=undefined )
+				sClickAction = sActionName + '=' + XmlAttrEncode( PARAMETERS.GetOptProperty( 'url', tools_web.get_mode_clean_url(curModeUrl, iObjectID, ({"doc_id": curDocID}))) );
+			else
+				sClickAction = sActionName + '=' + XmlAttrEncode( PARAMETERS.GetOptProperty( 'url', tools_web.get_mode_clean_url(teObject.Name, iObjectID, ({"doc_id": curDocID}))) );
+	}
+
+	if ( sDesc == undefined)
+		sDesc = "Ps.comment";
+	if ( sDesc != undefined )
+	{
+		if ( StrBegins( sDesc, 'Ps.' ) )
+		{
+			sDesc = teObject.Child( StrRightRangePos( sDesc, 3 ) ).Value;
+		}
+	}
+	
+if (learningObject == undefined)
+{
+%>
+
+<Grid Width="100%" Class="XAML-grid-list-item <%=sCustomClass%>" Adapt="1">
+	<GridColumns>
+<%
+		if(sObjectImageUrl != "")
+		{
+%>
+		<GridColumn/>
+<%
+		}
+%>
+		<GridColumn Width="100%"/>
+<%
+		if(!bIsMobile)
+		{
+%>		
+		<GridColumn/>
+<%
+		}
+%>		
+	</GridColumns>
+	<GridRow>
+<%
+		if(sObjectImageUrl != "")
+		{
+%>
+		<Image Click="<%=sClickAction%>" Source="pics/1blank.gif" Class="XAML-image-list-image">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+<%
+		}
+%>
+		<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+			<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="1">
+				<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+					<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+				</Link>				
+<%
+		if(sStatus != "")
+		{
+%>
+				<Label Class="XAML-label-status <%=sStatusColorClass%>">
+					<![CDATA[<%=sStatus%>]]>
+				</Label>
+<%
+		}
+%>				
+			</StackPanel>
+<%
+		if(sSubtitle != "")
+		{
+%>
+			<Label Class="XAML-label-tile-subtitle">
+				<![CDATA[<%=sSubtitle%>]]>
+			</Label>
+<%
+		}
+		if(sDesc != "")
+		{
+%>
+			<Label Class="XAML-label-tile-desc">
+				<![CDATA[<%=sDesc%>]]>
+			</Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+%>
+	</GridRow>
+</Grid>
+<%
+}
+else
+{
+%>
+<StackPanel Width="100%" Orientation="Horizontal" Class="XAML-stack-tile XAML-stack-tile-row <%=sCustomClass%>">
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile-image-container" Click="<%=sClickAction%>">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Width="216" Height="160">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+	</StackPanel>
+	<StackPanel Orientation="Vertical"  Class="XAML-stack-tile-title-container" Width="100%"  Height="160">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-hor-tile-title"><![CDATA[<%=sName%>]]></Link>
+		<StackPanel Orientation="Horizontal">
+			<Label Class="XAML-label-hor-tile-status"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label> 
+			<Label Class="XAML-label-hor-tile-status-bold"><%=sStatus%></Label>
+		</StackPanel>
+<%
+if (sStartDate != '' && sStartDate != null) 
+{
+%>
+		<StackPanel Orientation="Horizontal">
+			<Label Class="XAML-label-hor-tile-date"><%=tools_web.get_web_const( "c_start_date", curLngWeb )%>:</Label>
+			<Label Class="XAML-label-hor-tile-date-bold"><%=sStartDate%></Label>
+		</StackPanel>
+<%
+}
+if (sEndDate != '' && sEndDate != null) 
+{
+%>
+		<StackPanel Orientation="Horizontal">
+			<Label Class="XAML-label-hor-tile-date"><%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>:</Label>
+			<Label Class="XAML-label-hor-tile-date-bold"><%=sEndDate%></Label>
+		</StackPanel>
+<%
+}
+if (sScore != '' && sScore != null) 
+{
+%>		
+		<StackPanel Orientation="Horizontal">
+			<Label Class="XAML-label-hor-tile-score"><%=tools_web.get_web_const( "nabranoballov", curLngWeb )%>:</Label>
+			<Label Class="XAML-label-hor-tile-score-bold"><%=sScore%></Label>
+		</StackPanel>
+<%
+}
+	if(sDesc!="")
+	{
+		if(StrCharCount(sDesc)>=160 && bTileStyle)
+		{
+			sDesc = StrLeftCharRange(sDesc, 160);
+		}
+%>		
+		<Label Class="XAML-label-hor-tile-desc"><![CDATA[<%=sDesc%>]]></Label>
+<%
+	}
+%>	
+	</StackPanel>
+</StackPanel>
+<%
+}
+}
+%>
+</SPXMLScreen>

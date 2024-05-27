@@ -1,0 +1,256 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+	_is_new = tools_web.is_true( oParamSource.GetOptProperty( 'new' ) );
+	_url_without_new = tools_web.convert_mode_clean_url( tools_web.get_query_string_from_url(PAGEURL, true, "new;kp_id;expert_id;") );
+%>
+
+<SPXMLScreen>
+<Action Name="SaveExpertQuestion" Source="save_expert_question" Success="{!messageText};OPENURL=<%=_url_without_new%>;" Failure="ALERT={messageText}">
+	<Param Name="question_text" Value="{question_text}"/>
+	<Param Name="knowledge_part_id" Value=""/>
+	<Param Name="expert_id" Value=""/>
+	<Param Name="action" Value=""/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Dialog Name="estimate_answer" Source="dlg_filling_custom_fields" Title="<%=XmlAttrEncode(tools_web.get_web_const( "vmeq_estimate_title", curLngWeb ))%>" Width="800" Close="REFRESH">
+	<Param Name="doc_id" Value="<%=oParamSource.GetOptProperty( "doc_id" )%>"/>
+	<Param Name="object_id" Value=""/>
+	<Param Name="catalog" Value="expert_question"/>
+	<Param Name="title" Value=""/>
+</Dialog>
+<Dialog Name="new_question" Source="dlg_new_expert_question" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veb_ask_expert", curLngWeb ))%>" Width="700" Close="REFRESH">
+	<Param Name="doc_id" Value="<%=oParamSource.GetOptProperty( "doc_id" )%>"/>
+</Dialog>
+<%
+if ( !_is_new )
+{
+	try
+	{
+		_page_name = curDoc.name;
+	}
+	catch(err)
+	{
+		_page_name = XmlAttrEncode(tools_web.get_web_const( 'veb_my_questions', curLngWeb ) )
+	}
+%>
+
+			<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( _page_name, curLng.short_id )%></Label>
+
+			<Dialog Name="AnswerExspertDialog" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="">
+				<Param Name="iQuestionId" Value=""/>
+			</Dialog>
+			
+
+	<StackPanel Name="ToolBarPanel">
+			<Toolbar Name="ToolBarPanel" Class="XAML-toolbar-actions" Adapt="true">
+				<Button Class="XAML-button XAML-button-request" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'expert_question', null, { "new": 1 } )%>"><%=tools_web.get_web_const( "veb_ask_expert", curLngWeb )%></Button>
+			</Toolbar>
+	</StackPanel>
+	<StackPanel Width="100%">
+<%
+				row_filters = new Array();
+				arr_filters = new Array();
+				arr_filters.push( { title: tools_web.get_web_const( "c_status", curLngWeb ), name: "expert_question_status", type: "combo", items: [ { value: "all", title: tools_web.get_web_const( "vsestatusy", curLngWeb ) }, { value: "false", title: tools_web.get_web_const( "vmeq_status_not_answered", curLngWeb ) }, { value: "true", title: tools_web.get_web_const( "vmeq_status_answered", curLngWeb ) } ] } );
+				arr_filters.push( { title: tools_web.get_web_const( "c_type", curLngWeb ), name: "qtype", type: "combo", items: [ { value: "all", title: tools_web.get_web_const( "c_all_types", curLngWeb ) }, { value: "faq", title: tools_web.get_web_const( "veb_faq", curLngWeb ) }, { value: "open", title: tools_web.get_web_const( "veb_open_questions", curLngWeb ) } ] } );
+				row_filters.push( arr_filters );
+				
+				curFilter = {
+						'search_field': "key_word",
+						'search_width': 150,
+						'disp_search': true,
+						'search_action': "UPDATE=QuestionsKnowledgeTile;",
+						'selectors_action': "UPDATE=QuestionsKnowledgeTile;",
+						'action': "UPDATE=QuestionsKnowledgeTile;",
+						'row_filters': row_filters,
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+				<Collection Name="QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+					<Param Name="iPersonId" Value="<%=curUserID%>"/>
+					<Param Name="qStatus" Value="{expert_question_status}"/>
+					<Param Name="sKeyWord" Value="{key_word}"/>
+					<Param Name="QuestionType" Value="{qtype}"/>
+				</Collection>
+				<HTMLBox>
+						<![CDATA[
+							<style>
+								.XAML-image-contain { background-size: contain !important; }
+							</style>
+						]]>
+				</HTMLBox>
+				<TileView Class="XAML-tileview-list" Name="QuestionsKnowledgeTile" DataSource="{QuestionsCollection}" TemplateSource="knowledge_tile_list" Columns="1" Width="100%" PageSize="8">
+				</TileView>
+	</StackPanel>
+<%
+
+}
+else
+{
+%>
+	<Dialog Name="SelectDialogExperts" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="SET=expertIdsElems,{CatalogListDataGridFullList:^/id};SET=expertNameElems,{CatalogListDataGridFullList:^/disp};">
+		<Param Name="catalog_name" Value="expert"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="selected_object_ids" Value="{expertIdsElems}"/>
+		<Param Name="display_object_ids" Value="{DisplayedExpert}"/>
+	</Dialog>
+	<Edit Name="ActionCloseDialogSelect" Hidden="1"/>
+	<Label Class="XAML-object-title-label"><%=XmlAttrEncode(tools_web.get_web_const( "veb_ask_expert", curLngWeb ))%></Label>
+	<Grid Class="XAML-grid-info-table">
+		<GridColumns>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+			<GridColumn Width="100" Align="right"/>
+<%
+	}
+%>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_question", curLngWeb )%>:</Label>
+<%
+	if( curDevice.disp_type == "mobile" )
+	{
+%>
+		</GridRow>
+		<GridRow>
+<%
+	}
+%>
+			<EditBox Name="question_text" Width="<%=curDevice.disp_type != "mobile" ? 600 : "100%"%>" Height="60"><%=HtmlEncode(CONTEXT.GetOptProperty( "question_text" ) != undefined ? CONTEXT.GetOptProperty( "question_text" ) : "")%></EditBox>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vfb_subject", curLngWeb )%>:</Label>
+<%
+	if( curDevice.disp_type == "mobile" )
+	{
+%>
+		</GridRow>
+		<GridRow>
+<%
+	}
+%>
+			<StackPanel Width="<%=curDevice.disp_type != "mobile" ? 600 : "100%"%>" Class="XAML-stack-container XAML-stack-selector">
+<%
+			disp_kps = "";
+			_expert_id = OptInt( oParamSource.GetOptProperty( "expert_id" ) );
+			_kp_id = OptInt( oParamSource.GetOptProperty( "kp_id" ) );
+			if( _expert_id != undefined )
+			{
+				disp_kps = ArrayMerge( XQuery( "for $i in knowledge_parts where contains( $i/experts, '" + _expert_id + "' ) return $i" ), "This.id", ";" )
+			}
+			arr_disp_experts = new Array();
+			if( _kp_id != undefined )
+			{
+				dKp = OpenDoc( UrlFromDocID( _kp_id ) ).TopElem;
+				arr_disp_experts = dKp.experts;
+			}
+%>
+				<Edit Name="DisplayedKnowledgePart" Hidden="1"><%=disp_kps%></Edit>
+<%
+			bSingleSelect = tools_web.is_true( tools_web.get_web_param( curParams, "expert_questions_body.new_question.single_knowledge_part", false, true ) );
+			
+			curSelectorList = {
+				"id": "KnowledgePart",
+				"height": "150",
+				"width": ( curDevice.disp_type != "mobile" ? 600 : "100%" ),
+				"catalog_name": "knowledge_part",
+				"object_id_item_name": "TempDestinationEditKnowledgePart",
+				"close_action": "SET=SaveExpertQuestion/action,check_selected_knowledge_part;ACTION=SaveExpertQuestion",
+				"selected_object_ids": ( _kp_id != undefined ? _kp_id : "" ),
+				"object_name":  ( _kp_id != undefined ? dKp.name : "" ),
+				"display_object_ids": "{DisplayedKnowledgePart}",
+				"is_data_grid": "true",
+				"list_columns": ( curDevice.disp_type != "mobile" ? "name;knowledge_classifier_id.ForeignElem.name;parent_object_id.ForeignElem.name" : "name" ),
+				"can_be_empty": "true"
+			};
+			if( bSingleSelect )
+			{
+				curSelector = curSelectorList;
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+			}
+			else
+			{
+				if( _kp_id == undefined )
+				{
+					curSelectorList.SetProperty( 'buttons', [ { "title": "Выбрать тему", "click": "OPENDIALOG=SelectDialogKnowledgePart" } ] );
+				}
+				
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+			}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	if( _kp_id == undefined || ArrayOptFirstElem( arr_disp_experts ) != undefined )
+	{
+%>
+		<GridRow>
+			<StackPanel Name="LabelExpert" Align="<%=curDevice.disp_type == "mobile" ? "left" : "right"%>" Hidden="<%=_kp_id == undefined && _expert_id == undefined%>" Class="XAML-stack-container">
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vkpb_expert", curLngWeb )%>:</Label>
+			</StackPanel>
+<%
+		if( curDevice.disp_type == "mobile" )
+		{
+%>
+		</GridRow>
+		<GridRow>
+<%
+		}
+		dExpert = null;
+		if( _expert_id != undefined )
+			dExpert = OpenDoc( UrlFromDocID( _expert_id ) );
+		else if( ArrayCount( arr_disp_experts ) == 1 )
+			dExpert = OpenDoc( UrlFromDocID( ArrayOptFirstElem( arr_disp_experts ).expert_id ) );
+%>
+			<StackPanel Orientation="Horizontal" Name="StackPanelExpert" Hidden="<%=_kp_id == undefined && _expert_id == undefined%>" Class="XAML-without-padding-and-margin">
+				<Edit Name="DisplayedExpert" Hidden="1"><%=disp_kps%></Edit>
+				<Edit Name="expertIdsElems" Hidden="1"><%=dExpert != null ? dExpert.DocID : ""%></Edit>
+				<Edit Name="expertNameElems" Editable="0" Width="<%=curDevice.disp_type != "mobile" ? 600 : "100%"%>"><%=dExpert != null ? dExpert.TopElem.name : ""%></Edit>
+<%
+		if( _expert_id == undefined )
+		{
+%>
+				<StackPanel Name="ButtonSelectExpert" Orientation="Horizontal" Hidden="<%=dExpert != null ? 1 : 0%>">
+					<Button Class="XAML-button-content XAML-button-selector icon-folder-open-o" Click="OPENDIALOG=SelectDialogExperts"/>
+					<Button Click="SET=expertIdsElems,;SET=expertNameElems,;SET=DisplayedKnowledgePart,;" Class="XAML-button-content XAML-button-selector icon-close"></Button>
+				</StackPanel>
+<%
+		}
+%>
+			</StackPanel>
+
+		</GridRow>
+<%
+	}
+	bAddFile = tools_web.is_true( tools_web.get_web_param( curParams, "expert_questions_body.new_question.add_file", true, true ));
+	if( bAddFile )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vdb_add_file", curLngWeb )%>:</Label>
+<%
+		if( curDevice.disp_type == "mobile" )
+		{
+%>
+		</GridRow>
+		<GridRow>
+<%
+		}
+%>
+			<ResourceField Name="FileAttchID" Width="200" Source="resources" CurrentValue="" CanCreate="true" CanSelect="false" CanDownload="true"/>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<Toolbar Width="100%">
+		<Button Class="XAML-button XAML-button-save" Click="SET=SaveExpertQuestion/action,save;ACTION=SaveExpertQuestion"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+	</Toolbar>
+<%
+}
+%>
+</SPXMLScreen>

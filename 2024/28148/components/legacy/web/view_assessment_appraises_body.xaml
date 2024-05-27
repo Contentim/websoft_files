@@ -1,0 +1,75 @@
+﻿<SPXMLScreen>
+<%
+	var bThinMode = curDevice.disp_type == "mobile";
+	
+	var bAllExpanded = tools_web.is_true(tools_web.get_web_param(curParams, "assessment_appraises.all_expanded", "0", true));
+	var aAvailableStatuses = String(tools_web.get_web_param(curParams, "assessment_appraises.statuses", "", true)).split(";");
+	
+	var sDefaultStatus = tools_web.get_web_param(curParams, "assessment_appraises.statuses.default", null, true);
+	
+	var oStatus, aStatusSet = ([
+		["0", tools_web.get_web_const("vaab_selector_all", curLngWeb)],
+		["1", tools_web.get_web_const("vaab_selector_planned", curLngWeb)],
+		["2", tools_web.get_web_const("vaab_selector_going_on", curLngWeb)],
+		["3", tools_web.get_web_const("vaab_selector_overdue", curLngWeb)],
+		["4", tools_web.get_web_const("vaab_selector_archive", curLngWeb)]
+	]);
+	
+	aStatusSet = ArrayIntersect(aStatusSet, aAvailableStatuses, "This[0]");
+%>
+	<Label Class="XAML-object-title-label"><![CDATA[<%=tools_web.get_web_const("vaasb_assessment_appraises", curLngWeb)%>]]></Label>
+	<StackPanel Orientation="Horizontal" Align="right" Class="XAML-stack-filter">
+		<ComboBox Name="AssProcStatus" Width="200" Change="UPDATE=AssessmentAppraiseList" Class="XAML-combo-view">
+<%
+					for (oStatus in aStatusSet)
+					{
+%>
+						<ComboBoxItem Value="<%=oStatus[0]%>" Selected="<%=(oStatus[0] == sDefaultStatus)%>"><%=oStatus[1]%></ComboBoxItem>
+<%
+					}
+%>
+		</ComboBox>	
+	</StackPanel>
+	
+	<!--
+	<Grid Width="100%" Class="XAML-catalog-filter-table" CellClass="XAML-catalog-filter-cell">
+		<GridColumns>
+			<GridColumn Width="200"/>
+			<GridColumn Align="left"/>
+		</GridColumns>
+		<GridRow Class="XAML-grid-row">
+			<Label Class="XAML-grid-label-name" Width="170"><%=tools_web.get_web_const( "c_status", curLngWeb )%>: </Label>		
+			<ComboBox Name="AssProcStatus" Width="300" Change="UPDATE=AssessmentAppraiseList">
+<%
+					for (oStatus in aStatusSet)
+					{
+%>
+						<ComboBoxItem Value="<%=oStatus[0]%>" Selected="<%=(oStatus[0] == sDefaultStatus)%>"><%=oStatus[1]%></ComboBoxItem>
+<%
+					}
+%>
+			</ComboBox>	
+		</GridRow>
+	</Grid>
+	-->
+	<Collection Source="ASSESSMENT_APPRAISES_LIST" Name="AssList">
+		<Param Name="AssMode" Value="{AssProcStatus}"/>
+		<Param Name="bCategorized" Value="<%=!bThinMode%>"/>
+	</Collection>
+
+	<DataGrid Name="AssessmentAppraiseList" Title_="<%=tools_web.get_web_const( "vaasb_assessment_appraises", curLngWeb)%>" Source="{AssList}" Height="100%" Categorized="<%=(bThinMode ? "" : "id:assessment_appraise_id")%>" Expanded="<%=bAllExpanded%>">
+		<DataGridColumn Title="<%=tools_web.get_web_const("c_name", curLngWeb)%>" Value="name" Width="100%" MinWidth="150" Sortable="1" ColorSource="color" Type="link" Click="{!click}"/>
+<%
+		if (!bThinMode)
+		{
+%>
+		<!-- <DataGridColumn Title="<%=tools_web.get_web_const("qivz9ssdlx", curLngWeb)%>" Value="person_name" Width="150" ColorSource="color" Type="link" Click="{!detailclick}"/> -->
+		<DataGridColumn Title="<%=tools_web.get_web_const("qivz9ssdlx", curLngWeb)%>" Value="person_name" Width="150" ColorSource="color" Type="link" Click="{!detailclick}"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const("c_type", curLngWeb)%>" Value="type_name" Width="150" ColorSource="color"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const("c_status", curLngWeb)%>" Value="status_name" Width="100" ColorSource="color"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const("asaa9uhva8", curLngWeb)%>" Value="is_done" Width="70" ColorSource="color" Type="fixedimage"/>
+<%
+		}
+%>
+	</DataGrid>
+</SPXMLScreen>

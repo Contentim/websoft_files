@@ -1,0 +1,455 @@
+﻿<%
+//////////////////////////////////////////////////////////////////////
+try
+{
+	__bLearningInformersFuncInitialized;
+}
+catch(_x_)
+{
+	__bLearningInformersFuncInitialized = false;
+}
+
+if (__bLearningInformersFuncInitialized == false)
+{
+	function drawInfoStatus( iStateParam )
+	{
+		iStatusToScale = 0;
+		sAddClass = "";
+		switch ( iStateParam )
+		{
+			case 3:
+			{
+				iStatusToScale = 2;
+				sAddClass = "wt-course-status-failed";
+				break;
+			}
+			case 4:
+			{
+				sAddClass = "wt-course-status-passed";
+				iStatusToScale = 2;
+				break;
+			}
+			case 5:
+			{
+				sAddClass = "wt-course-status-browsed";
+				iStatusToScale = 2;
+				break;
+			}
+			default:
+			{
+				iStatusToScale = iStateParam; //curObject.state_id;
+				break;
+			}
+		}
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-status XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=tools_web.get_web_const( 'c_status', curLngWeb )%>]]></Label>
+	<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<ProgressBar FullScale="2" Value="<%=iStateParam%>" Title="<%=XmlAttrEncode( curLngCommon.learning_states.GetChildByKey( iStateParam ).name )%>" Size="60" Vertical="false" FitContainer="false" Class="wt-course-status wt-course-status-<%=iStateParam%>"/>
+		<Label NoWrap="true" Align="center" Class="wt-progress-bar-string"><%=curLngCommon.learning_states.GetChildByKey( iStateParam ).name%></Label>
+	</StackPanel>
+</StackPanel>
+<%
+	}
+
+	function drawInfoScore( sTitleParam, iScoreParam, iMaxScoreParam, iMasteryScoreParam )
+	{
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-score XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=sTitleParam%>]]></Label>
+<%
+		if ( iMaxScoreParam != null && iMaxScoreParam != 0 )
+		{
+%>
+	<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container circular-scale-container">
+			<ContScale Name="ScoreScale" Type="circular" Class="wt-info-course-score-scale XAML-contscale" FullScale="100" DiagramPart="0.5" DisplayValue="true" DisplayFirstValueAnyway="true" DisplayPercent="true">
+			<Val Value="<%=Int( (iScoreParam * 100.0) / iMaxScoreParam )%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'kap670sd4x', curLngWeb ) )%>" DisplayTip="true"/>
+<%
+				if ( iMasteryScoreParam != null )
+				{
+%>
+				<Val Value="<%=Int( (iMasteryScoreParam * 100.0) / iMaxScoreParam )%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_pass_score', curLngWeb ) )%>" DisplayTip="true"/>
+<%
+				}
+%>
+		</ContScale>
+	</StackPanel>
+	</StackPanel>
+
+	<StackPanel Class="XAML-stack-informer-footer">
+	<Label Class="wt-info-value-string"><%=( StrReal( iScoreParam, 2 ) + ( iMaxScoreParam != null ? '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxScoreParam : '' ) )%></Label>
+	</StackPanel>
+<%
+		}
+		else
+		{
+%>
+	<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+<%
+			if ( iMaxScoreParam != null )
+			{
+%>
+			<Label Class="wt-info-value-string-value"><%=( StrReal( iScoreParam, 2 ) )%></Label>
+			<Label Class="wt-info-value-string-none"><%=tools_web.get_web_const( 'kap670sd4x', curLngWeb )%> <%=( StrReal( iScoreParam, 2 ) + '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxScoreParam )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="wt-info-value-string-value"><%=( StrReal( iScoreParam, 2 ) )%></Label>
+<%
+			}
+%>
+	</StackPanel>
+<%
+		}
+%>
+</StackPanel>
+<%
+	}
+
+	function drawInfoScaleNumber( sTitleParam, iCountParam, iMaxCountParam, bDispDescParam, sActionParam, icon_url )
+	{
+		if ( iMaxCountParam < 0 )
+			return drawInfoNumber( sTitleParam, iCountParam );
+
+		sDesc = ( iCountParam + '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxCountParam );
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-score XAML-stack-informer XAML-stack-informer-score <%=curInformers_sSchemaClass%>">
+<%
+		if ( sActionParam == undefined || sActionParam == '' )
+		{
+%>
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=sTitleParam%>]]></Label>
+<%
+		}
+		else
+		{
+%>
+	<Link Class="wt-info-header XAML-label-informer-header" Click="<%=XmlAttrEncode( sActionParam )%>"><![CDATA[<%=sTitleParam%>]]></Link>
+<%
+		}
+
+		if ( iMaxCountParam > 0 )
+		{
+%>
+	<StackPanel Orientation="Horizontal" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container circular-scale-container">
+			<ContScale Name="ScoreScale" Type="circular" Class="wt-info-course-score-scale XAML-contscale" FullScale="100" DiagramPart="0.3" DisplayValue="true" DisplayPercent="true">
+				<Val Value="<%=StrInt( (iCountParam * 100.0) / iMaxCountParam )%>"/>
+			</ContScale>
+		</StackPanel>
+<%
+		if ( icon_url != '' )
+		{
+%>
+		<StackPanel Class="wt-info-icon" Orientation="Horizontal"><Image Source="<%=icon_url%>" /></StackPanel>
+<%
+		}
+%>
+	</StackPanel>
+<%
+			if ( bDispDescParam )
+			{
+%>
+	<StackPanel Class="XAML-stack-informer-footer">
+		<Label Class="wt-info-value-string"><%=sDesc%></Label>
+	</StackPanel>
+<%
+			}
+		}
+		else
+		{
+%>
+	<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<Label Class="wt-info-value-string-value"><%=iCountParam%></Label>
+		<Label Class="wt-info-value-string-none"><%=sDesc%></Label>
+	</StackPanel>
+<%
+		}
+%>
+	</StackPanel>
+<%
+	}
+
+	function drawInfoDates( dtActDateParam, dtStartDateParam, dtFinishDateParam )
+	{
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-dates XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=tools_web.get_web_const( 'c_info', curLngWeb )%>]]></Label>
+	<StackPanel Orientation="Vertical" Class="wt-info-body XAML-stack-informer-body">
+		<Grid Width="100%" Class="XAML-grid-info-table-compact" CellClass="">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Label Class="XAML-label-grid-column-name"><%=tools_web.get_web_const( 'aktivnost', curLngWeb )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label NoWrap="true"><%=( dtActDateParam != null ? StrDate( curObject.last_usage_date, true, false ) : '---' )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-label-grid-column-name"><%=tools_web.get_web_const( 'nachat_1', curLngWeb )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label NoWrap="true"><%=( dtStartDateParam != null ? StrDate( curObject.start_learning_date, true, false ) : '---' )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-label-grid-column-name"><%=tools_web.get_web_const( 'vllb_close', curLngWeb )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label NoWrap="true"><%=( dtFinishDateParam != null ? StrDate( curObject.max_end_date, true, false ) : '---' )%></Label>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+</StackPanel>
+<%
+	}
+
+	function drawInfoPersonExpInfo( dtHireParam, dtPositionParam )
+	{
+		arrYears = [ tools_web.get_web_const( 'let_1', curLngWeb ), tools_web.get_web_const( 'god', curLngWeb ), tools_web.get_web_const( 'goda', curLngWeb ) ];
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-dates XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wt-info-header XAML-label-informer-header"><%=tools_web.get_web_const( 'opytraboty', curLngWeb )%></Label>
+	<StackPanel Orientation="Vertical" Class="wt-info-body XAML-stack-informer-body">
+		<Grid Width="100%" Class="XAML-grid-info-table-compact">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+<%
+		if ( dtHireParam != null )
+		{
+%>
+			<GridRow>
+				<Label NoWrap="true" Class="XAML-label-grid-column-name"><%=tools_web.get_web_const( 'vkompanii', curLngWeb )%></Label>
+			</GridRow>
+			<GridRow>
+				<StackPanel Class="wtx-stack-panel-list" Orientation="Vertical">
+					<Label NoWrap="true" Class="wtx-stack-panel-list-item"><%=tools_web.str_period_date( dtHireParam, curLngWeb )%></Label>
+					<Label NoWrap="true"><%=StrNonTitleCase( tools_web.get_web_const( 't1y74xh7qn', curLngWeb ) )%> <%=StrDate( dtHireParam, false )%></Label>
+				</StackPanel>
+			</GridRow>
+<%
+		}
+		if ( dtPositionParam != null )
+		{
+%>
+			<GridRow>
+				<Label NoWrap="true" Class="XAML-label-grid-column-name"><%=tools_web.get_web_const( 'nadolzhnosti', curLngWeb )%></Label>
+			</GridRow>
+			<GridRow>
+				<StackPanel Class="wtx-stack-panel-list" Orientation="Vertical">
+					<Label NoWrap="true" Class="wtx-stack-panel-list-item"><%=tools_web.str_period_date( dtPositionParam, curLngWeb )%></Label>
+					<Label NoWrap="true"><%=StrNonTitleCase( tools_web.get_web_const( 't1y74xh7qn', curLngWeb ) )%> <%=StrDate( dtPositionParam, false )%></Label>
+				</StackPanel>
+			</GridRow>
+<%
+		}
+%>
+		</Grid>
+	</StackPanel>
+</StackPanel>
+<%
+	}
+
+	function drawInfoImage( sUrlParam )
+	{
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-image XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<BackgroundImage Source="<%=XmlAttrEncode( sUrlParam )%>"/>
+</StackPanel>
+<%
+	}
+
+	function drawInfoLinkImage( sUrlParam, sTitleTopParam, sTitleBottomParam, sLinkParam )
+	{
+		var sTitleBottom=UnifySpaces(sTitleBottomParam)
+		var sTitleTop=UnifySpaces(sTitleTopParam)
+		var iNameLength=35
+		sTitleTop=StrCharCount(  sTitleTop ) > iNameLength ? StrLeftCharRange(  sTitleTop, iNameLength ) + '...' :  sTitleTop;
+		sTitleBottom=StrCharCount(  sTitleBottom ) > iNameLength ? StrLeftCharRange(  sTitleBottom, iNameLength ) + '...' :  sTitleBottom;
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wtx-informer-img-text XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wtx-informer-link wtx-informer-link-top"><%=XmlAttrEncode(sTitleTopParam)%></Label>
+	<Link Class="wtx-informer-img" Click="<%=sLinkParam%>">
+		<BackgroundImage Source="<%=XmlAttrEncode( sUrlParam )%>"/>
+	</Link>
+	<Link Class="wtx-informer-link wtx-informer-link-bottom" Click="<%=sLinkParam%>"><%=XmlAttrEncode(sTitleBottom)%></Link>
+</StackPanel>
+
+<%
+	}
+
+	function drawInfoLinkText( sTitleTopParam, sTitleParam, sLinkParam )
+	{
+		var sTitleTop=UnifySpaces(sTitleTopParam)
+		var sTitle=UnifySpaces(sTitleParam)
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wtx-informer-img-text XAML-stack-informer <%=curInformers_sSchemaClass%>">
+	<Label Class="wtx-informer-link wtx-informer-link-top"><%=XmlAttrEncode(sTitleTopParam)%></Label>
+	<Link Class="wtx-informer-link mentor-link" Click="<%=sLinkParam%>"><%=XmlAttrEncode(sTitle)%></Link>
+</StackPanel>
+
+<%
+	}
+
+	function drawInfoNumber( sTitleParam, sValueParam, sActionParam, icon_url )
+	{
+		try
+		{
+			if( icon_url == null || icon_url == undefined )
+				throw 'not icon';
+		}
+		catch( ex )
+		{
+			icon_url = "";
+		}
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-plain XAML-stack-informer <%=curInformers_sSchemaClass%>">
+<%
+		if ( sActionParam == undefined || sActionParam == '' )
+		{
+%>
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=sTitleParam%>]]></Label>
+<%
+		}
+		else
+		{
+%>
+	<Link Class="wt-info-header XAML-label-informer-header" Click="<%=XmlAttrEncode( sActionParam )%>"><![CDATA[<%=sTitleParam%>]]></Link>
+<%
+		}
+%>
+	<StackPanel Orientation="Horizontal" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<Label Class="wt-info-value-string-large"><![CDATA[<%=sValueParam%>]]></Label>
+<%
+		if ( icon_url != '' )
+		{
+%>
+		<StackPanel Class="wt-info-icon" Orientation="Horizontal"><Image Source="<%=icon_url%>" /></StackPanel>
+<%
+		}
+%>
+	</StackPanel>
+</StackPanel>
+<%
+	}
+
+	function drawInfoString( sTitleParam, sValueParam, sActionParam, icon_url )
+	{
+%>
+<StackPanel Orientation="Vertical" Class="wt-informer wt-info-plain XAML-stack-informer <%=curInformers_sSchemaClass%>">
+<%
+		if ( sActionParam == undefined || sActionParam == '' )
+		{
+%>
+	<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=sTitleParam%>]]></Label>
+<%
+		}
+		else
+		{
+%>
+	<Link Class="wt-info-header XAML-label-informer-header" Click="<%=XmlAttrEncode( sActionParam )%>"><![CDATA[<%=sTitleParam%>]]></Link>
+<%
+		}
+%>
+	<StackPanel Orientation="Horizontal" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+		<Label><![CDATA[<%=sValueParam%>]]></Label>
+<%
+		if ( icon_url != '' )
+		{
+%>
+		<StackPanel Class="wt-info-icon" Orientation="Horizontal"><Image Source="<%=icon_url%>" /></StackPanel>
+<%
+		}
+%>
+	</StackPanel>
+</StackPanel>
+<%
+	}
+
+	__bLearningInformersFuncInitialized = true;
+}
+//////////////////////////////////////////////////////////////////////
+
+try
+{
+	curInformers;
+}
+catch ( err )
+{
+	curInformers = ({});
+}
+curInformers_arrInformers = curInformers.GetOptProperty( "informers", [] );
+
+curInformers_sSchemaClass = '';
+curInformers_sSchema= '';
+
+for ( curInformers_oInformerElem in curInformers_arrInformers )
+{
+	curInformers_sSchema = curInformers_oInformerElem.GetOptProperty( 'schema', curInformers.GetOptProperty( 'schema' ) );
+	sIconUrl = curInformers_oInformerElem.GetOptProperty( 'icon', '' )
+	switch ( curInformers_sSchema )
+	{
+		case 'icon':
+		case 'icon-large':
+		case 'blue':
+		case 'red':
+		case 'green':
+		case 'black':
+		case 'white':
+		case 'orange':
+		case 'violet':
+			curInformers_sSchemaClass = curInformers_sSchema; //'informer-' + curInformers_sSchema;
+			break;
+	}
+
+	switch ( curInformers_oInformerElem.type )
+	{
+		case 'status':
+			drawInfoStatus( curInformers_oInformerElem.GetOptProperty( 'state_id' ) );
+			break;
+
+		case 'score':
+			curInformers_sTitle = curInformers_oInformerElem.GetOptProperty( 'title', tools_web.get_web_const( 'c_score', curLngWeb ) );
+			drawInfoScore( curInformers_sTitle, curInformers_oInformerElem.GetOptProperty( 'score' ), curInformers_oInformerElem.GetOptProperty( 'max_score' ), curInformers_oInformerElem.GetOptProperty( 'mastery_score' ) );
+			break;
+
+		case 'scale_number':
+			drawInfoScaleNumber( curInformers_oInformerElem.GetOptProperty( 'title' ), curInformers_oInformerElem.GetOptProperty( 'count' ), curInformers_oInformerElem.GetOptProperty( 'max_count' ), tools_web.is_true( curInformers_oInformerElem.GetOptProperty( 'disp_desc', true ) ), curInformers_oInformerElem.GetOptProperty( 'action', '' ), sIconUrl );
+			break;
+
+		case 'info':
+			drawInfoDates( curInformers_oInformerElem.GetOptProperty( 'last_usage_date' ), curInformers_oInformerElem.GetOptProperty( 'start_learning_date' ), curInformers_oInformerElem.GetOptProperty( 'max_end_date' ) );
+			break;
+
+		case 'info_person_exp':
+			drawInfoPersonExpInfo( curInformers_oInformerElem.GetOptProperty( 'hire_date' ), curInformers_oInformerElem.GetOptProperty( 'position_date' ) );
+			break;
+
+		case 'image':
+			drawInfoImage( curInformers_oInformerElem.GetOptProperty( 'url' ) );
+			break;
+
+		case 'link_image':
+			drawInfoLinkImage( curInformers_oInformerElem.GetOptProperty( 'url' ),curInformers_oInformerElem.GetOptProperty( 'titleTop','' ),curInformers_oInformerElem.GetOptProperty( 'titleBottom','' ),curInformers_oInformerElem.GetOptProperty( 'link','' ));
+			break;
+
+		case 'link_text':
+			drawInfoLinkText( curInformers_oInformerElem.GetOptProperty( 'titleTop','' ),curInformers_oInformerElem.GetOptProperty( 'title','' ),curInformers_oInformerElem.GetOptProperty( 'link','' ));
+			break;
+
+		case 'number':
+			drawInfoNumber( curInformers_oInformerElem.GetOptProperty( 'title' ), curInformers_oInformerElem.GetOptProperty( 'value' ), curInformers_oInformerElem.GetOptProperty( 'action', '' ), sIconUrl );
+			break;
+
+		case 'string':
+			drawInfoString( curInformers_oInformerElem.GetOptProperty( 'title' ), curInformers_oInformerElem.GetOptProperty( 'value' ), curInformers_oInformerElem.GetOptProperty( 'action', '' ), sIconUrl );
+			break;
+	}
+}
+%>

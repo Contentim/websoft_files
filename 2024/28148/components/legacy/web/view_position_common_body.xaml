@@ -1,0 +1,210 @@
+﻿<SPXMLScreen>
+<%
+var arrBlockListParam = String(tools_web.get_web_param(curParams, 'position_common_body.tab_list', 'main;education;competence;career', true)).split(';');
+var sTabTitle = tools_web.get_web_param(curParams, "position_common_body.tab_list.main_tab", "", true);
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+catPosition = curUser.position_id.OptForeignElem;
+if ( catPosition != undefined && catPosition.position_common_id == curObjectID )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": "Это ваша типовая должность"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+<Dialog Name="BenefitDialog" Source="dlg_desc" Title="<%=tools_web.get_web_const("vk217sj03o", curLngWeb)%>" Width="650">
+	<Param Name="iObjectId" Value=""/>
+</Dialog>
+	<TabControl Name="PositionCommonBodyTab" Width="100%" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>">
+<%
+	for (sTabElem in arrBlockListParam)
+	{
+		switch(sTabElem)
+		{
+			case "main":
+				if(ArrayOptFirstElem(curObject.requirements) != undefined || curObject.desc.HasValue)
+				{
+%>
+		<TabItem Class="icon-info2" Title="<%=XmlAttrEncode(sTabTitle == "" ? tools_web.get_web_const("osnovnyesveden", curLngWeb) : tools_web.get_cur_lng_name(sTabTitle, curLng.short_id))%>">
+<%
+					curDescObject = curObject;
+					curDescObjectID = curObjectID;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+					if(ArrayOptFirstElem(curObject.requirements) != undefined)
+					{
+%>
+			<Label Class="XAML-label-header-4"><%=tools_web.get_web_const("vjx5r52gan", curLngWeb)%>:</Label>
+			<Grid Width="100%" Class="XAML-grid-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+						for (fldRequirement in curObject.requirements)
+						{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_cur_lng_name( fldRequirement.name, curLng.short_id )%></Label>
+					<Label><%=fldRequirement.comment%></Label>
+				</GridRow>
+<%
+					}
+%>
+			</Grid>
+<%
+					}
+%>
+		</TabItem>
+<%
+				}
+				break;
+
+			case "education":
+				if(ArrayOptFirstElem(curObject.compound_programs) != undefined || ArrayOptFirstElem(curObject.education_methods) != undefined || ArrayOptFirstElem(curObject.assessments) != undefined)
+				{
+%>
+		<TabItem Class="icon-university" Title="<%=tools_web.get_web_const("2h1z3jjflh", curLngWeb)%>">
+<%
+					if(ArrayOptFirstElem(curObject.compound_programs) != undefined)
+					{
+						curView = {
+							"id": "CompoundPrograms",
+							"title": tools_web.get_web_const("wstkzqqy1d", curLngWeb),
+							"height": "",
+							"catalog_name": "compound_program",
+							"list_columns": "name",
+							"disp_link": "true",
+							"disp_filter": "false",
+							"disp_search": "false",
+							"disp_array": true,
+							"array": ArrayMerge(curObject.compound_programs, "This.PrimaryKey", ";")
+						};
+						Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list.xaml"));
+					}
+
+					if(ArrayOptFirstElem(curObject.education_methods) != undefined)
+					{
+						curView = {
+							"id": "EducationMethods",
+							"title": tools_web.get_web_const("x2wgokvs22", curLngWeb),
+							"height": "",
+							"catalog_name": "education_method",
+							"list_columns": ((curDevice.disp_type != "mobile") ? "name;type;duration;cost" : "name;type"),
+							"disp_link": "true",
+							"disp_filter": "false",
+							"disp_search": "false",
+							"disp_array": true,
+							"array": ArrayMerge(curObject.education_methods, "This.PrimaryKey", ";")
+						};
+						Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list.xaml"));
+					}
+
+
+					if(ArrayOptFirstElem(curObject.assessments) != undefined)
+					{
+						curView = {
+							"id": "Assessments",
+							"title": tools_web.get_web_const("trebuemyetesty", curLngWeb),
+							"height": "",
+							"catalog_name": "assessment",
+							"list_columns": "title",
+							"disp_link": "true",
+							"disp_filter": "false",
+							"disp_search": "false",
+							"disp_array": true,
+							"array": ArrayMerge(curObject.assessments, "This.PrimaryKey", ";")
+						};
+						Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list.xaml"));
+					}
+%>
+		</TabItem>
+<%
+				}
+			break;
+
+			case "competence":
+				if(curObject.competence_profile_id.HasValue)
+				{
+%>
+		<TabItem Class="icon-server" Title="<%=tools_web.get_web_const("ass_competences", curLngWeb)%>">
+<%
+			curView = {
+				"id": "Competences",
+				"title": tools_web.get_web_const( "ass_competences", curLngWeb ),
+				"catalog_name": "competence",
+				"array": ArrayMerge( OpenDoc(UrlFromDocID(curObject.competence_profile_id.Value)).TopElem.competences, "PrimaryKey", ";" ),
+				"disp_link": true,
+				"link_mode": "competence_info",
+				"disp_filter": false,
+				"hide_empty": true,
+				"disp_type": "list",
+				"hide_action": "SHOW=EmptyMess;"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+
+			<StackPanel Name="EmptyMess" Hidden="true" Width="100%">
+				<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+			</StackPanel>
+		</TabItem>
+<%				}
+			break;
+
+			case "benefits":
+				if(ArrayOptFirstElem(curObject.benefits) != undefined)
+				{
+%>
+		<TabItem Class="icon-star" Title="<%="Привилегии"%>">
+			<Grid Class="XAML-grid-container XAML-grid-list-container">
+				<GridColumns>
+					<GridColumn Width="100%"/>
+				</GridColumns>
+<%
+					for(fldBenefit in curObject.benefits)
+					{
+						catBenefit = fldBenefit.PrimaryKey.OptForeignElem;
+						if(catBenefit == undefined)
+							continue;
+						sAction = "SET=BenefitDialog/iObjectId," + fldBenefit.PrimaryKey + ";OPENDIALOG=BenefitDialog;";
+%>
+				<GridRow>
+					<Grid Class="XAML-grid-list-item">
+						<GridColumns>
+							<GridColumn Width="32"/>
+							<GridColumn />
+						</GridColumns>
+						<GridRow>
+							<Link Click="<%=sAction%>" Class="icon-star"></Link>
+							<Link Click="<%=sAction%>"><%=tools_web.get_cur_lng_name( catBenefit.name, curLng.short_id )%></Link>
+						</GridRow>
+					</Grid>
+				</GridRow>
+			<%
+				}
+			%>
+			</Grid>
+		</TabItem>
+<%				}
+			break;
+
+			case "career":
+%>
+		<TabItem Class="icon-tree2" Title="<%=tools_web.get_web_const("hnumlkieoy", curLngWeb)%>">
+<%
+			sStartNodeType = "selected";
+			iSelectedId = curObjectID;
+			sTreeOrientation = "top";
+			bShowPositionFamilyFilter = false;
+			bShowTitle = false;
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_career_tree_body.xaml" ) );
+%>
+		</TabItem>
+<%
+		}
+	}
+%>
+	</TabControl>
+</SPXMLScreen>

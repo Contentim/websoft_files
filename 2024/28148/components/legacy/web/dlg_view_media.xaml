@@ -1,0 +1,65 @@
+﻿<%
+curDescObjectID = iObjectID = Int( PARAMETERS.GetOptProperty( 'object_id' ) );
+curDescObject = teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+
+sType = teObject.Name;
+sUrl = '';
+switch ( sType )
+{
+	case 'resource':
+		sType = teObject.type.Value;
+		sUrl = tools_web.get_object_source_url( 'resource', iObjectID, ({ 'Session' : Request.Session }) );
+		break;
+
+	case 'document':
+		break;
+}
+%>
+<SPXMLScreen>
+<%
+if ( sType == 'video' || sType == 'audio' )
+{
+%>
+	<HTMLBox Height="440">
+	<![CDATA[
+		<div style="height:460px; width: 100%; overflow: auto;">
+			<video controls="controls" style="height:430px; width: 100%; overflow: auto;">
+				<source src="<%=XmlAttrEncode( sUrl )%>"/>
+			</video>
+		</div>
+	]]>
+	</HTMLBox>
+<%
+}
+else if ( sType == 'img' )
+{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-overflow" Height="440" Width="100%">
+		<Image Source="<%=XmlAttrEncode( sUrl )%>" MaxHeight="430"/>
+	</StackPanel>
+<%
+}
+else if ( sType == 'document' )
+{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-overflow" Height="450" Width="100%">
+<%
+	curDescDispPanel = false;
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_text_area.xaml" ) );
+%>
+	</StackPanel>
+<%
+}
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

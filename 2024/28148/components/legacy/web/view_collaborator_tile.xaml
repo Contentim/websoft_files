@@ -1,0 +1,125 @@
+﻿<%
+// const_start
+var oConstCollTile = ({
+	"desc": tools_web.get_web_const( 'c_desc', curLngWeb ),
+	"position": tools_web.get_web_const( 'c_position', curLngWeb ),
+	"sub": tools_web.get_web_const( 'c_subd', curLngWeb ),
+	"email": "Email"
+});
+// const_end
+
+var iUserId = Int(PARAMETERS.GetOptProperty( "id" ));
+var iPhotoId = OptInt(PARAMETERS.GetOptProperty( "photo_source_id" ), iUserId);
+var sMode = PARAMETERS.GetOptProperty("mode");
+if (sMode != undefined)
+{
+	if (!StrIsAlphaNum(StrReplace(sMode, "_", "")))
+		sMode = "";
+}
+else
+	sMode = "collaborator";
+
+var sUsername = PARAMETERS.GetOptProperty( "fullname", "" );
+var sPosition = PARAMETERS.GetOptProperty( "position_name", "" );
+var sSubdivision = PARAMETERS.GetOptProperty( "position_parent_name", "" );
+var sEmail = PARAMETERS.GetOptProperty( "email", "" );
+sObjectImageUrl = tools_web.set_base_url_path(tools_web.get_object_source_url( "person", iPhotoId, "216x216" ), Env);
+
+sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( sMode, iUserId, { doc_id: curDocID } );
+var vValue, i = 0;
+var aAuxFields = new Array();
+while ((vValue = PARAMETERS.GetOptProperty("aux_title_" + i, "")) != "" )
+{
+	if (vValue != "-")
+		aAuxFields.push({"t": vValue, "v": PARAMETERS.GetOptProperty("aux_value_" + i, "")});
+	i++;
+}
+
+var bHasDescription = (ArrayCount(aAuxFields) > 0);
+%>
+<SPXMLScreen>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile" Height="<%=OptInt(PARAMETERS.GetOptProperty("tile_height"), "")%>">
+<%
+	if (bHasDescription)
+	{
+%>
+		<TabControl DisplayMode="concertina" TabsHidden="true" Name="tiletab<%=iUserId%>" Height="216">
+		<TabItem Title="Info">
+			<Link  Click="SET=tiletab<%=iUserId%>,1" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+<%
+	}
+%>
+	<StackPanel Class="XAML-stack-tile-image-container" Height="216">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Source="pics/1blank.gif" Height="216">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+	</StackPanel>
+
+<%
+	if (bHasDescription)
+	{
+%>
+		</TabItem>
+		<TabItem Title="<%=oConstCollTile.desc%>" Class="XAML-tabitem-tile-info">
+			<Link  Click="SET=tiletab<%=iUserId%>,0" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+
+			<Grid Width="100%" Class="XAML-grid-info-table-compact">
+				<GridColumns>
+					<GridColumn/>
+				</GridColumns>
+<%
+		for (i in aAuxFields)
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=(StrBegins(i.t, "const=") ? tools_web.get_web_const( StrRangePos(i.t, 6, -1), curLngWeb ) : i.t)%>:</Label>
+			</GridRow>
+			<GridRow>
+				<Label><![CDATA[<%=i.v%>]]></Label>
+			</GridRow>
+<%
+		}
+%>
+			</Grid>
+		</TabItem>
+		</TabControl>
+<%
+	}
+%>
+		<StackPanel Class="XAML-stack-tile-title-container" Height="55">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title"><![CDATA[<%=sUsername%>]]></Link>
+		</StackPanel>
+
+<%
+	if(sPosition != "")
+	{
+%>
+		<Label Class="XAML-label-tile-label"><![CDATA[<%=sPosition%>]]></Label>
+<%
+	}
+
+	if(sSubdivision != "")
+	{
+%>
+		<Label Class="XAML-label-tile-desc"><![CDATA[<%=sSubdivision%>]]></Label>
+<%
+	}
+
+	if(sEmail != "")
+	{
+%>
+		<Label Class="XAML-label-tile-desc"><![CDATA[<%=sEmail%>]]></Label>
+<%
+	}
+	i = 0;
+	while ((vValue = PARAMETERS.GetOptProperty("field_" + i, "")) != "")
+	{
+%>
+		<Label Class="XAML-label-tile-desc"><![CDATA[<%=vValue%>]]></Label>
+<%
+		i++;
+	}
+%>
+	</StackPanel>
+
+</SPXMLScreen>

@@ -1,0 +1,143 @@
+﻿<%
+sMsgBoxID = curMessageBox.GetOptProperty( 'id', '' );
+sMsgBoxText = curMessageBox.GetOptProperty( 'text', '' );
+sMsgBoxHtml = curMessageBox.GetOptProperty( 'html', '' );
+sMsgBoxHtmlAdd = curMessageBox.GetOptProperty( 'html_add', '' );
+arrMsgBoxButtons = curMessageBox.GetOptProperty( 'buttons', [] );
+bMsgBoxHidden = tools_web.is_true( CONTEXT.GetOptProperty( "MsgBoxHidden" + sMsgBoxID, false ) );
+bMsgBoxDispCloseButton = tools_web.is_true( curMessageBox.GetOptProperty( 'disp_close_button', false ) );
+bMsgBoxDispButtons = bMsgBoxDispCloseButton || ArrayOptFirstElem( arrMsgBoxButtons ) != undefined;
+switch ( curMessageBox.GetOptProperty( 'type', 'error' ) )
+{
+	case 'info':
+		sMsgBoxTitle = tools_web.get_web_const( 'c_info', curLngWeb );
+		sMsgBoxPanelClass = "XAML-grid-info-panel";
+		sMsgBoxLabelClass = "";
+		sMsgBoxType = "info";
+		break;
+
+	case 'warning':
+		sMsgBoxTitle = tools_web.get_web_const( '7ey6j94yku', curLngWeb );
+		sMsgBoxPanelClass = "XAML-grid-warning-panel";
+		sMsgBoxLabelClass = "";
+		sMsgBoxType = "warning";
+		break;
+
+	case 'error_access':
+		sMsgBoxText = tools_web.get_web_const( 'vap_message', curLngWeb );
+	default:
+		sMsgBoxTitle = tools_web.get_web_const( 'c_error', curLngWeb );
+		sMsgBoxPanelClass = "XAML-grid-error-panel";
+		sMsgBoxLabelClass = "";
+		sMsgBoxType = "alert";
+		break;
+}
+%>
+<Edit Name="MsgBoxHidden<%=sMsgBoxID%>" Hidden="true"><%=bMsgBoxHidden%></Edit>
+<%
+if ( ! bMsgBoxHidden )
+{
+%>
+<Grid Class="XAML-grid-message-panel <%=sMsgBoxPanelClass%>" Name="MsgBoxGrid<%=sMsgBoxID%>">
+	<GridColumns>
+		<GridColumn Width="20"/>
+		<GridColumn Width="100%"/>
+<%
+		if ( bMsgBoxDispCloseButton || ( bMsgBoxDispButtons && curDevice.disp_type == "" ) )
+		{
+%>
+		<GridColumn/>
+<%
+		}
+%>
+	</GridColumns>
+	<GridRow>
+		<Image Source="pics/1blank.gif" Class="XAML-image-message-icon XAML-msgbox-img-<%=sMsgBoxType%>"/>
+		<StackPanel Orientation="Vertical">
+<%
+		if ( sMsgBoxHtmlAdd != "" )
+		{
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+		<Label><%=sMsgBoxText%></Label>
+		<StackPanel Name="ShowMessageButtonContainer">
+			<Link Class="XAML-link-right-switch-collapsed" Click="TOGGLE=ShowMessageButtonContainer;TOGGLE=HideMessageButtonContainer;TOGGLE=MessageBoxText"></Link>
+
+			<!-- <Image Class="icon-chevron-down" Click="TOGGLE=ShowMessageButtonContainer;TOGGLE=HideMessageButtonContainer;TOGGLE=MessageBoxText" Source="pics/block_arrow_down.png"></Image> -->
+		</StackPanel>
+		<StackPanel Name="HideMessageButtonContainer" Hidden="1">
+			<Link Name="HideMessageButton" Class="XAML-link-right-switch-expanded" Click="TOGGLE=ShowMessageButtonContainer;TOGGLE=HideMessageButtonContainer;TOGGLE=MessageBoxText"></Link>
+			<!-- <Image Name="HideMessageButton" Class="icon-chevron-up" Click="TOGGLE=ShowMessageButtonContainer;TOGGLE=HideMessageButtonContainer;TOGGLE=MessageBoxText" Source="pics/block_arrow_up.png"></Image> -->
+		</StackPanel>
+	</StackPanel>
+	<StackPanel Name="MessageBoxText" Hidden="1">
+		<HTMLBox><%=HtmlEncode( sMsgBoxHtmlAdd )%></HTMLBox>
+	</StackPanel>
+<%
+		}
+		else
+		{
+			if ( sMsgBoxHtml != "" )
+			{
+%>
+			<HTMLBox><%=HtmlEncode( sMsgBoxHtml )%></HTMLBox>
+<%
+			}
+			else
+			{
+				for ( sTextElem in String( sMsgBoxText ).split( '<br/>' ) )
+				{
+%>
+			<Label Class="<%=sMsgBoxLabelClass%>"><%=sTextElem%></Label>
+<%
+				}
+			}
+		}
+%>
+		</StackPanel>
+		<StackPanel Name="MsgBoxButtons<%=sMsgBoxID%>" Orientation="Horizontal" Class="XAML-stack-container XAML-stack-buttons-container">
+<%
+		if ( curDevice.disp_type == "" )
+		{
+			for ( oButtonElem in arrMsgBoxButtons )
+			{
+%>
+			<Label Class="XAML-label-divider-small"></Label>
+			<Button Class="<%=oButtonElem.GetOptProperty( "class" )%>" Click="<%=( ( tools_web.is_true( oButtonElem.GetOptProperty( "hide_buttons" ) ) ? 'HIDE=MsgBoxButtons' + sMsgBoxID + ';' : '' ) + oButtonElem.click )%>"><![CDATA[<%=oButtonElem.title%>]]></Button>
+<%
+			}
+		}
+		if ( bMsgBoxDispCloseButton )
+		{
+%>
+			<Label Class="XAML-label-divider-small"></Label>
+			<Button Class="XAML-button-close icon-times" Click="Set=MsgBoxHidden<%=sMsgBoxID%>,true;HIDE=MsgBoxGrid<%=sMsgBoxID%>"></Button>
+<%
+		}
+%>
+		</StackPanel>
+	</GridRow>
+<%
+		if ( curDevice.disp_type != "" && ArrayOptFirstElem(arrMsgBoxButtons) != undefined)
+		{
+%>
+	<GridRow>
+		<Label/>
+		<StackPanel Name="MsgBoxButtons<%=sMsgBoxID%>" Orientation="Vertical" Class="XAML-stack-container">
+<%
+			for ( oButtonElem in arrMsgBoxButtons )
+			{
+%>
+			<Button Class="<%=oButtonElem.GetOptProperty( "class" )%>" Click="<%=( ( tools_web.is_true( oButtonElem.GetOptProperty( "hide_buttons" ) ) ? 'HIDE=MsgBoxButtons' + sMsgBoxID + ';' : '' ) + oButtonElem.click )%>"><![CDATA[<%=oButtonElem.title%>]]></Button>
+<%
+			}
+%>
+		</StackPanel>
+	</GridRow>
+<%
+		}
+%>
+</Grid>
+<%
+}
+%>

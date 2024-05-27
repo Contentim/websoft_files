@@ -1,0 +1,367 @@
+﻿<%
+// const_start
+sConstNotIndicated = tools_web.get_web_const( 'vrb_not_specified', curLngWeb );
+// const_end
+%>
+<SPXMLScreen>
+
+<%
+function title_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+function tab_block()
+{
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( "EduOrgBodyTab" + curObjectID ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+
+	arrTabListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list", "main;event;lector;response;report", true ) ).split( ";" );
+%>
+<TabControl Name="EduOrgBodyTab<%=curObjectID%>" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="<%=tools_web.get_web_param( curParams, "education_org_body.tabs_disp_type", "w", true )%>" Preservable="1" TabsWidth="216" Adapt="true">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "main" )
+			main_tab()
+
+///////////////////////////////////////////////   EVENT TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "event" )
+			tab_event()
+
+///////////////////////////////////////////////   LECTOR TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "lector" )
+			tab_lector()
+
+///////////////////////////////////////////////   EDUCATION METHOD TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "education_methods" )
+			tab_edu_method()
+
+///////////////////////////////////////////////   RESPONSE TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "response" )
+			tab_response()
+
+///////////////////////////////////////////////   REPORT TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "report" )
+			tab_report();
+		
+		if ( sTabListParam == 'custom_tab' )
+			custom_tab();
+			
+		if ( sTabListParam == 'contact' )
+			contact_tab();
+}
+%>
+</TabControl>
+<%
+}
+
+function custom_tab()
+{
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.custom_tab", "", true );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "nastraivaemaya", curLngWeb )
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+function main_tab()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.main_tab.block_list", "info;desc", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-info2">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "info" )
+			info_draw()
+
+		if ( sTabElem == "desc" )
+			desc_draw()
+		
+		if ( sTabElem == "edu_methods" )
+			edu_methods_draw( "education_org_body.tab_list.main_tab.block_list.edu_methods" )
+	}
+%>
+	</TabItem>
+<%
+}
+
+function info_draw()
+{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>				
+<%
+	if(curObject.code.HasValue)
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.code%>]]></Label>
+				</GridRow>
+<%
+	}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_phone", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.phone.HasValue ? curObject.phone : sConstNotIndicated%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_email", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.email.HasValue ? curObject.email : sConstNotIndicated%>]]></Label>
+				</GridRow>
+<%
+				
+	if(curObject.web.HasValue)
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "sayt", curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=curObject.web%>"><![CDATA[<%=curObject.web%>]]></Link>
+				</GridRow>
+<%
+	}
+				
+	if(curObject.postal_address.HasValue)
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_address", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.postal_address%>]]></Label>
+				</GridRow>
+<%
+	}
+%>
+			</Grid>
+<%
+}
+
+function desc_draw()
+{
+	Response.Write( tools_web.place_xaml( "block_desc" ) );
+}
+
+function edu_methods_draw( param_prefix )
+{
+	try
+	{
+		param_prefix;
+	}
+	catch( ex )
+	{
+		param_prefix = "";
+	}
+	curView = {
+				"id": ( "EducationMethods" + tools.random_string( 10 ) ),
+				"height": "",
+				"catalog_name": "education_method",
+				"disp_link": "true",	
+				"xquery_qual": " $elem/education_org_id = " + curObjectID,
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;type;duration;person_num;cost" : "name"),
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"paging_size": 15,
+				"param_preffix": param_prefix,
+				"check_access": false
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+}
+function tab_edu_method()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.edu_method_tab.block_list", "edu_methods", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.edu_method_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_edu_method", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" >
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "edu_methods" )
+			edu_methods_draw( "education_org_body.tab_list.edu_method_tab.block_list.edu_methods" )
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_lector()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.lector_tab.block_list", "lectors", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.lector_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "vllec_title", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-graduation-cap">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "lectors" )
+		{
+			curView = {
+				"id": "Lectors",
+				"height": "",
+				"catalog_name": "lector",
+				"disp_array": "true",
+				"select_xquery_qual": "$elem/is_dismiss != true()",
+				"array": ArrayMerge( curObject.lectors, "PrimaryKey", ";" ),
+				"disp_link": "true",	
+				"list_columns": ((curDevice.disp_type != "mobile") ? "lector_fullname;type;person_position_name" : "lector_fullname;type"),
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"param_preffix": "education_org_body.tab_list.lector_tab.block_list.lectors",
+				"paging_size": 15
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_event()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.event_tab.block_list", "events", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.event_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_events", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-calendar-o">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "events" )
+		{
+			curView = {
+				"id": "Events",
+				"height": "",
+				"catalog_name": "event",
+				"xquery_qual": ( "$elem/education_org_id = " + curObjectID ),
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"paging_size": 15,
+				"param_preffix": "education_org_body.tab_list.event_tab.block_list.events",
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;start_date;status_id" : "name;start_date")
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_response()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.response_tab.block_list", "responses", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.response_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "9pllz8peh0", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-edit">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "responses" )
+		{
+			xarrEvent = XQuery( "for $elem in events where $elem/education_org_id = " + curObjectID + " return $elem" );
+			xarrResponse = ArrayOptFirstElem( xarrEvent ) == undefined ? [] : XQuery( "for $elem in responses where $elem/is_public = true() and MatchSome( $elem/object_id, (" + ArrayMerge( xarrEvent, "education_org_id", "," ) + ") ) order by $elem/create_date descending return $elem" );
+			sResponsesParamPrefix = "education_org_body.tab_list.response_tab.block_list.responses"
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_response_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_custom_field()
+{
+
+}
+
+function tab_report()
+{
+	iCurTab = 0;
+	sReportTabPath = "education_org_body.tab_list.report_tab";
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_reports_tab.xaml" ) );
+}
+
+function contact_tab()
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.tab_list.contact_tab.block_list", "contact", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "education_org_body.tab_list.contact_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "jjxbgbdnwb", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-graduation-cap">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "contact" )
+		{
+			if ( curObject.contacts.ChildNum == 0 )
+			{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%='Контактные лица отсутствуют'%>]]></Label>
+<%
+			}
+			else
+			{
+				curView = {
+					"id": "Contacts",
+					"catalog_name": "collaborator",
+					"height": "",
+					"disp_filter": "false",
+					"disp_search": "false",
+					"disp_paging": "true",
+					"collection": "education_org_contacts_collection",
+					"param_preffix": "education_org_body.tab_list.contact_tab.block_list.contact",
+					"paging_size": 15
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+arrBlockListParam = String( tools_web.get_web_param( curParams, "education_org_body.block_list", "title;tab", true ) ).split( ";" );
+for( sBlockListParam in arrBlockListParam )
+{
+	if ( sBlockListParam == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if( sBlockListParam == "title" )
+		title_block();
+		
+	if( sBlockListParam == "tab" )
+		tab_block();
+		
+	if( sBlockListParam == "block_desc" )
+		desc_draw();
+		
+	if( sBlockListParam == "block_info" )
+		info_draw();
+}
+%>
+</SPXMLScreen>

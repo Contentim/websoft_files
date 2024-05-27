@@ -1,0 +1,137 @@
+﻿<SPXMLScreen>
+<%
+	var bShowPhoto, bShowName, bShowPosition, bShowSubdivision, bShowAge;
+	var aElemsShowList = String(PARAMETERS.GetOptProperty("pht_fnm_pos_sbd_age")).split("_");
+	bShowPhoto = (aElemsShowList[0] == "1");
+	bShowName = (aElemsShowList[1] == "1");
+	bShowPosition = (aElemsShowList[2] == "1");
+	bShowSubdivision = (aElemsShowList[3] == "1");
+	bShowAge = (aElemsShowList[4] == "1");
+	bShowDesc = (aElemsShowList[5] == "1");
+	
+	var sLink = tools_web.get_mode_clean_url(null, PARAMETERS.GetOptProperty("id",null), ({"doc_id": curDocID}));
+		
+	var sButtonTitle = PARAMETERS.GetOptProperty("tile_button", "");
+	
+%>
+	<Grid>
+		<GridColumns>
+<%
+	if (bShowPhoto)
+	{
+		var sPictUrl = PARAMETERS.GetOptProperty("pict_url");
+		if (sPictUrl == undefined)
+			sPictUrl = "/pics/nophoto.jpg";
+		
+		var sPlacement = PARAMETERS.GetOptProperty("photo_placement");
+		var iPhotoWidth = OptInt(PARAMETERS.GetOptProperty("photo_width"), 150);
+		
+		switch(sPlacement)
+		{
+			case "right":
+%>
+				<GridColumn/><GridColumn Width="<%=iPhotoWidth%>"/>
+<%
+			break;
+			case "center":
+%>
+				<GridColumn/>
+<%
+			break;
+			default:
+%>
+			<GridColumn Width="<%=iPhotoWidth%>"/><GridColumn/>
+<%
+			break;
+		}
+	}
+	else
+	{
+%>
+			<GridColumn/>
+<%
+	}
+%>
+		</GridColumns>
+		<GridRow>
+<%
+	if (bShowPhoto && sPlacement != "right" && sPlacement != "center")
+	{
+%>
+			<StackPanel>
+				<Image Source="<%=sPictUrl%>" MaxHeight="<%=iPhotoWidth%>" MaxWidth="<%=iPhotoWidth%>" Click="OPENURL=<%=sLink%>"/>
+			</StackPanel>
+<%
+	}
+%>
+			<StackPanel>
+<%
+	if (bShowPhoto && sPlacement == "center")
+	{
+%>
+			<StackPanel>
+				<Image Source="<%=sPictUrl%>" MaxHeight="<%=iPhotoWidth%>" MaxWidth="<%=iPhotoWidth%>" Click="OPENURL=<%=sLink%>"/>
+			</StackPanel>
+<%
+	}
+	if (bShowName)
+	{
+%>
+				<Link Click="OPENURL=<%=sLink%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+<%
+	}
+	if (bShowPosition)
+	{
+%>
+				<Label><%=PARAMETERS.GetOptProperty("position")%></Label>
+<%
+	}
+	if (bShowSubdivision)
+	{
+%>
+				<Label><%=PARAMETERS.GetOptProperty("subdivision")%></Label>
+<%
+	}
+	if (bShowAge)
+	{
+%>
+				<Label><%=PARAMETERS.GetOptProperty("age")%></Label>
+<%
+	}
+	if (bShowDesc)
+	{
+%>
+				<Label><%=PARAMETERS.GetOptProperty("desc")%></Label>
+<%
+	}
+%>
+				<Label><%=PARAMETERS.GetOptProperty("category")%></Label>
+			</StackPanel>
+<%
+	if (bShowPhoto && sPlacement == "right")
+	{
+%>
+			<StackPanel>
+				<Image Source="<%=sPictUrl%>" MaxHeight="<%=iPhotoWidth%>" MaxWidth="<%=iPhotoWidth%>" Click="OPENURL=<%=sLink%>"/>
+			</StackPanel>
+<%
+	}
+%>
+		</GridRow>
+	</Grid>
+<%
+	if (sButtonTitle != "")
+	{
+		sLink = PARAMETERS.GetOptProperty("tile_button_link", "");
+		if (sLink != "")
+		{
+			sLink += (StrContains(sLink, "?") ? "&" : "?") + "object_id=" + PARAMETERS.GetOptProperty("id",null);
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-news-all-link">
+			<Link Click="OPENURL=<%=XmlAttrEncode(sLink)%>"><![CDATA[  <%=sButtonTitle%>  ]]></Link>
+		</StackPanel>
+<%
+		}
+	}
+%>
+</SPXMLScreen>

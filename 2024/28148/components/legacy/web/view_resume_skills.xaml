@@ -1,0 +1,310 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+
+var sConstNoObjectWarning = "Сессия устарела. Пожалуйста, обновите страницу";
+
+// const_end
+
+//--functions
+
+function fnBuildButtons ( fldSkillParam )
+{
+	if ( !bReadOnly )
+	{
+		sCommonActionMiddle='SET=ResumeObjectChildID,'+fldSkillParam.id+';SET=sFieldNames,'+UrlEncode(sFieldNames)+';SET=sRequiredFieldNames,;'
+		sCommonAction=sCommonActionStart+sCommonActionMiddle+sCommonActionEnd
+%>
+		
+		<Button Class="XAML-button <%=(bShowButtonIcon?"icon-remove":"")%>" Click="SET=ResumeAction/sAction,delete_child;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_delete")):"")%></Button>
+		<Button Class="XAML-button <%=(bShowButtonIcon?"icon-arrow-down":"")%>" Click="SET=ResumeAction/sAction,move_child_up;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_move_down")):"")%></Button>
+		<Button Class="XAML-button <%=(bShowButtonIcon?"icon-arrow-up":"")%>" Click="SET=ResumeAction/sAction,move_child_down;<%=sCommonAction%>;"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_move_up")):"")%></Button>
+<%
+	}
+}
+
+function fnGetSkillLevels ( fldSkillParam )
+{
+	var arrLevels=[]
+	try
+	{
+
+		if ( fldSkillParam.use_parent_levels && fldSkillParam.parent_id.HasValue && fldSkillParam.parent_id.OptForeignElem!=undefined)
+		{
+			 arrLevels= fnGetSkillLevels( fldSkillParam.parent_id.OptForeignElem);
+		}
+		else
+		{
+			skillDoc = OpenDoc( UrlFromDocID( fldSkillParam.id ) ).TopElem;
+			arrLevels= skillDoc.levels
+		}
+	}
+	catch(err)
+	{
+		alert('fnGetSkillLevels error: '+err)
+	}
+    return arrLevels
+}
+
+function fnBuildSkillLevel(fldSkillParam)
+{
+
+	var arrLevels=[]
+
+	catSkill=fldSkillParam.skill_id.OptForeignElem
+	if (catSkill!=undefined)
+	{
+		arrLevels = fnGetSkillLevels ( catSkill )
+	}
+
+	if (ArrayOptFirstElem(arrLevels)!=undefined)
+	{
+		if ( !bReadOnly )
+		{
+			arrFieldKeys.push("skill_level_id_"+fldSkillParam.id)
+%>
+		<Toolbar Class="XAML-nomargin XAML-Toolbar-btn-icons" Adapt="true">
+			<ComboBox Name="skill_level_id_<%=fldSkillParam.id%>" SelectedItem="<%=fldSkillParam.level_id%>" Width="<%=iDefaultWidth%>">
+<%
+				for (fldScale in arrLevels )
+				{
+%>
+				<ComboBoxItem Value="<%=fldScale.id%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name(fldScale.name, curLng.short_id))%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+			
+<%
+			fnBuildButtons(fldSkillParam)
+%>
+		</Toolbar>
+<%
+
+		}
+		else
+		{
+			strLavelName=""
+			fldLevel=ArrayOptFindByKey(arrLevels,fldSkillParam.level_id,"id")
+			if (fldLevel!=undefined)
+			{
+				strLavelName=tools_web.get_cur_lng_name(fldLevel.name, curLng.short_id)
+			}
+%>
+				<Label><%=XmlAttrEncode(strLavelName)%></Label>
+<%
+		}
+	}
+	else
+	{
+%>
+		<Label></Label>
+<%
+	}
+}
+
+function fnBuildSkill(iParentIDParam,iLevelParam)
+{
+	var iLevel=iLevelParam
+	var iParentID=null
+	var bHasChildren=false
+	
+	if (!bDesctop) iLevel=0
+	try
+	{
+		iParentID=OptInt(iParentIDParam,null)
+	}
+	catch(ex)
+	{
+	}
+
+	var arrBuildSkills=ArraySelect(arrSkills,'This.skill_parent_id=='+(iParentID==null?'null':iParentID))
+	var iMainColumnWidth=150
+	var iEmptyColumnsWidth=0
+	var iEmptyColumnWidth=0
+	
+	for (fldSkill in arrBuildSkills)
+	{
+		bHasChildren=false
+		arrChildren=ArraySelect( arrSkills,'This.skill_parent_id=='+fldSkill.skill_id )
+		bHasChildren=ArrayOptFirstElem(arrChildren)!=undefined
+
+		if (!bHasChildren&&ArrayOptFirstElem(XQuery('for $elem in skills where $elem/parent_id = '+fldSkill.skill_id+' return $elem'))!=undefined)
+		{
+			bHasChildren=true
+		}
+		
+%>
+		<GridRow>
+			<Grid Class="XAML-compound-grid" Adapt="true" Width="100%">
+				<GridColumns>
+<%
+				iEmptyColumnsWidth=0
+				for (i=0;i<iLevel;i++)
+				{
+					iEmptyColumnsWidth=iEmptyColumnsWidth+Real(iMinColumnWidth)
+%>
+					<GridColumn Width="<%=iMinColumnWidth%>"/>
+<%
+				}
+%>
+					<GridColumn Width="<%=(iDefaultLeftColumnWidth-iEmptyColumnsWidth)%>"/>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow>
+<%	
+				for (i=0;i<iLevel;i++)
+				{
+%>				
+					<Label></Label>
+<%
+				}
+%>
+				<Label Class="XAML-info-grid-title-column"><%=XmlAttrEncode(tools_web.get_cur_lng_name(fldSkill.skill_name, curLng.short_id))%></Label>
+
+<%
+		if (bHasChildren)
+		{
+					if ( !bReadOnly )
+					{
+						sActionMiddleElems="SET=ResumeObjectChildID,{SelectSkills"+fldSkill.skill_id+"};SET=sFieldNames,;SET=sRequiredFieldNames,;"
+%>
+					<Toolbar Class="XAML-nomargin XAML-Toolbar-btn-icons" Adapt="true">
+						<Edit Name="SelectSkills<%=fldSkill.skill_id%>" Hidden="1"><%=ArrayMerge(arrChildren,"This.skill_id",";")%></Edit>
+						<Button Click="SET=SelectDialogCloseActionSkill,<%=UrlEncode16("SET=SelectSkills"+fldSkill.skill_id+",{CatalogListDataGridSelList:*/id};SET=ResumeAction/sAction,add_skills;"+sCommonActionStart+sActionMiddleElems+sCommonActionEnd)%>;Set=SelectDialogSkill/selected_object_ids,{SelectSkills<%=fldSkill.skill_id%>};Set=SelectDialogSkill/xquery_qual,$elem/parent_id=<%=fldSkill.skill_id%>;OPENDIALOG=SelectDialogSkill;" Class="XAML-button <%=(bShowButtonIcon?"icon-plus":"")%>"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("c_choose")):"")%></Button>
+<%
+						fnBuildButtons(fldSkill)
+%>
+					</Toolbar>
+<%
+					}
+					else
+					{
+%>
+					<Label/>
+<%
+					}
+%>
+				</GridRow>
+			</Grid>
+		</GridRow>
+<%
+			if (ArrayOptFirstElem(arrChildren)!=undefined)
+			{
+%>	
+					<%fnBuildSkill(fldSkill.skill_id,iLevelParam+1)%>
+
+<%
+			}
+		}
+		else
+		{
+%>
+				<%fnBuildSkillLevel(fldSkill)%>
+				</GridRow>
+			</Grid>
+		</GridRow>
+<%
+		}
+
+	}
+
+}
+
+var sDispType=curDevice.disp_type;
+var bDesctop=sDispType != "mobile";
+var iDefaultWidth=PARAMETERS.GetOptProperty( "iDefaultWidth");
+var iDefaultLeftColumnWidth=OptReal(PARAMETERS.GetOptProperty( "iDefaultLeftColumnWidth",300),300);
+var strChildName=PARAMETERS.GetOptProperty( 'sChildElem');
+var bReadOnly=tools_web.is_true(PARAMETERS.GetOptProperty( "bReadOnly"));
+var	bShowButtonIcon=true;
+var	bShowButtonTitle=false;
+
+var iMinColumnWidth=StrRealFixed((Real(iDefaultLeftColumnWidth)/Real(100))*Real(10),0)
+var sFieldNames="skill_level_id"
+var strTopLevelSkillsCodes=String( tools_web.get_web_param( curParams, "resume.top_level_skills_codes", "", true ) )
+var arrTopLevelSkillsCodes=strTopLevelSkillsCodes.split( ";" );
+var strWhereTopLevelSkillsCode=''
+
+for(strTopLevelSkillsCode in arrTopLevelSkillsCodes)
+{
+	if (Trim(strTopLevelSkillsCode)!='')
+	{
+		strWhereTopLevelSkillsCode+=(strWhereTopLevelSkillsCode==""?"":" or ")+"$elem/code='"+strTopLevelSkillsCode+"'"
+	}
+}							
+							
+if (strWhereTopLevelSkillsCode!="")
+{
+	strWhereTopLevelSkillsCode=" and ("+strWhereTopLevelSkillsCode+")"
+}
+
+var bHasErrors=false;
+
+if (curObject==null||curObject==undefined)
+{
+	bHasErrors=true
+}
+else if (curObject.Name!='resume')
+{
+	curObject = Env.GetOptProperty( 'curResume', null );
+}
+
+if (curObject==null||curObject==undefined)
+{
+%>
+	<Label><![CDATA[<%=sConstNoObjectWarning%>]]></Label>
+<%
+}
+
+if (!bHasErrors) 
+{
+	var arrFieldKeys=[];
+	sCommonActionStart='SET=ResumeAction/iObjectId,'+curObjectID+';SET=ResumeSuccessAction,'+UrlEncode('UPDATE='+strChildName+'_panel')+';SET=ResumeObjectChildrenName,'+strChildName+';'
+	sActionMiddle='SET=ResumeObjectChildID,{SelectSkills};SET=sFieldNames,;SET=sRequiredFieldNames,;'
+	sCommonActionEnd='CONTEXT=ResumeObjectContextGroup'+strChildName+';SET=ResumeAction/CONTEXT,{CONTEXT};ACTION=ResumeAction;'
+	
+	var arrSkills=curObject.skills;
+%>
+	<Edit Name="SelectSkills" Hidden="1"><%=ArrayMerge(ArraySelect(arrSkills,"!This.skill_parent_id.HasValue"),"This.skill_id",";")%></Edit>
+	<Edit Name="SelectDialogCloseActionSkill" Hidden="1"></Edit>
+	<Dialog Name="SelectDialogSkill" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!SelectDialogCloseActionSkill};">
+		<Param Name="catalog_name" Value="skill"/>
+		<Param Name="multi_select" Value="true"/>
+		<Param Name="view_type" Value=""/>
+		<Param Name="xquery_qual" Value=""/>
+		<Param Name="check_access" Value="false"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="display_object_ids" Value=""/>
+		<Param Name="disp_filter" Value=""/>
+		<Param Name="filter_id" Value=""/>
+		<Param Name="categorized" Value="false"/>
+
+	</Dialog>
+	<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="true">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+<%
+	if (ArrayOptFirstElem(arrSkills)!=undefined)
+	{
+%>
+				<%fnBuildSkill(null,0)%>
+<%
+	}
+	if ( !bReadOnly )
+	{
+%>
+		<GridRow>
+			<Button Click="SET=SelectDialogCloseActionSkill,<%=UrlEncode16("SET=SelectSkills,{CatalogListDataGridSelList:/id};SET=ResumeAction/sAction,add_skills;"+sCommonActionStart+sActionMiddle+sCommonActionEnd)%>;Set=SelectDialogSkill/selected_object_ids,{SelectSkills};Set=SelectDialogSkill/xquery_qual,<%=UrlEncode("$elem/parent_id=null()"+strWhereTopLevelSkillsCode)%>;OPENDIALOG=SelectDialogSkill;" Class="XAML-button <%=(bShowButtonIcon?"icon-plus":"")%>"><%=(bShowButtonTitle?HtmlEncode(tools.get_web_str("veb_add")):"")%></Button>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<ContextGroup Name="ResumeObjectContextGroup<%=strChildName%>" Items="<%='ResumeObjectChildrenName,ResumeObjectChildID,'+ArrayMerge(arrFieldKeys,"This",",")%>"/>	
+<%
+}
+
+%>
+</SPXMLScreen>

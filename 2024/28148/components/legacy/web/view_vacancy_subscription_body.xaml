@@ -1,0 +1,400 @@
+﻿<%
+    oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+    bIsNew = true;
+
+    try
+    {
+        OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+        bIsNew = false;
+    }
+    catch(err)
+    {
+        //alert("## " + err)
+    }
+
+    function fnGetScopeProperty( strProprtyNameParam )
+    {
+        var sReturnValue = '';
+
+        if ( ! bIsNew )
+        {
+            try
+            {
+                _find = ArrayOptFind( curObject.conditions, "This.field == '" + strProprtyNameParam + "'" );
+                if ( _find != undefined )
+                    sReturnValue = _find.value
+            }
+            catch(err)
+            {
+                alert("@@@@" + err)
+            }
+        }
+        return sReturnValue
+    }
+
+    arrSearchParam = String( tools_web.get_web_param( curParams, 'main_tab_param.search_param', 'key_word_in_name;key_word_in_fulltext;age;wage;region;educ_type;employment_type;professional_area;category', true ) ).split( ';' );
+
+    arrSelectedProfareas = [];
+
+    //ТРАНСЛЯЦИЯ УСЛОВИЙ ПОИСКА из ПОДПИСКИ в локальные переменные шаблона
+
+    var categ_array       = Array();
+    var _prof_areas_str   = "";
+    var _max_age          = fnGetScopeProperty("max_age");
+    var _min_age          = fnGetScopeProperty("min_age");
+    var _min_wage         = fnGetScopeProperty("min_wage");
+    var _max_wage         = fnGetScopeProperty("max_wage");
+    var _currency_type    = fnGetScopeProperty("currency_type_id");
+    var _educ_type        = fnGetScopeProperty("educ_type_id");
+    var _employment_type  = fnGetScopeProperty("employment_type_id");
+    var _region_id        = fnGetScopeProperty("region_id");
+    var _key_word_in_name = "";
+
+    sDispType = curDevice.disp_type;
+    bDesctop  = sDispType != 'mobile';
+
+    iDefaultTextEditWidth   = bDesctop ? '200' : '100%';
+    iDefaultLabelWidth      = bDesctop ? '25'  : '20';
+    iDefaultComboWidth      = bDesctop ? '150' : '100%';
+
+    if ( ! bIsNew )
+    {
+        for ( _cond in ArraySelect( curObject.conditions, "field == 'name'" ) )
+        {
+            _key_word_in_name += _cond.value + " "
+        }
+        _key_word_in_name = UnifySpaces( _key_word_in_name );
+
+        for ( _cond in ArraySelect( curObject.conditions, "field == 'profession_id'" ) )
+        {
+            categ_array.push(_cond.value);
+
+            arrSelectedProfareas = tools.xquery( "for $elem in professional_areas where MatchSome($elem/id, (" + ArrayMerge( categ_array, "This", ",") + ")) return $elem" );
+            _prof_areas_str      = ArrayMerge( arrSelectedProfareas,"This.name", " | ");
+        }
+    }
+%>
+
+<SPXMLScreen>
+
+    <Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "c_vacancy_subscription", curLngWeb )%></Label>
+    <Action Name="SaveSubscription" Source="SaveSubscription" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( null, '{object_id}', {} )%>" Failure="ALERT={messageText}">
+
+<%
+    form_property_array = Array( "key_word_in_name", "key_word_in_fulltext", "max_age", "min_age", "min_wage", "max_wage", "currency_type", "min_exp_years", "region", "educ_type", "employment_type", "is_active","professional_area" );
+    for ( _param in form_property_array )
+    {
+        if ( _param == "professional_area" )
+        {
+%>
+            <Param Name="<%=_param%>" Value="{TempDestinationEditProfessionIds}"/>
+<%
+        }
+        else
+        {
+%>
+            <Param Name="<%=_param%>" Value="{<%=_param%>}"/>
+<%
+        }
+    }
+%>
+        <Param Name="CONTEXT" Value="{CONTEXT}"/>
+        <Param Name="is_new" Value="<%=bIsNew%>"/>
+        <Param Name="subs_name" Value="{subs_name}"/>
+    </Action>
+
+    <Collection Name="SuitableVacancysCollection" Source="SuitableVacancysCollection">
+        <Param Name="context" Value="{CONTEXT}"/>
+    </Collection>
+
+    <Panel Title="<%=tools_web.get_web_const( "osnovnyeparame", curLngWeb )%>" Expanded="true">
+        <Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+            <GridColumns>
+                <GridColumn Width="350"/>
+                <GridColumn/>
+            </GridColumns>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_name", curLngWeb )%>*:</Label>
+                <Edit Name="subs_name" Width='100%'><%=bIsNew ? "" : curObject.name%></Edit>
+            </GridRow>
+<%
+        if ( ArrayOptFind( arrSearchParam, "This == 'key_word_in_name'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "klyuchevyeslovav_3", curLngWeb )%>:</Label>
+                <Edit Name="key_word_in_name" Width='100%'><%=bIsNew ? "" : _key_word_in_name%></Edit>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'key_word_in_fulltext'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "klyuchevyeslovav_4", curLngWeb )%>:</Label>
+                <Edit Name="key_word_in_fulltext" Width='100%'><%=bIsNew ? "" : curObject.full_text_search_str%></Edit>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'age'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <!-- <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vrb_age", curLngWeb )%>:</Label>
+                <StackPanel Orientation="Horizontal" Adapt="true">
+                    <Label><%=HtmlEncode(StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb )))%></Label>
+                    <Edit Name="min_age" Width="40"><%=bIsNew ? "" : _min_age%></Edit>
+                    <Label><%=StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) )%></Label>
+                    <Edit Name="max_age" Width="40"><%=bIsNew ? "" : _max_age%></Edit>
+                </StackPanel> -->
+
+
+                <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'vrb_age', curLngWeb )%>:</Label>
+                <StackPanel Orientation='<%=bDesctop ? 'Horizontal' : 'Vertical'%>'>
+                    <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( '23bdvmp63b', curLngWeb ) )%></Label>
+                    <Edit Name='min_age' Width='<%=iDefaultTextEditWidth%>'><%=bIsNew ? "" : _min_age%></Edit>
+                    <Label Width='<%=iDefaultLabelWidth%>'></Label>
+                    <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( 'mgbip6hh3a', curLngWeb ) )%></Label>
+                    <Edit Name='max_age' Width='<%=iDefaultTextEditWidth%>'><%=bIsNew ? "" : _max_age%></Edit>
+                </StackPanel>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'wage'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class='XAML-info-grid-title-column'><%=tools_web.get_web_const( 'urovendohoda', curLngWeb )%>:</Label>
+                <StackPanel Orientation='<%=bDesctop ? 'Horizontal' : 'Vertical'%>'>
+                    <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( '23bdvmp63b', curLngWeb ) )%></Label>
+                    <Edit Name='min_wage' Width='<%=iDefaultTextEditWidth%>'><%=bIsNew ? "" : _min_wage%></Edit>
+                    <Label Width='<%=iDefaultLabelWidth%>'></Label>
+                    <Label Width='<%=iDefaultLabelWidth%>' Class='XAML-info-grid-title-column'><%=StrNonTitleCase( tools_web.get_web_const( 'mgbip6hh3a', curLngWeb ) )%></Label>
+                    <Edit Name='max_wage' Width='<%=iDefaultTextEditWidth%>'><%=bIsNew ? "" : _max_wage%></Edit>
+                    <Label Width='<%=iDefaultLabelWidth%>'></Label>
+
+                    <ComboBox Name='currency_type' TypeAhead='1' Width='<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = ''></ComboBoxItem>
+<%
+                        for ( _currency in lists.currency_types )
+                        {
+%>
+                            <ComboBoxItem Value='<%=_currency.id%>'><%=_currency.name%></ComboBoxItem>
+<%
+                        }
+%>
+                    </ComboBox>
+                </StackPanel>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'region'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vrb_region", curLngWeb )%>:</Label>
+<%
+                iObjectID = null;
+                strObjectName = '';
+
+                if ( _region_id != "" )
+                {
+                    iObjectID = OptInt( _region_id, null );
+                    if ( iObjectID != null )
+                    {
+                        try
+                        {
+                            strObjectName = tools_web.get_cur_lng_name( OpenDoc( UrlFromDocID( iObjectID ) ).TopElem.name, curLng.short_id );
+                        }
+                        catch(ex)
+                        {
+                        }
+                    }
+                }
+
+                curSelector = {
+                    "id": "region",
+                    "width": '100%',
+                    "catalog_name": "region",
+                    "object_id_item_name": "region",
+                    "object_id": iObjectID,
+                    "object_name":  strObjectName,
+                    'can_be_empty': true
+                };
+                Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'educ_type'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vrb_education", curLngWeb )%>:</Label>
+                <ComboBox Name="educ_type" Width='<%=iDefaultTextEditWidth%>' SelectedItem="<%=bIsNew ? "" : _educ_type%>">
+                    <ComboBoxItem Value=""></ComboBoxItem>
+<%
+                    for (_educ_type_elem in common.educ_types)
+                    {
+%>
+                        <ComboBoxItem Value="<%=_educ_type_elem.id%>"><%=_educ_type_elem.name%></ComboBoxItem>
+<%
+                    }
+%>
+                    </ComboBox>
+            </GridRow>
+<%
+        }
+        if ( ArrayOptFind( arrSearchParam, "This == 'employment_type'" ) != undefined )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_employment_type", curLngWeb )%>:</Label>
+                <ComboBox Name="employment_type" Width='<%=iDefaultTextEditWidth%>' SelectedItem="<%=bIsNew ? "" : _employment_type%>">
+                    <ComboBoxItem Value=""></ComboBoxItem>
+<%
+                for (_employment_type_elem in common.employment_types)
+                {
+%>
+                    <ComboBoxItem Value="<%=_employment_type_elem.id%>"><%=_employment_type_elem.name%></ComboBoxItem>
+<%
+                }
+%>
+                </ComboBox>
+            </GridRow>
+<%
+        }
+%>
+
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "1smdtr0vck", curLngWeb )%>:</Label>
+                <CheckBox Name="is_active" Value="true" Checked="<%=bIsNew ? "true" : curObject.is_active%>"></CheckBox>
+            </GridRow>
+        </Grid>
+    </Panel>
+
+<%
+    if ( ArrayOptFind( arrSearchParam, "This == 'professional_area'" ) != undefined )
+    {
+%>
+    <Panel Title="<%=tools_web.get_web_const( "professionalny", curLngWeb )%>" Expanded="false">
+<%
+        curSelectorList = {
+                "id": "ProfessionIds",
+                "selected_object_ids":ArrayMerge(arrSelectedProfareas,"This.id",";"),
+                "height": "200",
+                "catalog_name": "professional_area",
+                "disp_link": "true",
+                "list_columns": "name;code",
+                "link_field_index": 0,
+                "close_action": "",
+                "check_access":"true"
+              };
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+            <Button Class="XAML-button XAML-button-select" Click="OPENDIALOG=SelectDialogProfessionIds"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+    </Panel>
+<%
+    }
+%>
+    <Toolbar Class="XAML-toolbar" Width="100%">
+        <Button Click="ACTION=SaveSubscription;REFRESH" Class="XAML-button XAML-button-save"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+    </Toolbar>
+<%
+if ( !bIsNew )
+{
+%>
+    <Panel Title="<%=tools_web.get_web_const( "podhodyashievaka", curLngWeb )%>" Expanded="false">
+    
+    <HTMLBox><![CDATA[
+        <%=tools_web.get_web_const( "parametryotbor", curLngWeb )%>
+    <UL>
+<%
+    if ( _key_word_in_name != "" )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "klyuchevyeslovav_7", curLngWeb )%>: <b><%=_key_word_in_name%></b> </LI>
+<%
+    }
+    if ( curObject.full_text_search_str.HasValue )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "klyuchevyeslovav", curLngWeb )%>: <b><%=curObject.full_text_search_str%></b> </LI>
+<%
+    }
+    if ( _prof_areas_str != "" )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "vrb_professional_field", curLngWeb )%>: <b><%=HtmlEncode(_prof_areas_str)%></b> </LI>
+<%
+    }
+    if ( _region_id != "" )
+    {
+        try
+        {
+            curRegion = OpenDoc( UrlFromDocID( _region_id ) ).TopElem;
+%>
+        <LI><%=tools_web.get_web_const( "vrb_region", curLngWeb )%>: <b><%=curRegion.name%></b> </LI>
+<%
+        }
+        catch(err)
+        {}
+    }
+    _educ_elem = ArrayOptFind( common.educ_types, "id=='" + _educ_type + "'" )
+    if ( _educ_type != "" && _educ_elem != undefined )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "vrb_education", curLngWeb )%>: <b><%=_educ_elem.name%></b> </LI>
+<%
+    }
+    _employment_elem = ArrayOptFind( common.employment_types, "id=='" + _employment_type + "'" )
+    if ( _employment_type != "" && _employment_elem != undefined )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "ibcxjyydad", curLngWeb )%>: <b><%=_employment_elem.name%></b> </LI>
+<%
+    }
+    if ( _max_age != "" || _min_age != "" )
+    {
+%>
+        <LI><%=tools_web.get_web_const( "vrb_age", curLngWeb )%>: <b><%=_min_age != "" ? StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) ) + " " + _min_age : ""%> <%= _max_age != ""  ? " " + StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) ) + " " + _max_age : ""%><%=tools_web.get_web_const( "let", curLngWeb )%></b> </LI>
+<%
+    }
+    if ( _min_wage != "" || _max_wage != "" )
+    {
+        _currency_elem = ArrayOptFind( lists.currency_types, "id=='" + _currency_type + "'" )
+%>
+        <LI><%=tools_web.get_web_const( "dohod", curLngWeb )%>: <b><%=_min_wage != "" ? StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) ) + " " + _min_wage : ""%> <%=_max_wage != "" ? " " + StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) ) + " " + _max_wage : ""%> <%=(_currency_type != "" && _currency_elem != undefined )? _currency_elem.short_name : ""%></b> </LI>
+<%
+    }
+%>
+    </UL>
+    ]]></HTMLBox>
+        <DataGrid Name="SuitableVacancysGrid" Source="{SuitableVacancysCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='500'" : "Height='200'")%> Selection="multiple" <%=(curDevice.disp_type != "mobile" ? "Width='100%'" : "Width='350%'")%> PageSize="20">
+            <DataGridColumn Title="id" Value="id" Type="string" Hidden="true"/>
+            <DataGridColumn Title="parent_id" Value="parent_id" Type="string" Hidden="true"/>
+            <%
+                if (curDevice.disp_type != "mobile")
+                {
+            %>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Width="300" Type="link" Click="OPENURL={url}" Sortable="true" ColorSource="color"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "profoblast", curLngWeb )%>" Value="prof_area" Width="100%" Type="string" Sortable="true" ColorSource="color"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "dohod", curLngWeb )%>" Value="wage" Width="150" Type="string" Sortable="true" ColorSource="color"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "vrb_region", curLngWeb )%>" Value="region" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_employment_type", curLngWeb )%>" Value="employment_type" Width="150" Type="string" Sortable="true" ColorSource="color"/>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "vrb_date_last_edit", curLngWeb )%>" Value="date" Width="150" Type="string" Sortable="true" ColorSource="color"/>
+            <%
+                }
+                else
+                {
+            %>
+                    <DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Width="100%" Type="link" Click="OPENURL={url}" Sortable="true" ColorSource="color"/>
+            <%
+                }
+            %>
+        </DataGrid>
+    </Panel>
+<%
+}
+%>
+</SPXMLScreen>

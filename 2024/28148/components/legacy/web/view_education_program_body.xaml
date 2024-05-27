@@ -1,0 +1,60 @@
+﻿<SPXMLScreen>
+
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+arrTabListParam = String( tools_web.get_web_param( curParams, 'education_program_body.tab_list', 'main', true ) ).split( ';' );
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'education_program_body.tab_list.main_tab.block_list', 'info;desc;programs', true ) ).split( ';' );
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' && curObject.code.HasValue)
+		{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.code%>]]></Label>
+				</GridRow>
+			</Grid>
+<%
+		}
+
+		if ( sTabElem == 'desc' )
+		{
+			Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+		
+		if ( sTabElem == 'programs' )
+		{
+			curView = {
+				"id": "EduMethods",
+				"height": "",
+				"title": tools_web.get_web_const( 'vepb_edu_methods', curLngWeb ),
+				"catalog_name": "education_method",
+				"disp_array": "true",
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;type;duration" : "name;type"),
+				"array": ArrayMerge( curObject.education_methods, 'PrimaryKey', ';' ),
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_paging": "true",
+				"paging_size": 15,
+				"disp_search": "false"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+}
+
+}
+%>
+
+</SPXMLScreen>

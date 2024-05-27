@@ -1,0 +1,82 @@
+﻿<SPXMLScreen>
+<%
+iPageItemsCount = Int( tools_web.get_web_param( curParams, "iPageItemsCount", 1, true ));
+if( curDevice.disp_type != "mobile")
+{
+	iColumnsNum = Int( tools_web.get_web_param( curParams, "iColumnsNum", 3, true ));
+	//iColumnsNum = 3
+}
+else
+	iColumnsNum = 1
+%>
+<!-------------------------------------- Actions -------------------------------------------->
+<Action Name="RunAction" Source="communication_users_actions" Success="ALERT={messageText};REFRESH">
+  <Param Name="iUserId" Value=""/>
+  <Param Name="sAction" Value=""/>
+</Action>
+
+
+<Collection Name="ChattersCollection" Source="communications_messages_collection">
+  <Param Name="sUserType" Value="chatter"/>
+</Collection>
+<Collection Name="NewInvitesCollection" Source="communications_messages_collection">
+  <Param Name="sUserType" Value="new_invites"/>
+</Collection>
+<Collection Name="MyInvitesCollection" Source="communications_messages_collection">
+  <Param Name="sUserType" Value="my_invites"/>
+</Collection>
+<Collection Name="CurUserProhibitedCollection" Source="communications_messages_collection">
+  <Param Name="sUserType" Value="cur_user_prohibited"/>
+</Collection>
+<Collection Name="PartnerProhibitedCollection" Source="communications_messages_collection">
+  <Param Name="sUserType" Value="partner_prohibited"/>
+</Collection>
+
+<!-------------------------------------- Collections -------------------------------------------->
+
+<%
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : "0");
+
+xarrChats = ArrayDirect( XQuery("for $elem in personal_chats where $elem/person_id=" + curUserID + "  order by $elem/last_message_date descending return $elem") );
+
+xarrUserChats = ArraySelect( xarrChats, "This.prohibited==false && This.partner_prohibited==false && This.confirmed==true && This.partner_confirmed==true" )
+xarrNewInvites = ArraySelect( xarrChats, "This.prohibited==false && This.partner_prohibited==false && This.confirmed==false && This.partner_confirmed==true" )
+xarrMyInvites = ArraySelect( xarrChats, "This.prohibited==false && This.partner_prohibited==false && This.confirmed==true && This.partner_confirmed==false" )
+xarrCurUserProhibited = ArraySelect( xarrChats, "This.prohibited==true" )
+%>
+	<StackPanel Width="100%" Orientation="Vertical" Class="XAML-stack-block">
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+			<Label Class="XAML-label-block-header"><%=tools_web.get_web_const( "moisobesedniki", curLngWeb )%></Label>
+		</StackPanel>
+	<Dialog Name="SelectDialogInviteUser" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vyberitesotrud_2", curLngWeb ) )%>" Close="SET=RunAction/iUserId,{CatalogListDataGridFullList:^/id};SET=RunAction/sAction,invite;ACTION=RunAction;">
+		<Param Name="catalog_name" Value="collaborator"/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+
+	<Dialog Name="CreateMessageDialog" Source="dlg_chat_message" Width="<%=curDevice.disp_type == "mobile" ? "90%" : "600"%>" Title="<%=tools_web.get_web_const( "novoesoobshenie", curLngWeb )%>" Close="REFRESH">
+
+	</Dialog>
+
+	<Toolbar Class="XAML-toolbar">
+		<Button Class="XAML-button XAML-button-new" Click="OPENDIALOG=CreateMessageDialog"><%=tools_web.get_web_const( "novoesoobshenie", curLngWeb )%></Button>
+		<Button Class="XAML-button XAML-button-invite" Click="OPENDIALOG=SelectDialogInviteUser"><%=tools_web.get_web_const( "priglasit", curLngWeb )%></Button>
+	</Toolbar>
+
+	<TabControl Name="ListViewTab" ActiveTab="<%=paramListViewTab%>">
+		<TabItem Title="<%=tools_web.get_web_const( "sobesedniki", curLngWeb )%> (<%=ArrayCount(xarrUserChats)%>)">
+			<TileView Name="ChattersTileView" Class="XAML-chat-tv" Width="100%" Height="400" TileHeight="auto" Columns="<%=iColumnsNum%>" PageSize="<%=iPageItemsCount%>" DataSource="{ChattersCollection}" TemplateSource="communications_message_tile"/>
+		</TabItem>
+
+		<TabItem Title="<%=tools_web.get_web_const( "novyepredlozhen", curLngWeb )%> (<%=ArrayCount(xarrNewInvites)%>)">
+			<TileView Name="NewInvitesTileView" Class="XAML-chat-tv" Width="100%" Height="400" TileHeight="auto" Columns="<%=iColumnsNum%>" PageSize="<%=iPageItemsCount%>" DataSource="{NewInvitesCollection}" TemplateSource="communications_message_tile"/>
+		</TabItem>
+		<TabItem Title="<%=tools_web.get_web_const( "moipredlozheniya", curLngWeb )%> (<%=ArrayCount(xarrMyInvites)%>)">
+			<TileView Name="MyInvitesTileView" Class="XAML-chat-tv" Width="100%" Height="400" TileHeight="auto" Columns="<%=iColumnsNum%>" PageSize="<%=iPageItemsCount%>" DataSource="{MyInvitesCollection}" TemplateSource="communications_message_tile"/>
+		</TabItem>
+		<TabItem Title="<%=tools_web.get_web_const( "otklonennyepre", curLngWeb )%> (<%=ArrayCount(xarrCurUserProhibited)%>)">
+			<TileView Name="ProhibitedTileView" Class="XAML-chat-tv" Width="100%" Height="400" TileHeight="auto" Columns="<%=iColumnsNum%>" PageSize="<%=iPageItemsCount%>" DataSource="{CurUserProhibitedCollection}" TemplateSource="communications_message_tile"/>
+		</TabItem>
+	</TabControl>
+</StackPanel>
+</SPXMLScreen>

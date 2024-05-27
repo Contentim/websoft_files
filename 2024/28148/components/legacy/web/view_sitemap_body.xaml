@@ -1,0 +1,64 @@
+﻿<SPXMLScreen>
+
+<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( 'icon_sitemap_alt_text', curLngWeb )%></Label>
+<StackPanel Class="XAML-grid-list-container">
+<%
+if ( (tools.sys_db_capability & tools.UNI_CAP_CLUSTER) != 0 )
+	curSite = OpenDoc( UrlFromDocID( curSiteID ) ).TopElem;
+
+sMenuCode = tools_web.get_web_param( curParams, "sitemap_body.site_menu_code", "header", true );
+fldMenu = curSite.menus.GetOptChildByKey( sMenuCode );
+if ( fldMenu == undefined )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+function hier_level( arrChildDocumentsParam, iIdentParam )
+{
+	if ( iIdentParam > 10 )
+		return;
+
+	var fldDocumentElem;
+	for ( fldDocumentElem in arrChildDocumentsParam )
+	{
+		catDocument = fldDocumentElem.document_id.OptForeignElem;
+		if ( catDocument == undefined )
+			continue;
+
+		if ( tools_web.check_access( catDocument, curUserID, curUser, Session ) != true )
+			continue;
+
+		arrChildDocuments = ArraySort( ArraySelectByKey( fldMenu.documents, fldDocumentElem.id, "parent_document_id" ), 'position', '+' );
+		if ( catDocument.is_link )
+		{
+			sImageUrl = "pics/link.gif";
+			sImageIcon = "icon-link";
+		}
+		else if ( ArrayOptFirstElem( arrChildDocuments ) != undefined )
+		{
+			sImageUrl = "pics/dir.gif";
+			sImageIcon = "icon-folder-o";
+		}
+		else
+		{
+			sImageUrl = "pics/doc.gif";
+			sImageIcon = "icon-file-text-o";
+		}
+%>
+<StackPanel Orientation="Horizontal" Class="XAML-grid-list-item XAML-grid-list-item-small">
+	<Image Source="pics/1blank.gif" Class="XAML-indent-<%=iIdentParam%>"></Image>
+	<Link Class="<%=sImageIcon%>" Click="OPENURL=<%=XmlAttrEncode( tools_web.doc_link( catDocument ) )%>" />
+	<Link Click="OPENURL=<%=XmlAttrEncode( tools_web.doc_link( catDocument ) )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catDocument.name, curLng.short_id )%>]]></Link>
+</StackPanel>
+<%
+		hier_level( arrChildDocuments, iIdentParam + 1 );
+	}
+}
+
+hier_level( ArraySort( ArraySelectByKey( fldMenu.documents, "", "parent_document_id" ), 'position', '+' ), 0 );
+%>
+</StackPanel>
+</SPXMLScreen>

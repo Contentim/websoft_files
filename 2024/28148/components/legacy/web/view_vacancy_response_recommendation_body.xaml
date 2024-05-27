@@ -1,0 +1,92 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+
+var sConstRecruter = tools_web.get_web_const( 'rekruter', curLngWeb )
+
+// const_end
+/*alert('--> CONTEXT ')
+for (elem in CONTEXT)
+{
+	alert(elem+"="+CONTEXT.GetProperty(elem))
+}
+alert(' CONTEXT <--')*/
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+bShowTitle=tools_web.is_true(tools_web.get_web_param( curParams, "vacancy_response_recommendation.bShowTitle", "true", true ))
+bShowChangeStatusButton=tools_web.is_true(tools_web.get_web_param( curParams, "vacancy_response_recommendation.bShowChangeStatusButton", "true", true ))
+bAllExpanded = tools_web.is_true(tools_web.get_web_param(curParams, "vacancy_response_recommendation.all_expanded", "0", true));
+arrAvailableStatuses = String(tools_web.get_web_param(curParams, "vacancy_response_recommendation.statuses", "", true)).split(";");
+
+strDefaultStatus = tools_web.get_web_param(curParams, "vacancy_response_recommendation.statuses.default", null, true);
+
+arrStatuses = []
+arrStatuses.push({"id":"0","name":tools_web.get_web_const("f0j4vfoxrb", curLngWeb)})
+for (fldStatus in curLngCommon.vacancy_response_status_types)
+{
+	arrStatuses.push({"id":fldStatus.id,"name":fldStatus.name})
+}
+
+arrStatuses = ArrayIntersect(arrStatuses, arrAvailableStatuses, "This.id");
+		
+%>
+<Collection Name="SearchResponseRecommendationCollection" Source="SearchResponseRecommendationCollection">
+	<Param Name="strStatus" Value="{Status}"/>
+	<Param Name="iVacancyID" Value="<%=curObjectID%>"/>
+</Collection>
+<Dialog Name="SetObjectStatusDialog" Source="dlg_set_object_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "uhxrmfu4y8", curLngWeb ) )%>" Width="25%" Close="SET=ChangeStatus/sSelectedObjects,{ResponseRecommendationGrid};SET=ChangeStatus/strStatus,{status};ACTION=ChangeStatus;">
+	<Param Name="common_status_collection_name" Value="vacancy_response_status_types"/>
+</Dialog>	
+<Action Name="ChangeStatus" Source="VacancyResponseRecommendationChangeStatus" Success="ALERT={!messageText};UPDATE=ResponseRecommendationGrid;" Failure="ALERT={!messageText}">
+	<Param Name="strStatus" Value=""/>
+	<Param Name="sSelectedObjects" Value=""/>
+</Action>
+<%
+if (bShowTitle)
+{
+%>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<%
+}
+%>
+
+	<Grid Class="XAML-grid-info-table">	
+		<GridColumns>
+			<GridColumn Width="200" Align="right"/>
+			<GridColumn Align="left"/>
+		</GridColumns>
+		<GridRow Class="XAML-grid-row">
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>: </Label>		
+			<ComboBox Name="Status" Width="300">
+<%
+					for (oStatus in arrStatuses)
+					{
+%>
+						<ComboBoxItem Value="<%=oStatus.id%>" Selected="<%=(oStatus.id == strDefaultStatus)%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( oStatus.name, curLng.short_id ))%></ComboBoxItem>
+<%
+					}
+%>
+			</ComboBox>	
+		</GridRow>
+	</Grid>
+<Toolbar Class="XAML-toolbar">
+	<Button Click="UPDATE=ResponseRecommendationGrid" Class="XAML-button XAML-button-content-standalone"><%=tools_web.get_web_const( 'sf_submit', curLngWeb )%></Button>
+<%
+if (bShowChangeStatusButton&&curObject.collaborator_id.HasValue&&curObject.collaborator_id==curUserID)
+{
+%>
+	<Button Click="OPENDIALOG=SetObjectStatusDialog" Class="XAML-button XAML-button-refresh"><%=tools_web.get_web_const( 'izmenitstatus', curLngWeb )%></Button>
+<%
+}
+%>
+</Toolbar>
+<DataGrid Name="ResponseRecommendationGrid" Source="{SearchResponseRecommendationCollection}" Height="400" Selection="multiple" Width="100%" PageSize="25" Categorized="id:parent_id" Expanded="<%=bAllExpanded%>">
+	<DataGridColumn Value="id" Hidden="true" Ghost="0"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_type', curLngWeb )%>" Value="type" Width="200" Type="string" Sortable="true"/>/>
+ 	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_fio', curLngWeb )%>" Value="fullname" Width="200" Type="link" Click="OPENURL={person_link}" Sortable="true"/>
+ 	<DataGridColumn Title="<%=tools_web.get_web_const( 'vrb_age', curLngWeb )%>" Value="age" Width="11%" Type="string" Sortable="true"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'opytraboty', curLngWeb )%>" Value="experience_in_company" Width="50" Type="string" Sortable="true"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_status', curLngWeb )%>" Value="status" Width="100" Type="string" Sortable="true"/>
+	<DataGridColumn Title="<%=sConstRecruter%>" Value="recruiter_fullname" Width="200" Type="link" Click="OPENURL={recruiter_link}" Sortable="true"/>
+</DataGrid>
+</SPXMLScreen>

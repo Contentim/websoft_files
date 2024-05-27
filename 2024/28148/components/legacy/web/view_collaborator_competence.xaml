@@ -1,0 +1,169 @@
+﻿<SPXMLScreen>
+<%
+	var bShowCollCompChart = false;
+
+	var _currentUserID, _currentUser;
+
+	try //SUPPORTING COLLABORATOR CARD VS MY ACCOUNT CARD
+	{
+		if (curObject.Name != "collaborator")
+			throw "-";
+		_currentUser = curObject;
+		_currentUserID = curObjectID;
+	}
+	catch(_x_)
+	{
+		_currentUser = curUser;
+		_currentUserID = curUserID;
+	}
+
+%>
+	<Collection Name="CollCompListDataGrid" Source="COLLABORATOR_COMPETENCE_LIST">
+		<Param Name="person_id" Value="<%=_currentUserID%>"/>
+		<Param Name="profile_id" Value="{CollaboratorCompenence_CompetenceProfile}"/>
+		<Param Name="returndatatype" Value="datagrid"/>
+	</Collection>
+	<!--
+	# chart splash
+	<Collection Name="UniversalChartData" Source="UniversalBase64ChartData">
+		<Param Name="base64_data" Value=""/>
+	</Collection>
+	-->
+	<Collection Name="CollCompListChart" Source="COLLABORATOR_COMPETENCE_LIST">
+		<Param Name="person_id" Value="<%=_currentUserID%>"/>
+		<Param Name="profile_id" Value="{CollaboratorCompenence_CompetenceProfile}"/>
+		<Param Name="returndatatype" Value="chart"/>
+	</Collection>
+
+
+	<StackPanel Orientation="Vertical" Class="XAML-stack-filters-container XAML-stack-filters-container-small" Align="right">
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-filter" Adapt="1" Align="right">
+
+			<Label Class="XAML-label-filters-title"></Label>
+			<Label Class="XAML-label-divider"/>
+			<ComboBox Class="XAML-combo-view" Name="CollaboratorCompenence_CompetenceProfile" Width="100%" Change="UPDATE=CollaboratorCompetenceList,CollCompChart">
+				<ComboBoxItem Value="" Selected="true"><%=tools_web.get_web_const("ass_competence_profiles", curLngWeb)%> - <%=tools_web.get_web_const("f0j4vfoxrb", curLngWeb)%></ComboBoxItem>
+<%
+				for (catProfile in tools.get_user_comp_profiles(_currentUser))
+				{
+%>
+					<ComboBoxItem Value="<%=catProfile.PrimaryKey%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name(catProfile.name, curLng.short_id))%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+			<Label Class="XAML-label-divider"/>
+			<Button Class="XAML-button XAML-button-table XAML-button-view icon-table" Toggle="1" ToggleGroup="sCollaboratorCompetenceListViewTypeSelector" Pressed="<%=!bShowCollCompChart%>" Click="TOGGLE=CollaboratorCompetenceList,CollaboratorCompetenceGraph"></Button>
+			<Button Class="XAML-button XAML-button-list XAML-button-view icon-bar-chart" Toggle="1" ToggleGroup="sCollaboratorCompetenceListViewTypeSelector" Pressed="<%=bShowCollCompChart%>" Click="TOGGLE=CollaboratorCompetenceList,CollaboratorCompetenceGraph"></Button>
+		</StackPanel>
+	</StackPanel>
+
+
+	<DataGrid Name="CollaboratorCompetenceList" Source="{CollCompListDataGrid}" Width="100%" Hidden="<%=bShowCollCompChart%>"/>
+
+	<StackPanel Name="CollaboratorCompetenceGraph" Hidden="<%=!bShowCollCompChart%>" Orientation="Vertical" Class1="wtx-informer wtx-informer-3-5xauto wtx-informer-competences" Width="100%">
+		<!--
+			<Label Class1="wtx-informer-header"><%=tools_web.get_web_const( "ass_competences", curLngWeb )%></Label>
+		-->
+			<Chart Name="CollCompChart" Width="100%" Height="500" Source="{CollCompListChart}" DataChartID="caption" DataCategory="x" DataValue="y" Legend="s"/>
+	</StackPanel>
+
+
+
+<%
+if (false)
+{
+var teCollection = OpenDoc( UrlFromDocID( ArrayOptFirstElem( XQuery( "for $elem in remote_collections where $elem/code = 'COLLABORATOR_COMPETENCE_LIST' return $elem" ) ).PrimaryKey ) ).TopElem;
+teCollection.wvars.ObtainChildByKey( "person_id" ).value = _currentUserID;
+
+var oResult = teCollection.evaluate( "raw", Request );
+var arrResults = oResult.result;
+var arrAssessments = ArraySelect( oResult.columns, "StrBegins(This.data,'a')" );
+if ( ArrayOptFirstElem(arrAssessments ) != undefined && ArrayOptFirstElem( arrResults ) != undefined )
+{
+	var oSeries = {};
+	var oAssessments = {};
+	for( oElem in arrAssessments )
+	{
+		oAssessments[oElem.data] = { sId: oElem.data, sTitle: tools_web.get_cur_lng_name( oElem.title, curLng.short_id ) };
+	}
+	var sSeriesId;
+	for( oResult in arrResults )
+	{
+		sSeriesId = "c" + oResult.id;
+		oSeries[sSeriesId] = { sId: oResult.id, sTitle: oResult.name, oPoints: {} };
+		if(oResult.HasProperty("plan_v"))
+		{
+			oSeries[sSeriesId].nThreshold = oResult.plan_v;
+		}
+		for(sKey in oAssessments)
+		{
+			if(oResult.HasProperty(sKey))
+			{
+				oSeries[sSeriesId].oPoints[sKey] = { sId: sKey, bEmpty: false, nValue: oResult.GetProperty(sKey) };
+			}
+			else
+			{
+				oSeries[sSeriesId].oPoints[sKey] = { sId: sKey, bEmpty: true, nValue: "" };
+			}
+		}
+	}
+	var aColors = [ "#002699", "#730099", "#007399", "#990026", "#D6A100", "#009926", "#990073", "#997300", "#00ACE6", "#E600AC", "#ACE600"  ];
+	var	iColorLen = ArrayCount(aColors);
+
+%>
+		<StackPanel Name="CollaboratorCompetenceGraph1" Hidden="true" Orientation="Vertical" Class="wtx-informer wtx-informer-3-5xauto wtx-informer-competences">
+			<Label Class="wtx-informer-header"><%=tools_web.get_web_const( "ass_competences", curLngWeb )%></Label>
+			<StackPanel Orientation="Vertical" Class="wt-info-main">
+				<Graph Class="wtx-competences-graph" Name="Graph1" Aspect="0.5" DisplayPoints="true" DisplayTips="true" DisplayZero="true" AxisValueFontSize="11" DisplayLegend="true" LegendPosition="bottom">
+				<!--
+					// mandatory attributes
+					// Name - string, id of the XAML element
+					// optional attributes:
+					// Class - string, additional class to provide CSS overrides,
+					// Width - integer.
+					// Height - integer.
+					// Aspect - number. Desired Height/Width ratio
+					// DisplayPoints - bool, display graph points
+					// DisplayTips - bool, display point tips on mouseover
+					// AxisTitleFontSize - number, overrides CSS value
+					// AxisValueFontSize - number, overrides CSS value
+				-->
+					<Axis Dir="X" AxisPosition="both" DisplayAxis="true" DisplayGrid="true" DisplayName="true" AxisName="" DisplayValues="true">
+<%
+						for( sKey in oAssessments )
+						{
+%>
+							<Val Value="<%=oAssessments[sKey].sTitle%>"/>
+<%
+						}
+%>
+					</Axis>
+					<Axis Dir="Y" AxisPosition="both" DisplayAxis="true" DisplayGrid="true" DisplayName="true" DisplayValues="true" AxisName="<%=tools_web.get_web_const( "ela6vna8le", curLngWeb )%>" Min="0" Max="5" Steps="5"/>
+<%
+					var iCnt = 0;
+					for( sKey in oSeries )
+					{
+%>
+						<Series Color="<%=aColors[iCnt]%>" Title="<%=oSeries[sKey].sTitle%>">
+<%
+						for( sAssId in oSeries[sKey].oPoints )
+						{
+%>
+							<Val Value="<%=oSeries[sKey].oPoints[sAssId].nValue%>"/>
+<%
+						}
+%>
+						</Series>
+<%
+						iCnt = (iCnt + 1) % iColorLen;
+					}
+%>
+				</Graph>
+			</StackPanel>
+		</StackPanel>
+<%
+}
+}
+%>
+</SPXMLScreen>

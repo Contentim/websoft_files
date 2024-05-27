@@ -1,0 +1,589 @@
+﻿<%
+sID_curFilter = curFilter.GetOptProperty( 'id', '' );
+sTitle_curFilter = curFilter.GetOptProperty( 'title', '' );
+sAction_curFilter = curFilter.GetOptProperty( 'action', 'REFRESH' );
+sClearAction_curFilter = curFilter.GetOptProperty( 'clear_action', sAction_curFilter );
+
+arrButtons_curFilter = curFilter.GetOptProperty( 'buttons', [] );
+bDispButtons_curFilter = ArrayCount( arrButtons_curFilter ) != 0;
+
+arrFilters_curFilter = curFilter.GetOptProperty( 'filters', [] );
+bDispFilters_curFilter = ArrayCount( arrFilters_curFilter ) != 0;
+
+arrRowFilters_curFilter = curFilter.GetOptProperty( 'row_filters', [] );
+bDispRowFilters_curFilter = ArrayCount( arrRowFilters_curFilter ) != 0;
+
+arrAddTemplates_curFilter = curFilter.GetOptProperty( 'add_templates', [] );
+bDispAddTemplates_curFilter = ArrayCount( arrAddTemplates_curFilter ) != 0;
+
+arrSelectors_curFilter = curFilter.GetOptProperty( 'selectors', '' );
+sSelectorsField_curFilter = curFilter.GetOptProperty( 'selectors_field', 'FilterSelectors' + sID_curFilter );
+sSelectorsAction_curFilter = curFilter.GetOptProperty( 'selectors_action', 'REFRESH' );
+sSelectorsValue_curFilter = curFilter.GetOptProperty( 'selectors_value', CONTEXT.GetOptProperty( sSelectorsField_curFilter, 'list' ) );
+
+if ( ! IsArray( arrSelectors_curFilter ) )
+{
+	if ( arrSelectors_curFilter == '' )
+	{
+		arrSelectors_curFilter = [];
+	}
+	else
+	{
+		arrTemp_curFilter = [];
+		for ( sSelectorElem_curFilter in arrSelectors_curFilter.split( ';' ) )
+		{
+			switch ( sSelectorElem_curFilter )
+			{
+				case 'grid':
+				case 'data_grid':
+					arrTemp_curFilter.push( { "class": "XAML-button-view icon-table", "title": tools_web.get_web_const( 'vcrb_table', curLngWeb ), "pressed": ( sSelectorsValue_curFilter == sSelectorElem_curFilter ), "click": ( "SET=" + sSelectorsField_curFilter + "," + sSelectorElem_curFilter + ";" + sSelectorsAction_curFilter ) } );
+					break;
+				case 'list':
+					arrTemp_curFilter.push( { "class": "XAML-button-view icon-align-justify", "title": tools_web.get_web_const( 'icpyfe9yb6', curLngWeb ), "pressed": ( sSelectorsValue_curFilter == 'list' ), "click": ( "SET=" + sSelectorsField_curFilter + ",list;" + sSelectorsAction_curFilter ) } );
+					break;
+				case 'list_adv':
+					arrTemp_curFilter.push( { "class": "XAML-button-view icon-list", "title": 'Список с картинками', "pressed": ( sSelectorsValue_curFilter == 'list_adv' ), "click": ( "SET=" + sSelectorsField_curFilter + ",list_adv;" + sSelectorsAction_curFilter ) } );
+					break;
+				case 'tile':
+					arrTemp_curFilter.push( { "class": "XAML-button-view icon-th", "title": tools_web.get_web_const( 'predprosmotr', curLngWeb ), "pressed": ( sSelectorsValue_curFilter == 'tile' ), "click": ( "SET=" + sSelectorsField_curFilter + ",tile;" + sSelectorsAction_curFilter ) } );
+					break;
+				case 'structure':
+					arrTemp_curFilter.push( { "class": "XAML-button-view icon-tree2", "title": tools_web.get_web_const( 's77u0wo1tj', curLngWeb ), "pressed": ( sSelectorsValue_curFilter == 'structure' ), "click": ( "SET=" + sSelectorsField_curFilter + ",structure;" + sSelectorsAction_curFilter ) } );
+					break;
+			}
+		}
+		arrSelectors_curFilter = arrTemp_curFilter;
+	}
+}
+bDispSelectors_curFilter = ArrayCount( arrSelectors_curFilter ) != 0;
+
+bSearchShow_curFilter = ( curDevice.disp_type == "" );
+bDispSearch_curFilter = curFilter.GetOptProperty( 'disp_search', true );
+sSearchField_curFilter = curFilter.GetOptProperty( 'search_field', 'FilterSearchEdit' + sID_curFilter );
+sSearchValue_curFilter = CONTEXT.GetOptProperty( sSearchField_curFilter, curFilter.GetOptProperty( 'search_value', '' ) );
+sSearchAction_curFilter = curFilter.GetOptProperty( 'search_action', sAction_curFilter );
+sSearchWidth_curFilter = curFilter.GetOptProperty( 'search_width', '' );
+if ( curDevice.disp_type == "" )
+{
+	if ( sSearchWidth_curFilter == '' )
+		sSearchWidth_curFilter = '150';
+}
+else
+{
+	sSearchWidth_curFilter = '';
+}
+
+if ( bDispSelectors_curFilter )
+{
+%>
+<Edit Name="<%=sSelectorsField_curFilter%>" Hidden="1"><%=HtmlEncode(sSelectorsValue_curFilter)%></Edit>
+<%
+}
+
+sSchema_curFilter = curFilter.GetOptProperty( "schema", "" );
+%>
+<StackPanel Class="XAML-stack-filters-container<%=( sSchema_curFilter == "small" ? " XAML-stack-filters-container-small" : "" )%>" Orientation="Vertical" Adapt="1">
+	<Grid Width="100%" Class="XAML-grid-filter">
+		<GridColumns>
+			<GridColumn Width="100%"/>
+<%
+	if ( curDevice.disp_type == "" )
+	{
+%>
+			<GridColumn/>
+<%
+	}
+%>
+		</GridColumns>
+
+		<GridRow>
+<%
+	if ( curDevice.disp_type == "" )
+	{
+%>
+			<Label Class="XAML-label-filters-title"><![CDATA[<%=sTitle_curFilter%>]]></Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+	}
+	else
+	{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+		if ( sTitle_curFilter != "" )
+		{
+%>
+			<Label Class="XAML-label-filters-title"><![CDATA[<%=sTitle_curFilter%>]]></Label>
+<%
+		}
+	}
+
+
+if ( bDispButtons_curFilter )
+{
+%>
+			<StackPanel Name="FilterBottonsPanel<%=sID_curFilter%>" Orientation="Horizontal" Class="XAML-panel-search" Adapt="true">
+<%
+for ( oButtonElem_curFilter in arrButtons_curFilter )
+{
+	sTip_curFilter = oButtonElem_curFilter.GetOptProperty( 'tip', '' );
+	sTip_curFilter = sTip_curFilter == '' ? '' : '<HTMLTip><![CDATA[' + sTip_curFilter + ']]></HTMLTip>';
+
+	bButtonToggle_curFilter = tools_web.is_true( oButtonElem_curFilter.GetOptProperty( 'toggle' ) );
+	if ( bButtonToggle_curFilter )
+	{
+%>
+				<Edit Name="<%=oButtonElem_curFilter.name%>" Hidden="true"><%=oButtonElem_curFilter.GetOptProperty( 'pressed', '' )%></Edit>
+<%
+	}
+	if ( curDevice.disp_type == "" )
+	{
+%>
+				<Label Class="XAML-label-divider"/>
+<%
+	}
+%>
+				<Button Class="XAML-button XAML-button-view" Toggle="<%=bButtonToggle_curFilter%>" Click="<%=XmlAttrEncode( bButtonToggle_curFilter ? 'SET=' + oButtonElem_curFilter.name + ',true' : oButtonElem_curFilter.click )%>" Release="<%=XmlAttrEncode( bButtonToggle_curFilter ? 'SET=' + oButtonElem_curFilter.name + ',false' : '' )%>" Pressed="<%=oButtonElem_curFilter.GetOptProperty( 'pressed', '' )%>"><%=sTip_curFilter%><![CDATA[<%=oButtonElem_curFilter.title%>]]></Button>
+<%
+}
+%>
+			</StackPanel>
+<%
+}
+
+for ( oFilterElem_curFilter in arrFilters_curFilter )
+{
+	if ( curDevice.disp_type == "" )
+	{
+%>
+				<Label Class="XAML-label-divider"/>
+<%
+	}
+	oFilterTitle_curFilter = oFilterElem_curFilter.GetOptProperty( 'title', '' );
+	if ( oFilterTitle_curFilter != '' )
+	{
+%>
+
+				<Label Class="XAML-grid-label-name" NoWrap="true"><![CDATA[<%=oFilterTitle_curFilter%>:]]></Label>
+<%
+	}
+
+	sFilterChange_curFilter = oFilterElem_curFilter.GetOptProperty( 'change', sAction_curFilter );
+	sFilterName_curFilter = oFilterElem_curFilter.GetOptProperty( 'name', '' );
+	sFilterDefault_curFilter = CONTEXT.GetOptProperty( sFilterName_curFilter, oFilterElem_curFilter.GetOptProperty( 'default', '' ) );
+	switch ( oFilterElem_curFilter.type )
+	{
+		case 'number':
+%>
+				<Edit Name="<%=sFilterName_curFilter%>" KeyPress="#!1-47:STOP;#!58-10000:STOP;#!S1-10000:STOP" Width="<%=oFilterElem_curFilter.GetOptProperty( 'width', '200' )%>"><![CDATA[<%=HtmlEncode(sFilterDefault_curFilter)%>]]></Edit>
+<%
+			break;
+
+		case 'combo':
+			if ( sFilterDefault_curFilter == '' )
+				sFilterDefault_curFilter = ArrayFirstElem( oFilterElem_curFilter.items ).value;
+
+				sTip_curFilter = oFilterElem_curFilter.GetOptProperty( 'tip', '' );
+				sTip_curFilter = sTip_curFilter == '' ? '' : '<HTMLTip><![CDATA[' + sTip_curFilter + ']]></HTMLTip>';
+%>
+				<ComboBox Name="<%=sFilterName_curFilter%>" Width="<%=oFilterElem_curFilter.GetOptProperty( 'width', '200' )%>" SelectedItem="<%=sFilterDefault_curFilter%>" Change="<%=sFilterChange_curFilter%>" Class="XAML-combo-view"><%=sTip_curFilter%>
+<%
+			for ( oItemElem_curFilter in oFilterElem_curFilter.items )
+			{
+%>
+					<ComboBoxItem Value="<%=oItemElem_curFilter.value%>" Change="<%=oItemElem_curFilter.GetOptProperty( 'change', sAction_curFilter )%>"><![CDATA[<%=oItemElem_curFilter.title%>]]></ComboBoxItem>
+<%
+			}
+%>
+				</ComboBox>
+<%
+			break;
+
+		case 'button_combo':
+%>
+				<Edit Name="<%=sFilterName_curFilter%>" Hidden="true"></Edit>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+			sToggleGroup = tools.random_string( 4 );
+			for ( oItemElem_curFilter in oFilterElem_curFilter.items )
+			{
+%>
+					<Button Class="XAML-button XAML-button-view" Toggle="true" ToggleGroup="<%=sToggleGroup%>" Pressed="<%=( sFilterDefault_curFilter == oItemElem_curFilter.value )%>" Click="SET=<%=sFilterName_curFilter%>,<%=oItemElem_curFilter.value%>;<%=oItemElem_curFilter.GetOptProperty( 'change', sAction_curFilter )%>"><![CDATA[<%=oItemElem_curFilter.title%>]]></Button>
+<%
+			}
+%>
+				</StackPanel>
+<%
+			break;
+
+		case 'date':
+%>
+				<DatePicker Name="<%=sFilterName_curFilter%>" Change="<%=sFilterChange_curFilter%>"><![CDATA[<%=HtmlEncode(sFilterDefault_curFilter)%>]]></DatePicker>
+				<Button Class="XAML-button-content XAML-button-filter-date" Click="<%=sFilterChange_curFilter%>"><%=tools_web.get_web_const( 'sf_submit', curLngWeb )%></Button>
+<%
+			break;
+
+		case 'foreign_elem':
+			curSelector = {
+				"id": sFilterName_curFilter,
+				"object_id": sFilterDefault_curFilter,
+				"object_id_item_name": sFilterName_curFilter,
+				"multi_select": false,
+				"catalog_name": oFilterElem_curFilter.GetOptProperty( "catalog_name" ),
+				"xquery_qual": oFilterElem_curFilter.GetOptProperty( "xquery_qual", "" ),
+				"width": "200",
+				"close_action": sFilterChange_curFilter,
+				"can_be_empty": true,
+				"check_access": oFilterElem_curFilter.GetOptProperty( "check_access", "false" ),
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+			break;
+
+		case 'slider':
+%>
+			<Slider Name="<%=sFilterName_curFilter%>" Ranged="false" Width="150" Min="<%=oFilterElem_curFilter.GetOptProperty( "min", 0 )%>" Max="<%=oFilterElem_curFilter.GetOptProperty( "max", 100 )%>" Value="<%=sFilterDefault_curFilter%>" Change="<%=sFilterChange_curFilter%>"/>
+<%
+			break;
+	}
+}
+
+if ( bDispRowFilters_curFilter )
+{
+	if ( curDevice.disp_type == "" )
+	{
+%>
+				<Label Class="XAML-label-divider"/>
+<%
+	}
+%>
+				<Button Class="XAML-button XAML-button-view" Toggle="1" Pressed="false" ToggleGroup="RowFiltersToggleGroup<%=sID_curFilter%>" Click="Toggle=RowFiltersPanel<%=sID_curFilter%>" Release="Toggle=RowFiltersPanel<%=sID_curFilter%>"><![CDATA[<%='Фильтры'%>]]></Button>
+
+<%
+}
+
+if ( bDispSelectors_curFilter )
+{
+	if ( curDevice.disp_type == "" )
+	{
+%>
+				<Label Class="XAML-label-divider"/>
+<%
+	}
+%>
+				<StackPanel Orientation="Horizontal">
+<%
+	for ( oSelectorElem_curFilter in arrSelectors_curFilter )
+	{
+%>
+					<Button Class="<%=oSelectorElem_curFilter.class%>" Toggle="1" ToggleGroup="FilterSelectorToggleGroup<%=sID_curFilter%>" Pressed="<%=oSelectorElem_curFilter.pressed%>" Click="<%=XmlAttrEncode( oSelectorElem_curFilter.click )%>"><HTMLTip><![CDATA[<%=oSelectorElem_curFilter.title%>]]></HTMLTip></Button>
+
+<%
+	}
+%>
+				</StackPanel>
+<%
+}
+
+if ( bDispSearch_curFilter )
+{
+	bDispSearchField_curFilter = curFilter.GetOptProperty( 'disp_search_field' );
+	if ( bDispSearchField_curFilter == undefined )
+	{
+		if ( bSearchShow_curFilter )
+			bSearchShow_curFilter = bDispButtons_curFilter || bDispFilters_curFilter || bDispRowFilters_curFilter || bDispSelectors_curFilter;
+	}
+	else
+	{
+		bSearchShow_curFilter = ! tools_web.is_true( bDispSearchField_curFilter );
+	}
+
+	if ( curDevice.disp_type == "" )
+	{
+%>
+				<Label Class="XAML-label-divider"/>
+<%
+	}
+%>
+				<StackPanel Orientation="Horizontal" Class="XAML-panel-search">
+					<StackPanel Name="FilterSearchPanel<%=sID_curFilter%>" Hidden="<%=( bSearchShow_curFilter && sSearchValue_curFilter == '' )%>" Orientation="Horizontal">
+						<Edit Class="XAML-input-text" Name="<%=sSearchField_curFilter%>" Change="<%=sSearchAction_curFilter%>" EmptyText="<%=tools_web.get_web_const( "vkpb_search", curLngWeb )%>" KeyPress="#13:<%=sSearchAction_curFilter%>" Width="<%=sSearchWidth_curFilter%>"><%=HtmlEncode( sSearchValue_curFilter )%></Edit>
+						<Button Class="XAML-button-view icon-arrow-right" Click="<%=sSearchAction_curFilter%>"><HTMLTip><![CDATA[<%=tools_web.get_web_const( 'sf_submit', curLngWeb )%>]]></HTMLTip></Button>
+					</StackPanel>
+<%
+	if ( bSearchShow_curFilter )
+	{
+%>
+					<Button Class="XAML-button-view icon-search" Click="TOGGLE=FilterSearchPanel<%=sID_curFilter%>,FilterBottonsPanel<%=sID_curFilter%>"><HTMLTip><![CDATA[<%=tools_web.get_web_const( 'vkpb_search', curLngWeb )%>]]></HTMLTip></Button>
+<%
+	}
+%>
+				</StackPanel>
+<%
+}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+<%
+if ( bDispAddTemplates_curFilter )
+{
+	for ( oAddTemplateElem in arrAddTemplates_curFilter )
+	{
+%>
+	<Grid Width="100%" CellClass="XAML-grid-filter-level-2-cell" Class="XAML-grid-filter-content" Adapt="true">
+		<GridColumns>
+			<GridColumn Width=""/>
+		</GridColumns>
+
+		<GridRow>
+			<StackPanel>
+<%
+		switch ( oAddTemplateElem.id )
+		{
+			case 'tag_cloud':
+			{
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_tag_cloud.xaml" ) );
+				break;
+			}
+		}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+<%
+	}
+}
+if ( bDispRowFilters_curFilter )
+{
+	bDispRowFiltersField_curFilter = curFilter.GetOptProperty( 'disp_row_filters_field' );
+	if ( bDispRowFiltersField_curFilter == undefined )
+		bDispRowFiltersField_curFilter = false;
+	else
+		bDispRowFiltersField_curFilter = tools_web.is_true( bDispRowFiltersField_curFilter );
+%>
+	<StackPanel Name="RowFiltersPanel<%=sID_curFilter%>" Hidden="<%=( ! bDispRowFiltersField_curFilter )%>" Orientation="Vertical">
+<%
+	sSetNames_curFilter = '';
+	for ( arrFiltersElem_curFilter in arrRowFilters_curFilter )
+	{
+		bRowFilterSelector_curFilter = ArrayFirstElem( arrFiltersElem_curFilter ).type == 'selector';
+		iRowFilterMaxColumn_curFilter = bRowFilterSelector_curFilter ? 1 : 3;
+%>
+		<Grid Width="100%" CellClass="XAML-grid-filter-level-2-cell" Class="XAML-grid-filter-content" Adapt="true">
+			<GridColumns>
+<%
+		if ( ! bRowFilterSelector_curFilter )
+		{
+%>
+				<GridColumn Width="33%"/>
+				<GridColumn Width="33%"/>
+<%
+		}
+%>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+<%
+		for ( i_curFilter = 0; i_curFilter < iRowFilterMaxColumn_curFilter; i_curFilter++ )
+		{
+			if ( i_curFilter < ArrayCount( arrFiltersElem_curFilter ) )
+			{
+				oFilterElem_curFilter = arrFiltersElem_curFilter[ i_curFilter ];
+				sFilterDefault_curFilter = oFilterElem_curFilter.GetOptProperty( 'value', '' );
+				if ( StrEnds( oFilterElem_curFilter.type, "_range" ) )
+					sSetNames_curFilter += 'SET=' + oFilterElem_curFilter.name + 'From,;SET=' + oFilterElem_curFilter.name + 'To,;';
+				else
+					sSetNames_curFilter += 'SET=' + oFilterElem_curFilter.name + ',' + sFilterDefault_curFilter + ';';
+
+				sFilterTitle_curFilter = oFilterElem_curFilter.GetOptProperty( "title", "" );
+				if ( sFilterTitle_curFilter != "" )
+					sFilterTitle_curFilter += ":";
+%>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<Label Class="XAML-label-filter-label"><![CDATA[<%=sFilterTitle_curFilter%>]]></Label>
+<%
+				sFilterCONTEXT_curFilter = CONTEXT.GetOptProperty( oFilterElem_curFilter.name, sFilterDefault_curFilter );
+				switch ( oFilterElem_curFilter.type )
+				{
+					case 'string':
+%>
+					<Edit Name="<%=oFilterElem_curFilter.name%>" Width="100%"><![CDATA[<%=HtmlEncode(sFilterCONTEXT_curFilter)%>]]></Edit>
+<%
+						break;
+
+					case 'number':
+%>
+					<Edit Name="<%=oFilterElem_curFilter.name%>" KeyPress="#!1-47:STOP;#!58-10000:STOP;#!S1-10000:STOP" Width="100%"><![CDATA[<%=OptReal(sFilterCONTEXT_curFilter,null)%>]]></Edit>
+<%
+						break;
+
+					case 'number_range':
+%>
+					<Grid Width="100%" Class="XAML-grid-container" Adapt="true">
+						<GridColumns>
+							<GridColumn Width="50%"/>
+							<GridColumn/>
+							<GridColumn Width="50%"/>
+						</GridColumns>
+						<GridRow>
+							<Edit Name="<%=oFilterElem_curFilter.name%>From" KeyPress="#!1-47:STOP;#!58-10000:STOP;#!S1-10000:STOP"><![CDATA[<%=HtmlEncode(CONTEXT.GetOptProperty( ( oFilterElem_curFilter.name + 'From' ), '' ))%>]]></Edit>
+							<Label>—</Label>
+							<Edit Name="<%=oFilterElem_curFilter.name%>To" KeyPress="#!1-47:STOP;#!58-10000:STOP;#!S1-10000:STOP"><![CDATA[<%=HtmlEncode(CONTEXT.GetOptProperty( ( oFilterElem_curFilter.name + 'To' ), '' ))%>]]></Edit>
+						</GridRow>
+					</Grid>
+
+<%
+						break;
+
+					case 'date':
+%>
+					<DatePicker Name="<%=oFilterElem_curFilter.name%>" Width="100%"><![CDATA[<%=HtmlEncode(sFilterCONTEXT_curFilter)%>]]></DatePicker>
+<%
+						break;
+
+					case 'selector':
+%>
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+						for ( oButtonSelectorElem_curFilter in oFilterElem_curFilter.items )
+						{
+%>
+						<CheckBox Name="<%=oButtonSelectorElem_curFilter.name%>" NoWrap="true" Checked="<%=oButtonSelectorElem_curFilter.pressed%>"><![CDATA[<%=oButtonSelectorElem_curFilter.title%>]]></CheckBox>
+<%
+						}
+%>
+					</StackPanel>
+<%
+						break;
+
+					case 'button_selector':
+%>
+					<StackPanel Orientation="Wrap" Class="XAML-stack-container" Adapt="true">
+<%
+						for ( oItemElem_curFilter in oFilterElem_curFilter.items )
+						{
+%>
+						<Button Name="<%=oItemElem_curFilter.name%>" Toggle="true" Pressed="<%=oItemElem_curFilter.pressed%>"><![CDATA[<%=oItemElem_curFilter.title%>]]></Button>
+<%
+						}
+%>
+					</StackPanel>
+<%
+						break;
+
+					case 'button_combo':
+%>
+					<Edit Name="<%=oFilterElem_curFilter.name%>" Hidden="true"></Edit>
+					<StackPanel Orientation="Wrap" Class="XAML-stack-container" Adapt="true">
+<%
+						sToggleGroup = tools.random_string( 4 );
+						for ( oItemElem_curFilter in oFilterElem_curFilter.items )
+						{
+%>
+						<Button Toggle="true" ToggleGroup="<%=sToggleGroup%>" Pressed="<%=( sFilterCONTEXT_curFilter == oItemElem_curFilter.value )%>" Click="SET=<%=oFilterElem_curFilter.name%>,<%=oItemElem_curFilter.value%>"><![CDATA[<%=oItemElem_curFilter.title%>]]></Button>
+<%
+						}
+%>
+					</StackPanel>
+<%
+						break;
+
+					case 'combo':
+						if ( sFilterCONTEXT_curFilter == '' )
+							sFilterCONTEXT_curFilter = ArrayFirstElem( oFilterElem_curFilter.items ).value;
+
+							sTip_curFilter = oFilterElem_curFilter.GetOptProperty( 'tip', '' );
+							sTip_curFilter = sTip_curFilter == '' ? '' : '<HTMLTip><![CDATA[' + sTip_curFilter + ']]></HTMLTip>';
+%>
+					<ComboBox Name="<%=oFilterElem_curFilter.name%>" Width="100%" SelectedItem="<%=XmlAttrEncode( sFilterCONTEXT_curFilter )%>" Change="<%=oFilterElem_curFilter.GetOptProperty( 'change', '' )%>"><%=sTip_curFilter%>
+<%
+							for ( oItemElem_curFilter in oFilterElem_curFilter.items )
+							{
+%>
+						<ComboBoxItem Value="<%=oItemElem_curFilter.value%>" Change="<%=oItemElem_curFilter.GetOptProperty( 'change', '' )%>" Selected="<%=( sFilterCONTEXT_curFilter == oItemElem_curFilter.value )%>"><![CDATA[<%=oItemElem_curFilter.title%>]]></ComboBoxItem>
+<%
+							}
+%>
+					</ComboBox>
+<%
+						break;
+
+					case 'foreign_elem':
+						sObjectName_curFilter = "";
+						sFilterCONTEXT_curFilter = OptInt( sFilterCONTEXT_curFilter, null );
+						if ( sFilterCONTEXT_curFilter != null )
+						{
+							try
+							{
+								teObject_curFilter = OpenDoc( UrlFromDocID( sFilterCONTEXT_curFilter ) ).TopElem;
+								sObjectName_curFilter = tools_web.get_cur_lng_name( tools.get_disp_name_value( teObject_curFilter ), curLng.short_id );
+							}
+							catch ( err )
+							{
+								sObjectName_curFilter = tools_web.get_web_const( 'c_deleted', curLngWeb );
+							}
+						}
+
+						sSetNames_curFilter += 'SET=ObjectNameEdit' + oFilterElem_curFilter.name + ',' + sObjectName_curFilter + ';';
+						curSelector = {
+							"id": oFilterElem_curFilter.name,
+							"object_id": sFilterCONTEXT_curFilter,
+							"object_name": sObjectName_curFilter,
+							"object_id_item_name": oFilterElem_curFilter.name,
+							"multi_select": false,
+							"catalog_name": oFilterElem_curFilter.GetOptProperty( "catalog_name" ),
+							"xquery_qual": oFilterElem_curFilter.GetOptProperty( "xquery_qual", "" ),
+							"width": "100%",
+							"can_be_empty": true,
+							"check_access": oFilterElem_curFilter.GetOptProperty( "check_access", "false" ),
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						break;
+
+					case 'checkbox':
+%>
+						<CheckBox Name="<%=oFilterElem_curFilter.name%>" NoWrap="true" Checked="<%=tools_web.is_true( sFilterCONTEXT_curFilter )%>"><![CDATA[<%=oFilterElem_curFilter.GetOptProperty( 'title_value', '' )%>]]></CheckBox>
+<%
+						break;
+
+					case 'slider':
+%>
+						<Slider Name="<%=oFilterElem_curFilter.name%>" Ranged="false" Width__="200" Min="<%=oFilterElem_curFilter.GetOptProperty( "min", 0 )%>" Max="<%=oFilterElem_curFilter.GetOptProperty( "max", 100 )%>" Value="<%=OptInt(sFilterCONTEXT_curFilter,null)%>"/>
+<%
+						break;
+				}
+%>
+				</StackPanel>
+<%
+			}
+			else
+			{
+%>
+				<Label/>
+<%
+			}
+		}
+%>
+			</GridRow>
+		</Grid>
+<%
+	}
+%>
+		<Grid Width="100%" Class="XAML-grid-dialog-buttons">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Label/>
+				<Button Class="XAML-button-important" Click="<%=sAction_curFilter%>"><![CDATA[<%='Применить'%>]]></Button>
+				<Button Toggle="1" ToggleGroup="RowFiltersToggleGroup<%=sID_curFilter%>" Click="<%=( sSetNames_curFilter + sClearAction_curFilter )%>;Toggle=RowFiltersPanel<%=sID_curFilter%>"><![CDATA[<%='Сброс'%>]]></Button>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+}
+%>
+</StackPanel>

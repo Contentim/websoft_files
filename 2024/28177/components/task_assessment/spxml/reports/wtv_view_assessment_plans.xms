@@ -1,0 +1,342 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="
+
+    fldThisReportikLocalSettings = local_settings.custom_datas.ObtainChildByKey( TopElem.report_name );
+">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+    <PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+        <PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+            <ITEM TYPE="standard_report_actions_panel" />
+        </PANEL>
+
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        
+        <!-- колонки -->
+        <LIST NAME="ViewGrid" HEIGHT="-32vpx" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" LOOP-EXPR="
+            try
+            {
+                arrColumnsInfo = StrReplace( List.GetCurCodeSortInfo(), '\'', '' ).split( ',' );
+                sColumnName = Trim( arrColumnsInfo[0] );
+                sSortDir = Trim( arrColumnsInfo[1] );
+
+                Ps.data_assessment_plans.Sort( sColumnName, sSortDir )
+                return Ps.data_assessment_plans;
+            }
+            catch( ex )
+            {
+                return Ps.data_assessment_plans;
+            }
+            " ON-SEL-CHANGE="
+                if ( TopElem.ChildExists( 'count_sel' ) )
+                {
+                    TopElem.set_sel_action( List );
+                }
+            ">
+
+            <ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen(UrlFromDocID(ListElem.id))" IMAGE-URL="ico/task.ico">
+                
+                <!-- «Сотрудник» - ФИО сотрудника; -->
+                <COL WIDTH="40zr" COL-TITLE-EXPR="ms_tools.get_const('c_coll')" TITLE-EXPR="ListElem.person_fullname" ORDER="person_fullname"/>
+
+                <!-- «Должность» - наименование должности сотрудника; -->
+                <COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('c_position')" TITLE-EXPR="ListElem.person_position_name" ORDER="person_position_name"/>
+
+                <!-- «Подразделение» - наименование подразделения, к которому относится должность; -->
+                <COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('c_subd')" TITLE-EXPR="ListElem.person_subdivision_name" ORDER="person_subdivision_name"/>
+
+                <!-- «Организация» - наименование организации, к которой относится подразделение; -->
+                <COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('c_org')" TITLE-EXPR="ListElem.person_org_name" ORDER="person_org_name"/>
+
+                <!-- «Задач» - общее число оцененных задач -->
+                <COL WIDTH="20zr" COL-TITLE-EXPR="'Задач'" TITLE-EXPR="ListElem.task_count" ORDER="task_count"/>
+
+                <!-- «Оценка» - итоговая оценка, взятая из плана оценки сотрудника -->
+                <COL WIDTH="20zr" COL-TITLE-EXPR="'Оценка'" TITLE-EXPR="ListElem.assessment_count" ORDER="assessment_count"/> 
+                
+            </ROW>
+
+            <MENU></MENU>
+        </LIST>
+        
+        <ITEM TYPE="status_panel"/>
+
+    </PANEL>
+
+    <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+    <PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+        <IF EXPR="! TopElem.is_minimized">
+            <PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+                <!-- поля фильтра -->
+
+                <!-- 
+                    Процедура оценки (обязательно) – единичный выбор из списка процедур оценки в статусе Завершена, привязанных к приложению websoft_task_assessment. Отчет считается только по выбранной процедуре;
+                -->
+                <ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'assessment_appraise'" SOURCE="Ps.assessment_appraise_id" requireExpr="true" xqueryQualExpr="
+                    curUser = tools.get_cur_user();
+                    var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+                    if( sApplicationID != '' )
+                    {
+                        task = new BackgroundTask;
+                        task.RunOnServer = true;
+                        task.ShowProgress = true;
+
+                        oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+                        if(oModelRoles.type != '')
+                        {
+                            switch( oModelRoles.type )
+                            {
+                                case 'admin':
+                                case 'manager':
+                                case 'expert':
+                                {
+                                    return '';
+                                }                                       
+                                case 'hr':
+                                {
+                                    arrGroupIDs = oModelRoles.group_ids.hr;
+                                    return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+                                }
+                                case 'observer':
+                                {
+                                    arrGroupIDs = oModelRoles.group_ids.observer;
+                                    return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+                                }
+                                case 'reject':
+                                {
+                                    return '$elem/id = 0';
+                                }
+                                default:
+                                {
+                                    return '$elem/id = 0';
+                                }
+                            }
+                        }
+                    } else {
+                        return '';
+                    }
+                "/>
+
+                <!-- 
+                    Сотрудник (необязательно) – единичный выбор из каталога сотрудников. Если выбрано, то берутся задачи только по данному сотруднику.
+                -->
+                <IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue && ! Ps.group_id.HasValue">
+                    <ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id" xqueryQualExpr="
+                        curUser = tools.get_cur_user();
+                        var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+                        if( sApplicationID != '' )
+                        {
+                            task = new BackgroundTask;
+                            task.RunOnServer = true;
+                            task.ShowProgress = true;
+
+                            oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+                            if(oModelRoles.type != '')
+                            {
+                                switch( oModelRoles.type )
+                                {
+                                    case 'admin':
+                                    case 'manager':
+                                    case 'expert': // методист
+                                    {
+                                        return '';
+                                    }
+                                    case 'hr': // менеджер обучения
+                                    {
+                                        arrSubordinateIDs = oModelRoles.subordinate_ids.hr;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+                                    }
+                                    case 'observer': // наблюдатель
+                                    {
+                                        arrSubordinateIDs = oModelRoles.subordinate_ids.observer;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+                                    }
+                                    case 'reject':
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                    default:
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                }
+                            }
+                        } else {
+                            return '';
+                        }
+                    "/>
+                </IF>
+
+                <!-- 
+                    Подразделение (необязательно) – единичный выбор из каталога подразделений. Если выбрано, то из процедуры отбираются только сотрудники из этого подразделения;
+
+                    Учитывать дочерние подразделения вниз по иерархии (необязательно) – флаг. Если включено, то к сотрудникам из указанного подразделения добавляются все нижележащие по структуре подразделения.
+                -->
+                <IF EXPR="! Ps.person_id.HasValue && ! Ps.group_id.HasValue">
+                    <ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+                        curUser = tools.get_cur_user();
+                        var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+                        if( sApplicationID != '' )
+                        {
+                            task = new BackgroundTask;
+                            task.RunOnServer = true;
+                            task.ShowProgress = true;
+
+                            oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+                            if(oModelRoles.type != '')
+                            {
+                                switch( oModelRoles.type )
+                                {
+                                    case 'admin':
+                                    case 'manager':
+                                    case 'expert':
+                                    {
+                                        return '';
+                                    }
+                                    case 'hr':
+                                    {
+                                        arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+                                    }
+                                    case 'observer':
+                                    {
+                                        arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+                                        return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+                                    }
+                                    case 'reject':
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                    default:
+                                    {
+                                        return '$elem/id = 0';
+                                    }
+                                }
+                            }
+                        } else {
+                            return '';
+                        }
+                    "/>
+                    <CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+                </IF>
+
+            </PANEL>
+        </IF>
+
+    </PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+    if ( Ps.assessment_appraise_id.HasValue )
+    {  
+        task = new BackgroundTask;
+        task.RunOnServer = true;
+        task.ShowProgress = true;
+
+        var curUserID = tools.cur_user_id;
+        var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+
+        oRes = tools.call_code_library_method( 'libTaskAssessment', 'getAssessmentPlansReport', [ Ps, curUserID, sApplicationID ] );
+
+//CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ oRes ]]);
+        
+        if ( oRes != null || oRes.error != 1 )
+        {
+            TopElem.count_arr = ArrayCount( oRes.data_assessment_plans );
+
+            iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+            Ps.data_assessment_plans.Clear();
+            for ( oAssessmentPlan in oRes.data_assessment_plans )
+            {
+                oItem = Ps.data_assessment_plans.AddChild();
+                oItem.id = oAssessmentPlan.id;
+
+                oItem.person_fullname = oAssessmentPlan.person_fullname;
+                oItem.person_position_name = oAssessmentPlan.person_position_name;
+                oItem.person_subdivision_name = oAssessmentPlan.person_subdivision_name;
+                oItem.person_org_name = oAssessmentPlan.person_org_name;
+
+                oItem.task_count = oAssessmentPlan.task_count;
+                oItem.assessment_count = oAssessmentPlan.assessment_count;
+            }
+
+            if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+            {
+                if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+                {
+                    arrColumns = [
+                        { 'name': 'person_fullname', 'title': ms_tools.get_const('c_coll') },
+                        { 'name': 'person_position_name', 'title': ms_tools.get_const('c_position') },
+                        { 'name': 'person_subdivision_name', 'title': ms_tools.get_const('c_subd') },
+                        { 'name': 'person_org_name', 'title': ms_tools.get_const('c_org') },
+                        { 'name': 'task_count', 'title': 'Задач' },
+                        { 'name': 'assessment_count', 'title': 'assessment_count' }
+                    ];
+
+                    _str = EvalCodePageUrl( 'x-local://components/task_assessment/spxml/templates/assessment_plans_report.html' );
+
+                    sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), oRes.data_assessment_plans ] );
+
+                    if ( ! System.IsWebClient )
+                    {
+                        sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+                        CopyUrl( sReportUrl, sReportFilePath );
+                        sReportFilePath = UrlToFilePath( sReportUrl );
+                    }
+
+                    ShellExecute( 'open', sReportFilePath );
+
+                }
+            }
+
+        }
+    } else {
+        Screen.MsgBox( 'Не выбрана процедура оценки', ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+        Cancel();
+    }
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+    arrColumns = [
+        { 'name': 'person_fullname', 'title': ms_tools.get_const('c_coll') },
+        { 'name': 'person_position_name', 'title': ms_tools.get_const('c_position') },
+        { 'name': 'person_subdivision_name', 'title': ms_tools.get_const('c_subd') },
+        { 'name': 'person_org_name', 'title': ms_tools.get_const('c_org') },
+        { 'name': 'task_count', 'title': 'Задач' },
+        { 'name': 'assessment_count', 'title': 'assessment_count' }
+    ];
+
+    task = new BackgroundTask;
+    task.RunOnServer = true;
+    task.ShowProgress = true;
+
+    _str = EvalCodePageUrl( 'x-local://components/task_assessment/spxml/templates/assessment_plans_report.html' );
+
+    sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), Ps.data_assessment_plans ] );
+
+    if ( ! System.IsWebClient )
+    {
+        sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+        CopyUrl( sReportUrl, sReportFilePath );
+        sReportFilePath = UrlToFilePath( sReportUrl );
+    }
+
+    ShellExecute( 'open', sReportFilePath );
+    
+"/>
+
+</SPXML-SCREEN>

@@ -1,0 +1,590 @@
+﻿<SPXMLScreen>
+<%
+bContinue = true;
+bPanel_files = false;
+try
+{
+	curFiles;
+}
+catch ( e )
+{
+	curFiles = ({});
+}
+curFiles_sSearch = curFiles.GetOptProperty( 'search', '' );
+curFiles_bDispSize = tools_web.is_true( curFiles.GetOptProperty( 'disp_size', ( curDevice.disp_type == "" ) ) );
+curFiles_bDispDlg = tools_web.is_true( curFiles.GetOptProperty( 'disp_dlg', ( curDevice.disp_type == "" ) ) );
+
+currentObjectID=curObjectID
+currentObject=curObject
+
+var sObjectName=''
+
+
+try
+{
+	currentObjectID=dummyObjectID
+	currentObject=dummyObject
+}
+catch ( e )
+{
+
+}
+
+try
+{
+	sID_curFiles
+}
+catch ( e )
+{
+	sID_curFiles=""
+}
+
+
+try
+{
+	sFilePath
+}
+catch ( e )
+{
+	sFilePath=""
+}
+
+try
+{
+	sFileObjectSubArrayID
+}
+catch ( e )
+{
+	sFileObjectSubArrayID=""
+}
+
+
+try
+{
+	sObjectName=currentObject.Name
+}
+catch(ex)
+{
+}
+
+try
+{
+	bStaticCollection = bStaticCollection == true;
+}
+catch ( e )
+{
+	bStaticCollection = true;
+}
+
+try
+{
+	sCloseAction;
+}
+catch ( e )
+{
+	sCloseAction = bStaticCollection? "REFRESH" : "UPDATE=FileListDataGrid"+sID_curFiles;
+}
+
+fldFiles=undefined;
+if (sFilePath!='')
+{
+	try
+	{
+		fldFilesContainer =currentObject.EvalPath(sFilePath);
+		if (sFileObjectSubArrayID!="")
+		{
+			fldFilesContainer=fldFilesContainer.GetOptChildByKey(sFileObjectSubArrayID)
+			if (fldFilesContainer!=undefined)
+			{
+				fldFiles=fldFilesContainer.files
+			}
+		}
+		else
+		{
+			fldFiles=fldFilesContainer
+		}
+
+	}
+	catch(ex)
+	{
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'nepravilnyyput', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			//Cancel();
+			bContinue = false;
+	}
+}
+
+if ( bContinue )
+{
+
+if (fldFiles==undefined)
+{
+	try
+	{
+		fldFiles = curFilesDoc.files;
+	}
+	catch ( e )
+	{
+		try
+		{
+			fldFiles = currentObject.files;
+		}
+		catch ( e )
+		{
+			if ( currentObjectID == null || curMode == "doc_type" )
+				fldFiles = curDoc.files;
+		}
+	}
+}
+try
+{
+	dispDelete = dispDelete == true;
+}
+catch ( e )
+{
+	dispDelete = false;
+}
+
+try
+{
+	allowChangeFiles = allowChangeFiles == true;
+}
+catch ( e )
+{
+	allowChangeFiles = false;
+}
+
+try
+{
+	bHideAddAction = bHideAddAction == true;
+}
+catch ( e )
+{
+	bHideAddAction = false;
+}
+
+try
+{
+	bShowChangeVisibilityAction = bShowChangeVisibilityAction == true;
+}
+catch ( e )
+{
+	bShowChangeVisibilityAction = false;
+}
+
+
+
+if ( fldFiles!=undefined&&(fldFiles.ChildNum != 0 || allowChangeFiles))
+{
+%>
+<StackPanel Orientation="Vertical" Class="XAML-uni-content-block">
+<%
+	bPanel_files = true;
+	curFiles_bParamPreffix = curFiles.GetOptProperty( 'param_preffix', '' );
+
+	curFiles_sHeight = '';
+	if ( curFiles_bParamPreffix != '' )
+		curFiles_sHeight = tools_web.get_web_param( curParams, curFiles_bParamPreffix + '.height', '', true );
+	if ( curFiles_sHeight == '' )
+		curFiles_sHeight = tools_web.get_web_param( curParams, 'list_files.height', '280', true );
+
+	try
+	{
+		if ( sFilesListViewType == 'default' )
+			throw 'default';
+	}
+	catch ( err )
+	{
+		sFilesListViewType = CONTEXT.GetOptProperty( 'sFilesListViewType', curFiles.GetOptProperty( 'view_type', '' ) );
+		if ( curFiles_bParamPreffix != "" )
+			sFilesListViewType = tools_web.get_web_param( curParams, curFiles_bParamPreffix + '.view_type', '', true );
+		if ( sFilesListViewType == "" )
+			sFilesListViewType = tools_web.get_web_param( curParams, 'list_files.view_type', 'list', true );
+	}
+
+	bDispViewSelector = "";
+	if ( curFiles_bParamPreffix != "" )
+	{
+		bDispViewSelector = tools_web.get_web_param( curParams, curFiles_bParamPreffix + '.disp_view_selector', '', true );
+	}
+	if ( bDispViewSelector == "" )
+	{
+		bDispViewSelector = tools_web.is_true( curFiles.GetOptProperty( 'disp_view_selector' ) );
+	}
+	else
+	{
+		bDispViewSelector = tools_web.is_true( bDispViewSelector );
+	}
+
+	if(allowChangeFiles)
+	{
+%>
+	<Dialog Name="AddFileDialog<%=sID_curFiles%>" Source="dlg_add_file" Title="<%=tools_web.get_web_const( 'vdb_add_file', curLngWeb )%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "600"%>" Close="<%=(sCloseAction)%>">
+	  	<Param Name="iObjectId" Value="<%=currentObjectID%>"/>
+		<Param Name="strFilesPath" Value="<%=sFilePath%>"/>
+		<Param Name="strFileObjectSubArrayID" Value="<%=sFileObjectSubArrayID%>"/>
+	</Dialog>
+
+	<Dialog Name="FileVisibilityDialog<%=sID_curFiles%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "600"%>" Source="dlg_file_visibility" Title="<%=tools_web.get_web_const( 'u2tcjb03dd', curLngWeb )%>" Close="SET=SetFileVisibility<%=sID_curFiles%>/strVisibility,{CatalogListDataGridSelList};ACTION=SetFileVisibility<%=sID_curFiles%>">
+		<Param Name="sObjectName" Value="<%=sObjectName%>"/>
+		<Param Name="strVisibility" Value=""/>
+	</Dialog>
+
+
+	<Action Name="DeleteFiles<%=sID_curFiles%>" Source="file_delete" Success="<%=(bStaticCollection?"REFRESH":"UPDATE=FileListDataGrid"+sID_curFiles)%>">
+	  <Param Name="iObjectId" Value="<%=currentObjectID%>"/>
+	  <Param Name="sSelectedObjects" Value="{FileListDataGrid<%=sID_curFiles%>}"/>
+	  <Param Name="strFilesPath" Value="<%=sFilePath%>"/>
+	  <Param Name="strFileObjectSubArrayID" Value="<%=sFileObjectSubArrayID%>"/>
+	</Action>
+
+	<Action Name="SetFileVisibility<%=sID_curFiles%>" Source="set_file_visibility" Success="<%=(bStaticCollection?"REFRESH":"UPDATE=FileListDataGrid"+sID_curFiles)%>">
+	  <Param Name="iObjectId" Value="<%=currentObjectID%>"/>
+	  <Param Name="sSelectedObjects" Value="{FileListDataGrid<%=sID_curFiles%>}"/>
+	  <Param Name="strFilesPath" Value="<%=sFilePath%>"/>
+	  <Param Name="strFileObjectSubArrayID" Value="<%=sFileObjectSubArrayID%>"/>
+	  <Param Name="strVisibility" Value=""/>
+	</Action>
+<%
+	}
+	else
+	{
+		bStaticCollection = true;
+	}
+
+	arrObjects = [];
+	bDispStaticCollection = sFilesListViewType == 'list' || bStaticCollection;
+	if ( bDispStaticCollection )
+	{
+		if ( curFiles_sSearch != '' )
+		{
+			fldFiles = XQuery( "for $elem in resources where MatchSome( $elem/id, (" + ArrayMerge( fldFiles, "file_id", "," ) + ") ) and doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( curFiles_sSearch ) + " ) return $elem" );
+		}
+
+		for ( fldFileElem in fldFiles )
+		{
+			sVisibility = curFiles_sSearch == '' ? tools_web.CheckRelativeFileVisibility(fldFileElem,curUserID,currentObjectID,currentObject) : '';
+			if ( sVisibility == null )
+				continue;
+
+			sDispDlg = false;
+			sClass = "icon-paperclip";
+			sType = "";
+			sSize = "";
+			if ( curFiles_sSearch == '' )
+			{
+				curFiles_iFileID = fldFileElem.file_id.Value;
+				catFile = fldFileElem.file_id.OptForeignElem;
+			}
+			else
+			{
+				curFiles_iFileID = fldFileElem.id.Value;
+				catFile = fldFileElem;
+			}
+			if ( catFile == undefined )
+			{
+				sName = tools_web.get_web_const( "c_deleted", curLngWeb );
+				sDesc = "";
+				sUrl = "[DELETED]";
+			}
+			else
+			{
+				if ( global_settings.settings.check_access_on_lists && tools_web.check_access( curFiles_iFileID, curUserID, curUser, Session ) == false )
+					continue;
+
+				sSize = tools_web.str_file_size( catFile.size.Value );
+				sName = catFile.name.Value;
+				sDesc = catFile.comment.Value;
+				sType = catFile.type.ForeignElem.name;
+				if ( curFiles_bDispDlg )
+					sUrl = tools_web.get_object_source_url( 'resource', curFiles_iFileID, ({ 'type': 'library_material' }) );
+				else
+					sUrl = tools_web.get_object_source_url( 'resource', curFiles_iFileID, ({ 'Session': Session }) );
+
+				switch ( catFile.type )
+				{
+					case 'img':
+						sClass = "icon-file-image-o";
+						sDispDlg = true;
+						break;
+					case 'video':
+						sClass = "icon-file-video-o";
+						sDispDlg = true;
+						break;
+					case 'audio':
+						sClass = "icon-file-audio-o";
+						sDispDlg = true;
+						break;
+					case 'doc':
+					case 'pdf':
+						sClass = "icon-file-text-o";
+						break;
+				}
+			}
+
+			arrObjects.push( {
+				'id': curFiles_iFileID,
+				'name': sName,
+				'desc': sDesc,
+				'type': sType,
+				'size': sSize,
+				'class': sClass,
+				'url': sUrl,
+				'visibility':sVisibility,
+				'click': ( curFiles_bDispDlg && sDispDlg ? "SET=ViewMediaDialog/object_id," + curFiles_iFileID + ";OPENDIALOG=ViewMediaDialog;" : "OPENWINDOW=" + UrlEncode( sUrl ) )
+			} );
+		}
+	}
+	else
+	{
+%>
+<Collection Name="FileListCollection<%=sID_curFiles%>" Source="files_list_collection">
+	<Param Name="iObjectID" Value="<%=currentObjectID%>"/>
+	<Param Name="strFilesPath" Value="<%=sFilePath%>"/>
+	<Param Name="strFileObjectSubArrayID" Value="<%=sFileObjectSubArrayID%>"/>
+</Collection>
+<%
+	}
+
+
+	curFilter = {
+		'title': tools_web.get_web_const( "vdb_files", curLngWeb ),
+		'selectors': ( bDispViewSelector ? 'grid;list;tile' : '' ),
+		'selectors_field': 'sFilesListViewType',
+		'selectors_value': sFilesListViewType,
+		'disp_search': false
+	};
+	if ( allowChangeFiles )
+	{
+		curFilter.buttons = [];
+		if ( bHideAddAction != true )
+			curFilter.buttons.push( { "title": tools_web.get_web_const( 'vdb_add_file', curLngWeb ), "click": ( "OPENDIALOG=AddFileDialog" + sID_curFiles ) } );
+		if ( sFilesListViewType == 'data_grid' )
+			curFilter.buttons.push( { "title": tools_web.get_web_const( 'c_delete_file', curLngWeb ), "click": ( "ACTION=DeleteFiles" + sID_curFiles ) } );
+		if ( bShowChangeVisibilityAction )
+			curFilter.buttons.push( { "title": tools_web.get_web_const( 'u2tcjb03dd', curLngWeb ), "click": ( "SET=FileVisibilityDialog" + sID_curFiles + "/strVisibility,{FileListDataGrid" + sID_curFiles + ":/visibility};OPENDIALOG=FileVisibilityDialog" + sID_curFiles ) } );
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+
+	if ( bDispStaticCollection && ArrayCount( arrObjects ) == 0 )
+	{
+%>
+	<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( 'netmaterialov', curLngWeb )%></Label>
+</StackPanel>
+</SPXMLScreen>
+<%
+		//Cancel();
+		bContinue = false;
+	}
+
+	if ( bContinue )
+	{
+
+	if ( bStaticCollection && sFilesListViewType != 'list' )
+	{
+%>
+<Collection Name="FileListCollection<%=sID_curFiles%>">
+<Data>
+<%
+		for ( oObjectElem in arrObjects )
+		{
+%>
+<Row>
+<Cell Id="id" Value="<%=oObjectElem.id%>"/>
+<Cell Id="visibility" Value="<%=XmlAttrEncode( oObjectElem.visibility )%>"/>
+<Cell Id="name" Value="<%=XmlAttrEncode( oObjectElem.name )%>"/>
+<Cell Id="desc" Value="<%=XmlAttrEncode( oObjectElem.desc )%>"/>
+<Cell Id="url" Value="<%=oObjectElem.url%>"/>
+<Cell Id="click" Value="<%=XmlAttrEncode( oObjectElem.click )%>"/>
+</Row>
+<%
+		}
+%>
+</Data>
+</Collection>
+<%
+	}
+%>
+<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%='Просмотр материала'%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="object_id" Value=""/>
+</Dialog>
+<%
+	switch ( sFilesListViewType )
+	{
+		case 'list':
+%>
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+			for ( oObjectElem in arrObjects )
+			{
+				if ( curDevice.disp_type != "" )
+				{
+%>
+	<GridRow>
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Link Click="<%=oObjectElem.click%>"><![CDATA[<%=oObjectElem.name%>]]></Link>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+				}
+				else
+				{
+%>
+	<GridRow>
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="32"/>
+<%
+				if ( curFiles_bDispSize )
+				{
+%>
+				<GridColumn/>
+				<GridColumn Width="100"/>
+				<GridColumn Width="100"/>
+<%
+				}
+				else
+				{
+%>
+				<GridColumn Width="100%"/>
+				<GridColumn/>
+<%
+				}
+%>
+			</GridColumns>
+
+			<GridRow>
+				<Link Click="<%=oObjectElem.click%>" Class="<%=oObjectElem.class%>"></Link>
+				<Link Click="<%=oObjectElem.click%>"><![CDATA[<%=oObjectElem.name%>]]></Link>
+				<Label Class="XAML-grid-list-desc" NoWrap="true"><%=oObjectElem.type%></Label>
+<%
+				if ( curFiles_bDispSize )
+				{
+%>
+				<Label Class="XAML-grid-list-desc" NoWrap="true" Align="right"><%=oObjectElem.size%></Label>
+<%
+				}
+%>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+				}
+			}
+%>
+</Grid>
+<%
+			break;
+
+		case 'tile':
+			if ( curFiles_bParamPreffix == "" )
+			{
+				curFiles_TemplateSource = "object_tile";
+				curFiles_Columns = "";
+				curFiles_TileWidth = "275";
+			}
+			else
+			{
+				curFiles_TemplateSource = tools_web.get_web_param( curParams, curFiles_bParamPreffix + '.tile_template', 'object_tile', true );
+				curFiles_Columns = tools_web.get_web_param( curParams, curFiles_bParamPreffix + '.tile_columns', '', true );
+				curFiles_TileWidth = curFiles_Columns == "" ? "275" : "";
+			}
+%>
+<TileView
+	Name="FileListTile<%=sID_curFiles%>"
+	Width="100%"
+	Height="<%=curFiles_sHeight%>"
+	TileHeight="275"
+	TileWidth="<%=curFiles_TileWidth%>"
+	DataSource="{FileListCollection<%=sID_curFiles%>}"
+	TemplateSource="<%=curFiles_TemplateSource%>"
+	Columns="<%=curFiles_Columns%>"
+/>
+<%
+			break;
+
+		default:
+%>
+<DataGrid Name="FileListDataGrid<%=sID_curFiles%>" Source="{FileListCollection<%=sID_curFiles%>}" Height="<%=curFiles_sHeight%>" Selection="<%=( allowChangeFiles ? "Multiple" : "none")%>" Adapt="true">
+	<DataGridColumn Value="id" Title="ID" Type="Label" Hidden="true" Editable="1"/>
+	<DataGridColumn Value="visibility" Title="visibility" Type="Label" Hidden="true" Editable="1"/>
+	<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>" Width="100%" Type="link" Click="{!click}"/>
+<% 
+		if ( curDevice.disp_type != "mobile" ) 
+		{
+%>
+	<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Width="300" Type="string"/>
+<%
+		}
+		if ( dispDelete )
+		{
+%>
+	<DataGridColumn Value_="del" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%>" Width="50" Type="bool"/>
+<%
+		}
+		if(allowChangeFiles)
+		{
+%>
+
+<Menu>
+<%
+			if (bHideAddAction!=true)
+			{
+%>
+	<MenuItem Title="<%=tools_web.get_web_const( 'vdb_add_file', curLngWeb )%>" Click="OPENDIALOG=AddFileDialog<%=sID_curFiles%>"/>
+<%
+			}
+%>
+	<MenuItem Title="<%=tools_web.get_web_const( 'c_delete_file', curLngWeb )%>" Click="ACTION=DeleteFiles<%=sID_curFiles%>"/>
+<%
+	if (bShowChangeVisibilityAction)
+	{
+%>
+	<MenuItem Title="<%=tools_web.get_web_const( 'u2tcjb03dd', curLngWeb )%>" Click="SET=FileVisibilityDialog<%=sID_curFiles%>/strVisibility,{FileListDataGrid<%=sID_curFiles%>:/visibility};OPENDIALOG=FileVisibilityDialog<%=sID_curFiles%>"/>
+<%
+	}
+%>
+</Menu>
+
+<%
+		}
+%>
+</DataGrid>
+<%
+			break;
+	}
+
+	}
+}
+
+if ( bContinue )
+{
+	if ( bPanel_files )
+	{
+%>
+</StackPanel>
+<%
+	}
+%>
+</SPXMLScreen>
+<%
+}
+
+}
+%>

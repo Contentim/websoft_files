@@ -1,0 +1,391 @@
+﻿<SPXMLScreen>
+<%
+oToDoInit = new Object;
+oToDoInit.SetProperty("type", "todo");
+EvalCodePageUrl( global_settings.web_path + "view_todo_init.bs", true );
+arrToDoItems = oToDoInit.GetOptProperty( "arrToDoItems", [] );
+bIsMobile = (curDevice.disp_type == "mobile");
+bHideTitles = bIsMobile && tools_web.is_true(tools_web.get_web_param( curParams, "todo.bHideTitlesInMobile", false, true ));
+arrTabListParam = String( tools_web.get_web_param( curParams, "todo.tab_list", "critical;exceeded;future;all", true ) ).split( ";" );
+bShowTiles = tools_web.is_true(tools_web.get_web_param( curParams, "todo.bShowTiles", false, true ));
+sTileHeight = tools_web.get_web_param( curParams, "todo.bShowTiles.height", 260, true );
+sTileWidth = tools_web.get_web_param( curParams, "todo.bShowTiles.width", 250, true );
+
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : "0");
+
+arrCriticalItems = [];
+arrExceededItems = [];
+arrFutureItems = [];
+for ( oItemElem in arrToDoItems )
+{
+	sCritical = tools_web.is_true( oItemElem.GetProperty( "critical" ) );
+	sExceeded = tools_web.is_true( oItemElem.GetProperty( "exceeded" ) );
+	sIndefinite = tools_web.is_true( oItemElem.GetProperty( "indefinite" ) );
+	sFuture = tools_web.is_true( oItemElem.GetProperty( "future" ) );
+
+	if ( sCritical == true && sExceeded == false && sIndefinite == false )
+	{
+		oItemElem.icon_class = "icon-critical-color icon-fire2-ico";
+		arrCriticalItems.push( oItemElem );
+	}
+	if ( sExceeded == true )
+	{
+		oItemElem.icon_class = "icon-critical-color icon-fire2-ico";
+		arrExceededItems.push( oItemElem );
+	}
+	if ( sFuture== true && sCritical == false && sExceeded == false && sIndefinite == false )
+	{
+		oItemElem.icon_class = "icon-hour-glass-ico";
+		arrFutureItems.push( oItemElem );
+	}
+	if(oItemElem.GetOptProperty("icon_class","") == "")
+	{
+		oItemElem.icon_class = "icon-warning-color icon-warning2-ico";
+	}
+}
+
+
+
+	if(curMode=="todo")
+	{
+%>
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "vsezadachi", curLngWeb )%></Label>
+<%
+	}
+%>
+<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-block">
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+		<Label Class="XAML-label-block-header"><%=tools_web.get_web_const( "tekushiedela", curLngWeb )%></Label>
+	</StackPanel>
+	<TabControl Name="ListViewTab" ActiveTab="<%=paramListViewTab%>" Class="XAML-uni-content-container XAML-uni-content-container">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		if ( sTabListParam == "critical" )
+		{
+			sTitle = !bHideTitles ? (tools_web.get_web_const( "srochnye", curLngWeb ) + " (" + ArrayCount(arrCriticalItems) + ")") : "";
+%>
+			<TabItem Class="icon-clock-o" Title="<%=sTitle%>">
+				<Grid Width="100%" Class="XAML-todo XAML-grid-list-container">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+<%
+					if(ArrayCount(arrCriticalItems)>0)
+					{
+						if (bShowTiles)
+						{
+						%>
+						<Collection Name="AllCriticalCollection">
+						<Data>
+						<%
+							for ( catCriticalEventElem in arrCriticalItems )
+							{
+						%>
+						<Row>
+						<Cell Id="id" Value="<%=catCriticalEventElem.id%>"/>
+						<Cell Id="date" Value="<%=catCriticalEventElem.date%>"/>
+						<Cell Id="name" Value="<%=XmlAttrEncode( catCriticalEventElem.name )%>"/>
+						<Cell Id="state_id" Value="<%=XmlAttrEncode( catCriticalEventElem.state_id )%>"/>
+						<Cell Id="state" Value="<%=XmlAttrEncode( catCriticalEventElem.state )%>"/>
+						<Cell Id="image" Value="<%=XmlAttrEncode( catCriticalEventElem.image )%>"/>
+						<Cell Id="type" Value="<%=XmlAttrEncode( catCriticalEventElem.type )%>"/>
+						<Cell Id="action" Value="<%=XmlAttrEncode( catCriticalEventElem.action )%>"/>
+						<Cell Id="actionLabel" Value="<%=XmlAttrEncode( catCriticalEventElem.actionLabel )%>"/>
+						</Row>
+						<%
+							}
+						%>
+						</Data>
+						</Collection>
+						<GridRow>
+							<TileView Name="DocChildTileCritical" Class="XAML-todo-tileview" Width="100%" TileHeight="<%=sTileHeight%>" TileWidth="<%=sTileWidth%>" DataSource="{AllCriticalCollection}" TemplateSource="todo_tile"/>					
+						</GridRow>
+						<%
+						}
+						else
+						{						
+						for( oItemElem in arrCriticalItems )
+						{
+%>
+					<GridRow>
+						<Grid Class="XAML-grid-list-item">
+							<GridColumns>
+								<GridColumn Width="20"/>
+								<GridColumn/>
+								<GridColumn Width="10%"/>
+							</GridColumns>
+							<GridRow>
+								<Label Class="<%=oItemElem.icon_class%>"></Label>
+								<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+									<Link Click="<%=( ( oItemElem.GetProperty( "type" ) == "learning" ? "OPENWINDOW=" : "OPENURL=" ) + oItemElem.GetProperty( "action" ) )%>"><![CDATA[<%=oItemElem.GetProperty( "name" )%>]]></Link>
+									<Label><![CDATA[<%=oItemElem.GetProperty( "actionLabel" )%>]]></Label>
+									<Label Class="XAML-label-tile-desc"><%=( oItemElem.GetProperty( "date" ) != "" ? oItemElem.GetProperty( "date" ) : oItemElem.GetProperty( "strDate" ) )%></Label>
+								</StackPanel>
+							</GridRow>
+						</Grid>
+					</GridRow>
+<%
+							}
+						}
+					}
+					else
+					{
+%>
+						<GridRow Class="XAML-grid-row-empty">
+							<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netzadach", curLngWeb )%></Label>
+						</GridRow>
+<%
+					}
+%>
+					</Grid>
+			</TabItem>
+<%
+		}
+		else if ( sTabListParam == "exceeded" )
+		{
+			sTitle = !bHideTitles ? (tools_web.get_web_const( "vaab_selector_overdue", curLngWeb ) + " (" + ArrayCount(arrExceededItems) + ")") : "";
+%>
+			<TabItem Class="icon-fire2" Title="<%=sTitle%>">
+				<Grid Width="100%" Class="XAML-todo XAML-grid-list-container">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+<%
+					if(ArrayCount(arrExceededItems)>0)
+					{
+						if (bShowTiles)
+						{
+						%>
+						<Collection Name="AllExceededCollection">
+						<Data>
+						<%
+							for ( catExceededEventElem in arrExceededItems )
+							{
+						%>
+						<Row>
+						<Cell Id="id" Value="<%=catExceededEventElem.id%>"/>
+						<Cell Id="date" Value="<%=catExceededEventElem.date%>"/>
+						<Cell Id="name" Value="<%=XmlAttrEncode( catExceededEventElem.name )%>"/>
+						<Cell Id="state_id" Value="<%=XmlAttrEncode( catExceededEventElem.state_id )%>"/>
+						<Cell Id="state" Value="<%=XmlAttrEncode( catExceededEventElem.state )%>"/>
+						<Cell Id="image" Value="<%=XmlAttrEncode( catExceededEventElem.image )%>"/>
+						<Cell Id="type" Value="<%=XmlAttrEncode( catExceededEventElem.type )%>"/>
+						<Cell Id="action" Value="<%=XmlAttrEncode( catExceededEventElem.action )%>"/>
+						<Cell Id="actionLabel" Value="<%=XmlAttrEncode( catExceededEventElem.actionLabel )%>"/>
+						</Row>
+						<%
+							}
+						%>
+						</Data>
+						</Collection>
+						<GridRow>
+							<TileView Name="DocChildTileExceeded" Class="XAML-todo-tileview" Width="100%" TileHeight="<%=sTileHeight%>" TileWidth="<%=sTileWidth%>" DataSource="{AllExceededCollection}" TemplateSource="todo_tile"/>					
+						</GridRow>
+						<%
+						}
+						else
+						{
+							for ( oItemElem in arrExceededItems )
+							{
+%>
+					<GridRow>
+						<Grid Class="XAML-grid-list-item">
+							<GridColumns>
+								<GridColumn Width="20"/>
+								<GridColumn/>
+							</GridColumns>
+							<GridRow>
+								<Label Class="<%=oItemElem.icon_class%>"></Label>
+								<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+									<Link Click="<%=( ( oItemElem.GetProperty( "type" ) == "learning" ? "OPENWINDOW=" : "OPENURL=" ) + oItemElem.GetProperty( "action" ) )%>"><![CDATA[<%=oItemElem.GetProperty( "name" )%>]]></Link>
+									<Label><![CDATA[<%=oItemElem.GetProperty( "actionLabel" )%>]]></Label>
+									<Label Class="XAML-label-tile-desc"><%=( oItemElem.GetProperty( "date" ) != "" ? oItemElem.GetProperty( "date" ) : oItemElem.GetProperty( "strDate" ) )%></Label>
+								</StackPanel>
+							</GridRow>
+						</Grid>
+					</GridRow>
+<%
+							}
+						}
+					}
+					else
+					{
+%>
+						<GridRow Class="XAML-grid-row-empty">
+							<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netzadach", curLngWeb )%></Label>
+						</GridRow>
+<%
+					}
+%>
+				</Grid>
+			</TabItem>
+<%
+		}
+		else if ( sTabListParam == "future" )
+		{
+			sTitle = !bHideTitles ? (tools_web.get_web_const( "predstoyashie", curLngWeb ) + " (" + ArrayCount(arrFutureItems) + ")") : "";
+%>
+			<TabItem Class="icon-hour-glass" Title="<%=sTitle%>">
+				<Grid Width="100%" Class="XAML-todo XAML-grid-list-container">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+				<%
+					if(ArrayCount(arrFutureItems)>0)
+					{
+						if (bShowTiles)
+						{
+						%>
+						<Collection Name="AllFutureCollection">
+						<Data>
+						<%
+							for ( catFutureEventElem in arrFutureItems )
+							{
+						%>
+						<Row>
+						<Cell Id="id" Value="<%=catFutureEventElem.id%>"/>
+						<Cell Id="date" Value="<%=catFutureEventElem.date%>"/>
+						<Cell Id="name" Value="<%=XmlAttrEncode( catFutureEventElem.name )%>"/>
+						<Cell Id="state_id" Value="<%=XmlAttrEncode( catFutureEventElem.state_id )%>"/>
+						<Cell Id="state" Value="<%=XmlAttrEncode( catFutureEventElem.state )%>"/>
+						<Cell Id="image" Value="<%=XmlAttrEncode( catFutureEventElem.image )%>"/>
+						<Cell Id="type" Value="<%=XmlAttrEncode( catFutureEventElem.type )%>"/>
+						<Cell Id="action" Value="<%=XmlAttrEncode( catFutureEventElem.action )%>"/>
+						<Cell Id="actionLabel" Value="<%=XmlAttrEncode( catFutureEventElem.actionLabel )%>"/>
+						</Row>
+						<%
+							}
+						%>
+						</Data>
+						</Collection>
+						<GridRow>
+							<TileView Name="DocChildTileFuture" Class="XAML-todo-tileview" Width="100%" TileHeight="<%=sTileHeight%>" TileWidth="<%=sTileWidth%>" DataSource="{AllFutureCollection}" TemplateSource="todo_tile"/>					
+						</GridRow>
+						<%
+						}
+						else
+						{
+						for( oItemElem in arrFutureItems )
+						{
+				%>
+				<GridRow>
+					<Grid Class="XAML-grid-list-item">
+						<GridColumns>
+							<GridColumn Width="20"/>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+							<Label Class="<%=oItemElem.icon_class%>"></Label>
+							<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+								<Link Click="<%=( ( oItemElem.GetProperty( "type" ) == "learning" ? "OPENWINDOW=" : "OPENURL=" ) + oItemElem.GetProperty( "action" ) )%>"><![CDATA[<%=oItemElem.GetProperty( "name" )%>]]></Link>
+								<Label><![CDATA[<%=oItemElem.GetProperty( "actionLabel" )%>]]></Label>
+									<Label Class="XAML-label-tile-desc"><%=( oItemElem.GetProperty( "date" ) != "" ? oItemElem.GetProperty( "date" ) : oItemElem.GetProperty( "strDate" ) )%></Label>
+							</StackPanel>
+						</GridRow>
+					</Grid>
+				</GridRow>
+				<%			}
+						}
+					}
+					else
+					{
+%>
+						<GridRow Class="XAML-grid-row-empty">
+						<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netzadach", curLngWeb )%></Label>
+						</GridRow>
+<%
+					}
+%>
+				</Grid>
+			</TabItem>
+<%
+		}
+		else if ( sTabListParam == "all" )
+		{
+			sTitle = !bHideTitles ? (tools_web.get_web_const( "f0j4vfoxrb", curLngWeb ) + " (" + ArrayCount(arrToDoItems) + ")") : "";
+%>
+			<TabItem Class="icon-clipboard2" Title="<%=sTitle%>">
+				<Grid Width="100%" Class="XAML-todo XAML-grid-list-container">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+<%
+					if( ArrayCount(arrToDoItems) > 0 )
+					{
+						if (bShowTiles)
+						{
+						%>
+						<Collection Name="AllEventCollection">
+						<Data>
+						<%
+							for ( catAllEventElem in arrToDoItems )
+							{
+						%>
+						<Row>
+						<Cell Id="id" Value="<%=catAllEventElem.id%>"/>
+						<Cell Id="date" Value="<%=catAllEventElem.date%>"/>
+						<Cell Id="name" Value="<%=XmlAttrEncode( catAllEventElem.name )%>"/>
+						<Cell Id="state_id" Value="<%=XmlAttrEncode( catAllEventElem.state_id )%>"/>
+						<Cell Id="state" Value="<%=XmlAttrEncode( catAllEventElem.state )%>"/>
+						<Cell Id="image" Value="<%=XmlAttrEncode( catAllEventElem.image )%>"/>
+						<Cell Id="type" Value="<%=XmlAttrEncode( catAllEventElem.type )%>"/>
+						<Cell Id="action" Value="<%=XmlAttrEncode( catAllEventElem.action )%>"/>
+						<Cell Id="actionLabel" Value="<%=XmlAttrEncode( catAllEventElem.actionLabel )%>"/>
+						</Row>
+						<%
+							}
+						%>
+						</Data>
+						</Collection>
+						<GridRow>
+							<TileView Name="DocChildTileAll" Class="XAML-todo-tileview" Width="100%" TileHeight="<%=sTileHeight%>" TileWidth="<%=sTileWidth%>" DataSource="{AllEventCollection}" TemplateSource="todo_tile"/>					
+						</GridRow>
+						<%
+						}
+						else
+						{
+							for( oItemElem in arrToDoItems )
+							{
+%>
+					<GridRow>
+						<Grid Class="XAML-grid-list-item">
+							<GridColumns>
+								<GridColumn Width="20"/>
+								<GridColumn/>
+							</GridColumns>
+							<GridRow>
+								<Label Class="<%=oItemElem.icon_class%>"></Label>
+								<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+									<Link Click="<%=( ( oItemElem.GetProperty( "type" ) == "learning" ? "OPENWINDOW=" : "OPENURL=" ) + oItemElem.GetProperty( "action" ) )%>"><![CDATA[<%=oItemElem.GetProperty( "name" )%>]]></Link>
+									<Label><![CDATA[<%=oItemElem.GetProperty( "actionLabel" )%>]]></Label>
+									<Label Class="XAML-label-tile-desc"><%=( oItemElem.GetProperty( "date" ) != "" ? oItemElem.GetProperty( "date" ) : oItemElem.GetProperty( "strDate" ) )%></Label>
+								</StackPanel>
+							</GridRow>
+						</Grid>
+					</GridRow>
+<%
+
+							}
+						}
+					}
+					else
+					{
+%>
+						<GridRow Class="XAML-grid-row-empty">
+						<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netzadach", curLngWeb )%></Label>
+						</GridRow>
+<%
+					}
+%>
+				</Grid>
+			</TabItem>
+
+<%
+		}
+	}
+%>
+		</TabControl>
+	</StackPanel>
+</SPXMLScreen>

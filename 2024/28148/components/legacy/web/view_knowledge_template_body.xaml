@@ -1,0 +1,149 @@
+﻿<SPXMLScreen>
+<%
+	if( curObject == null || curLngCommon.knowledge_parts_objects.GetOptChildByKey( curObject.Name ) == undefined || curObject.Name == "knowledge_part" || curObject.Name == "knowledge_classifier" || curObject.Name == "tag" )
+	{
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+	arrListParam = String( tools_web.get_web_param( curParams, "knowledge_template.list_elem", "tags;knowledge_parts;date;status;experts", true ) ).split( ";" );
+	for( listElem in arrListParam )
+	{
+		switch( listElem )
+		{
+			case "tags":
+				bFirst = true;
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "tegi", curLngWeb )%>:</Label>
+			<HTMLBox>
+				<![CDATA[
+				<div>
+<%
+				for( elem in curObject.tags )
+				{
+					if( bFirst )
+						bFirst = false;
+					else
+					{
+%>
+					<span>, </span>
+<%
+					}
+%>
+					<a href="<%=tools_web.get_mode_clean_url( null, elem.tag_id )%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( elem.tag_name, curLng.short_id  ) )%></a>
+<%
+				}
+%>
+				</div>
+				]]>
+		</HTMLBox>
+		</GridRow>
+<%
+				break;
+				
+			case "knowledge_parts":
+				bFirst = true;
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_knowledge_parts_title", curLngWeb )%>:</Label>
+			<HTMLBox>
+				<![CDATA[
+				<div>
+<%
+				for( elem in curObject.knowledge_parts )
+				{
+					if( bFirst )
+						bFirst = false;
+					else
+					{
+%>
+					<span>, </span>
+<%
+					}
+%>
+					<a href="<%=tools_web.get_mode_clean_url( "knowledge_classifier", elem.knowledge_part_id )%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( elem.knowledge_part_name, curLng.short_id  ) )%></a>
+<%
+				}
+%>
+				</div>
+				]]>
+		</HTMLBox>
+		</GridRow>
+<%
+				break;
+			case "experts":
+				if( curObject.Name == "learning_task" )
+				{
+					break;
+				}
+				bFirst = true;
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_experts", curLngWeb )%>:</Label>
+			<HTMLBox>
+				<![CDATA[
+				<div>
+<%
+				for( elem in curObject.experts )
+				{
+					feExpert = elem.expert_id.OptForeignElem;
+					if( feExpert == undefined )
+						continue;
+					if( bFirst )
+						bFirst = false;
+					else
+					{
+%>
+					<span>, </span>
+<%
+					}
+%>
+					<a href="<%=tools_web.get_mode_clean_url( null, elem.expert_id )%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( feExpert.name, curLng.short_id  ) )%></a>
+<%
+				}
+%>
+				</div>
+				]]>
+			</HTMLBox>
+		</GridRow>
+<%
+				break;
+				
+			case "date":
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkmb_start_action_date", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">	
+				<Label Width="200"><%=curObject.kp_start_date.HasValue ? StrDate( curObject.kp_start_date, false ) : ""%></Label>
+				<Label Width="200" Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "j87phjbjvh", curLngWeb )%>:</Label>
+				<Label Width="200"><%=curObject.kp_end_date.HasValue ? StrDate( curObject.kp_end_date, false ) : ""%></Label>
+			</StackPanel>
+		</GridRow>
+<%
+				break;
+				
+			case "status":
+				sColorClass = tools_web.get_class_for_status( curObject.status_in_knowledge_map );
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<Label Class="XAML-label-status <%=sColorClass%>">
+				<![CDATA[<%=curObject.status_in_knowledge_map.HasValue ? curObject.status_in_knowledge_map.ForeignElem.name : ""%>]]>
+			</Label>
+		</GridRow>
+<%
+				break;
+		}
+	}
+%>
+	</Grid>
+</SPXMLScreen>

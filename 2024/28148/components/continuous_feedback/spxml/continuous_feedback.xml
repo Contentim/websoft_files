@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM CODE-LIB____="1">
+
+<continuous_feedback>
+
+	<init PROPERTY="1" EXPR="
+		try
+		{
+			if ( AppConfig.GetOptProperty( 'COMPONENTS' ) == '1' )
+			{
+				alert( 'Component continuous_feedback initializing...' );
+
+				//tools_component.init_forms();
+
+				tools.process_custom_packs( null, continuous_feedback.append_component_relative_url( '/custom' ) );
+
+				alert( 'Component continuous_feedback initialized' );
+			}
+		}
+		catch ( g_err )
+		{
+			alert( 'ERROR: Component initializing: continuous_feedback:\r\n' + g_err );
+			throw g_err;
+		}
+	"/>
+
+
+	<component_base_path TYPE="string" NOT-NULL="1" DEFAULT="x-local://components/continuous_feedback"/>
+
+	<append_component_relative_url PROPERTY="1" PARAM="sUrlParam" EXPR="
+			UrlAppendPath( continuous_feedback.component_base_path, sUrlParam );
+	"/>
+
+	<component_application_obj TYPE="variant"/>
+	<get_component_application PROPERTY="1" EXPR="
+			if ( ! continuous_feedback.component_application_obj.HasValue )
+			{
+				catApplication = ArrayOptFirstElem( XQuery( 'for $elem in applications where $elem/code = \'websoft_continuous_feedback\' return $elem/Fields(\'id\')' ) );
+				if ( catApplication == undefined )
+				{
+					return null;
+				}
+				continuous_feedback.component_application_obj = OpenDoc( UrlFromDocID( catApplication.id ) ).TopElem;
+			}
+			return continuous_feedback.component_application_obj.Object;
+	"/>
+
+	<get_component_application_response_types PROPERTY="1" EXPR="
+			var teApplication = continuous_feedback.get_component_application();
+			var arrApplicationResponseTypes = [];
+			try
+			{
+				arrApplicationResponseTypes = ArraySelect( ParseJson( teApplication.wvars.ObtainChildByKey( 'response_types' ).value ), 'OptInt(This.GetOptProperty(\'response_type_id\'),null)!=null' );
+			}
+			catch ( err )
+			{
+			}
+			return arrApplicationResponseTypes;
+	"/>
+
+</continuous_feedback>
+
+</SPXML-INLINE-FORM>

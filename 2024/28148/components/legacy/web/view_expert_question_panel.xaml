@@ -1,0 +1,601 @@
+﻿<%
+	function show_hide_info( id )
+	{
+%>
+						<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+								<StackPanel Name="DescShow<%=sType%><%=id%><%=tmpCode%>" Hidden="<%=PanelExpand%>" Class="XAML-stack-container">
+									<Link Class="wt-Knowledge-element-switch wt-Knowledge-element-switch-collapsed" Click="HIDE=DescShowLink<%=sType%><%=id%><%=tmpCode%>;SHOW=DescHideLink<%=sType%><%=id%><%=tmpCode%>;HIDE=DescShow<%=sType%><%=id%><%=tmpCode%>;SHOW=DescHide<%=sType%><%=id%><%=tmpCode%>;SHOW=Desc<%=sType%><%=id%><%=tmpCode%>">
+										<HTMLTip><%=tools_web.get_web_const( "pokazatpodrobn", curLngWeb )%></HTMLTip>
+									</Link>
+								</StackPanel>
+								<StackPanel Name="DescHide<%=sType%><%=id%><%=tmpCode%>" Hidden="<%=PanelExpand == "0" ? "1" : "0"%>" Class="XAML-stack-container">
+									<Link Class="wt-Knowledge-element-switch wt-Knowledge-element-switch-expanded" Click="HIDE=DescHideLink<%=sType%><%=id%><%=tmpCode%>;SHOW=DescShowLink<%=sType%><%=id%><%=tmpCode%>;HIDE=DescHide<%=sType%><%=id%><%=tmpCode%>;SHOW=DescShow<%=sType%><%=id%><%=tmpCode%>;HIDE=Desc<%=sType%><%=id%><%=tmpCode%>">
+										<HTMLTip><%=tools_web.get_web_const( "skrytpodrobnuyu", curLngWeb )%></HTMLTip>
+									</Link>
+								</StackPanel>
+						</StackPanel>
+<%
+	}
+%>
+<SPXMLScreen>
+<%
+	sType = "question";
+	curExperts = new Array();
+	curSubExperts = new Array();
+	bShowExpertQuestion = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "bShowExpertQuestion", true, true ) );
+	
+	curExperts = XQuery( "for $i in experts where $i/type = 'collaborator' and $i/person_id = " + curUserID + " return $i" );
+
+	bEditQuestion = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "bEditQuestion", false, true ) );
+
+	bShowSubExpertQuestion = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "bShowSubExpertQuestion", false, true ) );
+	
+	if( bShowSubExpertQuestion )
+		curSubExperts = XQuery( "for $i in experts where MatchSome( $i/sub_expert_id, ( " + ArrayMerge( curExperts, "This.id", "," ) + " ) ) return $i" );
+	
+	if( bShowExpertQuestion )
+		curExperts = ArrayUnion( curExperts, curSubExperts );
+	else
+		curExperts = curSubExperts;
+	
+	cond = new Array();
+	
+	cond.push( "MatchSome( $i/expert_id, ( " + ArrayMerge( curExperts, "This.id", "," ) + " ) )" );
+	
+	PanelExpand = tools_web.get_web_param( PARAMETERS, "PanelExpand", "0", true );
+	
+	KeyWord = tools_web.get_web_param( PARAMETERS, "KeyWord", "", true );
+	if( KeyWord != "" )
+		cond.push( "contains( $i/question, '" + KeyWord + "' )" );
+		
+	KnowledgeParts = tools_web.get_web_param( PARAMETERS, "KnowledgeParts", "", true );
+	if( KnowledgeParts != "" )
+		for( kp in KnowledgeParts.split( ";" ) )
+			cond.push( "contains( $i/knowledge_parts, '" + kp + "' )" );
+	
+	try
+	{
+		DateStart = Date( tools_web.get_web_param( PARAMETERS, "DateStart", "", true ) );
+	}
+	catch( ex )
+	{
+		DateStart = "";
+	}
+	if( DateStart != "" )
+		cond.push( "$i/date >= date( '" + DateStart + "' )" );
+
+	try
+	{
+		DateFinish = Date( tools_web.get_web_param( PARAMETERS, "DateFinish", "", true ) );
+	}
+	catch( ex )
+	{
+		DateFinish = "";
+	}
+	if( DateFinish != "" )
+		cond.push( "$i/date <= date( '" + DateFinish + "' )" );
+		
+	TypeQuestion = tools_web.get_web_param( PARAMETERS, "TypeQuestion", "all", true );
+	if( TypeQuestion == "faq" )
+		cond.push( "$i/is_faq = true()" );
+	else if( TypeQuestion == "opened" )
+		cond.push( "$i/is_disclosed = true()" );
+		
+	StatusQuestion = String( tools_web.get_web_param( PARAMETERS, "StatusQuestion", "false", true ) );
+	cond.push( "$i/status = " + StatusQuestion + "()" );
+	
+	tmpCode = tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" );
+%>
+	<Grid Class="XAML-grid-result-margin-padding">
+		<GridColumns>
+			<GridColumn Width="98%"/>
+		</GridColumns>
+<%
+	resultQuestArray = Array()
+	for ( _quest in XQuery( "for $i in expert_questions " + ( ArrayCount( cond ) > 0 ? " where " + ArrayMerge( cond, "This", " and " ) : "" ) + " return $i" ) )
+	{
+		try
+		{
+			dQues = OpenDoc( UrlFromDocID( _quest.id ) ).TopElem;
+		}
+		catch( ex )
+		{
+			continue;
+		}
+		pers = dQues.person_id.OptForeignElem;
+%>
+
+		<GridRow>
+			<Grid Width="98%" Class="XAML-StackPanelKnowledge-table-result">
+				<GridColumns>
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+					<GridColumn Width="16"/>
+<%							
+					}
+%>
+					<GridColumn Width="32"/>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow Class="XAML-Knowledge-show-desc">
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+					<StackPanel>
+						<Label Class="icon-<%=( dQues.status && dQues.is_faq ? "question-circle" : dQues.status ? "input-checked" : "times-circle" )%>"/>
+					</StackPanel>
+<%
+					}
+					show_hide_info( _quest.id );	
+%>
+					<Label Width="98%"><%=dQues.question.Value%></Label>	
+				</GridRow>
+				
+				<GridRow Class="wt-plain-row">
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+					<Label/>
+<%							
+					}
+%>
+					<Label/>
+					<StackPanel UsePadding="false" Class="XAML-StackPanelKnowledge">
+						<StackPanel Name="Desc<%=sType%><%=_quest.id%><%=tmpCode%>" Hidden="<%=PanelExpand == "0" ? "1" : "0"%>" Class="XAML-grid-knowledge-map-padding-top-end">
+							<Grid Class="XAML-grid-info-table">	
+								<GridColumns>
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+									<GridColumn Width="150" Align="right"/>
+									<GridColumn Width="10"/>
+<%
+					}				
+%>
+									<GridColumn/>
+								</GridColumns>
+								
+								<GridRow>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+					}				
+%>
+									<Label Width="150" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vepb_person_asked_question", curLngWeb )%>*:</Label>
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+									<Label/>
+<%
+					}				
+						if( pers == undefined )
+						{
+%>
+									<HTMLBox Class="XAML-answer"><![CDATA[<%=tools_web.get_web_const( "gmk3t7zeoc", curLngWeb )%>]]></HTMLBox> 
+<%
+						}
+						else
+						{
+%>
+									<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, _quest.person_id )%>"><%=HtmlEncode( pers.fullname )%></Link>	
+<%
+						}
+						
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+<%
+					if( bEditQuestion && StatusQuestion != "true" )
+					{
+%>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+						}				
+%>
+									<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_question", curLngWeb )%>*:</Label>
+<%							
+						if( curDevice.disp_type != "mobile"  )
+						{
+%>
+									<Label/>
+<%
+						}				
+%>
+									<EditBox Width="98%" Height="60" Name="question<%=_quest.id%>"><![CDATA[<%=dQues.question%>]]></EditBox>
+<%						
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									</StackPanel>
+<%
+						}				
+%>
+								</GridRow>
+<%
+					}
+					if( dQues.question_file_id.HasValue )
+					{
+%>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+						}				
+%>
+									<Label Class="XAML-grid-label-name"><%="Файл, прикрепленный к вопросу"%>:</Label>
+<%							
+						if( curDevice.disp_type != "mobile"  )
+						{
+%>
+									<Label/>
+<%
+						}				
+%>
+									<Link Class="XAML-label-infoblock-header" Click="OPENWINDOW=download_file.html?file_id=<%=dQues.question_file_id%>&sid=<%=tools_web.get_sum_sid( dQues.question_file_id, Session.sid )%>"><![CDATA[<%=dQues.question_file_id.ForeignElem.file_name%>]]></Link>
+<%						
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									</StackPanel>
+<%
+						}				
+%>
+								</GridRow>
+								
+<%
+					}
+%>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_answer", curLngWeb )%>*:</Label>
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+									<Label/>
+<%
+					}				
+						if( StatusQuestion == "true" )
+						{
+%>
+									<HTMLBox Class="XAML-answer"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( _quest.id ), "expert_question.answer" )%>]]></HTMLBox> 
+<%
+						}
+						else
+						{
+							if( curDevice.disp_type == "mobile"  )
+							{
+%>
+									<!--<RTE Name="answer<%=_quest.id%>" Class="" Width="98%" Height="200" BBCode="0"></RTE>-->
+									<EditBox Width="100%" Height="60" Name="answer<%=_quest.id%>"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( _quest.id ), "expert_question.answer" )%>]]></EditBox>
+<%						
+							}
+							else
+							{
+%>
+									<RichEdit Name="answer<%=_quest.id%>" Class="" Width="100%" Height="200" BBCode="0"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( _quest.id ), "expert_question.answer" )%>]]></RichEdit>
+									<!--<EditBox Width="550" Height="60" Name="answer<%=_quest.id%>"><![CDATA[<%=tools_web.get_web_desc( dQues.answer, UrlFromDocID( _quest.id ), "expert_question.answer" )%>]]></EditBox>	-->
+<%
+							}
+						}
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+%>
+								</GridRow>
+<%							
+					if( dQues.answer_file_id.HasValue  )
+					{
+%>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+						}				
+%>
+									<Label Class="XAML-grid-label-name"><%="Файл, прикрепленный к ответу"%>:</Label>
+<%							
+						if( curDevice.disp_type != "mobile"  )
+						{
+%>
+									<Label/>
+<%
+						}
+						if( StatusQuestion == "true" )
+						{
+%>
+									<Link Class="XAML-label-infoblock-header" Click="OPENWINDOW=download_file.html?file_id=<%=dQues.answer_file_id%>&sid=<%=tools_web.get_sum_sid( dQues.answer_file_id, Session.sid )%>"><![CDATA[<%=dQues.answer_file_id.ForeignElem.file_name%>]]></Link>
+<%		
+						}
+						else
+						{
+%>
+									<ResourceField Name="FileAttchID<%=_quest.id%>" Width="200" Source="resources" CurrentValue="" CanCreate="true" CanSelect="false" CanDownload="true"/>
+<%				
+						}
+						if( curDevice.disp_type == "mobile"  )
+						{
+%>
+									</StackPanel>
+<%
+						}				
+%>
+								</GridRow>
+<%
+					}				
+%>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vfb_subject", curLngWeb )%>:</Label>
+<%
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+									<Label/>
+<%
+					}	
+%>
+									<StackPanel Orientation="Vertical" Class="XAML-StackPanelKnowledge">
+<%
+		curSelectorList = {
+			"id": 'KnowledgePart' + _quest.id + tmpCode,
+			"title": "",
+			"selected_object_ids": _quest.knowledge_parts,
+			"height": "",
+			"catalog_name": "knowledge_part",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"disp_array": "true",
+			"disp_link": "true",
+			"show_all": true,
+			"list_columns": "name",
+			"is_data_grid": "true",
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>					
+										<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogKnowledgePart<%=_quest.id%><%=tmpCode%>"><%=tools_web.get_web_const( "izmenit", curLngWeb )%></Button>
+									</StackPanel>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+								<GridRow Class="XAML-gridrow-multiline">
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "pe82k7en9s", curLngWeb )%>:</Label>
+<%
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+									<Label/>
+<%
+					}	
+%>
+									<StackPanel Orientation="Vertical" Class="XAML-StackPanelKnowledge">
+<%
+		curSelectorList = {
+			"id": 'Tags' + _quest.id + tmpCode,
+			"title": "",
+			"selected_object_ids": _quest.tags,
+			"height": "100",			
+			"catalog_name": "tag",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"disp_array": "true",
+			"disp_link": "true",
+			"show_all": true,
+			"list_columns": "name",
+			"is_data_grid": "true",
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>					
+										<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogTags<%=_quest.id%><%=tmpCode%>"><%=tools_web.get_web_const( "izmenit", curLngWeb )%></Button>
+									</StackPanel>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+								<GridRow>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Width="150" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "veb_faq", curLngWeb )%>:</Label>
+									<Label/>
+									<CheckBox Name="faq<%=_quest.id%><%=tmpCode%>" Checked="<%=_quest.is_faq%>"></CheckBox>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+								<GridRow>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Width="150" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vcb_open", curLngWeb )%>:</Label>
+									<Label/>
+									<CheckBox Name="open<%=_quest.id%><%=tmpCode%>" Checked="<%=_quest.is_disclosed%>"></CheckBox>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+								<GridRow>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Width="150" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_create_date", curLngWeb )%>:</Label>
+									<Label/>
+									<Label><%=( StrDate( _quest.date, false ) )%></Label>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+<%
+		if ( dQues.normative_date.HasValue )
+		{
+			diff = DateDiff( dQues.normative_date, Date() );
+%>				
+								<GridRow>
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									<StackPanel Orientation="Vertical">
+<%
+					}				
+%>
+									<Label Width="150" Class="XAML-grid-label-name-no-padding XAML-nowrap"><%=tools_web.get_web_const( "vtr_last_time", curLngWeb )%>:</Label>
+									<Label/>
+									<Label><%=diff < 0 ? tools_web.get_web_const( "vkmb_expired", curLngWeb ) : Int( diff/86400 ) + " " + tools_web.get_web_const( "vtlpb_message2", curLngWeb )%></Label>	
+<%							
+					if( curDevice.disp_type == "mobile"  )
+					{
+%>
+									</StackPanel>
+<%
+					}				
+%>
+								</GridRow>
+<%
+		}
+%>	
+							</Grid>
+							<Label/>
+							<Toolbar Width="100%">
+<%
+		if ( StatusQuestion == "true" )
+		{
+%>	
+								<Button Class="XAML-button XAML-button-save" Click="SET=TempCode,<%=tmpCode%>;SET=AnswerQuestion/action,update;SET=AnswerQuestion/question_id,<%=_quest.id%>;ACTION=AnswerQuestion"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+		}
+		else
+		{
+%>
+								<Button Class="XAML-button XAML-button-save" Click="CONFIRM=<%=tools_web.get_web_const( "vepb_expert_mess", curLngWeb )%>;SET=TempCode,<%=tmpCode%>;SET=AnswerQuestion/action,answer;SET=AnswerQuestion/question_id,<%=_quest.id%>;SET=AnswerQuestion/answer,{answer<%=_quest.id%>};ACTION=AnswerQuestion"><%=tools_web.get_web_const( "vfb_submit", curLngWeb )%></Button>
+								<Button Class="XAML-button XAML-button-save" Click="SET=TempCode,<%=tmpCode%>;SET=TempQuestionID,<%=_quest.id%>;OPENDIALOG=SelectDialogForwardExpert"><%=tools_web.get_web_const( "perenapravitvo", curLngWeb )%></Button>
+<%
+		}
+%>
+							</Toolbar>
+						</StackPanel>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+<%							
+					if( curDevice.disp_type != "mobile"  )
+					{
+%>
+					<Label/>
+<%							
+					}
+%>
+					<Label/>
+					
+					<StackPanel Orientation="Vertical" Class="XAML-StackPanelKnowledge">
+						<StackPanel Orientation="Vertical" Class="XAML-StackPanelKnowledge">
+							<StackPanel Name="DescShowLink<%=sType%><%=_quest.id%><%=tmpCode%>" Hidden="<%=PanelExpand%>" UsePadding="false">
+								<Link Click="HIDE=DescShow<%=sType%><%=_quest.id%><%=tmpCode%>;SHOW=DescHide<%=sType%><%=_quest.id%><%=tmpCode%>;HIDE=DescShowLink<%=sType%><%=_quest.id%><%=tmpCode%>;SHOW=DescHideLink<%=sType%><%=_quest.id%><%=tmpCode%>;SHOW=Desc<%=sType%><%=_quest.id%><%=tmpCode%>"><%=tools_web.get_web_const( "vlpb_show", curLngWeb )%></Link>
+							</StackPanel>
+							<StackPanel Name="DescHideLink<%=sType%><%=_quest.id%><%=tmpCode%>" Hidden="<%=PanelExpand == "0" ? "1" : "0"%>" UsePadding="false">
+								<Link Click="HIDE=DescHide<%=sType%><%=_quest.id%><%=tmpCode%>;SHOW=DescShow<%=sType%><%=_quest.id%><%=tmpCode%>;HIDE=DescHideLink<%=sType%><%=_quest.id%><%=tmpCode%>;SHOW=DescShowLink<%=sType%><%=_quest.id%><%=tmpCode%>;HIDE=Desc<%=sType%><%=_quest.id%><%=tmpCode%>"><%=tools_web.get_web_const( "0gcai5ay0x", curLngWeb )%></Link>
+							</StackPanel>
+						</StackPanel>
+					</StackPanel>
+				</GridRow>
+			</Grid>
+		</GridRow>
+<%	
+	}
+%>
+	</Grid>
+</SPXMLScreen>

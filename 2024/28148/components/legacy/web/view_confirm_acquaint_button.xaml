@@ -1,0 +1,72 @@
+﻿<SPXMLScreen>
+<%
+	teAcquaintObject = null;
+	iAcquaintObjectId = null;
+	if( curObject != null )
+	{
+		teAcquaintObject = curObject;
+		iAcquaintObjectId = curObjectID;
+	}
+	else if( curDoc != null )
+	{
+		teAcquaintObject = curDoc;
+		iAcquaintObjectId = curDocID;
+	}
+%>
+	<Action Name="ConfirmAcquaintAction" Source="ConfirmAcquaintAction" Success="{!messageText};REFRESH;" Failure="{!messageText}">
+		<Param Name="curUserID" Value="<%=curUserID%>"/>
+		<Param Name="acquaintAssignID" Value=""/>
+		<Param Name="action" Value=""/>
+		<Param Name="acquaint_id" Value=""/>
+		<Param Name="tmp" Value="<%=iAcquaintObjectId%>"/>
+	</Action>
+	<Dialog Name="QuestionAcquaint<%=iAcquaintObjectId%>" Source="dlg_question_acquaint" Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_questions", curLngWeb ))%>" Close="REFRESH;">
+		<Param Name="AcquaintAssignID" Value=""/>
+	</Dialog>
+	<Dialog Name="QuestionAcquaintUpdate<%=iAcquaintObjectId%>" Source="dlg_question_acquaint" Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_questions", curLngWeb ))%>" Close="REFRESH;">
+		<Param Name="AcquaintAssignID" Value=""/>
+	</Dialog>
+<%
+	if( teAcquaintObject != null )
+	{
+		curMessageBox = {
+			"id": "AssignButtons",
+			"type": "info",
+			"buttons": []
+		};
+		bCreateAquaintAssign = tools_web.is_true( tools_web.get_web_param( curParams, 'confirm_acquaint_button.create_aquaint_assign', false, true ) );
+		xarrAquaintAssigns= XQuery( "for $elem in acquaint_assigns where $elem/person_id = " + curUserID + " and $elem/object_id=" + iAcquaintObjectId + " return $elem" );
+		if ( ArrayOptFirstElem( xarrAquaintAssigns ) != undefined )
+		{
+			if( ArrayOptFind( xarrAquaintAssigns, "This.state_id != 'familiar'" ) != undefined )
+			{
+				curMessageBox.SetProperty( "text", 'Вы можете подтвердить ознакомление по данному объекту' );
+				curMessageBox.buttons.push( {
+					"title": tools_web.get_web_const( 'vab_acquaint_this', curLngWeb ),
+					"click": ( "CONFIRM=" + tools_web.get_web_const( 'vcb_mess_confirm', curLngWeb ) + ";SET=ConfirmAcquaintAction/action,confirm;SET=ConfirmAcquaintAction/acquaintAssignID," + ArrayOptFind( xarrAquaintAssigns, "This.state_id != 'familiar'" ).id + ";ACTION=ConfirmAcquaintAction" )
+				} );
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+			}
+			else
+			{
+				catAcquainAssign = ArrayOptFind( ArraySort( xarrAquaintAssigns, "This.finish_date", "-" ), "This.state_id == 'familiar'" )
+				curMessageBox.SetProperty( "text", 'Вы уже ознакомлены с данным объектом' + ( catAcquainAssign.finish_date.HasValue ? " " + StrDate( catAcquainAssign.finish_date, false ) : "" ) );
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+			}
+		}
+		else if( bCreateAquaintAssign )
+		{
+			oAcquaint = ArrayOptFirstElem( XQuery( "for $i in acquaints where $i/object_id = " + iAcquaintObjectId + " and $i/status = true() return $i" ) );
+			if( oAcquaint != undefined || tools_web.is_true( tools_web.get_web_param( curParams, 'confirm_acquaint_button.create_aquaint', false, true ) ) )
+			{
+				curMessageBox.SetProperty( "text", 'Вы можете подтвердить ознакомление по данному объекту' );
+				curMessageBox.buttons.push( {
+					"title": tools_web.get_web_const( 'vab_acquaint_this', curLngWeb ),
+					"click": ( "CONFIRM=" + tools_web.get_web_const( 'vcb_mess_confirm', curLngWeb ) + ";SET=ConfirmAcquaintAction/acquaintAssignID,;SET=ConfirmAcquaintAction/action,create_and_confirm;SET=ConfirmAcquaintAction/tmp," + iAcquaintObjectId + ";SET=ConfirmAcquaintAction/acquaint_id," + ( oAcquaint != undefined ? oAcquaint.id : "" ) + ";ACTION=ConfirmAcquaintAction" )
+				} );
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+			}
+		}
+	}
+%>
+</SPXMLScreen>

@@ -1,0 +1,105 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+<table border="1" cellpadding="2" cellspacing="0">
+<!-- 	<tr>
+		<td align="center"><b></b></td>
+		<td align="center"><b></b></td>
+		<td align="center"><b></b></td>
+		<td align="center"><b></b></td>
+		<td align="right"><b></b></td>
+		<td align="right"><b></b></td>
+		<td align="right"><b></b></td>
+		<td align="right"><b></b></td>
+<%		
+		for ( _elem in Ps.objectives )
+		{
+%>		
+		<td align="center"  bgcolor="#FF4433"><b><%=_elem.PrimaryKey%></b></td>
+
+<%		
+		}
+%>	
+	</tr> -->
+	<tr valign="top">
+		<td width="300" bgcolor="#FFCC99"><%=ms_tools.get_const('wrm4ebg7c9')%></td>
+		<td width="200" bgcolor="#FFCC99"><%=ms_tools.get_const('c_code')%></td>
+		<td width="200" bgcolor="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+		<td width="300" bgcolor="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+		<td width="300" bgcolor="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+		<td width="100" bgcolor="#FFCC99">Дата активации курса</td>
+		<td width="100" bgcolor="#FFCC99">Дата активации модуля</td>
+		<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('c_status')%></td>
+		<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('y02j7bpbmq')%></td>
+<% 
+for (_objective in Ps.objectives)
+{
+%>
+		<td>
+			<table  border="1">
+				<td width="150" bgcolor="#FFCC99"><%=ms_tools.get_const('c_score')%></td>
+				<td width="80" bgcolor="#FFCC99"><%=ms_tools.get_const('bfuibkfp1w')%></td>
+				<td width="80" bgcolor="#FFCC99"><%=ms_tools.get_const('c_status')%></td>
+				<td width="150" bgcolor="#FFCC99"><%=ms_tools.get_const('c_desc')%></td> 
+			</table>
+		</td> 
+<%
+}
+%>
+	</tr>
+<%
+for ( _learning in Ps.learnings )
+{
+%>
+  <tr valign="top">
+  	<td width="300" align="center"><%=_learning.person_fullname%></td>
+	<td width="200"><%=_learning.person_code%></td>
+	<td width="200"><%=_learning.person_id.ForeignElem.org_name%></td>
+	<td width="300"><%=TopElem.disp_person_list_staff ? _learning.person_list_staff : _learning.person_subdivision_name%></td>
+	<td width="300"><%=_learning.person_position_name%></td>
+	<td width="110" align="center"><%=StrDate( _learning.course_start_usage_date, true, false )%></td>
+	<td width="110" align="center"><%=StrDate( _learning.start_usage_date, true, false )%></td>
+	<td width="80" align="center"><%
+		fldState = _learning.state_id.OptForeignElem;
+		Response.Write( fldState == undefined ? _learning.state_id : fldState.name );
+	%></td>
+	<td width="50" align="center"><%try { _learning.max_score != null ? Response.Write( _learning.score + ' (' + ( ( 100 * _learning.score ) / _learning.max_score ) + '%)' ) : Response.Write( _learning.score ) } catch ( e ) {  }%></td>
+    
+<% 
+	for (_objective in _learning.objectives.lines)
+	{
+		_bgcolor = (_objective.ChildExists('success_status')&& Trim(_objective.success_status)!=''&&_objective.success_status == "passed") ? "#CCFFCC" :"#FFCCCC" ;
+%>
+		<td>
+			<table  border="1">
+				<td width="300" align="center"><%=_objective.score%></td>
+				<td width="110" align="center"><%=(_objective.ChildExists('completion_status')&& Trim(_objective.completion_status)!='' )? _objective.completion_status.ForeignElem.name : ''%></td>
+				<td width="80" align="center" bgcolor="<%=_bgcolor%>">
+				<%
+					strStatusName=global_settings.object_deleted_str
+					if (_objective.ChildExists('success_status')&& Trim(_objective.success_status)!='' )
+					{
+						fldStatus = _objective.success_status.OptForeignElem;
+						strStatusName=(fldStatus!=undefined?fldStatus.name:strStatusName)
+					}
+				%><%=strStatusName%></td>
+				<td width="50" align="center"><%=_objective.description%></td>
+			</table>
+		</td>	
+	  	
+<%
+	}
+%>
+	</tr>
+<%
+}
+%>
+</table>
+</body>
+</html>

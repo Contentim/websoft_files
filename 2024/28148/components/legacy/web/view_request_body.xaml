@@ -1,0 +1,906 @@
+﻿<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+curRequestTypeID = null;
+curRequestType = null;
+teWorkflow = null;
+isNew = oParamSource.GetOptProperty( "new" ) == "1" || curMode == "request_create";
+
+bResaveCurObject = true;
+function resave_cur_object()
+{
+	if ( bResaveCurObject )
+	{
+		curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+	}
+	bResaveCurObject = false;
+}
+
+if ( isNew )
+{
+	curUser = OpenDoc( UrlFromDocID( curUserID ) ).TopElem;
+	curUser.password.Clear();
+
+	curObjectID = null;
+	curObject = OpenNewDoc( 'x-local://wtv/wtv_request.xmd' ).TopElem;
+
+	curObject.is_group = tools_web.is_true( CONTEXT.GetOptProperty( "IsGroupCheck" ) );
+
+	curRequestObjectID = OptInt( oParamSource.GetOptProperty( 'request_object_id' ), null );
+	if ( curRequestObjectID == null )
+		curRequestObjectID = OptInt( tools_web.get_web_param( curParams, 'request_body.request_object_id', null, true ), null );
+	if ( curRequestObjectID != null )
+	{
+		curRequestObject = OpenDoc( UrlFromDocID( curRequestObjectID ) ).TopElem;
+		curObject.object_id = curRequestObjectID;
+		curObject.type = curRequestObject.Name;
+		curObject.object_name = tools.get_disp_name_value( curRequestObject );
+
+/*********************
+		URL request sample:
+		selected_users=[request_object_id]_[user_id_1]:[VALUE],[request_object_id]_[user_id_2]:[VALUE],[request_object_id]_[user_id_n]:[VALUE]
+*********************/
+		curRequestSelectedUsers = oParamSource.GetOptProperty( 'selected_users', '' );
+		if ( curRequestSelectedUsers == '' )
+			curRequestSelectedUsers = tools_web.get_web_param( curParams, 'request_body.selected_users', '', true );
+		if ( curRequestSelectedUsers != '' )
+		{
+			arrSelectedUsersInfo = String( curRequestSelectedUsers ).split(",");
+			for(sSelectedUserInfo in arrSelectedUsersInfo)
+			{
+				arrUserInfo = String(sSelectedUserInfo).split(":");
+				if(arrUserInfo.length > 1 && arrUserInfo[1] == "1")
+				{
+					iPersonId = Int(StrReplace(arrUserInfo[0], curRequestObjectID + "_", ""));
+					_child = curObject.persons.ObtainChildByKey( iPersonId );
+					tools.common_filling( "collaborator", _child, iPersonId );
+				}
+			}
+		}
+	}
+	if ( curObject.object_id.HasValue )
+	{
+		if ( curObject.ChildExists( 'date_request_over' ) && curObject.date_request_over.HasValue && curObject.date_request_over < Date() )
+		{
+%>
+<SPXMLScreen>
+<%
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'veb_request_time_expired', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+		}
+		else if ( curObject.ChildExists( 'date_request_begin' ) && curObject.date_request_begin.HasValue && curObject.date_request_over > Date() )
+		{
+%>
+<SPXMLScreen>
+<%
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'veb_request_time_begin', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+		}
+	}
+
+	curRequestTypeID = OptInt( CONTEXT.GetOptProperty( 'request_type_id', oParamSource.GetOptProperty( 'request_type_id' ) ), null );
+	if ( curRequestTypeID == null )
+		curRequestTypeID = OptInt( tools_web.get_web_param( curParams, 'request_body.request_type_id', null, true ), null );
+	curRequestTypeCode = oParamSource.GetOptProperty( 'request_type_code', '' );
+	if ( curRequestTypeCode == '' )
+		curRequestTypeCode = tools_web.get_web_param( curParams, 'request_body.request_type_code', '', true );
+	if ( curRequestTypeID == null && curRequestTypeCode != '' )
+	{
+		requestTypeArrayFirstElem = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/code = " + XQueryLiteral( String( curRequestTypeCode ) ) + " return $elem/Fields('id')" ) );
+		if ( requestTypeArrayFirstElem != undefined )
+			curRequestTypeID = requestTypeArrayFirstElem.id;
+	}
+	if ( curRequestTypeID != null )
+	{
+		curRequestType = OpenDoc( UrlFromDocID( curRequestTypeID ) ).TopElem;
+		if ( !tools.check_access(curRequestType, curUserID, curUser) )
+		{
+%>
+<SPXMLScreen>
+<%
+			curMessageBox = {
+				"type": "error",
+				"text": 'Вам недоступа подача заявки данного типа: "' + curRequestType.name.Value + '"'
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+		}
+		tools.common_filling( 'request_type', curObject, curRequestTypeID, curRequestType );
+	}
+
+	if ( curUser.in_request_black_list && curRequestType != null && ! curRequestType.ignore_black_list )
+	{
+%>
+<SPXMLScreen>
+<%
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'veb_text_in_request_black_list', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+
+	curRequestObjectType = oParamSource.GetOptProperty( 'type', '' );
+	if ( curRequestObjectType == '' )
+		curRequestObjectType = tools_web.get_web_param( curParams, 'request_body.type', '', true );
+	if ( curRequestObjectType != '' )
+		curObject.type = curRequestObjectType;
+
+	curSourceRequestID = OptInt( oParamSource.GetOptProperty( 'source_request_id' ), null );
+	if ( curSourceRequestID == null )
+		curSourceRequestID = OptInt( tools_web.get_web_param( curParams, 'request_body.source_request_id', null, true ), null );
+	if ( curSourceRequestID != null )
+	{
+		curSourceRequest = OpenDoc( UrlFromDocID( curSourceRequestID ) ).TopElem;
+
+		sSourceRequestFields = oParamSource.GetOptProperty( "source_request_fields", "" );
+		if ( sSourceRequestFields == '' )
+		{
+			curObject.custom_elems.AssignElem( curSourceRequest.custom_elems );
+			for ( fldCustomElem in ArraySelect( curObject.custom_elems, "StrContains(name,'$clear')" ) )
+				fldCustomElem.Delete();
+		}
+		else
+		{
+			arrSourceRequestFields = sSourceRequestFields.split( ";" );
+			for ( sFieldNameElem in arrSourceRequestFields )
+			{
+				fldCustomElem = curSourceRequest.custom_elems.GetOptChildByKey( sFieldNameElem );
+				if ( fldCustomElem != undefined )
+					curObject.custom_elems.ObtainChildByKey( sFieldNameElem ).AssignElem( fldCustomElem );
+			}
+		}
+	}
+
+	curObject.person_id = curUserID;
+	tools.common_filling( 'collaborator', curObject, curUserID, curUser );
+}
+else if ( ISDIALOG )
+{
+	curObjectID = OptInt( oParamSource.GetOptProperty( 'object_id' ), null );
+	if ( curObjectID == null )
+	{
+%>
+<SPXMLScreen>
+<%
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neukazanidobek', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+
+	resave_cur_object();
+}
+
+curRequestTypeID = curObject.request_type_id.Value;
+if ( curRequestTypeID != null && curRequestType == null )
+	curRequestType = OpenDoc( UrlFromDocID( curRequestTypeID ) ).TopElem;
+
+
+if ( ! isNew )
+{
+	bReadAccess = curUserID == curObject.person_id;
+	if ( ! bReadAccess )
+	{
+		if ( curRequestType != null && curObject.workflow_id.HasValue )
+		{
+			try
+			{
+				teWorkflow = OpenDoc( UrlFromDocID( curObject.workflow_id ) ).TopElem;
+			}
+			catch ( err )
+			{
+				alert( err );
+			}
+			if ( teWorkflow != null )
+			{
+				sCustomEval = '';
+				fldWorkflowCustomState = curObject.workflow_custom_states.GetOptChildByKey( curObject.workflow_state );
+				if ( fldWorkflowCustomState != undefined && fldWorkflowCustomState.condition_eval_str.HasValue )
+					sCustomEval = '(' + fldWorkflowCustomState.condition_eval_str.Value + ')';
+
+				bReadAccess = ! teWorkflow.condition_eval_str.HasValue && sCustomEval == '';
+				if ( ! bReadAccess )
+				{
+					resave_cur_object();
+					sCustomEval += ( sCustomEval == '' ? '' : '||' ) + ( teWorkflow.condition_eval_str.HasValue ? '(' + teWorkflow.condition_eval_str + ')' : 'false' );
+					bReadAccess = tools.safe_execution( sCustomEval );
+				}
+			}
+		}
+	}
+	if ( ! bReadAccess )
+	{
+%>
+<SPXMLScreen>
+<%
+		curMessageBox = {
+			"type": "error_access",
+			"buttons": [
+				{ "title": tools_web.get_web_const( "vhrb_title2", curLngWeb ), "click": ( "OPENURL=" + tools_web.get_mode_clean_url( "requests", null, { tab_requests: 1, doc_id: curDocID } ) ) }
+			]
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+%>
+<SPXMLScreen>
+<%
+
+
+if ( curRequestType != null && curRequestType.request_custom_web_template_id.HasValue )
+{
+	Response.Write( tools_web.place_xaml( curRequestType.request_custom_web_template_id.Value ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+if ( curRequestType == null )
+{
+	curTitle = {
+		"type": "simple",
+		"title": tools_web.get_web_const( 'verb_title', curLngWeb )
+	};
+}
+else
+{
+	curTitle = {
+		"object": curRequestType,
+		"object_title": ( tools_web.get_web_const( 'c_request', curLngWeb ) + ( isNew ? "" : " (№" + curObject.code + ")" ) )
+	};
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+
+arrContextFildNames = [ 'IsGroupCheck', 'CatalogListDataGridRequestGroup:*', 'comment' ];
+
+bAllowCreate = isNew && curRequestType != null;
+if ( bAllowCreate && curRequestType.boss_only )
+{
+	bAllowCreate = tools.is_boss();
+	if ( ! bAllowCreate )
+	{
+		curMessageBox = {
+			"type": "info",
+			"text": tools_web.get_web_const( 'podavatzayavkum', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+}
+
+if ( isNew && curRequestTypeID != null )
+{
+	xarrRequests = XQuery( "for $elem in requests where $elem/person_id = " + curUserID + " and $elem/request_type_id = " + curRequestTypeID + " order by $elem/create_date descending return $elem/Fields('id','create_date','object_name')" );
+	iRequestsCount = ArrayCount( xarrRequests );
+	if ( iRequestsCount != 0 )
+	{
+		if ( iRequestsCount > 10 )
+			xarrRequests = ArrayRange( xarrRequests, 0, 10 );
+
+		curMessageBox = {
+			"type": "info",
+			"text": ( "Вы подавали заявку данного типа" + ":  " + iRequestsCount + " " + "раз" ),
+			"html_add": ( ArrayMerge( xarrRequests, "This.create_date+'&nbsp;&nbsp;&nbsp;'+This.object_name", '<br/>' ) + ( iRequestsCount > 10 ? '<br/>...' : '' ) )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+}
+
+arrButtons = [];
+bAllowCopy = false;
+if ( ! isNew && curUserID == curObject.person_id && ! curRequestType.forbid_copy )
+{
+	sCopyUrl = tools_web.get_mode_clean_url( "request_create", null, { request_type_id: curObject.request_type_id.Value, source_request_id: curObjectID, doc_id: curDocID } );
+	bAllowCopy = true;
+	// SET=RequestNewSaveAction/source_request_id,< =curObjectID >;ACTION=RequestNewSaveAction
+}
+
+bAllowReject = false;
+if ( ! isNew && curObject.status_id == 'active' && curUserID == curObject.person_id && ! curRequestType.forbid_rejection )
+{
+	bAllowReject = true;
+	if ( curObject.object_id.HasValue )
+		try
+		{
+			_baseObject = OpenDoc( UrlFromDocID( curObject.object_id ) ).TopElem;
+
+			if ( _baseObject.ChildExists('date_request_rejection_over') && _baseObject.date_request_rejection_over.HasValue && _baseObject.date_request_rejection_over < Date() )
+				bAllowReject = false;
+		}
+		catch(_heh_)
+		{
+		}
+}
+sSaveUrl = curRequestType == null || ! curRequestType.reject_redirect_url.HasValue ? tools_web.get_mode_clean_url( "requests", null, { doc_id: curDocID } ) : tools_web.convert_mode_clean_url( StrBegins( curRequestType.reject_redirect_url, '=' ) ? SafeEval( StrRightRangePos( curRequestType.reject_redirect_url, 1 ), [ { 'curObject': curObject, 'Env': Env } ] ) : curRequestType.reject_redirect_url );
+%>
+<Action Name="RequestNewSaveAction" Source="request_create" Success="SET=RequestNewSaveAction/source_request_id,;<%=( curRequestType != null && curRequestType.create_message.HasValue ? 'ALERT=' + XmlAttrEncode( curRequestType.create_message ) + ';' : '' )%><%=( ISDIALOG ? 'CLOSEDIALOG' : 'OPENURL=' + sSaveUrl )%>" Failure="Show=MainActionsPanel;SET=RequestNewSaveAction/source_request_id,;{!workflow_action_failure_action}">
+	<Param Name="request_type_id" Value="<%=curObject.request_type_id%>"/>
+	<Param Name="source_request_id" Value=""/>
+	<Param Name="object_id" Value="{object_id}"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Action Name="RequestRejectAction" Source="request_reject" Success="<%=( ISDIALOG ? 'CLOSEDIALOG' : 'OPENURL=' + sSaveUrl )%>" Failure="Show=MainActionsPanel;ALERT={messageText}">
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+</Action>
+<Edit Name="IsGroupCheck" Hidden="true"><%=( curObject.is_group ? 1 : 0 )%></Edit>
+<%
+if ( curObject.workflow_id.HasValue )
+	try
+	{
+		teWorkflow = OpenDoc( UrlFromDocID( curObject.workflow_id ) ).TopElem;
+	}
+	catch ( err )
+	{
+		alert( err );
+	}
+
+
+if ( isNew && curRequestType == null )
+{
+%>
+<ComboBox Name="request_type_id" SelectedItem="" Width="100%" Change="REFRESH">
+	<ComboBoxItem Value="" Selected="true"><![CDATA[<%=tools_web.get_web_const( 'vyberitetipzaya', curLngWeb )%>]]></ComboBoxItem>
+<%
+	for ( catRequestTypeElem in XQuery( "for $elem in request_types" + ( curObject.type.HasValue ? ' where $elem/object_type = ' + curObject.type.XQueryLiteral : '' ) + " order by $elem/name return $elem/Fields('id','name')" ) )
+	{
+%>
+	<ComboBoxItem Value="<%=catRequestTypeElem.id%>"><![CDATA[<%=tools_web.get_cur_lng_name( catRequestTypeElem.name, curLng.short_id )%>]]></ComboBoxItem>
+<%
+	}
+%>
+</ComboBox>
+<%
+}
+else
+{
+%>
+<Edit Name="request_type_id" Hidden="true"><%=curRequestTypeID%></Edit>
+<%
+fldCustomElems = null;
+bCustomElemsCondition = false;
+if ( curRequestTypeID != null )
+{
+	fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+	if ( fldCustomElems != null )
+	{
+		fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+		bCustomElemsCondition = ArrayOptFind( fldWebCustomFields, "ArrayCount(This.view.conditions)!=0" ) != undefined;
+	}
+}
+
+
+dSimpleView = isNew || curDevice.disp_type != "";
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'RequestTab' ), OptInt( oParamSource.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+if ( dSimpleView )
+{
+	arrTabListParam = ["main"];
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'request_body.tab_list', 'main;persons;history', true ) ).split( ';' );
+%>
+<TabControl Name="RequestTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w">
+<%
+}
+
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'request_body.tab_list.main_tab.block_list', 'desc;info;persons;files;fields;workflow', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "request_body.tab_list.main_tab", "", true );
+
+	sCustomFieldsComboBoxWidth = tools_web.get_web_param( curParams, 'request_body.custom_fields.combo_box_width', '200', true );
+
+	if ( ! dSimpleView )
+	{
+%>
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	}
+
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'desc' && curRequestType != null )
+		{
+			curDescObject = curRequestType;
+			curDescObjectID = curRequestTypeID;
+			Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+
+		if ( sTabElem == 'info' )
+		{
+			bDispInfo = curRequestType == null || ! isNew || curObject.type.HasValue || ( curRequestType != null && ! curRequestType.hide_portal_comment ) || ( isNew && curRequestType != null && curRequestType.is_can_be_group );
+			if ( bDispInfo )
+			{
+
+			catPerson = curObject.person_id.OptForeignElem;
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+			if ( curRequestType == null )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( '5rrpn7n7gm', curLngWeb )%>:</Label>
+					<ComboBox Name="request_type_id" SelectedItem="<%=curRequestTypeID%>" Width="100%" Change="REFRESH">
+<%
+				for ( catRequestTypeElem in XQuery( "for $elem in request_types" + ( curObject.type.HasValue ? ' where $elem/object_type = ' + curObject.type.XQueryLiteral : '' ) + " order by $elem/name return $elem/Fields('id','name')" ) )
+				{
+%>
+						<ComboBoxItem Value="<%=catRequestTypeElem.id%>"><![CDATA[<%=tools_web.get_cur_lng_name( catRequestTypeElem.name, curLng.short_id )%>]]></ComboBoxItem>
+<%
+				}
+%>
+					</ComboBox>
+				</GridRow>
+<%
+			}
+
+			if ( ! isNew )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'zayavitel', curLngWeb )%>:</Label>
+					<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.person_id, { doc_id: curDocID } )%>" Class="XAML-right-margin"><%=( catPerson == undefined ? curObject.person_fullname : catPerson.fullname )%></Link>
+<%
+				if ( catPerson != undefined && ( catPerson.position_name.HasValue || catPerson.position_parent_name.HasValue ) )
+				{
+%>
+						<Label><![CDATA[(<%=( tools_web.get_cur_lng_name( catPerson.position_name, curLng.short_id ) + ( catPerson.position_name.HasValue && catPerson.position_parent_name.HasValue ? ', ' : '' ) + tools_web.get_cur_lng_name( catPerson.position_parent_name, curLng.short_id ) )%>)]]></Label>
+<%
+				}
+%>
+					</StackPanel>
+				</GridRow>
+<%
+			}
+
+			if ( curObject.type.HasValue )
+			{
+				fldCommonCatalog = curLngCommon.exchange_object_types.GetChildByKey( curObject.type );
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=fldCommonCatalog.title%>:</Label>
+<%
+				sOldObjectID = CONTEXT.GetOptProperty( 'object_id', null );
+				if ( isNew && ! curObject.object_id.HasValue )
+				{
+					curSelector = {
+						"id": "RequestObject",
+						"catalog_name": curObject.type,
+						"object_id_item_name": "object_id",
+						"check_access": true,
+						"width": "100%",
+						"can_be_empty": true,
+						"object_id": sOldObjectID
+					};
+					try
+					{
+						if ( curObject.type != 'assessment' )
+						{
+							fldCatElem = tools.new_doc_by_name( curObject.type, true ).TopElem.AddChild();
+							if ( fldCatElem.ChildExists( 'is_open' ) )
+								curSelector.SetProperty( 'xquery_qual', '$elem/is_open = true()' );
+						}
+					}
+					catch ( err )
+					{
+					}
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+				}
+				else
+				{
+					if ( fldCommonCatalog.web_template.HasValue )
+					{
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.object_id, { doc_id: curDocID } )%>"><%=tools_web.get_cur_lng_name( curObject.object_name, curLng.short_id )%></Link>
+<%
+					}
+					else
+					{
+%>
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( curObject.object_name, curLng.short_id )%>]]></Label>
+<%
+					}
+%>
+					<Edit Name="object_id" Hidden="1"><%=curObject.object_id%></Edit>
+<%
+				}
+%>
+				</GridRow>
+<%
+			}
+
+			if ( ! isNew )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_cur_workflow_state', curLngWeb )%> :</Label>
+					<Label><%=tools_web.get_cur_lng_name( curObject.workflow_state_name, curLng.short_id )%></Label>
+				</GridRow>
+<%
+			}
+
+			if ( curRequestType != null && ! curRequestType.hide_portal_comment )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'verb_comment', curLngWeb )%>:</Label>
+					<EditBox Name="comment" Width="100%"><![CDATA[<%=tools_web.html_decode( curObject.comment )%>]]></EditBox>
+				</GridRow>
+<%
+			}
+
+			if ( isNew && curRequestType != null && curRequestType.is_can_be_group )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'zayaviteli', curLngWeb )%>:</Label>
+					<ComboBox Name="RequestGroupSelector" SelectedItem="<%=( curRequestType.is_group || curObject.is_group ? 'group' : 'single' )%>" Class="XAML-input-medium">
+						<ComboBoxItem Value="single" Change="SET=IsGroupCheck,0;<%=( bCustomElemsCondition ? "REFRESH;" : "HIDE=RequestGroupPanel;" )%>"><%=tools_web.get_web_const( 'individualnayaz', curLngWeb )%></ComboBoxItem>
+						<ComboBoxItem Value="group" Change="SET=IsGroupCheck,1;<%=( bCustomElemsCondition ? "REFRESH;" : "SHOW=RequestGroupPanel;" )%>"><%=tools_web.get_web_const( 'vrb_is_group', curLngWeb )%></ComboBoxItem>
+					</ComboBox>
+				</GridRow>
+<%
+			}
+%>
+			</Grid>
+<%
+			}
+		}
+
+		if ( sTabElem == 'persons' && ( ( isNew && curRequestType != null && curRequestType.is_can_be_group ) || ( ! isNew && curDevice.disp_type != "" && ( curObject.is_group || curObject.persons.ChildNum != 0 ) ) ) )
+		{
+%>
+			<Panel Name="RequestGroupPanel" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'sostavgruppy', curLngWeb ) + ( isNew ? '' : ' (' + curObject.persons.ChildNum + ')' ) )%>" Hidden="<%=( ! curObject.is_group && ! curRequestType.is_group )%>" Width="100%">
+<%
+			curSelectorList = {
+				"id": "RequestGroup",
+				"height": "200",
+				"catalog_name": "collaborator",
+				"selected_object_ids": CONTEXT.GetOptProperty( "TempDestinationEditRequestGroup", ArrayMerge( curObject.persons, 'PrimaryKey', ';' ) ),
+				"list_columns": "fullname;position_name;position_parent_name",
+				"disp_schema": "block",
+			}
+			if ( isNew )
+			{
+				curSelectorList.SetProperty( "buttons", [
+					{ "title": tools_web.get_web_const( "vaaeb_sel_colls", curLngWeb ), "click": "OPENDIALOG=SelectDialogRequestGroup" }
+				] );
+			}
+			if ( ! curRequestType.is_can_be_add_youself )
+			{
+				curSelectorList.SetProperty( "select_xquery_qual", "$elem/id != " + curUserID );
+			}
+			curSelectorList.SetProperty( "show_all", curRequestType.show_all.Value );
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+			</Panel>
+<%
+		}
+
+		if ( sTabElem == 'files' && ! isNew )
+		{
+			curFilesDoc = curObject;
+			allowChangeFiles = curUserID == curObject.person_id;
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+		}
+
+		if ( sTabElem == 'fields' && curRequestTypeID != null )
+		{
+			if ( fldCustomElems != null )
+			{
+				if ( ArrayCount( fldWebCustomFields ) != 0 )
+				{
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_request', curLngWeb ) )%>" Width="100%">
+<%
+					arrCustomFieldNames = Array();
+					curCustomFields = {
+						"template": fldCustomElems,
+						"fields": fldWebCustomFields,
+						"source": curObject.custom_elems,
+						"modify_eval": isNew,
+						"combo_box_width": sCustomFieldsComboBoxWidth,
+						"disp_pages": true,
+						"condition_action": "REFRESH"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					arrContextFildNames = ArrayUnion( arrContextFildNames, arrCustomFieldNames );
+%>
+		</Panel>
+<%
+				}
+			}
+		}
+
+		if ( sTabElem == 'workflow' && curRequestTypeID != null )
+		{
+//////////////////////////////////////////////////
+			if ( ! isNew && teWorkflow != null )
+			{
+				resave_cur_object();
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'soglasovanie', curLngWeb ) )%>" Width="100%">
+<%
+				arrWorkflowFields = Array();
+				for ( fldGroupElem in teWorkflow.field_groups )
+					if ( tools.safe_execution( fldGroupElem.read_conditions.condition_eval_str ) )
+						for ( fldFieldElem in ArraySelectByKey( teWorkflow.workflow_fields, fldGroupElem.code, 'field_group_id' ) )
+							arrWorkflowFields.push( fldFieldElem );
+
+				arrCustomFieldNames = Array();
+				curCustomFields = {
+					"id": "Workflow",
+					"fields": arrWorkflowFields,
+					"source": curObject.workflow_fields,
+					"modify_eval": false,
+					"field_modify_eval": "tools.safe_execution(fldFieldElem.Parent.Parent.field_groups.GetChildByKey(fldFieldElem.field_group_id).write_conditions.condition_eval_str)",
+					"combo_box_width": sCustomFieldsComboBoxWidth
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+				arrContextFildNames = ArrayUnion( arrContextFildNames, arrCustomFieldNames );
+%>
+		</Panel>
+
+		<ContextGroup Name="WorkflowActionContext" Items="<%=ArrayMerge( arrCustomFieldNames, 'This', ',' )%>"/>
+		<Action Name="WorckflowAction" Source="workflow_process" Success="{!workflow_action_success_action}" Failure="ALERT={messageText}">
+			<Param Name="action_id" Value=""/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+<%
+				sCustomStateActionID = '';
+				for ( fldActionElem in teWorkflow.actions )
+				{
+					if ( tools.safe_execution( fldActionElem.condition_eval_str ) )
+					{
+						if ( ArrayOptFindByKey( fldActionElem.operations, 'set_workflow_custom_state', 'type' ) != undefined )
+							sCustomStateActionID = fldActionElem.PrimaryKey;
+
+						arrButtons.push( { 'xaml': '<Button Click="SET=WorckflowAction/action_id,' + fldActionElem.PrimaryKey + ';CONTEXT=WorkflowActionContext;ACTION=WorckflowAction" Class="XAML-button"><![CDATA[' + tools_web.get_cur_lng_name( fldActionElem.name, curLng.short_id ) + ']]></Button>' } );
+					}
+				}
+				if ( ArrayCount( arrButtons ) != 0 )
+				{
+					if ( sCustomStateActionID != '' )
+					{
+%>
+		<Panel Name="RequestCustomStatePanel" Source="request_custom_state_panel" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vybrannyeetapy', curLngWeb ) )%>" Width="100%">
+			<Param Name="state_action_id" Value="<%=sCustomStateActionID%>"/>
+		</Panel>
+<%
+					}
+				}
+			}
+////////////////////////////////////////////
+		}
+	}
+%>
+<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+	<StackPanel Name="MainActionsPanel" Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+if ( bAllowCreate )
+{
+%>
+	<Button Class="XAML-button XAML-button-important" Click="Hide=MainActionsPanel;CONTEXT=AllSavedContext;ACTION=RequestNewSaveAction"><%=tools_web.get_web_const( 'c_create', curLngWeb )%></Button>
+<%
+}
+if ( bAllowCopy )
+{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=sCopyUrl%>"><%=tools_web.get_web_const( 'vrb_request_copy', curLngWeb )%></Button>
+<%
+}
+if ( bAllowReject )
+{
+%>
+	<Button Class="XAML-button" Click="Hide=MainActionsPanel;ACTION=RequestRejectAction"><%=tools_web.get_web_const( 'c_reject', curLngWeb )%></Button>
+<%
+}
+sBackUrl = tools_web.get_web_param( curParams, 'request_body.back_list_url', '', true );
+if ( sBackUrl != '' )
+{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=XmlAttrEncode( sBackUrl )%>"><%=tools_web.get_web_const( 'vaaeb_list_back', curLngWeb )%></Button>
+<%
+}
+%>
+	</StackPanel>
+<%
+	if ( ArrayCount( arrButtons ) != 0 )
+	{
+		iRowButtonCount = OptInt( tools_web.get_web_param( curParams, 'request_body.workflow_row_buttons_count', 5, true ), 5 );
+		iButtonCount = 0;
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+		for ( oButtonElem in arrButtons )
+		{
+			if ( ( iButtonCount % iRowButtonCount ) == 0 && iButtonCount != 0 )
+			{
+%>
+	</StackPanel>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+			}
+
+			Response.Write( oButtonElem.xaml );
+			iButtonCount++;
+		}
+%>
+	</StackPanel>
+<%
+	}
+%>
+</StackPanel>
+<%
+
+	if ( ! dSimpleView )
+	{
+%>
+	</TabItem>
+<%
+	}
+}
+
+
+
+///////////////////////////////////////////////   PERSONS TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'persons' && ! isNew && ( curObject.is_group || curObject.persons.ChildNum != 0 ) )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'request_body.tab_list.persons_tab.block_list', 'persons', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "request_body.tab_list.persons_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'c_group', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'persons' )
+		{
+			curView = {
+				"id": "RequestGroup",
+				"height": "",
+				"catalog_name": "collaborator",
+				"disp_array": true,
+				"array": ArrayMerge( curObject.persons, 'PrimaryKey', ';' ),
+				"show_all": true,
+				"list_columns": "fullname;position_name;position_parent_name"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   HISTORY TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'history' && ! isNew && ( curObject.workflow_id.HasValue || curObject.workflow_log_entrys.ChildNum != 0 ) )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'request_body.tab_list.history_tab.block_list', 'history', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "request_body.tab_list.history_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( 'istoriyasoglaso', curLngWeb ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'history' )
+		{
+%>
+		<Collection Name="RequestWorkflowLogCollection">
+			<Data>
+<%
+			for ( fldLogEntryElem in curObject.workflow_log_entrys )
+			{
+				if ( teWorkflow == null )
+				{
+					sAction = fldLogEntryElem.action_id;
+					sBegin = fldLogEntryElem.begin_state;
+					sFinish = fldLogEntryElem.finish_state;
+				}
+				else
+				{
+					sAction = teWorkflow.actions.GetOptChildByKey( fldLogEntryElem.action_id );
+					sAction = sAction == undefined ? fldLogEntryElem.action_id : tools_web.get_cur_lng_name( sAction.name, curLng.short_id );
+					sBegin = teWorkflow.states.GetOptChildByKey( fldLogEntryElem.begin_state );
+					sBegin = sBegin == undefined ? fldLogEntryElem.begin_state : tools_web.get_cur_lng_name( sBegin.name, curLng.short_id );
+					sFinish = teWorkflow.states.GetOptChildByKey( fldLogEntryElem.finish_state );
+					sFinish = sFinish == undefined ? fldLogEntryElem.finish_state : tools_web.get_cur_lng_name( sFinish.name, curLng.short_id );
+				}
+%>
+				<Row>
+					<Cell Id="date" Value="<%=fldLogEntryElem.create_date%>"/>
+					<Cell Id="person" Value="<%=XmlAttrEncode( fldLogEntryElem.person_fullname )%>"/>
+					<Cell Id="action" Value="<%=XmlAttrEncode( sAction )%>"/>
+					<Cell Id="begin" Value="<%=XmlAttrEncode( sBegin )%>"/>
+					<Cell Id="finish" Value="<%=XmlAttrEncode( sFinish )%>"/>
+				</Row>
+<%
+			}
+%>
+			</Data>
+		</Collection>
+		<DataGrid Name="LearningEventGrid" Source="{RequestWorkflowLogCollection}" Height="">
+			<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vdb_aim_date', curLngWeb ) )%>" Width="140" Type="string"/>
+			<DataGridColumn Value="person" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_fio', curLngWeb ) )%>" Type="string"/>
+			<DataGridColumn Value="action" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vfb_action', curLngWeb ) )%>" Width="200" Type="string"/>
+			<DataGridColumn Value="begin" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'uyt854xyos', curLngWeb ) )%>" Width="200" Type="string"/>
+			<DataGridColumn Value="finish" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'aaf9r251lp', curLngWeb ) )%>" Width="200" Type="string"/>
+		</DataGrid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+
+if ( ! dSimpleView )
+{
+%>
+</TabControl>
+<%
+}
+%>
+<ContextGroup Name="AllSavedContext" Items="<%=ArrayMerge( arrContextFildNames, 'This', ',' )%>"/>
+<%
+if ( ISDIALOG )
+{
+%>
+	<Button Click="CANCELDIALOG"><%=tools_web.get_web_const( 'c_cancel', curLngWeb )%></Button>
+<%
+}
+
+
+}
+%>
+</SPXMLScreen>

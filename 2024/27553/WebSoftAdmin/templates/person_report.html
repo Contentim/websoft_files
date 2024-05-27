@@ -1,0 +1,82 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+
+	<%
+		arrColumns = Ps.columns;
+	%>
+
+<table border="1" cellpadding="2" cellspacing="0">
+  <tr valign="middle">
+		<% for(oColumn in arrColumns){ %>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const(oColumn.const)%></td>
+		<% } %>
+	</tr>
+
+<%
+	for ( _learning in Ps.learnings )
+	{
+		sReturn = null;
+		try 
+		{ 
+			sReturn= _learning.score
+			if (_learning.max_score>0)
+				sReturn = sReturn+ ' (' + StrReal( ( 100 * Real(_learning.score) ) / Real(_learning.max_score),1 ) + '%)' 
+		} 
+		catch ( e ) 
+		{ 
+			
+		}
+%>
+  <tr valign="top">
+  	<% for(oColumn in arrColumns){ %>
+  		<% if(oColumn.name == 'person_fullname'){ %>
+					<td width="150"><%=_learning.person_fullname%></td>
+			<% } %>
+			<% if(oColumn.name == 'person_org_name'){ %>
+					<td width="200"><%=_learning.person_org_name%></td>
+			<% } %>
+			<% if(oColumn.name == 'person_code'){ %>
+					<td width="200"><%=_learning.person_code%></td>
+			<% } %>
+			<% if(oColumn.name == 'person_subdivision_name'){ %>
+					<td width="150"><%=TopElem.disp_person_list_staff ? _learning.person_list_staff : _learning.person_subdivision_name%></td>
+			<% } %>
+			<% if(oColumn.name == 'person_position_name'){ %>
+					<td width="150"><%=_learning.person_position_name%></td>
+			<% } %>
+			<% if(oColumn.name == 'type'){ %>
+					<td width="150"><%=_learning.type%></td>
+			<% } %>
+			<% if(oColumn.name == 'name'){ %>
+					<td width="400"><%=_learning.name%></td>
+			<% } %>
+			<% if(oColumn.name == 'start_usage_date'){ %>
+					<td width="110"><%=_learning.start_usage_date.HasValue ? StrDate( Date( _learning.start_usage_date ), true, false ) : ''%></td>
+			<% } %>
+			<% if(oColumn.name == 'last_usage_date'){ %>
+					<td width="110"><%=_learning.last_usage_date.HasValue ? StrDate( Date( _learning.last_usage_date ), true, false ) : ''%></td>
+			<% } %>
+			<% if(oColumn.name == 'score'){ %>
+					<td width="50"><%=sReturn%></td>
+			<% } %>
+			<% if(oColumn.name == 'status'){ %>
+					<td width="80"><%=_learning.status%></td>
+			<% } %>
+			<% if(oColumn.name == 'is_assist'){ %>
+					<td width="80"><%=_learning.is_assist.HasValue?(_learning.is_assist?'+':'-'):''%></td>
+			<% } %>
+  	<% } %>
+  </tr>
+<%
+	}
+%>
+</table>
+</body>
+</html>

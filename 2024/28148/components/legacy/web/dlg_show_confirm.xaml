@@ -1,0 +1,33 @@
+﻿<SPXMLScreen>
+	<Edit Name="ActionSelectObjectTemp" Hidden="1"><%=UrlDecode( PARAMETERS.GetOptProperty( "action_ok" ) )%></Edit>
+	<Label Width="350"><%=UrlDecode( PARAMETERS.GetOptProperty( "label" ) )%></Label>
+
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+<%
+	if( OptInt( PARAMETERS.GetOptProperty( "show_cancel" ) ) == 1 )
+	{
+%>
+			<GridColumn Width="100"/>
+<%
+	}
+%>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Click="CLOSEDIALOG" Width="100">Да</Button>
+<%
+	if( OptInt( PARAMETERS.GetOptProperty( "show_cancel" ) ) == 1 )
+	{
+%>
+	<Button Class="XAML-button" Click="SET=ActionSelectObjectTemp,<%=UrlEncode( PARAMETERS.GetOptProperty( "action_cancel" ) )%>;CLOSEDIALOG" Width="100">Нет</Button>
+<%
+	}
+%>
+		</GridRow>
+	</Grid>
+
+</SPXMLScreen>

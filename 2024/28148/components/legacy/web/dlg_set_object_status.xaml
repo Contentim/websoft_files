@@ -1,0 +1,75 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+strCommonStatusCollectionName = Trim(oParamSource.GetOptProperty( 'common_status_collection_name' , '' ));
+
+if (strCommonStatusCollectionName==''||!curLngCommon.ChildExists(strCommonStatusCollectionName))
+{
+	curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'ka_err_list', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+}
+arrStatuses=ArraySelectAll(curLngCommon.EvalPath(strCommonStatusCollectionName))
+%>
+<Panel Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vyborstatusa', curLngWeb ))%>" Expanded="1" Width="100%" Heigth="40%" Class="XAML-panel-info">
+
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="50%" Align="left"/>
+			<GridColumn Width="50%" Align="left"/>
+		</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( 'c_status', curLngWeb ) )%>:</Label>
+<%
+
+					strFieldName='status'
+
+%>
+		<ComboBox Name="<%=strFieldName%>" >
+<%
+					for( fldElem in arrStatuses)
+					{
+						try
+						{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>"><%=XmlAttrEncode(fldElem.name)%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+						}
+					}
+%>
+
+		</ComboBox>
+	</GridRow>
+</Grid>
+</Panel>
+<%
+if ( ISDIALOG )
+{
+%>
+<Grid Width="100%">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+		<Button Class="XAML-button XAML-button-ok" Click="CLOSEDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_save', curLngWeb ))%></Button>
+		<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_cancel', curLngWeb ))%></Button>
+	</GridRow>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

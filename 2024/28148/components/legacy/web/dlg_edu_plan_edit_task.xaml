@@ -1,0 +1,67 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+sConstAddToFolder = tools_web.get_web_const( "dobavitvetap", curLngWeb );
+sConstFolderName = tools_web.get_web_const( "c_phase", curLngWeb );
+sConstEduMethodName = tools_web.get_web_const("c_edu_method", curLngWeb );
+sConstCourseName = tools_web.get_web_const("c_course", curLngWeb );
+sConstTestName = tools_web.get_web_const("c_test", curLngWeb );
+sConstEventName = tools_web.get_web_const("c_event", curLngWeb );
+sConstDurationDays = tools_web.get_web_const( "prodolzhitelnos_1", curLngWeb );
+sConstDelayDays = tools_web.get_web_const( "startcherez", curLngWeb );
+sConstDelayNameFolder = StrNonTitleCase( tools_web.get_web_const( "dneyposlenachal_2", curLngWeb ) );
+sConstDelayNameProgram = StrNonTitleCase( tools_web.get_web_const( "dneyposlenachal", curLngWeb ) );
+sConstStartTypeAuto = StrNonTitleCase( tools_web.get_web_const( "avtomaticheski", curLngWeb ) );
+sConstStartTypeManual = StrNonTitleCase( tools_web.get_web_const( "vruchnuyu", curLngWeb ) );
+sConstStatus = tools_web.get_web_const( "c_status", curLngWeb );
+sConstPercent = tools_web.get_web_const( "c_readiness_percent", curLngWeb );
+sConstPlanDate = tools_web.get_web_const( "c_plan_date", curLngWeb );
+sConstFinishDate = tools_web.get_web_const( "c_finish_date", curLngWeb );
+// const_end
+iParentProgramId = OptInt(PARAMETERS.GetOptProperty( "parent_program_id", "" ),0);
+sProgramType = PARAMETERS.GetOptProperty( "program_type", "" );
+sObjectName = PARAMETERS.GetOptProperty( "object_name", "" );
+iObjectId = OptInt( PARAMETERS.GetOptProperty( "object_id", "" ), 0 );
+iPartId = OptInt( PARAMETERS.GetOptProperty( "parent_program_id", "" ), "" );
+sActionId = PARAMETERS.GetOptProperty( "action_id", "add" );
+_curPart = undefined;
+if ( sActionId == "edit" && iPartId != "" )
+{
+	_curPart = ArrayOptFind( curObject.programs,"This.id == " + iPartId );
+}
+if ( _curPart != undefined )
+{
+	sProgramType = _curPart.type;
+	sObjectName = _curPart.object_name;
+	iObjectId = _curPart.object_id;
+}
+%>
+	<Action Name="DlgEduPlanEditAction" Source="edu_plan_edit_action" Success="ALERT={messageText};CLOSEDIALOG" Failure="ALERT={messageText}">
+		<Param Name="object_id" Value="<%=curObjectID%>"/>
+		<Param Name="iObjectId" Value="<%=iObjectId%>"/>
+	    <Param Name="iParentId" Value="<%=iParentProgramId%>"/>
+		<Param Name="sContext" Value="{CONTEXT}"/>
+		<Param Name="sAction" Value="<%=sActionId%>"/>
+	</Action>
+	
+	<Edit Name="TempCONTEXT" Hidden="1">{}</Edit>
+	<Edit Name="TempCatalogName" Hidden="1"><%=_curPart != undefined ? _curPart.catalog_name : ""%></Edit>
+	<Panel Name="PlanEducationStageData" Source="panel_education_plan_stage" ShowHeader="false">
+		<Param Name="sProgramType" Value="{dlg_program_type}"/>
+		<Param Name="iPartId" Value="<%=sActionId == "edit" ? iPartId : ""%>"/>
+		<Param Name="CONTEXTSTR" Value="{TempCONTEXT}"/>
+	</Panel>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="120"/>
+			<GridColumn Width="120"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="120" Click="ACTION=DlgEduPlanEditAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+			<Button Class="XAML-button" Width="120" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

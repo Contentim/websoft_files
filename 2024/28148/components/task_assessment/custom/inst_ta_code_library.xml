@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>kdfdw60wer</id>
+		<server_version>2020.3.3.183 (2020-06-09)</server_version>
+	</basic>
+	<code_librarys>
+		<code_library>
+			<id>0x60F3BB941FB777C7</id>
+			<code>libTaskAssessment</code>
+			<name VALUE="##'Библиотека Управление проектной оценкой'##"/>
+			<exec_code>
+				<code_url>x-local://components/task_assessment/spxml/libs/task_assessment_library.js</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+			<i18n_param>
+				<load_path>x-local://components/task_assessment/i18n/code_library/libTaskAssessment</load_path>
+				<code>components/task_assessment/code_library/libTaskAssessment</code>
+			</i18n_param>
+		</code_library>
+	</code_librarys>
+</data>

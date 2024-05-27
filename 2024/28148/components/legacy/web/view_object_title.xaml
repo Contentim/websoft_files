@@ -1,0 +1,126 @@
+﻿<%
+try
+{
+	curTitle
+}
+catch ( err_curTitle )
+{
+	curTitle = new Object();
+}
+curTitle_sType = curTitle.GetOptProperty( "type", "full" );
+curTitle_sObjectTitle = curTitle.GetOptProperty( "title" );
+curTitle_teTitleObject = curTitle.GetOptProperty( "object", curObject );
+
+if ( curTitle_sType == "desc" && ! curTitle_teTitleObject.resource_id.HasValue )
+	curTitle_sType = "simple";
+
+switch ( curTitle_sType )
+{
+	case "simple":
+	{
+
+		if ( curTitle_sObjectTitle == undefined )
+			curTitle_sObjectTitle = tools.get_disp_name_value( curTitle_teTitleObject );
+%>
+<StackPanel Class="XAML-stack-object-title-container">
+	<Label Class="XAML-label-header-1"><![CDATA[<%=tools_web.get_cur_lng_name( curTitle_sObjectTitle, curLng.short_id )%>]]></Label>
+</StackPanel>
+<%
+		break;
+	}
+
+	case "full":
+	{
+		if ( curTitle_sObjectTitle == undefined )
+			curTitle_sObjectTitle = tools.get_disp_name_value( curTitle_teTitleObject );
+		curTitle_sObjectTypeName = curTitle.GetOptProperty( "object_title" );
+		if ( curTitle_sObjectTypeName == undefined )
+			curTitle_sObjectTypeName = curLngCommon.exchange_object_types.GetChildByKey( curTitle_teTitleObject.Name ).title.Value;
+
+		curTitle_bDispImage = tools_web.is_true( curTitle.GetOptProperty( "disp_image", true ) );
+		curTitle_bDispDefaultImage = tools_web.is_true( curTitle.GetOptProperty( "disp_default_image", true ) );
+		curTitle_sImageUrl = "";
+
+		if ( curTitle_bDispImage )
+		{
+			curTitle_sImageUrl = curTitle.GetOptProperty( "image_url", "" );
+			if ( curTitle_sImageUrl == "" )
+				curTitle_sImageUrl = tools_web.get_object_image_url( curTitle_teTitleObject, curTitle_bDispDefaultImage );
+		}
+%>
+<Grid Width="100%" Class="XAML-grid-object-title-container XAML-grid-container-gl" Adapt="1">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+
+	<GridRow Class__="XAML-object-title">
+<%
+		if ( curTitle_sImageUrl != "" )
+		{
+			curTitle_sImageUrl = tools_web.set_base_url_path( curTitle_sImageUrl, Env );
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-image-container">
+			<BackgroundImage Source="<%=XmlAttrEncode( curTitle_sImageUrl )%>"/>
+		</StackPanel>
+<%
+		}
+		else
+		{
+%>
+		<Label/>
+<%
+		}
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+			<Label Class="XAML-label-header-4"><![CDATA[<%=curTitle_sObjectTypeName%>]]></Label>
+			<Label Class="XAML-label-header-2"><![CDATA[<%=tools_web.get_cur_lng_name( curTitle_sObjectTitle, curLng.short_id )%>]]></Label>
+		</StackPanel>
+	</GridRow>
+</Grid>
+<%
+		break;
+	}
+
+	case "desc":
+	{
+		if ( curTitle_sObjectTitle == undefined )
+			curTitle_sObjectTitle = tools.get_disp_name_value( curTitle_teTitleObject );
+		curTitle_sObjectTypeName = curTitle.GetOptProperty( "object_title" );
+		if ( curTitle_sObjectTypeName == undefined )
+			curTitle_sObjectTypeName = curLngCommon.exchange_object_types.GetChildByKey( curTitle_teTitleObject.Name ).title.Value;
+
+		var sDesc = "";
+		if(curTitle_teTitleObject.ChildExists("comment"))
+		{
+			sDesc = curTitle_teTitleObject.comment.Value;
+		}
+		if ( sDesc != "" )
+		{
+			if ( StrBegins( sDesc, 'Ps.' ) )
+			{
+				sDesc = curTitle_teTitleObject.Child( StrRightRangePos( sDesc, 3 ) ).Value;
+			}
+		}
+		sObjectImageUrl = tools_web.get_object_source_url( 'resource', curTitle_teTitleObject.resource_id );
+%>
+<Grid Width="100%" Class="wtx-object-header XAML-grid-object-title-desc-container">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+	<GridRow>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-image-container">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</StackPanel>
+		<StackPanel Orientation="Vertical">
+			<Label Class="wtx-object-header-title wtx-object-header-title-with-desc XAML-label-header-1"><![CDATA[<%=tools_web.get_cur_lng_name( curTitle_sObjectTitle, curLng.short_id )%>]]></Label>
+			<Label Class="wtx-object-header-desc XAML-label-title-desc"><![CDATA[<%=sDesc%>]]></Label>
+		</StackPanel>
+	</GridRow>
+</Grid>
+<%
+		break;
+	}
+}
+%>

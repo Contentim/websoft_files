@@ -1,0 +1,33 @@
+﻿<SPXMLScreen>
+<%
+sLabel = PARAMETERS.GetOptProperty( "label", "" );
+sText = PARAMETERS.GetOptProperty( "text", "" );
+%>
+<StackPanel Orientation="Vertical">
+<%
+	if (sLabel!='')
+	{
+%>	
+	<Label><![CDATA[<%=sLabel%>]]></Label>
+<%
+	}
+%>	
+	<EditBox Class="XAML-dialog-edit-text" Name="DialogText" Width="100%" Height="100"><![CDATA[<%=sText%>]]></EditBox>
+
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG"><%=tools_web.get_web_const( "tkhz90n4pi", curLngWeb )%></Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+
+</StackPanel>
+
+</SPXMLScreen>

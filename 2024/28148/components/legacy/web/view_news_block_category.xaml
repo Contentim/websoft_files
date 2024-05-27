@@ -1,0 +1,228 @@
+﻿<SPXMLScreen Class="category_news">
+<%
+	sName = tools_web.get_web_param( curParams, "category_news.sHeaderText", tools_web.get_web_const( 'novostiportala', curLngWeb ), true );
+	bShowFilters = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter", "1", true ) );
+	bShowFilterYear = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter.Years", "1", true ) );
+	bShowFilterType = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter.Type", "1", true ) );
+	bShowFilterSection = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter.Section", "1", true ) );
+	bShowFilterSearch = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter.Search", "1", true ) );
+	bShowFilterView = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowFilter.View", "1", true ) );
+
+	if ( !bShowFilterYear && !bShowFilterType && !bShowFilterSection && !bShowFilterSearch && !bShowFilterView )
+		bShowFilters = false;
+
+	bUsePublishTime = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bUsePublishTime", "0", true ) );
+	sDefaultViewParam = tools_web.get_web_param( curParams,"category_news.default_view", "list", true );
+
+	iCount = Int(tools_web.get_web_param( curParams, "category_news.iCount", "5", true ));
+	bImage= tools_web.get_web_param( curParams, "category_news.bShowImage", "1", true ) == "1";
+	bDate = tools_web.get_web_param( curParams, "category_news.bShowDate", "1", true ) == "1";
+
+	bShowAllNewsLink = tools_web.is_true( tools_web.get_web_param( curParams, "category_news.bShowAllNewsLink", "0", true ) );
+	sAllNewsLinkUrl = tools_web.get_web_param( curParams,"category_news.sAllNewsLink", tools_web.get_mode_clean_url( "all_news", null, {} ), true );
+	sAllNewsPosition = tools_web.get_web_param( curParams,"category_news.sAllNewsPosition", "righttop", true );
+
+	newsSection = tools_web.get_web_param( curParams, "category_news.sections", [], true );
+
+	iYear = OptInt(CONTEXT.GetOptProperty("year"),null);
+	sSearch = CONTEXT.GetOptProperty("news_search_field", "" );
+	sType = CONTEXT.GetOptProperty("news_type", "" );
+	sSection =  CONTEXT.GetOptProperty("news_section", "" );
+	sDefaultViewParam = CONTEXT.GetOptProperty( 'sDefaultViewParam', sDefaultViewParam );
+
+	sCondition  = '';
+	
+	conds = new Array();
+
+	if ( sSection != null && sSection != '' )
+	{
+		if ( sSection == 'all')
+			conds.push( " MatchSome( $elem/parent_document_id, (" + ArrayMerge( newsSection, "__value", "," ) + ") )" );
+		else
+			conds.push( " MatchSome( $elem/parent_document_id, (" + sSection + ") )" );
+	}
+	else
+	{
+		conds.push( " MatchSome( $elem/parent_document_id, (" + ArrayMerge( newsSection, "__value", "," ) + ") )" );
+	}
+
+	if ( bShowFilterSearch && sSearch != "" )
+	{
+
+		conds.push( " doc-contains($elem/id,'" + DefaultDb + "'," + XQueryLiteral( sSearch ) + ")" );
+	}
+
+	if ( bShowFilterYear && iYear != null )
+	{
+		conds.push( "( $elem/create_date > date('01.01." + iYear + "') and $elem/create_date < date('31.12." + iYear + "') )" );
+	}
+
+	if( bShowFilterType )
+	{
+		if ( sType == null || sType =='' || sType=='active' )
+		{
+			conds.push( " MatchSome( $elem/status_in_knowledge_map, ('','active'))" );
+		}
+
+		else if ( sType=='all' )
+		{
+			conds.push( " MatchSome( $elem/status_in_knowledge_map, ('','obsolete','active'))" );
+		}
+
+		else if ( sType == 'project' || sType == 'obsolete' )
+		{
+			conds.push( " $elem/status_in_knowledge_map='" + sType + "'" );
+		}
+	}
+
+	if (bUsePublishTime)
+	{
+		conds.push( "( $elem/kp_start_date <= date('" + Date() + "') or $elem/kp_start_date = null() )" ); 
+		conds.push( "( $elem/kp_end_date >= date('" + Date() + "') or $elem/kp_end_date = null() )" ); 
+	}
+	
+	sSortedFieldName = tools_web.get_web_param( curParams, "category_news.sort_field_name", "create_date", true )
+
+	//xarrAllNews = XQuery( "for $elem in documents" + ( ArrayOptFirstElem( conds ) == undefined ? "" : " where " ) + ArrayMerge( conds, "This", " and " ) + " order by $elem/" + sSortedFieldName + " descending return $elem" );
+
+	if ( bShowAllNewsLink && sAllNewsPosition=='righttop' )
+	{
+%>
+<Grid Class="XAML-grid-container XAML-grid-block-header-container news-block-container">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100"/>
+	</GridColumns>
+	<GridRow>
+		<Label Class="XAML-label-block-header"><%=sName%></Label>
+		<Link Class="XAML-link-all" Click="OPENURL=/<%=sAllNewsLinkUrl%>"><%=tools_web.get_web_const( "vnp_all_news", curLngWeb )%></Link>
+	</GridRow>
+</Grid>
+<%
+	}
+	else
+	{
+%>
+<Label Class="XAML-label-block-header"><%=sName%></Label>
+<%
+	}
+	arr_filters = new Array();
+	if(bShowFilters)
+	{
+
+		if (bShowFilterYear)
+		{
+			obj_filter = new Object();
+			obj_filter.name = "year";
+			obj_filter.type = "combo";
+			obj_filter.width = 70;
+			obj_filter.SetProperty( "default", 'all' );
+//			obj_filter.SetProperty( "default", Year( Date() ) );
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: 'all', title: tools_web.get_web_const( "f0j4vfoxrb", curLngWeb ) } );
+			for ( i = 2015; i < 2030; i++ )
+			{
+				obj_filter.items.push( { value: i, title: i } );
+			}
+			arr_filters.push( obj_filter );
+		}
+
+		if (bShowFilterType)
+		{
+			obj_filter = new Object();
+			obj_filter.name = "news_type";
+			obj_filter.type = "combo";
+			obj_filter.width = 130;
+			obj_filter.SetProperty( "default", 'active' );
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: tools_web.get_web_const( "c_all_types", curLngWeb ) } );
+		//	obj_filter.items.push( { value: 'project', title: 'Проект' } );
+			obj_filter.items.push( { value: 'active', title: 'Действующий' } );
+			obj_filter.items.push( { value: 'obsolete', title: 'Архивный' } );
+			arr_filters.push( obj_filter );
+		}
+
+		if (bShowFilterSection)
+		{
+			obj_filter = new Object();
+			obj_filter.name = "news_section";
+			obj_filter.type = "combo";
+			obj_filter.width = 150;
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: 'Все разделы' } );
+			for ( s_ection in newsSection )
+			{
+				curSectionDoc = OpenDoc( UrlFromDocID( Int( s_ection.__value ) ) ).TopElem;
+				obj_filter.items.push( { value: curSectionDoc.id, title: curSectionDoc.name } );
+			}
+			arr_filters.push( obj_filter );
+		}
+
+	bNavigationListDispSearch = tools_web.is_true( tools_web.get_web_param( curParams, 'navigation_list.disp_search', true, true ) );
+
+
+	}
+
+	curView = {
+				"id": "NewsDoc",
+				"title": "",
+				"height": "",
+				"image": "",
+				"catalog_name": "document",
+				"link_prop": "=tools_web.doc_link( ListElem ) ",
+				"link_action": "OPENURL={link}",
+				"action": "OPENURL={link}",
+				//"xquery_qual": ArrayMerge( conds, "This", " and " ),
+				"disp_link": "true",
+				"disp_filter": ( bShowFilters ? true : false ),
+				"filter_mode": "custom",
+				"disp_search": ( bShowFilterSearch ? true : false ),
+				"disp_selectors": true,
+				"disp_type": sDefaultViewParam,
+				"hide_empty": true,
+				"disp_array": false,
+				"paging_size": OptInt( tools_web.get_web_param( curParams, "category_news.page_size", "", true ), 100 ),
+				"hide_action": "SHOW=NoNews;",
+				"disp_paging": true,
+				"sort_field_name": sSortedFieldName,
+				"sort_direct": "-",
+				"is_data_grid": true,
+				"selectors": ( bShowFilterView ? "list;tile" : "" ),
+				"selectors_field": "sDefaultViewParam",
+				"selectors_value": sDefaultViewParam,
+				"search_width": 150,
+				"search_field": "news_search_field",
+				"search_action": "REFRESH;",
+				"filter_action": "REFRESH;",
+				"filters": arr_filters,
+				"tile_template": tools_web.get_web_param( curParams, "category_news.tile.tile_template", "", true ),
+				"tile_columns": tools_web.get_web_param( curParams, "category_news.tile.tile_columns", "", true ),
+				"tile_rows": tools_web.get_web_param( curParams, "category_news.tile.tile_rows", "", true )
+	};
+	if( iCount != 0 )
+	{
+		xarrAllNews = XQuery( "for $elem in documents" + ( ArrayOptFirstElem( conds ) == undefined ? "" : " where " ) + ArrayMerge( conds, "This", " and " ) + " order by $elem/" + sSortedFieldName + " descending return $elem" );
+		xarrAllNews = ArrayRange( xarrAllNews, 0, iCount );
+		curView.disp_array = true;
+		curView.SetProperty( "array", ArrayMerge( xarrAllNews, "This.id", ";" ) )
+	}
+	else
+		curView.SetProperty( "xquery_qual", ArrayMerge( conds, "This", " and " ) )
+	
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+
+
+	if ( bShowAllNewsLink && sAllNewsPosition=='leftbottom' )
+	{
+%>
+		<StackPanel Class="XAML-uni-block" Align="left"><Link Class="XAML-link-all" Click="OPENURL=/<%=sAllNewsLinkUrl%>"><%=tools_web.get_web_const( "vnp_all_news", curLngWeb )%></Link></StackPanel>
+<%
+	}
+	else if  ( bShowAllNewsLink && sAllNewsPosition=='rightbottom' )
+	{
+%>
+		<StackPanel Class="XAML-uni-block" Align="right"><Link Class="XAML-link-all" Click="OPENURL=/<%=sAllNewsLinkUrl%>"><%=tools_web.get_web_const( "vnp_all_news", curLngWeb )%></Link></StackPanel>
+<%
+	}
+%>
+</SPXMLScreen>

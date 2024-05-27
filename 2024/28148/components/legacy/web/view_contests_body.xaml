@@ -1,0 +1,30 @@
+﻿<SPXMLScreen>
+<%
+	var bThinMode = curDevice.disp_type == "mobile";
+%>
+	<DataGrid Name="ContestsGrid" Source="contests_body_contests" Height="" PageSize="25" Selection="single">
+		<DataGridColumn Title="ID" Value="id" Hidden="1" Ghost="false"/>
+<%
+		if (!bThinMode)
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_code", curLngWeb )%>" Value="code" Width="100" Type="string" Sortable="True"/>
+<%
+		}
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Width="<%=(bThinMode ? "" : 200)%>" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", ({"doc_id": curDocID}))%>"/>
+<%
+		if (!bThinMode)
+		{
+%>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_type", curLngWeb )%>" Value="type" Width="80" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "vcb_mark", curLngWeb )%>" Value="estimation" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_person_num", curLngWeb )%>" Value="person_num" Width="80" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="start_date" Width="100" Type="string"  Sortable="True"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>" Value="finish_date" Width="100" Type="string"  Sortable="True"/>			
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_state", curLngWeb )%>" Value="status" Width="200" Type="string"  Sortable="True"/>
+<%
+		}
+%>
+	</DataGrid>		
+</SPXMLScreen>

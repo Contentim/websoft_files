@@ -1,0 +1,517 @@
+﻿<SPXMLScreen>
+<%
+curAssessmentID	= curObject.assessment_id.Value;
+try
+{
+	curAssessment = OpenDoc( UrlFromDocID( curAssessmentID ) ).TopElem;
+}
+catch ( err )
+{
+	curMessageBox = {
+		"type": "error",
+		"text": ( tools_web.get_web_const( 'nevozmozhnootkr_1', curLngWeb ) + " Assessment ID: " + curAssessmentID )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+curTitle = {
+	"object": curAssessment,
+	"object_title": tools_web.get_web_const( '9km66hzf4u', curLngWeb )
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'LearningStatTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+
+if( curAssessment.use_proctoring && curObject.event_id.HasValue && ArrayOptFirstElem(tools.xquery("for $elem in event_collaborators where $elem/collaborator_id=" + curUserID + " and $elem/is_tutor=true() return $elem/id")) != undefined )
+{
+	catRecord = ArrayOptFirstElem(tools.xquery("for $elem in learning_records where $elem/test_learning_id=" + curObjectID + " return $elem/id"));
+	if(catRecord != undefined)
+	{
+		teRecord = OpenDoc(UrlFromDocID(catRecord.id)).TopElem;
+		xarrFiles = QueryCatalogByKeys("resources", "id", ArrayExtract(teRecord.files, "This.file_id"));
+		if(ArrayCount(xarrFiles) > 0)
+		{
+%>
+<StackPanel Name="ToolBarPanel">
+<Toolbar Name="ToolBarPanel" Class="XAML-toolbar-actions" Adapt="true">
+<%
+			for(catFile in xarrFiles)
+			{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%="download_file.html?file_id=" + catFile.PrimaryKey + "&sid=" + tools_web.get_sum_sid( catFile.PrimaryKey, Session.sid )%>"><%=catFile.name%></Button>
+<%
+			}
+%>
+</Toolbar>
+</StackPanel>
+<%
+		}
+	}
+}
+
+if ( curDevice.disp_type != "" )
+{
+	arrTabListParam = ["main"];
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, "test_learning_stat.tab_list", "main;map;files", true ) ).split( ";" );
+}
+%>
+<TabControl Name="LearningStatTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == "main" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "test_learning_stat.tab_list.main_tab.block_list", "info", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_stat.tab_list.main_tab", "", true );
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "info" )
+		{
+			curInformers = ({
+				"informers": []
+			});
+			if ( curDevice.disp_type != "" )
+			{
+				arrTiles = ["status","score"];
+			}
+			else
+			{
+				arrTiles = String( tools_web.get_web_param( curParams, "test_learning_stat.tab_list.main_tab.block_list.info_block.tile_list", "status;score;info", true ) ).split( ";" );
+			}
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-tiles-container" Adapt="true">
+<%
+			for ( sTileElem in arrTiles )
+			{
+				if ( sTileElem == 'status' )
+				{
+					curInformers.informers.push( {
+						"type": "status",
+						"state_id": curObject.state_id.Value
+					} );
+				}
+
+				if ( sTileElem == 'score' )
+				{
+					curInformers.informers.push( {
+						"type": "score",
+						"score": curObject.score.Value,
+						"max_score": curObject.max_score.Value,
+						"mastery_score": curAssessment.passing_score.Value
+					} );
+				}
+
+				if ( sTileElem == 'info' )
+				{
+					curInformers.informers.push( {
+						"type": "info",
+						"last_usage_date": curObject.last_usage_date.Value,
+						"start_learning_date": curObject.start_learning_date.Value,
+						"max_end_date": curObject.max_end_date.Value
+					} );
+				}
+
+				if ( sTileElem == 'course_image' && curAssessment.resource_id.HasValue )
+				{
+					sUrl = tools_web.get_object_source_url( 'resource', curAssessment.resource_id );
+					curInformers.informers.push( {
+						"type": "image",
+						"url": sUrl
+					} );
+				}
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+			</StackPanel>
+<%
+			arrGridRowsParam = String( tools_web.get_web_param( curParams, "test_learning_stat.tab_list.main_tab.block_list.info_block.grid_row_list", "collaborator;event;group", true ) ).split( ";" );
+			arrGridRows = [];
+			for ( sGridRowElem in arrGridRowsParam )
+			{
+				switch ( sGridRowElem )
+				{
+					case 'collaborator':
+						if ( curObject.person_id != curUserID )
+							arrGridRows.push( sGridRowElem );
+						break;
+					case 'event':
+						if ( curObject.event_id.HasValue )
+							arrGridRows.push( sGridRowElem );
+						break;
+					case 'group':
+						if ( curObject.group_id.HasValue )
+							arrGridRows.push( sGridRowElem );
+						break;
+				}
+			}
+			if ( ArrayCount( arrGridRows ) != 0 )
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+			for ( sGridRowElem in arrGridRows )
+			{
+				if ( sGridRowElem == 'collaborator' )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.person_id, { doc_id: curDocID } )%>"><![CDATA[<%=curObject.person_fullname%>]]></Link>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'event' )
+				{
+					try
+					{
+						catEvent = curObject.event_id.ForeignElem;
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_event", curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.event_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catEvent.name, curLng.short_id )%>]]></Link>
+				</GridRow>
+<%
+					}
+					catch ( err )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_event', curLngWeb )%>:</Label>
+					<Label Class="XAML-deleted"><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+				</GridRow>
+<%
+					}
+				}
+				if ( sGridRowElem == 'group' )
+				{
+					try
+					{
+						catGroup = curObject.group_id.ForeignElem;
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_group', curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.group_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catGroup.name, curLng.short_id )%>]]></Link>
+				</GridRow>
+<%
+					}
+					catch ( err )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_group', curLngWeb )%>:</Label>
+					<Label><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+				</GridRow>
+<%
+					}
+				}
+			}
+%>
+			</Grid>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   MAP TAB   /////////////////////////////////////////////
+if ( sTabListParam == "map" && ( curObject.lesson_report.HasValue || curObject.objects.ChildNum != 0 ) )
+{
+	sDispMap = ( curAssessment.display_result_report && curUserID == curObject.person_id );
+	if ( ! sDispMap )
+	{
+		xarrBossTypes = tools.get_object_relative_boss_types( curUserID, curObject.person_id );
+		xarrOperations = tools.get_relative_operations_by_boss_types( xarrBossTypes );
+		sDispMap = ArrayOptFindByKey( xarrOperations, "test_learning_stat_disp_map", "action" ) != undefined;
+	}
+	if ( sDispMap )
+	{
+
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "test_learning_stat.tab_list.map_tab.block_list", "map", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_stat.tab_list.map_tab", "", true );
+%>
+	<TabItem Class="icon-tasks" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'protokol', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="1">
+<%
+	if ( iDefaultTab == iCurTab )
+	{
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == "map" )
+			{
+				fldAnnals = tools.annals_decrypt( curObject );
+				if ( fldAnnals == null )
+				{
+					arrSections = [];
+				}
+				else
+				{
+					fldObject = ArrayOptFirstElem( fldAnnals.au.history.objects );
+					arrSections = fldObject == undefined ? [] : fldObject.section;
+				}
+
+				var teItem = null;
+				var iItemID = null;
+				function writeAnswers( arrAnswersParam )
+				{
+					var sRes = '';
+					var iCounter = 0;
+					for ( fldAnswerElem in arrAnswersParam )
+					{
+						arrKey = String( fldAnswerElem.PrimaryKey ).split( '_' );
+						sKey = arrKey[ ArrayCount( arrKey ) - 1 ];
+						if ( iCounter != 0 )
+							sRes += ';<br/>';
+						if ( teItem != null )
+						{
+							fldAnswerChild = teItem.answers.GetOptChildByKey( sKey );
+							if ( fldAnswerChild != undefined && fldAnswerChild.image.name.HasValue )
+								sRes += '<a href="view_item_image.html?object_id=' + iItemID + '&answer_id=' + sKey + '" target="_blank" class="icon-image-ico" title="' + XmlAttrEncode( fldAnswerChild.image.name ) + '"></a>&nbsp;';
+						}
+						sRes += HtmlToPlainText( fldAnswerElem.text ) + ( fldAnswerElem.varscore.HasValue ? ' (' + fldAnswerElem.varscore + ')' : '' );
+						iCounter++;
+					}
+					return sRes;
+				}
+
+				sDispAnswers = CONTEXT.GetOptProperty( 'disp_answers', curUrlQuery.GetOptProperty( 'disp_answers', 'all' ) );
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+
+			<ComboBox Name="disp_answers" SelectedItem="<%=sDispAnswers%>" Width="240" Change="REFRESH">
+				<ComboBoxItem Value="all"><%=tools_web.get_web_const( 'vseotvety', curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="incorrect_answers"><%=tools_web.get_web_const( 'd2eadl5gwl', curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="correct_answers"><%=tools_web.get_web_const( 'x4mkrsli74', curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="not_max_points"><%=tools_web.get_web_const( 'nenabranmaksim', curLngWeb )%></ComboBoxItem>
+			</ComboBox>
+<%
+				for ( fldSectionElem in arrSections )
+				{
+					iQuestionCounter = 1;
+%>
+		<Label Class="XAML-label-header-4"><%=tools_web.get_cur_lng_name( fldSectionElem.title, curLng.short_id )%>:</Label>
+		<Grid Name="LearningReportGrid<%=fldSectionElem.PrimaryKey%>" Width="100%" Class="XAML-grid-info-table small-padding">
+			<GridColumns>
+				<GridColumn Width="10" Align="center"/>
+				<GridColumn/>
+				<GridColumn Width="50" Align="center"/>
+				<GridColumn Width="50" Align="center"/>
+				<GridColumn/>
+<%
+					if ( curAssessment.display_correct_answer_in_report )
+					{
+%>
+				<GridColumn/>
+<%
+					}
+%>
+				<GridColumn Width="50" Align="center"/>
+<%
+					if ( curAssessment.display_answers_in_report )
+					{
+%>
+				<GridColumn/>
+<%
+					}
+%>
+				<GridColumn Width="100" Align="center"/>
+				<GridColumn Width="50" Align="center"/>
+			</GridColumns>
+
+			<GridRow Class="XAML-gridrow-header">
+				<Label Class="XAML-grid-header-text">#</Label>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'c_question', curLngWeb )%></Label>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'vtpb_correct', curLngWeb )%></Label>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'c_score', curLngWeb )%></Label>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'c_answer', curLngWeb )%></Label>
+<%
+					if ( curAssessment.display_correct_answer_in_report )
+					{
+%>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'vieb_correct', curLngWeb )%></Label>
+<%
+					}
+%>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'zatrachennoevre', curLngWeb )%></Label>
+<%
+					if ( curAssessment.display_answers_in_report )
+					{
+%>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( '5ed2971r62', curLngWeb )%></Label>
+<%
+					}
+%>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'c_type', curLngWeb )%></Label>
+				<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( 'vtpb_expert_comment', curLngWeb )%></Label>
+			</GridRow>
+<%
+					for ( fldQuestionElem in fldSectionElem.question )
+					{
+						bIsCorrect = tools_web.is_correct_question( fldQuestionElem );
+						_is_weight = ArrayOptFind( fldQuestionElem.variant, 'varscore.HasValue' ) != undefined;
+
+						switch ( sDispAnswers )
+						{
+							case 'incorrect_answers':
+								if ( bIsCorrect )
+									continue;
+								break;
+							case 'correct_answers':
+								if ( ! bIsCorrect )
+									continue;
+								break;
+							case 'not_max_points':
+								iMaxPoints = fldQuestionElem.maxweight.HasValue? fldQuestionElem.maxweight : ( fldQuestionElem.ws_question_points.HasValue ? fldQuestionElem.ws_question_points : '' );
+								if ( fldQuestionElem.maxweight.HasValue )
+								if ( ! _is_weight || iMaxPoints == '' || fldQuestionElem.points != iMaxPoints )
+									continue;
+								break;
+						}
+
+						iItemID = fldQuestionElem.PrimaryKey;
+						try
+						{
+							teItem = OpenDoc( UrlFromDocID( Int( iItemID ) ) ).TopElem;
+						}
+						catch ( err )
+						{
+							teItem = null;
+						}
+
+						switch ( fldQuestionElem.qtype )
+						{
+							case 'choice':
+							case 'select':
+								sVariants = writeAnswers( ArraySelect( fldQuestionElem.variant, 'Trim( This )==\'1\'' ) );
+								break;
+							case 'range':
+							default:
+								sVariants = ArrayMerge( fldQuestionElem.variant, 'HtmlToPlainText(value)', ';<br/>' );
+								break;
+						}
+%>
+			<GridRow>
+				<Label><%=iQuestionCounter%></Label>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+						if ( teItem != null && teItem.image.name.HasValue )
+						{
+%>
+					<Link Click="OPENWINDOW=view_item_image.html?object_id=<%=fldQuestionElem.PrimaryKey%>" Class="icon-image"/>
+<%
+						}
+%>
+					<Label><![CDATA[<%=HtmlToPlainText( fldQuestionElem.text )%>]]></Label>
+				</StackPanel>
+				<Label><%=( bIsCorrect ? '+' : '-' )%></Label>
+				<Label><%=( fldQuestionElem.points + ( ! _is_weight && fldQuestionElem.points.HasValue && fldQuestionElem.maxweight.HasValue && Real( fldQuestionElem.maxweight ) != 0.0 ? ' (' + StrReal( ( Real( fldQuestionElem.points ) / Real( fldQuestionElem.maxweight ) ) * 100.0, 1 ) + '%)' : '' ) )%></Label>
+				<HTMLBox><![CDATA[<%=sVariants%>]]></HTMLBox>
+<%
+						if ( curAssessment.display_correct_answer_in_report )
+						{
+							switch ( fldQuestionElem.qtype )
+							{
+								case 'choice':
+								case 'select':
+									sCorrect = writeAnswers( ArraySelect( fldQuestionElem.variant, 'correct==\'1\'' ) );
+									break;
+
+								case 'range':
+									sCorrect = '';
+									_counter = 0;
+									for ( _answer in fldQuestionElem.variant )
+										sCorrect += ( sCorrect == '' ? '' : '; ' ) + _counter++;
+									break;
+
+								case 'numeric':
+									sCorrect = ArrayMerge( fldQuestionElem.variant, 'ArrayMerge(cond,\'operator.ForeignElem.name+Trim(Value)\',\', \')', '; ' );
+									break;
+
+								case 'text':
+									sCorrect = ArrayMerge( fldQuestionElem.variant, 'ArrayMerge(cond,\'operator==\\\'cn\\\'?\\\'...\\\'+Trim(Value)+\\\'...\\\':Trim(Value)\',\', \')', '; ' );
+									break;
+
+								default:
+									sCorrect = ArrayMerge( fldQuestionElem.variant, 'HtmlToPlainText(cor_value)', ';<br/>' );
+									break;
+							}
+%>
+				<HTMLBox><![CDATA[<%=sCorrect%>]]></HTMLBox>
+<%
+						}
+%>
+				<Label><%=fldQuestionElem.elapsed%></Label>
+<%
+						if ( curAssessment.display_answers_in_report )
+						{
+%>
+				<HTMLBox><![CDATA[<%=writeAnswers( fldQuestionElem.variant )%>]]></HTMLBox>
+<%
+						}
+%>
+				<Label><%=( curLngCommon.annals_item_types.GetChildByKey( fldQuestionElem.qtype ).name + ( _is_weight ? ' ' + tools_web.get_web_const( 'ruqnhtrz42', curLngWeb ) : '' ) )%></Label>
+				<HTMLBox><![CDATA[<%=HtmlToPlainText( fldQuestionElem.comment.HasValue ? fldQuestionElem.comment : ( teItem == null ? '' : ( bIsCorrect ? teItem.feedback_correct : teItem.feedback_wrong ) ) )%>]]></HTMLBox>
+			</GridRow>
+<%
+						iQuestionCounter++;
+					}
+%>
+		</Grid>
+<%
+				}
+%>
+	</StackPanel>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+	}
+}
+
+
+
+
+///////////////////////////////////////////////   FILES TAB   /////////////////////////////////////////////
+if ( sTabListParam == "files" && curObject.ChildExists("files") && ArrayOptFirstElem(curObject.files)!=undefined )
+{
+	iCurTab++;
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_stat.tab_list.files_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'vdb_files', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

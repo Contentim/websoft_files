@@ -1,0 +1,351 @@
+﻿<%
+function write_buttons()
+{
+%>
+<Toolbar Class="XAML-toolbar">
+
+</Toolbar>
+<%
+}
+
+
+function custom_tab()
+{
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+}
+
+function command_tab()
+{
+%>
+
+	<Edit Hidden="1" Name="SelectCollaboratorID"><%=CONTEXT.GetOptProperty( "SelectCollaboratorID", "" )%></Edit>
+	<Grid>
+		<GridColumns>
+			<GridColumn />
+			<GridColumn Width="640"/>
+		</GridColumns> 	
+		<GridRow Class="XAML-gridrow-multiline">
+			<StackPanel>
+				<Edit Name="PanelAction" Hidden="1"></Edit>
+<%
+	curFilter = {
+		'search_field': "key_word",
+		'search_width': 150,
+		'disp_search': true,
+		'search_action': "UPDATE=CommandCollaboratorList;",
+		'action': "UPDATE=CommandCollaboratorList;",
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+				<Panel Source="command_collaborator_list_panel" Name="CommandCollaboratorList" ShowHeader="false">
+					<Param Name="group_id" Value="<%=tools_web.get_web_param( curParams, "command_body.group_id", "", true )%>"/>
+					<Param Name="action" Value="{PanelAction}"/>
+					<Param Name="page_num" Value="{PageNum}"/>
+					<Param Name="key_word" Value="{key_word}"/>
+				</Panel>
+				<StackPanel Name="ButtonsStackPanel" Hidden="1"  Orientation="Horizontal" Class="XAML-stack-container XAML-paging-container">
+					<StackPanel Name="NotBack" Class="XAML-stack-container x-tbar-page-prev x-bnt-container">
+						<Label Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Label>
+					</StackPanel>
+					<StackPanel Name="Back" Class="XAML-stack-container x-tbar-page-prev x-bnt-container">
+						<Link Class="x-tbar-page-btn" Click="SET=PanelAction,back;UPDATE=CommandCollaboratorList"><%=XmlAttrEncode( "" )%></Link>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal">
+						<Edit Name="PageNum" Width="50" Editable="0"><%=XmlAttrEncode( "" )%></Edit>	
+						<Label Class="XAML-paging-divider"><%=XmlAttrEncode( "/" )%></Label>
+						<Edit Class="XAML-edit-label" Width="50" Name="Pages" Editable="0"></Edit>	
+					</StackPanel>
+					<StackPanel Name="NotNext" Class="XAML-stack-container x-tbar-page-next x-bnt-container">
+						<Label Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Label>
+					</StackPanel>
+					<StackPanel Name="Next" Class="XAML-stack-container x-tbar-page-next x-bnt-container">
+						<Link Click="SET=PanelAction,next;UPDATE=CommandCollaboratorList" Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Link>
+					</StackPanel>
+				</StackPanel>
+			</StackPanel>
+			<Panel Class="XAML-command-info" Source="command_collaborator_panel" Name="CommandCollaboratorPanel" ShowHeader="false">
+				<Param Name="collaborator_id" Value="{SelectCollaboratorID}"/>
+				<Param Name="can_edit_pict" Value="false"/>
+				<Param Name="use_task_tile" Value="true"/>
+				<Param Name="can_change_state" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.command.can_change_state", "false", true )%>"/>
+				<Param Name="can_change_current_task" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.command.can_change_task", "false", true )%>"/>
+				<Param Name="can_add_task" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.command.can_add_task", "false", true )%>"/>
+				<Param Name="show_open_chat" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.command.show_open_chat", "false", true )%>"/>
+			</Panel>
+		</GridRow>
+	</Grid>
+<%
+}
+
+function my_tasks_tab()
+{
+%>
+	<Panel Source="command_collaborator_panel" Name="CommandCollaboratorPanel" ShowHeader="false">
+		<Param Name="collaborator_id" Value="<%=curUserID%>"/>
+		<Param Name="can_edit_pict" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_change_pict", "true", true )%>"/>
+		<Param Name="can_change_state" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_change_state", "false", true )%>"/>
+		<Param Name="can_change_current_task" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_change_task", "false", true )%>"/>
+		<Param Name="can_add_task" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_add_task", "false", true )%>"/>
+		<Param Name="show_open_chat" Value="<%=tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_open_conversations", "false", true )%>"/>
+		<Param Name="can_change_foto" Value="true"/>
+	</Panel>
+<%
+}
+function get_last_user_photo( user_id )
+{
+		oImage = new Object();
+		oImage.date = "";
+		oImage.url = "";
+		catObjectDataType = ArrayOptFirstElem( XQuery( "for $i in object_data_types where $i/code = 'user_photo' and $i/object_type = 'collaborator' return $i/Fields( 'id' )" ) );
+		if( catObjectDataType != undefined )
+		{
+			catObjectData = ArrayOptFirstElem( XQuery( "for $i in object_datas where $i/object_data_type_id = " + catObjectDataType.id + " and $i/object_id = " + user_id + " return $i/Fields( 'id' )" ) );
+			if( catObjectData != undefined )
+			{
+				teObjectData = OpenDoc( UrlFromDocID( catObjectData.id ) ).TopElem;
+				oImage.url = tools_web.get_object_source_url( "resource", teObjectData.custom_elems.ObtainChildByKey( "resource_id" ).value, { Session: Session } );
+				oImage.date = teObjectData.custom_elems.ObtainChildByKey( "resource_date" ).value;
+			}
+		}
+		if( oImage.url == "" )
+			oImage.url = tools_web.get_object_source_url( "person", user_id, "150x150" );
+			
+		return oImage;
+}
+function wall_tab()
+{
+	
+	sCollectionCode =  "command_collection";
+	teCollection = OpenDoc( UrlFromDocID( ArrayOptFirstElem( tools.xquery( "for $elem in remote_collections where $elem/code = " + XQueryLiteral( sCollectionCode ) + " return $elem/id, $elem/__data" ) ).id ) ).TopElem;
+	teCollection.wvars.ObtainChildByKey( "group_id" ).value = tools_web.get_web_param( curParams, "command_body.group_id", "", true );
+	oResult_search = teCollection.evaluate( "json", Request );
+	//alert('oResult_search '+oResult_search.result)
+	arrResult = ParseJson( oResult_search.result );
+%>
+	<StackPanel Orientation="Wrap" Class="XAML-command-wall">
+<%
+	for( _user in QueryCatalogByKeys( 'collaborators', 'id', ArrayExtract( arrResult, 'Int( This.id )' ) ) )
+	{
+		if( _user.id == curUserID ) 
+			oObjectImageUrl = curObjectImageUrl;
+		else
+			oObjectImageUrl = get_last_user_photo( _user.id );
+%>
+		<StackPanel Class="XAML-command-wall-tile">
+			<Image Width="160" Source="pics/1blank.gif" Class="XAML-command-wall-photo">
+				<BackgroundImage Source="<%=XmlAttrEncode( oObjectImageUrl.url )%>"/>
+				<HTMLTip>
+					<![CDATA[<%=_user.fullname%>]]>
+				</HTMLTip>
+			</Image>
+			<Label Class="XAML-command-wall-name"><![CDATA[<%=_user.fullname%>]]></Label>
+			<Label Class="XAML-command-wall-date"><![CDATA[<%=oObjectImageUrl.date%>]]></Label>
+		</StackPanel>
+<%
+	}
+%>
+	</StackPanel>
+<%
+}
+
+function social_tab()
+{
+
+}
+
+function get_default_title( tab_id )
+{
+	switch( tab_id )
+	{
+		case "command":
+			return "Команда";
+		case "my_tasks":
+			return "Мои задачи";
+		case "wall":
+			return "Стена";
+		case "social":
+			return "Обсуждение";
+		case "tasks":
+			return "Все задачи";
+	}
+	return "";
+}
+
+function tab_block()
+{
+
+	arrTabListParam = String( tools_web.get_web_param( curParams, "command_body.tabs", "command;my_tasks;wall;social", true ) ).split( ";" );
+%>
+	<TabControl Name="CommandBodyTab" Width="100%" ActiveTab="<%=CONTEXT.GetOptProperty( "CommandBodyTab", 0 )%>" TabsLocation="n" TabsWidth="216" Adapt="true">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		sTabTitle = tools_web.get_web_param( curParams, "command_body.tabs." + sTabListParam + ".title", "", true );
+		if( sTabTitle == "" )
+			sTabTitle = get_default_title( sTabListParam );
+%>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		switch( sTabListParam )
+		{
+			case "command":
+				command_tab();
+				break;
+			case "my_tasks":
+				my_tasks_tab();
+				break;
+			case "wall":
+				wall_tab();
+				break;
+			case "social":
+				social_tab();
+				break;
+			case "custom":
+				custom_tab();
+				break;
+			case "tasks":
+				tasks_tab();
+				break;
+		}
+%>
+		</TabItem>
+<%
+	}
+%>
+	</TabControl>
+<%
+}
+
+function tasks_tab()
+{
+	curView = {
+		"id": "TasksCollaboratorPanel",
+		"height": "",
+		"disp_paging": true,
+		"paging_size": 100,
+		"catalog_name": "task",
+		"disp_search": false,
+		"disp_filter": false,
+		"collection": { "name" : "command_tasks_collection", "params": [ { name: "group_id", "value": tools_web.get_web_param( curParams, "command_body.group_id", "", true ) }, { name: "status", value: "{status_id_task}" }, { name: "task_type_id", value: tools_web.get_web_param( curParams, "command_body.task_type_id", "", true ) } ] },
+	};
+	arr_filters = new Array()
+	obj_filter = new Object();
+
+	aResultArray = common.task_statuses;
+	obj_filter.type = "combo";
+	obj_filter.items = new Array();
+	obj_filter.items.push( { value: "all", title: "Все задачи" } );
+	obj_filter.items.push( { value: "in_job", title: "Планируется и выполняется " } );
+	for ( catElem in aResultArray )
+		obj_filter.items.push( { value: catElem.id.Value, title: catElem.name.Value } );
+			
+	obj_filter.name = "status_id_task";
+	obj_filter.SetProperty( "default", "in_job" );
+	arr_filters.push( obj_filter )
+	curFilter = {
+		'disp_search': false,
+		'search_action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel",
+		'selectors_action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel",
+		'action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel",
+		'filters': arr_filters,
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+}
+
+function title_block()
+{
+	curTitle = new Object();
+	curTitle.SetProperty( "title", tools_web.get_web_param( curParams, "command_body.block_list.title", "title;tabs", true ) );
+	curTitle.SetProperty( "object", null );
+	curTitle.SetProperty( "type", "simple" );
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+function buttons_block()
+{
+	write_buttons();
+}
+function message_block()
+{
+	iMinutes = OptInt( tools_web.get_web_param( curParams, "command_body.period", 0, true ), 0 )
+	if( iMinutes > 0 )
+	{
+		dLastDate = DateOffset( Date(), ( 0 - 1 )*iMinutes*60 );
+
+		if( curObjectImageUrl.date == "" || Date( curObjectImageUrl.date ) < dLastDate )
+		{
+			curMessageBox = {
+				"type": "warning",
+				"text": tools_web.get_web_param( curParams, "command_body.period.message", "Вам необходимо обновить фото", true )
+			};
+
+			arrMessageButtons = [];
+			
+			arrMessageButtons.push({ "title": "Обновить фото", "click": "OPENWINDOW=create_foto.html,Width=600,Height=600,CloseAction=PageRefreshFinish" });
+
+			curMessageBox.SetProperty( "buttons", arrMessageButtons);
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+}
+
+%>
+<SPXMLScreen Class="XAML-command-body">
+	<Action Name="PageRefreshFinish" Initialize="REFRESH"/>
+	<Edit Hidden="1" Name="EditTaskIDPanel"/>
+	<Dialog Name="DialogCreateTask" Source="dlg_command_task" Title="<%=XmlAttrEncode( "Задача" )%>" Close="REFRESH;">
+		<Param Name="task_id" Value="{EditTaskIDPanel}"/>
+	</Dialog>
+	<HTMLBox>
+		<![CDATA[
+			<style>
+<%
+sArr = tools_web.get_web_param( curParams, "command_body.state_classes", "[]", true );
+aArr = tools.read_object( sArr );
+for( _state in aArr )
+{
+%>
+				.color-command-state-<%=_state.state%>{
+					background-color: <%=_state.color%> !important;
+				}
+<%
+}
+%>
+			</style>
+		]]>
+	</HTMLBox>
+<%
+curObjectImageUrl = get_last_user_photo( curUserID );
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+
+arrBlockListParam = String( tools_web.get_web_param( curParams, "command_body.block_list", "title;tabs", true ) ).split( ";" );
+for( sBlockListParam in arrBlockListParam )
+{
+	if ( sBlockListParam == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if( sBlockListParam == "title" )
+		title_block();
+
+	if( sBlockListParam == "tabs" )
+		tab_block();
+		
+	if( sBlockListParam == "message" )
+		message_block();
+
+}
+
+%>
+</SPXMLScreen>

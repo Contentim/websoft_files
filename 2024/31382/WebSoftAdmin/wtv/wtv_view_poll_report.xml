@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_poll_report>
+
+	<report_name TYPE="string" DEFAULT="poll_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+	<exported_file_link TYPE="string" TEMP="1"/>
+
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<poll_id TYPE="integer" FOREIGN-ARRAY="polls"/>
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+	<disp_answers TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<show_comments_in_report TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<is_switched TYPE="bool" DEFAULT="false"/>
+
+	<polls>
+		<poll MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			<code TYPE="string"/>
+			<name TYPE="string"/>
+			<start_date TYPE="date"/>
+			<end_date TYPE="date"/>
+			<person_fullname TYPE="string"/>
+			<person_code TYPE="string"/>
+			<collaborator_fullname TYPE="string"/>
+			<questions>
+				<question MULTIPLE="1" PRIMARY-KEY="question_id">
+					<question_id TYPE="integer"/>
+					<answers TYPE="string"/>
+					<type TYPE="string" FOREIGN-ARRAY="common.poll_types" DEFAULT="choice"/>
+					<comment TYPE="string"/>
+					<entries>
+						<entry MULTIPLE="1" PRIMARY-KEY="id">
+							<id TYPE="integer"/>
+							<value TYPE="string"/>
+						</entry>
+					</entries>
+				</question>
+			</questions>
+		</poll>
+	</polls>
+
+	<collaborator_fullname_has_count TYPE="bool" NOT-NULL="0" DEFAULT="false"/>
+
+	<questions>
+		<question MULTIPLE="1" PRIMARY-KEY="question_id">
+			<question_id TYPE="integer"/>
+			<title TYPE="string"/>
+			<entries>
+				<entry MULTIPLE="1" PRIMARY-KEY="id">
+					<id TYPE="integer"/>
+					<value TYPE="string"/>
+				</entry>
+			</entries>
+		</question>
+	</questions>
+
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			row_list_field.Clear();
+			row_key_field = '.id';
+			rowsArray = Array();
+			rowsArrayCounter = 0;
+			for ( _row in rows.Object )
+			{
+				if ( _row.Env.ListElem.ChildExists('id') && _row.Env.ListElem.id !=0 )
+				{
+					try
+					{
+						rowsArray[ rowsArrayCounter ] = Int(_row.Env.ListElem.id);
+						rowsArrayCounter++;
+					}
+					catch(ex)
+					{
+					}
+				}
+			}
+			rows = ArraySelectDistinct( QueryCatalogByKeys( 'collaborators', 'id', ArrayExtract(QueryCatalogByKeys('poll_results', 'id', rowsArray),'person_id'), 'id'),'id')	;
+
+			_num = ArrayCount(rows.Object);
+
+			
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+			if ( _num == 0 )
+			{   
+				Screen.MsgBox( ms_tools.get_const('wedllgnw6b'), ms_tools.get_const('7ey6j94yku'), 'warning');
+				Cancel();
+			}
+			
+			return _num;
+	"/>
+
+
+	<disp_poll_type TYPE="string" NOT-NULL="1" DEFAULT="(true,false)"/>
+
+	<catalog_name TYPE="string"/>
+	<view_type TYPE="string"/>
+	<view_type_env TYPE="variant"/>
+
+	<INHERIT TYPE="view_columns_base"/>
+
+</view_poll_report>
+
+<OnInit PROPERTY="1" EXPR="
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

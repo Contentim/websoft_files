@@ -1,0 +1,58 @@
+﻿<%
+var iPersonID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+var tePerson = OpenDoc( UrlFromDocID( iPersonID ) ).TopElem;
+
+var sPersonName = tePerson.fullname;
+var sPersonImageUrl = tools_web.get_object_source_url( "person", iPersonID, "100x100" );
+
+var curPersonsList_arrCatalogFields = [
+	{ "field_name": "position_name" }
+];
+var arrArrayFields_curPersonsList = [];
+%>
+<SPXMLScreen>
+
+		<StackPanel Orientation="Vertical" Class="XAML-person-tile">
+			<StackPanel Class="XAML-stack-tile-image-container">
+				<Image Source="pics/1blank.gif" Class="bg-cover XAML-person-tile-image" Height="100">
+					<BackgroundImage Source="<%=XmlAttrEncode( sPersonImageUrl )%>"/>
+				</Image>
+			</StackPanel>
+			<StackPanel Class="XAML-stack-tile-title-container">
+				<Link Class="XAML-link-tile-title" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, iPersonID, { doc_id: curDocID } )%>"><![CDATA[<%=sPersonName%>]]></Link>
+			</StackPanel>
+<%
+			for ( curPersonsList_sFieldNameElem in curPersonsList_arrCatalogFields )
+			{
+				curPersonsList_fldField = tePerson.Child( curPersonsList_sFieldNameElem.field_name );
+				if ( curPersonsList_fldField.ForeignArrayCodeStr == '' )
+				{
+					curPersonsList_sValue = curPersonsList_fldField.Value;
+				}
+				else
+				{
+					curPersonsList_sValue = curPersonsList_fldField.ForeignElem.name.Value;
+				}
+%>
+				<Label Class="XAML-label-tile-desc"><![CDATA[<%=curPersonsList_sValue%>]]></Label>
+<%
+			}
+			for ( curPersonsList_sFieldNameElem in arrArrayFields_curPersonsList )
+			{
+				curPersonsList_fldField = tePerson.Child( curPersonsList_sFieldNameElem.field_name );
+				if ( curPersonsList_fldField.ForeignArrayCodeStr == '' )
+				{
+					curPersonsList_sValue = curPersonsList_fldField.Value;
+				}
+				else
+				{
+					curPersonsList_sValue = curPersonsList_fldField.ForeignElem.name.Value;
+				}
+%>
+				<Label Class="XAML-label-tile-desc"><![CDATA[<%=curPersonsList_sValue%>]]></Label>
+<%
+			}
+%>
+		</StackPanel>
+
+</SPXMLScreen>

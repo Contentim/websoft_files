@@ -1,0 +1,208 @@
+﻿<SPXMLScreen>
+	<Dialog Name="AnswerExspertDialog" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="">
+		<Param Name="iQuestionId" Value="{iQuestionId}"/>
+	</Dialog>
+	<Edit Name="iQuestionId" Hidden="1"></Edit>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iObjectID != undefined )
+{
+	is_open_window = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'is_open_window', true, true ) );
+	if( is_open_window )
+		lnk = "OPENWINDOW";
+	else
+		lnk = "OPENURL";
+	teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	switch ( teObject.Name )
+	{
+		//case 'resource':
+		//	sName = teObject.name;
+		//	sObjectImageUrl = '/ico/resource.ico';
+		//	break;
+
+		default:
+			
+			if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+				sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+			else
+				sObjectImageUrl = '/images/' + teObject.Name + '.png';
+			break;
+	}
+	sName = '';
+	sClickAction = "";
+	if( teObject.Name == 'expert' )
+	{
+		sDesc = '';
+		pers = undefined;
+		if( teObject.type == 'collaborator' )
+		{
+			pers = teObject.person_id.OptForeignElem;
+			if( pers == undefined )
+			{
+				sName = teObject.name;
+			}
+			else
+			{
+				sName = pers.fullname;
+				if( pers.pict_url.HasValue )
+					sObjectImageUrl = pers.pict_url;
+			}
+			
+		}
+		else
+			sName = teObject.name;
+		
+		sClickAction = lnk + "=" + tools_web.get_mode_clean_url( null, iObjectID );
+	}
+	else if( teObject.Name == 'expert_question' )
+	{
+		sName = teObject.question;
+		sDesc = teObject.answer;
+		sClickAction = "SET=iQuestionId," + iObjectID + ";OPENDIALOG=AnswerExspertDialog;";
+		if( curDevice.disp_type == "mobile" )
+			lnk = "OPENWINDOW";
+	}
+	else
+	{
+		sName = tools.get_disp_name_value( teObject );
+		sDesc = common.exchange_object_types.GetOptChildByKey( teObject.Name ).title + '<br>';
+		sDesc += tools_web.get_web_const( "c_create_date", curLngWeb ) + ' : '  + Date( StrDate( teObject.doc_info.creation.date, false ) ) + '<br>';
+		sDesc += tools_web.get_web_const( "c_status", curLngWeb ) + ' : '  + teObject.status_in_knowledge_map.ForeignElem.name  + '<br>';
+		sDesc +=  teObject.ChildExists( 'comment' ) ? XmlAttrEncode( teObject.comment ) : '';
+		
+		catalog = common.exchange_object_types.GetOptChildByKey( teObject.Name );
+		sClickAction = "";
+		if( catalog != undefined )
+		{
+			if( teObject.Name == "document" )
+			{
+				if( teObject.attributes.is_link )
+					sClickAction = teObject.attributes.link_href;
+				else
+					sClickAction = tools_web.doc_link( teObject )
+			}
+			else
+				sClickAction = catalog != undefined && catalog.web_template != "" ? tools_web.get_mode_clean_url( null, iObjectID ) : ( catalog.name == "expert_question" ? "SET=AnswerExspertDialog/iQuestionId," + iObjectID + ";OPENDIALOG=AnswerExspertDialog;" : "" );
+		}
+		if( sClickAction != "" )
+			sClickAction = lnk + "=" + sClickAction
+	}
+	sName = XmlAttrEncode( sName );
+	if( teObject.Name == "item" )
+		sClickAction = "OPENDIALOG=ShowItem" + iObjectID;
+	if( teObject.Name == "item" )
+	{
+%>
+	<Dialog Name="ShowItem<%=iObjectID%>" Width="800" Source="dlg_item_check" Title="<%=XmlAttrEncode( 'Вопрос' )%>">
+		<Param Name="item_id" Value="<%=iObjectID%>"/>
+	</Dialog>
+<%
+	}
+%>
+	<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%="Просмотр материала"%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+		<Param Name="object_id" Value=""/>
+	</Dialog>	
+<%
+if( teObject.Name == 'expert' )
+{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile" Height="290">
+		<TabControl DisplayMode="concertina" TabsHidden="true" Name="tiletab<%=iObjectID%>" Height="216">
+		<TabItem Title="Info" Class="XAML-container-image">
+			<Link  Click="SET=tiletab<%=iObjectID%>,1" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+			<StackPanel Class="XAML-stack-tile-image-container XAML-container-image" Height="216">
+				<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image XAML-panel-search" Source="pics/1blank.gif" Height="216">
+					<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+			</StackPanel>
+		</TabItem>
+		<TabItem Title="<%=tools_web.get_web_const( 'c_desc', curLngWeb )%>" Class="XAML-tabitem-tile-info">
+			<Link  Click="SET=tiletab<%=iObjectID%>,0" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+			<Grid Width="100%" Class="XAML-grid-info-table-compact">
+				<GridColumns>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "sa1ibhf93r", curLngWeb )%>:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=teObject.rating%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "vkmb_answered_questions", curLngWeb )%>:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=ArrayCount( XQuery("for $elem in expert_questions where $elem/expert_id=" + iObjectID + " and $elem/status=true() return $elem" ) )%>]]></Label>
+				</GridRow>
+<%
+			if( pers != undefined )
+			{
+
+				if( pers.position_name.HasValue )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=pers.position_name%>]]></Label>
+				</GridRow>
+<%
+				}
+
+			}
+%>
+				
+			</Grid>
+		</TabItem>
+		</TabControl>
+		<StackPanel Class="XAML-stack-tile-title-container" Height="55">
+			<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+				<%=sName%>
+			</Link>
+		</StackPanel>
+	
+<%
+}
+else if( teObject.Name == 'expert_question' )
+{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+			<StackPanel Orientation="Vertical" Class="wtx-tile-title" Click="<%=sClickAction%>">
+				<Link Class="wtx-tile-title-text" Click="<%=sClickAction%>"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+			</StackPanel>
+			<StackPanel Orientation="Vertical" Class="wtx-tile-desc">
+				<!--<Link Class="wtx-tile-desc-text" Click="<%=sClickAction%>">-->
+					<HTMLBox Class="wtx-tile-desc-html"><![CDATA[<%= HtmlToPlainText( sDesc ) %>]]></HTMLBox>
+				<!--</Link>-->
+			</StackPanel>
+			
+<%
+}
+else
+{
+%>
+
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+	<StackPanel Class="XAML-stack-tile-image-container">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Source="pics/1blank.gif" Height="160" Width="216">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+	</StackPanel>
+	
+	<StackPanel Class="XAML-stack-tile-title-container">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+			<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+		</Link>
+	</StackPanel>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile-desc">
+		<HTMLBox Class="XAML-label-tile-desc"><![CDATA[<%=sDesc%>]]></HTMLBox>
+	</StackPanel>
+<%
+}
+%>
+</StackPanel>
+<%
+}
+%>
+</SPXMLScreen>

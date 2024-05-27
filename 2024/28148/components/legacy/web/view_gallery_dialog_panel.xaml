@@ -1,0 +1,144 @@
+﻿<%
+	var INDEX_HOLDER_NAME = "DlgGalleryIndexHolder";
+	
+	var iSupposedWidth = "100%";//PARAMETERS.GetOptProperty("supposed_width","");
+	var source = PARAMETERS.GetOptProperty("source");
+	var repositorium_id = PARAMETERS.GetOptProperty("repositorium_id");
+	var pic_idx = OptInt(PARAMETERS.GetOptProperty("pic_idx"), 0);
+	var shift = OptInt(PARAMETERS.GetOptProperty("shift"), 0);
+	var pic_mode = PARAMETERS.GetOptProperty("pic_mode");
+	
+	var iRepoID = null;
+	var sourceID = "__gallery";
+	var aFiles;
+	if (source == "all" || source == "repo")
+	{
+		iRepoID = ArraySelect(ArrayExtract(String(repositorium_id).split(";"), "OptInt(This)"), "This != undefined");
+		switch(ArrayCount(iRepoID))
+		{
+			case 0:
+				iRepoID = null;
+				break;
+			case 1:
+				iRepoID = iRepoID[0];
+		}
+		
+		if (iRepoID != null)
+			sourceID = "__grepo" + Base64Encode(repositorium_id);
+	}
+	if (curDoc != null && (source == "all" || source == "doc_files"))
+	{
+		sourceID = "__gdoc" + curDoc.id.Value;
+	}
+
+	aFiles = tools_web.get_user_data(sourceID);
+	if (aFiles != null && aFiles.HasProperty("result_array"))
+		aFiles = aFiles.result_array;
+	else
+		aFiles = new Array();
+	
+	var catFile = undefined;
+	var iLength = ArrayCount(aFiles);
+	
+	
+	if (shift != 0)
+	{
+		pic_idx += (shift > 0 ? 1 : -1);
+		
+		if (pic_idx < 0)
+			pic_idx = iLength - 1;
+		else if (pic_idx >= iLength)
+			pic_idx = 0;
+	}	
+	
+	if (iLength > pic_idx)
+		catFile = aFiles[pic_idx];
+	
+	var sShowMode = "default"; //calc by type
+	var sPictUrl = ""; // calc url download_file.html with sid
+	
+	if (catFile != undefined)
+	{
+		if (catFile.type == "flv" && pic_idx != undefined)
+		{
+			sShowMode = "stream_video";
+			sPictUrl = "/download_file.html?file_id=" + RValue(catFile.id) + "&sid=" + tools_web.get_sum_sid(RValue(catFile.id), Request.Session.sid);
+		}
+		else if (catFile.type == "video" && pic_idx != undefined)
+		{
+			sShowMode = "video";
+			sPictUrl = "/download_file.html?file_id=" + RValue(catFile.id) + "&sid=" + tools_web.get_sum_sid(RValue(catFile.id), Request.Session.sid);
+		}
+		else if (catFile.type == "img" && (pic_mode == "image" || pic_idx != undefined))
+		{
+			sPictUrl = "/download_file.html?file_id=" + RValue(catFile.id) + "&sid=" + tools_web.get_sum_sid(RValue(catFile.id), Request.Session.sid);
+		}
+		else
+		{
+			sPictUrl = "icons/file_types/64/" + (catFile.type.HasValue ? catFile.type : "file")  + ".png";
+		}
+	
+%><SPXMLScreen Ready="SET=<%=INDEX_HOLDER_NAME%>,<%=pic_idx%>">
+	<StackPanel Align="center">
+<%
+	switch (sShowMode)
+	{
+		case "video":
+			sPictUrl = StrReplace(sPictUrl, "&amp;", "&");
+%>
+			<HTMLBox>
+				<![CDATA[
+				<div style="display: block; z-index: 1000; zoom: 1; opacity: 1">
+					<object id="WMPlay" classid="CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6" standby="<%=tools_web.get_web_const( "c_loading", curLngWeb )%>" type="application/x-oleobject" height="<%=400%>" width="<%=iSupposedWidth%>" style="display: block; z-index: 1000; zoom: 1; opacity: 1">
+						<param name="URL" value="<%=sPictUrl%>"/>
+						<param name="filename" value="<%=sPictUrl%>"/>
+						<param name="AllowChangeDisplaySize" value="False"/>
+						<param name="TransparentatStart" value="0"/>
+						<param name="ShowControls" value="1"/>
+						<param name="ShowDisplay" value="1"/>
+						<param name="ShowStatusBar" value="1"/>
+						<param name="AutoStart" value="0"/>
+						<param name="InvokeURLS" value="False"/>
+						<param name="WindowlessVideo" value="0"/>
+						<param name="wmode" value="window"/>
+						<embed name="WMplay" type="application/x-mplayer2" autostart="False" height="<%=400%>" width="<%=iSupposedWidth%>" src="<%=sPictUrl%>"></embed>
+					</object>
+				</div>
+				]]>
+			</HTMLBox> 
+<%
+			break;
+		case "stream_video":
+			sPictUrl = StrReplace(sPictUrl, "&amp;", "&") + "&autoplay=false";
+%>
+			<HTMLBox>
+				<![CDATA[
+					<script src="scripts/swfobject_modified.js" type="text/javascript"></script>
+					<object style="visibility: visible" id="flvplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="<%=iSupposedWidth%>" height="400">
+						<param name="FlashVars" value="flv=<%=UrlEncode(sPictUrl)%>"/>
+						<param name="Movie" value="mpw_player.swf"/>
+						<param name="AllowFullScreen" value="true"/>
+					</object>
+				]]>
+			</HTMLBox> 
+<%
+			break;
+		default:
+%>
+			<Image Source="<%=sPictUrl%>" MaxHeight="80vh" MaxWidth="80vw" Click="OPENWINDOW=<%=sPictUrl%>" UpdateOnLoad="1"/>
+<%
+	}
+%>
+	</StackPanel>
+	<Label Align="center"><%=(pic_idx+1) + " / " + iLength%></Label>
+<%
+	}
+	else
+	{
+%>
+<SPXMLScreen>
+	<Label>Error obtaining resource. Reload page.</Label>
+<%
+	}
+%>
+</SPXMLScreen>

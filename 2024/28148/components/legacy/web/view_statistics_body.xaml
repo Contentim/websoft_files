@@ -1,0 +1,728 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	STATISTIC_SOURCE;
+}
+catch(_x_)
+{
+	STATISTIC_SOURCE = null;
+}
+
+iCurTab = 0-1;
+
+if (ObjectType(STATISTIC_SOURCE) == "JsObject" && ObjectType(STATISTIC_SOURCE.GetOptProperty("parameters")) == "JsObject")
+{
+	arrTabListParam = String(STATISTIC_SOURCE.parameters.GetOptProperty("tab_list", "graph;table;info")).split(";");
+	sDefaultGraphType = String(STATISTIC_SOURCE.parameters.GetOptProperty("default_graph_type", "line"));
+	sDefaultStatistics = STATISTIC_SOURCE.parameters.GetOptProperty("default_statistics", "");
+	bShowGraphFilters = tools_web.is_true(STATISTIC_SOURCE.parameters.GetOptProperty("show_graph_filters", false));
+	bAllowSelection=tools_web.is_true( STATISTIC_SOURCE.parameters.GetOptProperty("allow_selection", false));
+	iColNum=OptInt(STATISTIC_SOURCE.parameters.GetOptProperty("columns_num"), 1);
+	sContentWidth = String(STATISTIC_SOURCE.parameters.GetOptProperty("content_width", "100%"));
+	sContentHeight=String( STATISTIC_SOURCE.parameters.GetOptProperty("content_height", "200") );
+	sDefaultPeriod=String( STATISTIC_SOURCE.parameters.GetOptProperty("default_period", "all"));
+	dDefaultDate=Date(STATISTIC_SOURCE.parameters.GetOptProperty("default_date", Date()));
+	iDefaulPeriodValue=OptInt( STATISTIC_SOURCE.parameters.GetOptProperty("default_period_value"), 1);
+	bHideSelectPanel=OptInt( STATISTIC_SOURCE.parameters.GetOptProperty("hide_select_panel"),0 )==1;
+	bShowMegaFilter=tools_web.is_true( STATISTIC_SOURCE.parameters.GetOptProperty("show_date_filter", true));
+	bShowExcelExportButton = tools_web.is_true( STATISTIC_SOURCE.parameters.GetOptProperty("show_excel_export_button", true) );
+	bShow3dGraphics=tools_web.is_true( STATISTIC_SOURCE.parameters.GetOptProperty("show_3d_graphics", false ));
+	sHash = String( STATISTIC_SOURCE.parameters.GetOptProperty("hash", "") ) + Env.GetProperty( "curDocSid") + Env.GetProperty( 'curMode' );
+	bCacheData=tools_web.is_true( STATISTIC_SOURCE.parameters.GetOptProperty("cache_data", false));
+	
+	iRootObject = OptInt(STATISTIC_SOURCE.GetOptProperty("object_id"), null)
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, "statistics_body.tab_list", "graph;table", true ) ).split( ";" );
+	sDefaultGraphType=String( tools_web.get_web_param( curParams, "statistics_body.default_graph_type", "line", true ) );
+	sDefaultStatistics=String( tools_web.get_web_param( curParams, "statistics_body.default_statistics", "", true ) );
+	bShowGraphFilters=tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.show_graph_filters", true, true ),true );
+	bAllowSelection=tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.allow_selection", true, true ),true );
+	iColNum=OptInt( tools_web.get_web_param( curParams, "statistics_body.columns_num", "1", true ), 1);
+	sContentWidth=String( tools_web.get_web_param( curParams, "statistics_body.content_width", "100%", true ));
+	sContentHeight=String( tools_web.get_web_param( curParams, "statistics_body.content_height", "200", true ));
+	sDefaultPeriod=String( tools_web.get_web_param( curParams, "statistics_body.default_period", "all", true ) );
+	dDefaultDate=Date( tools_web.get_web_param( curParams, "statistics_body.default_date", Date(), true ) );
+	iDefaulPeriodValue=OptInt( tools_web.get_web_param( curParams, "statistics_body.default_period_value", "1", true ), 1);
+	bHideSelectPanel=OptInt( tools_web.get_web_param( curParams, "statistics_body.hide_select_panel", "0", true ),0 )==1;
+	bShowMegaFilter=tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.show_date_filter", true, true ),1 );
+	bShowExcelExportButton = tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.show_excel_export_button", true, true ), true );
+	bShow3dGraphics=tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.show_3d_graphics", false, false ), 0 );
+	sHash = String( tools_web.get_web_param( curParams, "statistics_body.hash", "", true ) ) + Env.GetProperty( "curDocSid") + Env.GetProperty( 'curMode' );
+	bCacheData=tools_web.is_true( tools_web.get_web_param( curParams, "statistics_body.cache_data", false, false ), 0 );
+	
+	iRootObject = null;
+}
+
+var bThinMode = curDevice.disp_type == "mobile";
+
+if (bThinMode)
+{
+	iColNum = 1;
+	sContentWidth = "100%";
+}
+sDefaultAdditionalInfoCode = "system_info";
+iDefaultStartYear = 1950;
+iYearsToShow = 100;
+
+arrStatistics = tools.read_object(tools_web.get_user_data( "statistics_" + sHash));
+if(ArrayOptFirstElem(arrStatistics) == undefined || !bCacheData)
+{
+	if (tools.data_type(sDefaultStatistics) == "array")
+		arrStatistics = sDefaultStatistics;
+	else
+		arrStatistics = tools.read_object(sDefaultStatistics);
+	if (IsArray(arrStatistics))
+	{
+		for(oTile in arrStatistics)
+		{
+			xarrStatistics = XQuery("for $elem in statistic_recs where MatchSome($elem/code, (" +ArrayMerge(oTile.statistics_codes, "CodeLiteral(This)", ",")+ ")) return $elem/Fields('id')");
+			oTile.statistics = new Array();
+			for(catStat in xarrStatistics)
+			{
+				oTile.statistics.push({"id": catStat.id.Value});
+			}
+		}
+		tools_web.set_user_data( "statistics_" + sHash, tools.array_to_text(arrStatistics, "json"), 86400 );
+	}
+	else
+	{
+		arrStatistics = new Array();
+		alert("Statistics error: invalid 'default_statistics' parameter!");
+	}
+}
+
+if(CONTEXT.GetOptProperty("ChangeStatistics", "false") == "true" || !bCacheData)
+{
+	i=0;
+	for(oTile in arrStatistics)
+	{
+		if(CONTEXT.HasProperty( "SelectedStatistics" + i ))
+			oTile.statistics = tools.read_object(CONTEXT.GetProperty( "SelectedStatistics" + i ));
+		i++;
+	}
+	tools_web.set_user_data( "statistics_" + sHash, tools.array_to_text(arrStatistics, "json"), 86400 );
+}
+iTilesCount = ArrayCount(arrStatistics);
+if(CONTEXT.HasProperty("ContextExists"))
+{
+	tools_web.set_user_data( "context_" + sHash, tools.object_to_text(CONTEXT, "json"), 86400 );
+}
+else
+{
+	oContext = tools.read_object(tools_web.get_user_data( "context_" + sHash));
+	if(oContext != null)
+		CONTEXT = oContext;
+}
+
+
+if (STATISTIC_SOURCE == null)
+{
+	sTitle = (curDoc != null) ? curDoc.name : tools_web.get_web_const( "kaleydoskoppok", curLngWeb );
+%>
+
+	<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( sTitle, curLng.short_id )%></Label>
+<%
+}
+%>
+<Dialog Name="AdditionalInfoDialog" Source="{EditAdditionalTemplate}" Width="80%" Height="80%" Title="<%=tools_web.get_web_const( "vnrqm9djn5", curLngWeb )%>">
+	<Param Name="sInfo" Value=""/>
+</Dialog>
+
+<Edit Name="EditAdditionalTemplate" Hidden="1"></Edit>
+<Edit Name="ContextExists" Hidden="1">true</Edit>
+<Edit Name="ChangeStatistics" Hidden="1">false</Edit>
+
+<Action Source="ExcelExporterAction" Name="excelExportAction" Success="OPENWINDOW=/assessment_excel_export.html?mode=htmlfileurl&htmlfileurl={xls_url}&header=vnd.openxmlformats-officedocument.spreadsheetml.sheet" Failure="ALERT={messageText}">
+	<Param Name="sCollection" Value=""/>
+	<Param Name="sCollectionData" Value=""/>
+	<Param Name="sData" Value=""/>
+	<Param Name="sMode" Value="datagrid"/>
+	<Param Name="sColumnList" Value=""/>
+</Action>
+
+<%
+	sSelectedRange = CONTEXT.GetOptProperty("CBRange", sDefaultPeriod);
+	iSelectedYear = Int(CONTEXT.GetOptProperty("CBYear", Year(dDefaultDate)));
+	iSelectedMonth = Int(CONTEXT.GetOptProperty("CBMonth", Month(dDefaultDate)));
+	iSelectedQuarter = (!CONTEXT.HasProperty("ContextExists") && (sDefaultPeriod == "quarter")) ? iDefaulPeriodValue : Int(CONTEXT.GetOptProperty("CBQuarter", 1));
+	iSelectedHalfYear = (!CONTEXT.HasProperty("ContextExists") && (sDefaultPeriod == "halfyear")) ? iDefaulPeriodValue : Int(CONTEXT.GetOptProperty("CBHalfYear", 1));
+	dSelectedDate = Date(CONTEXT.GetOptProperty("DPDate", dDefaultDate));
+	iSelectedHour = (!CONTEXT.HasProperty("ContextExists") && (sDefaultPeriod == "hour")) ? iDefaulPeriodValue : Int(CONTEXT.GetOptProperty("CBHour", 1));
+	iSelectedMinute = (!CONTEXT.HasProperty("ContextExists") && (sDefaultPeriod == "minute")) ? iDefaulPeriodValue : Int(CONTEXT.GetOptProperty("CBMinute", 1));
+
+	dStartDate = null;
+	dEndDate = null;
+	arrPeriods = new Array();
+%>
+<StackPanel Orientation="Horizontal" Class="XAML-stackpanel" Hidden="<%=(bShowMegaFilter ? "0" : "1")%>" Adapt="1">
+	<ComboBox Name="CBRange" Width="200" SelectedItem="<%=sSelectedRange%>" Change="REFRESH">
+		<ComboBoxItem Value="all"><%=tools_web.get_web_const( "zavsevremya", curLngWeb )%></ComboBoxItem>
+<%
+	for(fldPeriodity in curLngCommon.perioditys)
+	{
+		if(fldPeriodity.id == "week" || fldPeriodity.id=="minute")
+			continue;
+%>
+		<ComboBoxItem Value="<%=fldPeriodity.id%>"><%=curLngCommon.perioditys.GetChildByKey( fldPeriodity.id ).name%></ComboBoxItem>
+<%
+	}
+%>
+	</ComboBox>
+<%
+	if(sSelectedRange == "year" || sSelectedRange == "quarter" || sSelectedRange == "halfyear" || sSelectedRange == "month")
+	{
+		if(sSelectedRange == "year")
+		{
+			dStartDate = DateNewTime(Date(iSelectedYear, 1, 1), 0,0,0);
+			dEndDate = DateNewTime(Date(iSelectedYear, 12, 31), 23,59,59);
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("halfyear"));
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("quarter"));
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("month"));
+		}
+		if(sSelectedRange == "quarter")
+		{
+%>
+	<ComboBox Name="CBQuarter" SelectedItem="<%=iSelectedQuarter%>" Width="80" Change="REFRESH">
+		<ComboBoxItem Value="1">1</ComboBoxItem>
+		<ComboBoxItem Value="2">2</ComboBoxItem>
+		<ComboBoxItem Value="3">3</ComboBoxItem>
+		<ComboBoxItem Value="4">4</ComboBoxItem>
+	</ComboBox>
+<%
+			if(iSelectedQuarter != 4)
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear, 3 * iSelectedQuarter + 1, 1), 0,0,0), 0-1);
+			}
+			else
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear + 1, 1, 1), 0,0,0), 0-1);
+			}
+			dStartDate = DateNewTime(Date(iSelectedYear, Month(dEndDate)-2, 1), 0,0,0);
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("month"));
+		}
+		if(sSelectedRange == "halfyear")
+		{
+%>
+	<ComboBox Name="CBHalfYear" SelectedItem="<%=iSelectedHalfYear%>" Width="80" Change="REFRESH">
+		<ComboBoxItem Value="1">1</ComboBoxItem>
+		<ComboBoxItem Value="2">2</ComboBoxItem>
+	</ComboBox>
+<%
+			if(iSelectedHalfYear == 1)
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear, 6*iSelectedHalfYear + 1, 1), 0,0,0), 0-1);
+			}
+			else
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear + 1, 1, 1), 0,0,0), 0-1);
+			}
+			dStartDate = DateNewTime(Date(iSelectedYear, Month(dEndDate)-5, 1), 0,0,0);
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("month"));
+		}
+		if(sSelectedRange == "month")
+		{
+%>
+	<ComboBox Name="CBMonth" SelectedItem="<%=iSelectedMonth%>" Width="120" Change="REFRESH">
+		<ComboBoxItem Value="1"><%=tools_web.get_web_const( "c_january", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="2"><%=tools_web.get_web_const( "c_february", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="3"><%=tools_web.get_web_const( "c_march", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="4"><%=tools_web.get_web_const( "c_april", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="5"><%=tools_web.get_web_const( "c_may", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="6"><%=tools_web.get_web_const( "c_june", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="7"><%=tools_web.get_web_const( "c_july", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="8"><%=tools_web.get_web_const( "c_august", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="9"><%=tools_web.get_web_const( "c_september", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="10"><%=tools_web.get_web_const( "c_october", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="11"><%=tools_web.get_web_const( "c_november", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="12"><%=tools_web.get_web_const( "c_december", curLngWeb )%></ComboBoxItem>
+	</ComboBox>
+<%
+			dStartDate = DateNewTime(Date(iSelectedYear, iSelectedMonth, 1), 0,0,0);
+			if(iSelectedMonth != 12)
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear, iSelectedMonth + 1, 1), 0,0,0), 0-1);
+			}
+			else
+			{
+				dEndDate = DateOffset(DateNewTime(Date(iSelectedYear + 1, 1, 1), 0,0,0), 0-1);
+			}
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("day"));
+		}
+%>
+	<ComboBox Name="CBYear" SelectedItem="<%=iSelectedYear%>" Width="100" Change="REFRESH">
+	<%
+		iCurYear = iDefaultStartYear;
+		for(i=0; i<iYearsToShow; i++)
+		{
+	%>
+		<ComboBoxItem Value="<%=iCurYear%>"><%=iCurYear%></ComboBoxItem>
+	<%
+			iCurYear++;
+		}
+	%>
+	</ComboBox>
+<%
+	}
+	if(sSelectedRange == "day" || sSelectedRange == "hour" || sSelectedRange == "minute")
+	{
+		if(sSelectedRange == "day")
+		{
+			dStartDate = DateNewTime(dSelectedDate, 0,0,0);
+			dEndDate = DateNewTime(dSelectedDate, 23,59,59);
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("hour"));
+		}
+%>
+	<DatePicker Name="DPDate" Change="REFRESH"><%=StrDate(dSelectedDate, false, false)%></DatePicker>
+<%
+		if(sSelectedRange == "hour")
+		{
+			arrPeriods.push(curLngCommon.perioditys.GetChildByKey("minute"));
+		}
+		if(sSelectedRange == "hour" || sSelectedRange == "minute")
+		{
+%>
+	<ComboBox Name="CBHour" SelectedItem="<%=iSelectedHour%>" Width="100" Change="REFRESH">
+	<%
+			for(i=0; i<24; i++)
+			{
+	%>
+			<ComboBoxItem Value="<%=i%>"><%=StrInt(i,2)%></ComboBoxItem>
+	<%
+			}
+	%>
+	</ComboBox>
+<%
+			dStartDate = DateNewTime(dSelectedDate, iSelectedHour,0,0);
+			dEndDate = DateNewTime(dSelectedDate, iSelectedHour,59,59);
+		}
+
+		if(sSelectedRange == "minute")
+		{
+%>
+	<ComboBox Name="CBMinute" SelectedItem="<%=iSelectedMinute%>" Width="100" Change="REFRESH">
+	<%
+			for(i=0; i<60; i++)
+			{
+	%>
+			<ComboBoxItem Value="<%=i%>"><%=StrInt(i,2)%></ComboBoxItem>
+	<%
+			}
+	%>
+	</ComboBox>
+<%
+			dStartDate = DateNewTime(dSelectedDate, iSelectedHour,iSelectedMinute,0);
+			dEndDate = DateNewTime(dSelectedDate, iSelectedHour,iSelectedMinute,59);
+		}
+	}
+	if(sSelectedRange == "all")
+	{
+		dStartDate = DateNewTime(Date(iDefaultStartYear,1,1), 0,0,0);
+		dEndDate = DateNewTime(Date(iDefaultStartYear + iYearsToShow,1,1), 23,59,59);
+		arrPeriods.push(curLngCommon.perioditys.GetChildByKey("year"));
+	}
+	sSelectedPeriodType = CONTEXT.GetOptProperty("EditPeriodType", "second");
+	fldSelectedPeriodType = ArrayOptFind(arrPeriods, "This.id == sSelectedPeriodType");
+
+	fldFirstPeriodType = ArrayOptFirstElem(arrPeriods);
+	if( fldSelectedPeriodType != undefined)
+	{
+		sSelectedPeriodType = fldSelectedPeriodType.id;
+	}
+	else if(fldFirstPeriodType != undefined)
+	{
+		sSelectedPeriodType = fldFirstPeriodType.id;
+	}
+
+	if(ArrayCount(arrPeriods) > 1)
+	{
+%>
+	<ComboBox Name="CBPeriodType" Width="150" SelectedItem="<%=sSelectedPeriodType%>" Change="SET=EditPeriodType,{CBPeriodType};REFRESH">
+<%
+		for(fldPeriodity in arrPeriods)
+		{
+%>
+		<ComboBoxItem Value="<%=fldPeriodity.id%>"><%=curLngCommon.perioditys.GetChildByKey( fldPeriodity.id ).name%></ComboBoxItem>
+<%
+		}
+%>
+	</ComboBox>
+<%
+	}
+%>
+	<Edit Name="EditPeriodType" Hidden="1"><%=sSelectedPeriodType%></Edit>
+</StackPanel>
+
+<%
+
+iColTempCounter=0
+iTilesCounter = 0;
+iTableCounter = 0;
+iColCounter = iTilesCount > 1 ? iColNum : iTilesCount;
+
+
+if ( iColCounter > 1 )
+{
+%>
+<Grid Width="100%">
+	<GridColumns>
+<%
+	iColumnWidth=(100/iColCounter)
+	for( iParamElem = 0; iParamElem < iColCounter; iParamElem++ )
+	{
+%>
+		<GridColumn Width="<%=iColumnWidth%>%"/>
+<%
+	}
+%>
+	</GridColumns>
+<%
+}
+
+for(oTile in arrStatistics)
+{
+	sTileSuffix = "tile_" + iTilesCounter + sHash;
+	//arrStatisticsIds = ArrayExtract(oTile.statistics, "Int(This.id)");
+	//sStatisticRecs = ArrayMerge(arrStatisticsIds, "This", ";");
+	//xarrStatistics = QueryCatalogByKeys("statistic_recs", "id", arrStatisticsIds);
+	bNewRow = (iColTempCounter == 0);
+	if (bNewRow && ( iColCounter > 1 ))
+	{
+%>
+	<GridRow>
+<%
+	}
+
+	arrCurrentTabs = Trim(oTile.GetOptProperty("tab_list",""));
+	
+	if (arrCurrentTabs != "")
+		arrCurrentTabs = arrCurrentTabs.split(";");
+	else
+		arrCurrentTabs = arrTabListParam;
+	
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( "StatisticMosaicBodyTab" + iTilesCounter ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-indicator-panel">
+		<Edit Name="SelectedStatistics<%=iTilesCounter%>" Hidden="1"><%=tools.array_to_text(oTile.statistics, "json")%></Edit>
+		<TabControl Name="StatisticMosaicBodyTab<%=iTilesCounter%>" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsHidden="<%=ArrayCount(arrCurrentTabs) <= 1%>">
+<%
+	iTabCounter = 0;
+
+	bShowGraphSelector = false;
+	bShowAggregation = false;
+	bShowShowNorm = false;
+	bShowExcelExportButtonInTile = false;
+
+	bShowNorm = CONTEXT.GetOptProperty("CHBShowNorm" + sTileSuffix, false);
+	sGraphType = CONTEXT.GetOptProperty("ChartType" + sTileSuffix, sDefaultGraphType);
+	
+	for ( sTabListParam in arrCurrentTabs )
+	{
+		///////////////////////////////////////////////   TAB   /////////////////////////////////////////////
+		iCurTab++;
+		switch(sTabListParam)
+		{
+			case "graph":
+				strTabItemTitle = tools_web.get_web_const( "grafiki", curLngWeb );
+			break;
+			case "info":
+				strTabItemTitle = tools_web.get_web_const( 'c_info', curLngWeb );
+				break;
+			case "table":
+				strTabItemTitle = tools_web.get_web_const( 'vcrb_values', curLngWeb );
+				break;
+			default:
+				strTabItemTitle = tools_web.get_web_const( 'kaleydoskoppok', curLngWeb );
+				break;
+		}
+		//sNameSuffix = iTilesCounter + (sTabListParam == "table" ? "Grid" : "Graph");
+		sNameSuffix = sTileSuffix + sTabListParam;
+%>
+			<TabItem Title="<%=XmlAttrEncode( strTabItemTitle )%>" Reload="1">
+<%
+		if(iTabCounter == iDefaultTab)
+		{
+			if(sTabListParam == "table")
+			{
+				bShowAggregation = true;
+				bShowExcelExportButtonInTile = bShowExcelExportButton;
+			}
+			else
+			{
+				bShowGraphSelector = true;
+				bShowAggregation = (sGraphType == "pie" || sGraphType == "donut" || sGraphType == "gauge");
+				bShowShowNorm = (sGraphType == "line" || sGraphType == "bar" || sGraphType == "area");
+			}
+		}
+		sSelectedAggregation = CONTEXT.GetOptProperty("CBAggregation" + sTileSuffix, oTile.GetOptProperty("default_aggregation", "sum"));
+		sExcelExportAction = "";
+		
+			if (sTabListParam == "info")
+			{
+%>
+				<StackPanel Name="SP<%=sNameSuffix%>" Orientation="Horizontal" Class="XAML-stack-container">
+<%
+			}
+			else
+			{
+%>
+
+				<StackPanel Name="SP<%=sNameSuffix%>">
+					<Collection Name="StatisticRecDatasCollection<%=sNameSuffix%>" Source="statistics_data_collection">
+						<Param Name="iGraphNum" Value="<%=iTilesCounter%>"/>
+						<Param Name="sStatisticRecs" Value="{SelectedStatistics<%=iTilesCounter%>}"/>
+						<Param Name="sAggregationType" Value="<%=sSelectedAggregation%>"/>
+						<Param Name="sTab" Value="<%=sTabListParam%>"/>
+						<Param Name="sGraphType" Value="<%=sGraphType%>"/>
+						<Param Name="sPeriodType" Value="{EditPeriodType}"/>
+						<Param Name="bShowNorm" Value="<%=bShowNorm%>"/>
+						<Param Name="dStartDate" Value="<%=dStartDate%>"/>
+						<Param Name="dEndDate" Value="<%=dEndDate%>"/>
+						<Param Name="root_objects_id" Value="<%=iRootObject%>"/>
+					</Collection>
+<%
+			}
+			
+			if ( sTabListParam == "table")
+			{
+%>
+					<DataGrid Name="StatisticRecDataGrid<%=sNameSuffix%>" Source="{StatisticRecDatasCollection<%=sNameSuffix%>}" Height="<%=sContentHeight%>" Width="100%"
+						ShowHeader="1" >
+					</DataGrid>
+<%
+				if(bShowExcelExportButtonInTile)
+				{
+					sExcelExportAction = "SET=excelExportAction/sCollection,statistics_data_collection";
+					sExcelExportAction += ";SET=excelExportAction/sCollectionData";
+					sExcelExportAction += ",curUserID=" + curUserID + "&sStatisticRecs={SelectedStatistics" + iTilesCounter + "}&sAggregationType=" + sSelectedAggregation;
+					sExcelExportAction += "&sTab=" + sTabListParam + "&sPeriodType={EditPeriodType}&sAggregationType=" + sSelectedAggregation;
+					sExcelExportAction += "&dStartDate=" + dStartDate + "&dEndDate=" + dEndDate;
+					sExcelExportAction += ";ACTION=excelExportAction";
+				}
+			}
+			else if ( sTabListParam == "graph")
+			{
+				if ( sGraphType != "gauge")
+				{
+%>
+					<Chart Name="StatisticRecDataGraph<%=sNameSuffix%>" Width="<%=sContentWidth%>" Scrollable="1" Height="<%=sContentHeight%>"
+						Legend="<%=oTile.legend_position%>" View3D="<%=(bShow3dGraphics && (sGraphType == "bar" || sGraphType == "pie" || sGraphType == "donut"))%>" DataChartID="caption" DataCategory="x" DataValue="y" Source="{StatisticRecDatasCollection<%=sNameSuffix%>}" DataColor="color" Click="SET=EditAdditionalTemplate,{info_code};SET=AdditionalInfoDialog/sInfo,{info};OPENDIALOG=AdditionalInfoDialog"/>
+<%
+				}
+				else
+				{
+%>
+					<Gauge Name="StatisticRecDataGraph<%=sNameSuffix%>" Width="<%=sContentWidth%>" Height="<%=sContentHeight%>" Source="{StatisticRecDatasCollection<%=sNameSuffix%>}" DataChartID="caption" DataValue="y" ShowLabels="1" Legend="0" Click="SET=EditAdditionalTemplate,{info_code};SET=AdditionalInfoDialog/sInfo,{info};OPENDIALOG=AdditionalInfoDialog"/>
+<%
+				}
+			}
+			else if (sTabListParam == "info")
+			{
+				curInformers = ({"informers": []});
+				for (catStat in XQuery("for $elem in statistic_recs where MatchSome($elem/id,(" +ArrayMerge(oTile.statistics, "This.id", ",") + ")) return $elem/Fields('id','name')"))
+				{
+					sXQ = "for $elem in statistic_datas where "
+					
+					if (iRootObject != null)
+						sXQ += "$elem/object_id = " + iRootObject + " and ";
+					
+					sXQ += "$elem/statistic_rec_id = " +catStat.PrimaryKey+ " and $elem/period_type='" + sSelectedPeriodType + "'"
+					if (dStartDate != null)
+						sXQ += " and $elem/statistic_date >= date('" + dStartDate + "')";
+					if (dEndDate != null)
+						sXQ += " and $elem/statistic_date <= date('" + dEndDate + "')"
+					sXQ += " order by $elem/statistic_date return $elem/Fields('id', 'value')";
+					
+					xarrStatistics = XQuery(sXQ);
+
+					vValue = null;
+					switch(sSelectedAggregation)
+					{
+						case "sum":					
+							vValue = ArraySum(xarrStatistics,"This.value");
+							break;
+						case "max":					
+							vValue = ArrayMax(xarrStatistics,"This.value");
+							break;
+						case "min":					
+							vValue = ArrayMin(xarrStatistics,"This.value");
+							break;
+						case "average":
+							iDataCount = ArrayCount(xarrStatistics);
+							vValue =  (iDataCount) > 0 ? ArraySum(xarrStatistics,"This.value") / Real(iDataCount) : 0;
+							break;
+					}
+					if (vValue != null)
+						vValue = StrReal(vValue, 2);
+					curInformers.informers.push({"type": "number", "title": catStat.name.Value, "value": vValue});
+				}
+				%>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+				<%
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+				%>
+				</StackPanel>
+				<%
+			}
+%>
+				</StackPanel>
+
+			</TabItem>
+<%
+		iTabCounter++;
+	}
+%>
+		</TabControl>
+		
+<%
+	if(bShowGraphFilters && (bShowGraphSelector || bShowAggregation || bShowShowNorm) || bShowExcelExportButtonInTile || bAllowSelection)
+	{
+		iTabCounter = 0;
+%>
+	<StackPanel>
+	<!--
+		<Edit Name="EditPperiodType<%=sTileSuffix%>" Hidden="1"><%=sSelectedPeriodType%></Edit>
+		<Edit Name="SelectDialogArraySelected<%=sTileSuffix%>" Hidden="1">#empty#</Edit>
+	-->
+		<StackPanel Orientation="Horizontal" Align="Right" Class="XAML-indicator-fields">
+		<%
+				if(bShowGraphFilters)
+				{
+					if(bShowGraphSelector)
+					{
+						iTabCounter++
+		%>
+			<ComboBox Name="ChartType<%=sTileSuffix%>" Width="160" SelectedItem="<%=sGraphType%>" Change="REFRESH">
+		<%
+						for(sCurGraphType in oTile.graph_types)
+						{
+		%>
+				<ComboBoxItem Value="<%=sCurGraphType%>"><%=curLngCommon.graph_types.GetChildByKey(sCurGraphType).name%></ComboBoxItem>
+		<%
+						}
+		%>
+			</ComboBox>
+		<%
+					}
+					if(bShowAggregation)
+					{
+						iTabCounter++;
+		%>
+			<StackPanel Class="XAML-stack-container">
+				<ComboBox Name="CBAggregation<%=sTileSuffix%>" Width="120" SelectedItem="<%=sSelectedAggregation%>" Change="REFRESH">
+			<%
+						for(fldAggregationType in curLngCommon.aggregation_types)
+						{
+			%>
+				<ComboBoxItem Value="<%=fldAggregationType.id%>"><%=fldAggregationType.name%></ComboBoxItem>
+			<%
+						}
+			%>
+				</ComboBox>
+			</StackPanel>
+		<%
+					}
+					if(bShowShowNorm)
+					{
+						if (bThinMode && iTabCounter % 2 == 0)
+						{
+%>
+	</StackPanel>
+	<StackPanel Orientation="Horizontal" Align="Right" Class="XAML-stack-filter">
+<%
+						}
+					
+					
+						iTabCounter++;
+		%>
+			<CheckBox Name="CHBShowNorm<%=sTileSuffix%>" Checked="<%=bShowNorm%>" Change="REFRESH"><%=tools_web.get_web_const( "vyvoditnormu", curLngWeb )%></CheckBox>
+		<%
+					}
+				}
+
+				if(bShowExcelExportButtonInTile)
+				{
+						if (bThinMode && iTabCounter % 2 == 0)
+						{
+%>
+	</StackPanel>
+	<StackPanel Orientation="Horizontal" Align="Right" Class="XAML-stack-filter">
+<%
+						}
+					iTabCounter++;
+		%>
+			<Button Name="ExportExcelButton<%=sTileSuffix%>" Click="<%=sExcelExportAction%>" Icon="" Class="XAML-button XAML-button-excel-download"><%=tools_web.get_web_const( "eksportirovatv", curLngWeb )%></Button>
+		<%
+				}
+				if(bAllowSelection)
+				{
+						if (bThinMode && iTabCounter % 2 == 0)
+						{
+%>
+	</StackPanel>
+	<StackPanel Orientation="Horizontal" Align="Right" Class="XAML-stack-filter">
+<%
+						}
+					iTabCounter++;
+		%>
+			<Dialog Name="SelectDialogStatistics<%=sTileSuffix%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="Set=SelectDialogStatistics<%=iTilesCounter%>/selected_from_data,true;Set=SelectedStatistics<%=iTilesCounter%>,{CatalogListDataGridSelList};SET=ChangeStatistics,true;REFRESH;">
+				<Param Name="catalog_name" Value="statistic_rec"/>
+				<Param Name="multi_select" Value="true"/>
+				<Param Name="selected_object_ids" Value="{SelectedStatistics<%=iTilesCounter%>}"/>
+				<Param Name="selected_from_data" Value="true"/>
+				<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+			</Dialog>
+		
+			<Button Name="SelectStatButton<%=sTileSuffix%>" Class="XAML-button XAML-button-no-icon" Click="OPENDIALOG=SelectDialogStatistics<%=sTileSuffix%>"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+		<%
+					iTabCounter++;
+				}
+		%>
+		</StackPanel>
+		
+		
+	</StackPanel>
+<%
+	}
+%>
+</StackPanel>
+<%
+	iTableCounter++;
+	iColTempCounter++;
+	bNewRow = (iColTempCounter==iColCounter)
+	if (bNewRow && (iColCounter>1))
+	{
+		iColTempCounter = 0;
+%>
+	</GridRow>
+<%
+	}
+	iTilesCounter++;
+
+
+}
+if (iColCounter>1)
+{
+	if (iTableCounter%iColNum)
+	{
+
+		for (i=iTableCounter;i%iColNum;i++)
+		{
+%>
+		<StackPanel>
+		</StackPanel>
+<%
+		if(i>30) break;
+		}
+%>
+	</GridRow>
+<%
+	}
+%>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<tools_report>
+
+	<!-- Портал -->
+	<poll_report PROPERTY="1" ALLOW-CALL-FROM-CLIENT="1" PARAM="oParams" EXPR="
+
+		oResult = new Object();
+		oResult.error = 0;
+		oResult.poll_results = [];
+		// oResult.questions = [];
+		oResult.immediate_export = false;
+		oResult.exported_file_link = '';
+		oResult.rows_count = 0;
+		oResult.too_much_columns = false;
+		oResult.columns_count = 0;
+
+		if ( oParams == null || oParams == undefined )
+		{
+			oResult.error = 1;
+		}
+
+		arrPersonsIDs = Array();
+
+		arrXQueryConditions = [];
+
+		arrXQueryConditions.push( '$elem/poll_id = ' + oParams.poll_id );
+
+		if ( oParams.start_date != null )
+		{
+			arrXQueryConditions.push( '$elem/create_date >= ' + XQueryLiteral( DateNewTime( Date( oParams.start_date ), 0, 0, 0 ) ) );
+		}
+
+		if ( oParams.finish_date != null )
+		{
+			arrXQueryConditions.push( '$elem/create_date <= ' + XQueryLiteral( DateNewTime( Date( oParams.finish_date ), 23, 59, 59 ) ) );
+		}
+
+		if ( oParams.person_id != null )
+			arrXQueryConditions.push( '$elem/person_id = ' + oParams.person_id );
+
+		if ( oParams.group_id != null )
+		{
+			arrGroupPersonsIDs = new Array();
+
+			docGroup = tools.open_doc( oParams.group_id );
+			if ( docGroup != undefined )
+			{
+				arrGroupPersonsIDs = ArrayExtract( docGroup.TopElem.collaborators, 'collaborator_id' );
+
+				arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrGroupPersonsIDs, 'This.PrimaryKey', ',' ) + ' ) ) ' );
+			}
+		}
+
+		if ( oParams.parent_object_id != null )
+		{
+			catSub = ArrayOptFirstElem( XQuery('for $elem in subdivisions where $elem/id = ' + oParams.parent_object_id + ' return $elem') );
+
+			arrPersonsIDs = ArrayExtract( tools.xquery( 'for $elem in person_hierarchys where MatchSome( $elem/subdivision_id, ( ' + ( catSub != undefined ? catSub.id : null ) + ' ) ) return $elem/Fields( \'collaborator_id\')' ), 'This.collaborator_id' );
+
+			if ( oParams.hier_sub_select )
+			{
+				arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersonsIDs, 'This.PrimaryKey', ',' ) + ' ) ) ' );
+			}
+			else
+			{
+				arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/position_parent_id = ' + oParams.parent_object_id + ' )' );
+			}
+		}
+
+		if ( oParams.org_id != null && oParams.parent_object_id == null )
+		{
+			if ( oParams.hier_sub_select )
+			{
+				arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/org_id = ' + oParams.org_id + ' )' );
+			}
+			else
+			{
+				arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/org_id = ' + oParams.org_id + ' and $person/position_parent_id = null() )' );
+			}
+		}
+
+		/*
+			all - все
+			active - активные
+			completed - завершенные
+
+			// активные
+			0 - назначен
+			1 - В процессе
+			
+			// завершенные
+			2 - Завершен
+			3 - Не пройден
+			4 - Пройден
+		*/
+		switch(oParams.poll_result_status)
+		{
+			case 'all':
+				arrStatusIDs = [0,1,2,3,4];
+				break;
+			case 'active':
+				arrStatusIDs = [0,1];
+				break;
+			case 'completed':
+				arrStatusIDs = [2,3,4];
+				break;
+		}
+
+		arrXQueryConditions.push( 'MatchSome( $elem/status, ( ' + ArrayMerge( arrStatusIDs, 'This', ',' ) + ' ) ) ' );
+
+		// закомментирован 21-05-24
+		// arrXQueryConditions.push('and $elem/main_value != \'\'');
+
+		sXQueryConditions = ArrayCount( arrXQueryConditions ) > 0 ? ' where ' + ArrayMerge( arrXQueryConditions, 'This', ' and ' ) : '';
+
+		sQuery = 'for $elem in poll_results ' + sXQueryConditions + ' return $elem';
+		xarrPollResults = XQuery( sQuery );
+
+		CheckCurThread();
+
+		var progress = new TaskProgress;
+		progress.TaskName = 'Загружаем список результатов опросов';
+
+		sQuery = 'for $elem in polls where MatchSome($elem/id, ' + oParams.poll_id + ') return $elem';
+		xarrPoll = tools.xquery( sQuery );
+
+		arrPoll = ArrayOptFirstElem(xarrPoll);
+
+		if(arrPoll != undefined)
+		{
+			oResult.poll = {};
+			oResult.poll.id = arrPoll.id.Value;
+			oResult.poll.code = arrPoll.code.Value;
+			oResult.poll.name = arrPoll.name.Value;
+			oResult.poll.questions = [];
+
+			tePollResult = OpenDoc( UrlFromDocID( arrPoll.id ) ).TopElem;
+
+			for(oQuestion in tePollResult.questions)
+			{
+				_question = {};
+				_question.question_id = oQuestion.id.Value;
+				_question.type = oQuestion.type.Value;
+				_question.title = oQuestion.title.Value;
+
+				if(oQuestion.type != 'number' && oQuestion.type != 'date' && oQuestion.type != 'text')
+				{
+					_question.entries = [];
+					arrEntries = oQuestion.entries;
+					if ( oQuestion.entries.ChildNum != 0)
+					{
+						for ( _entry in arrEntries )
+						{
+							_tmp = {};
+							_tmp.id = _entry.id.Value;
+							_tmp.value = _entry.value.Value;
+							_question.entries.push(_tmp);
+						}
+					}
+				}
+				oResult.poll.questions.push(_question);
+			}
+		}
+
+	    for(oPollResult in xarrPollResults)
+	    {
+	    	
+			sQuery = 'for $elem in poll_results where MatchSome($elem/poll_id, ' + oPollResult.id.Value + ') and MatchSome($elem/person_id, ' + oPollResult.person_id.Value + ') return $elem';
+			xarrPollResult = tools.xquery( sQuery );
+
+			oTempPollResult = {};
+	    	oTempPollResult.id = oPollResult.id.Value;
+			oTempPollResult.name = oPollResult.name.Value;
+
+			oTempPollResult.start_date =  StrDate( OptDate( oPollResult.create_date.Value ), false, false );
+			// if(OptDate(oPollResult.create_date.HasValue) != undefined)
+				// oTempPollResult.start_date = StrDate( OptDate( oPollResult.create_date.Value ), false, false );
+			
+			oTempPollResult.person_id = oPollResult.person_id.Value;
+			oTempPollResult.person_fullname = oPollResult.person_fullname.Value;
+
+			oTempPollResult.person_code = '';
+			if(oPollResult.person_id.OptForeignElem != undefined)
+			{
+				oTempPollResult.person_code = oPollResult.person_id.ForeignElem.code.Value;
+			}
+			
+			oTempPollResult.answers = [];
+
+			    docPollResultTE = tools.open_doc(OptInt(oPollResult.id)).TopElem;
+
+					for(oAnswer in docPollResultTE.questions)
+					{
+						_tmp = {};
+
+						for(questionElem in tePollResult.questions)
+						{
+							if(questionElem.id == oAnswer.id)
+							{
+								_tmp.type = questionElem.type.Value;
+							}
+						}
+
+						_tmp.question_id = oAnswer.id.Value;
+
+						switch(_tmp.type)
+						{
+							case 'date':
+								if(OptDate(oAnswer.value.Value) != undefined)
+									_tmp.value = StrDate( OptDate( oAnswer.value.Value ), false, false );
+								break;
+							case 'bool':
+
+								_tmp.value = 'да';
+								if(oAnswer.value.Value == 'false')
+									_tmp.value = 'нет';
+
+								_tmp.value = oAnswer.value.Value;
+								
+								break;
+							case 'file':
+
+								_tmp.value = '';
+								if( oAnswer.value.HasValue )
+								{
+									sUrlPath = tools_web.get_object_source_url( 'resource', oAnswer.value.Value );
+									try
+									{
+										_tmp.value = UrlAppendPath( global_settings.settings.portal_base_url.Value, sUrlPath );
+									}
+									catch(ex)
+									{
+										_tmp.value = global_settings.settings.portal_base_url+(StrEnds(global_settings.settings.portal_base_url,'/')?'':'/')+sUrlPath;
+									}
+								}
+																
+								break;
+							case 'link_to_database_object':
+
+								_tmp.value = '';
+								_catalog = '';
+								for(questionElem in tePollResult.questions)
+								{
+									if(questionElem.id == oAnswer.id)
+									{
+
+										_catalog = questionElem.catalog.Value;
+										
+									}
+								}
+
+								if(_catalog != '')
+								{
+									xarrPollAnswer = XQuery( 'for $elem in ' + _catalog + 's where MatchSome( $elem/id, ( ' + oAnswer.value.Value + ' ) ) return $elem' );
+
+									if(ArrayOptFirstElem(xarrPollAnswer) != undefined)
+									{
+										oPollAnswer = ArrayOptFirstElem(xarrPollAnswer);
+										_tmp.value = oPollAnswer.name.Value;
+									}
+								}
+								break;
+							default:
+								_tmp.value = oAnswer.value.Value;
+						}
+
+						_tmp.comment = oAnswer.comment.Value;
+
+
+						oTempPollResult.answers.push(_tmp);
+						
+					}
+
+			oResult.poll_results.push( oTempPollResult );
+	    }
+
+		return oResult;
+	"/>
+	
+
+</tools_report>
+
+</SPXML-INLINE-FORM>

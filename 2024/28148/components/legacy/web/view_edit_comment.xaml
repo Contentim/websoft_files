@@ -1,0 +1,106 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+iFlag=0
+if ( ISDIALOG )
+{
+	curObjectID = OptInt( oParamSource.GetOptProperty( 'object_id' ), null );
+	if ( curObjectID == null )
+	{
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neukazanidobek', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+	
+	try
+	{
+		curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+	}
+	catch(ex)
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+	
+	strComment=curObject.comment
+	strTaskID = oParamSource.GetOptProperty( 'task_id' , null );
+	strCommentID='comment_'+curObjectID
+	if ( strTaskID != null )
+	{
+			if (curObject.Name=='career_reserve')
+			{
+				fldTask=curObject.tasks.GetOptChildByKey(strTaskID)
+				if (fldTask==undefined)
+				{
+					curMessageBox = {
+						"type": "error",
+						"text": tools_web.get_web_const( 'neukazanidzada', curLngWeb )
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+	</SPXMLScreen>
+<%
+					Cancel();
+				}
+				strComment=fldTask.person_comment
+				strCommentID='person_comment'+fldTask.id
+				iFlag=1;
+			}
+	}
+}
+%>
+
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vkpb_comment', curLngWeb ))%>" Expanded="1" Width="100%" Heigth="40%" Class="XAML-panel-info">
+	<EditBox Name="<%=strCommentID%>" Height="250"  Width="100%" Enabled="1"><%=HtmlEncode(strComment)%></EditBox>
+</Panel>
+<%
+if ( ISDIALOG )
+{
+	strAction='CLOSEDIALOG'
+	if (iFlag==1)
+	{
+		strAction='Action=SaveComment'
+%>
+	<Edit Name="career_reserve_id" Hidden="1"><%=curObjectID%></Edit>
+	<Edit Name="command" Hidden="1">save_collaborator_comment</Edit>
+	<Edit Name="task_id" Hidden="1"><%=strTaskID%></Edit>
+	<Edit Name="doc_id" Hidden="1"></Edit>
+	<Edit Name="result_text" Hidden="1"></Edit>
+<!--Actions-->
+	<Action Name="SaveComment" Source="save_task_comment" Success="Set=result_text,{<%=strCommentID%>};CLOSEDIALOG" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+<!--Actions end-->
+<%
+	}
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Width="100" Click="<%=strAction%>"><%=tools_web.get_web_const( 'c_save', curLngWeb )%></Button>
+			<Button Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( 'c_cancel', curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

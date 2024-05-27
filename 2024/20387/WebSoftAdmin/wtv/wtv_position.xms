@@ -1,0 +1,332 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="
+	ms_tools.check_doc_screen_access( TopElem );
+" BEFORE-SAVE-ACTION="
+	if ( TopElem.view.basic_collaborator_id != TopElem.basic_collaborator_id )
+	{
+		if ( TopElem.basic_collaborator_id.HasValue )
+		{
+			if ( TopElem.view.basic_collaborator_id.HasValue )
+			{
+				if ( ! Screen.MsgBox( ms_tools.get_const('mr18i75oft'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+					Cancel();
+			}
+			else
+			{
+				if ( ! Screen.MsgBox( ms_tools.get_const('li1rohgjmv'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+					Cancel();
+			}
+		}
+		else
+		{
+			if ( ! Screen.MsgBox( ms_tools.get_const('il3xsaifvm'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+		}
+	}
+	else if ( TopElem.view.org_id != TopElem.org_id )
+	{
+		if ( ! Screen.MsgBox( ms_tools.get_const('qklx7k7cua'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+			Cancel();
+	}
+
+	TopElem.view.desc_save();
+" SAVE-ACTION="
+	if ( TopElem.view.basic_collaborator_id != TopElem.basic_collaborator_id )
+	{
+		try
+		{
+			if ( TopElem.basic_collaborator_id.HasValue )
+			{
+				if ( TopElem.view.basic_collaborator_id.HasValue )
+				{
+					docPerson = ObtainUiDoc( UrlFromDocID( TopElem.view.basic_collaborator_id ) );
+					docPerson.TopElem.clear_cur_position();
+					UpdateUiDoc( docPerson );
+				}
+
+				docPerson = ObtainUiDoc( UrlFromDocID( TopElem.basic_collaborator_id ) );
+				if ( ! docPerson.TopElem.position_id.HasValue )
+				{
+					docPerson.TopElem.position_id = TopElem.Doc.DocID;
+					docPerson.TopElem.view.position_doc_ref = TopElem;
+					UpdateUiDoc( docPerson );
+				}
+			}
+			else
+			{
+				docPerson = ObtainUiDoc( UrlFromDocID( TopElem.view.basic_collaborator_id ) );
+				if ( docPerson.TopElem.position_id == TopElem.Doc.DocID )
+				{
+					docPerson.TopElem.clear_cur_position();
+					UpdateUiDoc( docPerson );
+				}
+			}
+			TopElem.view.basic_collaborator_id = TopElem.basic_collaborator_id;
+		}
+		catch ( err )
+		{
+			alert( err );
+		}
+	}
+	else if ( TopElem.view.org_id != TopElem.org_id || TopElem.view.name != TopElem.name || TopElem.view.parent_object_id != TopElem.parent_object_id )
+	{
+		personArray = XQuery( 'for $elem in collaborators where $elem/position_id = ' + TopElem.Doc.DocID + ' return $elem' );
+		for ( _person in personArray )
+			try
+			{
+				doc = ObtainUiDoc( UrlFromDocID( _person.PrimaryKey ) );
+				doc.TopElem.view.position_doc_ref = TopElem;
+				UpdateUiDoc( doc );
+			}
+			catch ( err )
+			{
+				alert( err );
+			}
+		TopElem.view.org_id = TopElem.org_id;
+		TopElem.view.name = TopElem.name;
+		TopElem.view.parent_object_id = TopElem.parent_object_id;
+	}
+
+	UpdateScreens( '*', '*position*' );
+	UpdateScreens( '*', '*sub*' );
+" WINDOW-ICON-URL="ico/position.ico" TITLE-EXPR="TopElem.name + ' — ' + ms_tools.get_const('c_position')" MAXIMIZED="1">
+
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="wtv_general_ass.xms"/>
+
+<ITEM TYPE="std_doc_menu"/>
+<ITEM TYPE="ms_std_doc_toolbar"/>
+
+
+<LINE STD-MARGINS="0">
+
+
+<INHERIT TYPE="page_tree_base"/>
+
+
+
+<SELECTOR NAME="main_selector">
+
+
+<PAGE TITLE="##ms_tools.get_const('cavr3d3iwk')##" IMAGE-URL="ico/common.ico" HEIGHT="100%" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1" HORIZ-SCROLL="1">
+	<ITEM TYPE="ms_code_name_base"/>
+	<BR/>
+
+	<ITEM TYPE="ms_sub_table_base" SOURCE="Ps.parent_object_id"/>
+	<BR/>
+
+	<ITEM TYPE="ms_object_selector" catalogExpr="'collaborator'" SOURCE="Ps.basic_collaborator_id" titleExpr="ms_tools.get_const('xhgnux3sbt') + ':'" doFillingExpr="true" WIDTH="316vpx"/>
+	<BR/>
+
+	<LINE MULTILINE="1">
+		<TitleLabel TITLE=" " WIDTH="316vpx">
+			<CHECK SOURCE="Ps.is_boss" TITLE-EXPR="ms_tools.get_const('9w25wndxt8')" ENABLE-EXPR="! tools.cur_user_id.HasValue || tools.get_cur_user().access.access_role.ForeignElem.can_edit_managers"/>
+		</TitleLabel>
+		<EditLabel SOURCE="TopElem.basic_rate" TITLE="##ms_tools.get_const('p7kssz5oz1')##" typeExpr="'integer'" WIDTH="150vpx">
+			<LABEL TITLE="%" ALIGN="right"/>
+		</EditLabel>
+		<TitleLabel TITLE="##ms_tools.get_const('mesyachnayastavka')##" WIDTH="316vpx">
+			<LINE HORIZ-SPACING="4vpx">
+				<EditLabel SOURCE="TopElem.cost_month" typeExpr="'real'" WIDTH="162vpx"/>
+				<ComboLabel SOURCE="TopElem.currency" ELEM="ListElem.name" WIDTH="150vpx"/>
+			</LINE>
+		</TitleLabel>
+	</LINE>
+	<BR/>
+
+	<LINE CHILD-VERT-ALIGN="bottom" MULTILINE="1">
+		<ITEM TYPE="ms_object_selector" catalogExpr="'appointment_type'" SOURCE="TopElem.position_appointment_type_id"/>
+		<DateLabel SOURCE="TopElem.position_date" TITLE="##ms_tools.get_const('datavstupleniya')##" WIDTH="150vpx"/>
+		<DateLabel SOURCE="TopElem.position_finish_date" TITLE="##ms_tools.get_const('datazaversheniya_1')##" WIDTH="150vpx"/>
+		<TitleLabel TITLE=" ">
+			<PANEL HEIGHT="edit">
+				<CHECK SOURCE="TopElem.is_position_finished" TITLE="##ms_tools.get_const('deystvienaznach')##" VERT-ALIGN="center"/>
+			</PANEL>
+		</TitleLabel>
+	</LINE>
+	<BR/>
+	<BR/>
+
+	<ITEM TYPE="comment_base"/>
+	<BR/>
+
+	<ITEM TYPE="ms_custom_data_view"/>
+	<BR/>
+</PAGE>
+
+
+
+
+<PAGE TITLE="##ms_tools.get_const('c_additional')##" IMAGE-URL="ico/additional.ico" HEIGHT="100%" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1" HORIZ-SCROLL="1">
+	<!--<ITEM TYPE="ms_object_selector" SOURCE="Ps.competence_profile_id" catalogExpr="'competence_profile'"/>-->
+
+	<TitleLine TITLE="##ms_tools.get_const('ass_competence_profiles')##" HEIGHT="10gr">
+		<BUTTON NAME="zone_button" TITLE="##ms_tools.get_const('c_choose') + '...'##" IMAGE-URL="//wtv/svg/add.svg" ACTION="
+				var dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+				dlgDoc.TopElem.multi_select = true;
+				dlgDoc.TopElem.catalog_name = 'competence_profile';
+				dlgDoc.TopElem.value_array = TopElem.competence_profiles;
+				Screen.ModalDlg( dlgDoc );
+
+				TopElem.competence_profiles.DeleteChilds( '! dlgDoc.TopElem.values.ChildByKeyExists( \'\' + PrimaryKey.Value )' );
+				TopElem.competence_profile_id.Clear();
+				var _value;
+				for ( _value in dlgDoc.TopElem.values )
+				{
+					if (!TopElem.competence_profile_id.HasValue)
+						TopElem.competence_profile_id = _value.key;
+					TopElem.competence_profiles.ObtainChildByKey( _value.key );
+				}
+
+				Ps.Doc.SetChanged( true );
+		" ALIGN="right"/>
+		<ITEM TYPE="ms_list_catalog_base" catalogExpr="'competence_profile'" arrayExpr="
+				if (TopElem.competence_profile_id.HasValue)
+				{
+					var fldPrimeEntry = TopElem.competence_profiles.GetOptChildByKey(TopElem.competence_profile_id);
+					if (fldPrimeEntry == undefined) //for syncing single and multiple fields
+					{
+						fldPrimeEntry = TopElem.competence_profiles.InsertChild(0);
+						fldPrimeEntry.id = TopElem.competence_profile_id;
+						Ps.Doc.SetChanged( true );
+					}
+				}
+				return TopElem.competence_profiles;
+		" deleteAction="
+				TopElem.competence_profiles.GetChildByKey(ListElem.PrimaryKey).Delete();
+				if (ArrayOptFirstElem(TopElem.competence_profiles) == undefined)
+					TopElem.competence_profile_id.Clear();
+				Ps.Doc.SetChanged(true);
+		"/>
+	</TitleLine>
+
+	<TitleLabel TITLE="##ms_tools.get_const('2fgltf4vzt')##" WIDTH="648vpx">
+		<EDIT SOURCE="Ps.competence_codes" MULTILINE="1" HEIGHT="3gr" TIP-TEXT="##ms_tools.get_const('za95ni3i3h')##"/>
+	</TitleLabel>
+	<BR/>
+
+	<LINE MULTILINE="1">
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.kpi_profile_id" catalogExpr="'kpi_profile'" WIDTH="316vpx"/>
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.knowledge_profile_id" catalogExpr="'knowledge_profile'" WIDTH="316vpx"/>
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.bonus_profile_id" catalogExpr="'bonus_profile'" WIDTH="316vpx"/>
+	</LINE>
+
+	<TitleLine TITLE="##ms_tools.get_const('ass_kpi_profiles')##" arrButtonsExpr="[
+			{ cmd: 'SelectListElems', catalog_name: 'kpi_profile', value_array: TopElem.kpi_profiles }
+	]" HEIGHT="10gr">
+		<GRID>
+			<COLUMNS>
+				<COL WIDTH="50%"/>
+				<COL WIDTH="50%"/>
+				<COL WIDTH="3zr"/>
+			</COLUMNS>
+			<ROW HEADER="1">
+				<LABEL ALIGN="center" TITLE="##ms_tools.get_const('kpe')##"/>
+				<LABEL ALIGN="center" TITLE="##ms_tools.get_const('c_period')##"/>
+				<LABEL/>
+			</ROW>
+			<LOOP EXPR="TopElem.kpi_profiles" VAR="ListElem">
+				<ROW OPEN-ACTION="ObtainDocScreen(UrlFromDocID(ListElem.id))" DELETE-ACTION="ListElem.Delete(); Ps.Doc.SetChanged(true);">
+					<LABEL TITLE-EXPR="ListElem.id.ForeignElem.name" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.period_type_id.HasValue ? ListElem.period_type_id.ForeignElem.name : ''" FLAT="1"/>
+					<LINK TITLE="..." ACTION="
+							dlgDoc = OpenDoc('//wtv/ms_dlg_object_select.xml');
+							dlgDoc.TopElem.use_common_columns = false;
+							dlgDoc.TopElem.variant = common.perioditys;
+							column = dlgDoc.TopElem.columns[0];
+							column.width = '100%';
+							column.name = 'name';
+							column.const = 'c_folder';
+							Screen.ModalDlg(dlgDoc);
+
+							ListElem.period_type_id = dlgDoc.TopElem.object_str;
+
+							Ps.Doc.SetChanged( true );
+					"/>
+				</ROW>
+			</LOOP>
+		</GRID>
+	</TitleLine>
+	<BR/>
+
+	<LINE MULTILINE="1">
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.position_common_id"
+		afterSelectAction="
+				TopElem.position_common_level_id.Clear();
+				TopElem.position_common_level_name.Clear();
+		" afterDeleteAction="
+				TopElem.position_common_level_id.Clear();
+				TopElem.position_common_level_name.Clear();
+		" catalogExpr="'position_common'" titleExpr="ms_tools.get_const('c_position_common')" WIDTH="316vpx"/>
+		<IF EXPR="TopElem.position_common_id.HasValue">
+			<EditLabel SOURCE="TopElem.position_common_level_name" TITLE="##ms_tools.get_const('voqs5lcnua')##" READ-ONLY="1" OPEN-ACTION="
+					try
+					{
+						ObtainDocScreen( UrlFromDocID( Int( TopElem.position_common_id) ) );
+					}
+					catch(ex)
+					{
+						Screen.MsgBox( ms_tools.get_const('i8hsyiz5wf'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						Cancel();
+					}
+			" DELETE-ACTION="
+					TopElem.position_common_level_id.Clear();
+					TopElem.position_common_level_name.Clear();
+			" WIDTH="316vpx">
+				<ButtonImage WIDTH="button" HEIGHT="edit" IMAGE-URL="//wtv/svg/ellipsis.svg" TIP-TEXT="##ms_tools.get_const('xy8vnti3jm')##" ACTION="
+						TopElem.position_common_level_id.Clear();
+						TopElem.position_common_level_name.Clear();
+						try
+						{
+							positionDoc = OpenDoc( UrlFromDocID( Int(  TopElem.position_common_id ) ) ).TopElem;
+						}
+						catch(ex)
+						{
+							Screen.MsgBox( ms_tools.get_const('i8hsyiz5wf'), ms_tools.get_const('c_error'), 'error', 'ok' );
+							Cancel();
+						}
+						if (ArrayCount(positionDoc.levels)==0)
+						{
+							Screen.MsgBox( ms_tools.get_const('0eyd4p0svv'), ms_tools.get_const('c_error'), 'error', 'ok' );
+							Cancel();
+						}
+						dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+						dlgDoc.TopElem.multi_select = false;
+						//dlgDoc.TopElem.catalog_name = lists.event_forms;
+						dlgDoc.TopElem.variant = positionDoc.levels;
+						dlgDoc.TopElem.can_be_empty = false;
+						Screen.ModalDlg( dlgDoc );
+
+						TopElem.position_common_level_id = dlgDoc.TopElem.object_id;
+						if (Trim(dlgDoc.TopElem.object_obj.Object.name)!='')
+						{
+							TopElem.position_common_level_name = dlgDoc.TopElem.object_obj.Object.name;
+						}
+						else
+						{
+							TopElem.position_common_level_name =ms_tools.get_const('w5qromf7yj') + ' '+ArrayOptFind(positionDoc.levels,'PrimaryKey == ' + dlgDoc.TopElem.object_id).ChildIndex + 1
+						}
+
+						TopElem.Doc.SetChanged( true );
+				" ALIGN="right"/>
+			</EditLabel>
+		</IF>
+	</LINE>
+
+	<ITEM TYPE="ms_object_selector" SOURCE="Ps.position_family_id" catalogExpr="'position_family'" WIDTH="316vpx"/>
+
+	<ITEM TYPE="ms_object_selector" catalogExpr="'staff_position'" SOURCE="TopElem.staff_position_id" WIDTH="316vpx"/>
+	<BR/>
+</PAGE>
+
+
+
+<INHERIT TYPE="ms_pages_base"/>
+
+
+</SELECTOR>
+
+</LINE>
+
+</SPXML-SCREEN>

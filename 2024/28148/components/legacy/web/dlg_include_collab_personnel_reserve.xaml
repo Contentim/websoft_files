@@ -1,0 +1,83 @@
+﻿<SPXMLScreen>
+
+<%
+sSelectData = UrlDecode(PARAMETERS.GetOptProperty( "select_data", "" ));
+
+strUserIds = ArrayMerge(ArrayExtract( tools.read_object( sSelectData ), "id" ),"This",";");
+%>
+
+	<Action Name="CreatePersonnelReserve" Source="create_personnel_reserve" Success="ALERT={messageText};CLOSEDIALOG">
+	   <Param Name="sSelectedUsers" Value='<%=strUserIds%>'/> 
+		<Param Name="CareerResType" Value="{career_reserve_type_id}"/>
+		<Param Name="State" Value="{state_id}"/>
+		<Param Name="PositionCommon" Value="{position_common_id}"/>
+		<Param Name="IncludeDate" Value="{date_include_pr}"/> 
+   </Action>
+
+   <Grid Class="XAML-grid-info-table"  Width="100%" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="200" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+		
+		<GridRow>
+			<Label Class="XAML-grid-label-name-no-padding XAML-nowrap" Width="200" Align="left"><%=HtmlEncode(tools_web.get_web_const( "tipkadrovogore", curLngWeb ) + ":")%></Label>
+			<ComboBox Name="career_reserve_type_id">
+<%
+				for ( catReserve in career_reserve_types )
+				{
+%>
+					<ComboBoxItem Value="<%=catReserve.id%>"><%=tools_web.get_cur_lng_name( catReserve.name, curLng.short_id )%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow> 
+		
+		<GridRow>
+			<Label Class="XAML-grid-label-name-no-padding XAML-nowrap" Align="left" Width="200"><%=tools_web.get_web_const( "c_status", curLngWeb )%></Label>
+			<ComboBox Name="state_id">
+<%
+				for ( elemState in common.personnel_reserve_status_types )
+				{
+%>
+					<ComboBoxItem Value="<%=elemState.id%>"><%=tools_web.get_cur_lng_name( elemState.name, curLng.short_id )%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow> 
+	
+		<GridRow>
+			<Label Class="XAML-grid-label-name-no-padding XAML-nowrap" Align="left" Width="200"><%=tools_web.get_web_const( "c_position_common", curLngWeb )%></Label>
+			<ComboBox Name="position_common_id">
+<%
+				for ( catPositCommonElem in position_commons )
+				{
+%>
+					<ComboBoxItem Value="<%=catPositCommonElem.id%>"><%=tools_web.get_cur_lng_name( catPositCommonElem.name, curLng.short_id )%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow>
+		
+		<GridRow>
+			<Label Class="XAML-grid-label-name-no-padding XAML-nowrap" Align="left" Width="200"><%=HtmlEncode(tools_web.get_web_const( "datavklyucheniyav_1", curLngWeb ) + ":")%></Label>
+			<DatePicker Name="date_include_pr"><%=StrDate(Date(),false,false)%></DatePicker>
+		</GridRow>
+		
+	</Grid>
+	
+<%
+	sCreateAction = "ACTION=CreatePersonnelReserve;";
+%>		
+	<Label/>
+	<Toolbar Width="">
+			<Button Class="XAML-button" Click="<%=sCreateAction%>"><%=HtmlEncode(tools_web.get_web_const( "vklyuchitvkadrov", curLngWeb ))%></Button>
+			<Button Class="XAML-button" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</Toolbar>
+
+
+
+</SPXMLScreen>	

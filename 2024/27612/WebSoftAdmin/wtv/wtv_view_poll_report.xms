@@ -1,0 +1,719 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_poll_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<!-- <IF EXPR="Ps.poll.name != ''">
+			<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%" BK-COLOR-EXPR="'230,255,230'">
+				<LABEL TITLE-EXPR="Ps.poll.name" ALIGN="center" VERT-ALIGN="center" WIDTH="100%" PADDING="12px" FONT-CLASS="bold"/>
+			</PANEL>
+		</IF> -->
+
+		<IF EXPR="Ps.disp_answers">
+
+			<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT__="1" VERT-SCROLL="1">
+				<COLUMNS>
+					<COL WIDTH="30zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="25zr"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<IF EXPR="ArrayCount(questElem.entries) > 0">
+							<COL WIDTH="20zr"/>
+							<WITH VAR="entriesRange" EXPR="
+								return ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+							">
+								<LOOP EXPR="entriesRange" VAR="entryElem">
+									<COL WIDTH="20zr"/>
+								</LOOP>
+							</WITH>
+						</IF>
+						<ELSE>
+							<COL WIDTH="20zr"/>
+						</ELSE>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<COL WIDTH="20zr"/>
+						</IF>
+					</LOOP>
+				</COLUMNS>
+				<ROW HEADER="1">
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<IF EXPR="ArrayCount(questElem.entries) > 0 && questElem.type != 'order'">
+							<LABEL TITLE-EXPR="questElem.title" ALIGN="center" HSPAN-EXPR="ArrayCount(questElem.entries)"/>
+						</IF>
+						<ELSE>
+							<IF EXPR="questElem.type == 'bool'">
+								<LABEL TITLE-EXPR="questElem.title" ALIGN="center" HSPAN="2"/>
+							</IF>
+
+							<IF EXPR="questElem.type != 'bool'">
+								<LABEL TITLE-EXPR="questElem.title" ALIGN="center"/>
+							</IF>
+						</ELSE>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_comment')" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+				<ROW HEADER="1">
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_coll')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('vdb_aim_date')" ALIGN="center"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						
+						<IF EXPR="ArrayCount(questElem.entries) > 0 && questElem.type != 'order'">
+							<WITH VAR="firstElemValue" EXPR="
+								_tmp = ArrayOptFirstElem(questElem.entries);
+ 								return _tmp.value
+							">
+								<LABEL TITLE-EXPR="firstElemValue" ALIGN="center"/>
+							</WITH>
+							<WITH VAR="entriesRange" EXPR="
+								return ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+							">
+								<LOOP EXPR="entriesRange" VAR="entryElem">
+									<LABEL TITLE-EXPR="entryElem.value" ALIGN="center"/>
+								</LOOP>
+							</WITH>
+						</IF>
+						<ELSE>
+							<IF EXPR="questElem.type == 'bool'">
+								<LABEL TITLE="Да" ALIGN="center"/>
+								<LABEL TITLE="Нет" ALIGN="center"/>
+							</IF>
+							<IF EXPR="questElem.type != 'bool'">
+								<LABEL TITLE="" ALIGN="center"/>
+							</IF>
+						</ELSE>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE="" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+
+				<LOOP EXPR="Ps.poll_results" VAR="resultElem">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( resultElem.id ) )">
+						<LABEL TITLE-EXPR="resultElem.person_fullname"/>
+						<LABEL TITLE-EXPR="resultElem.person_code" ALIGN="center"/>
+						<LABEL TITLE-EXPR="resultElem.start_date" ALIGN="center"/>
+
+						<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+							
+							<!-- блоки с вариантами ответов -->
+							<IF EXPR="ArrayCount(questElem.entries) > 0">
+								
+								<WITH VAR="_vars" EXPR="
+									Screen.AuxData.SetProperty('order_answer_value', '');										
+								"/>
+
+								<!-- единственный выбор: radiobox, select -->
+								<IF EXPR="questElem.type == 'combo' || questElem.type == 'choice' ">
+
+									<LOOP EXPR="questElem.entries" VAR="entryElem">
+										<WITH VAR="_vars_combo_choice" EXPR="
+											Screen.AuxData.SetProperty('_empty_combo_choice', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+										"/>
+
+										<!-- если нет ответов по блоку -->
+										<IF EXPR="Screen.AuxData.GetProperty('_empty_combo_choice') == undefined">
+											<LABEL TITLE="" ALIGN="center"/>
+										</IF>
+
+										<IF EXPR="Screen.AuxData.GetProperty('_empty_combo_choice') != undefined">
+
+											<LOOP EXPR="resultElem.answers" VAR="answerElem">
+												<IF EXPR="questElem.question_id == answerElem.question_id">
+													<!-- <LABEL TITLE="has" ALIGN="center"/> -->
+													<WITH VAR="arrAnswerValues" EXPR="
+														return String( answerElem.value ).split( ';' );
+													">
+														<IF EXPR="ArrayCount(arrAnswerValues) == 1">
+															<IF EXPR="entryElem.id == OptInt(answerElem.value)">
+																<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+															</IF>
+															<ELSE>
+																<LABEL TITLE="" ALIGN="center"/>
+															</ELSE>
+														</IF>
+														
+													</WITH>
+												</IF>
+											</LOOP>
+											
+										</IF>
+
+
+
+									</LOOP>
+
+								</IF>
+
+								<!-- Множественный выбор -->
+								<IF EXPR="questElem.type == 'select'">
+
+									<LOOP EXPR="questElem.entries" VAR="entryElem">
+										<WITH VAR="_vars_select" EXPR="
+											Screen.AuxData.SetProperty('_empty_select', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+											Screen.AuxData.SetProperty('_select_value', false);
+										"/>
+
+										<!-- если нет ответов по блоку -->
+										<IF EXPR="Screen.AuxData.GetProperty('_empty_select') == undefined">
+											<LABEL TITLE="" ALIGN="center"/>
+										</IF>
+
+										<IF EXPR="Screen.AuxData.GetProperty('_empty_select') != undefined">
+
+											<WITH VAR="_has_select" EXPR="
+												_answer = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+												if(_answer != '')
+													_values = String( _answer.value ).split( ';' );
+
+												_has_value = ArrayOptFind(_values, 'This == StrInt(entryElem.id.Value)');
+
+												if(_has_value != undefined)
+													Screen.AuxData.SetProperty('_select_value', true);
+												else
+													Screen.AuxData.SetProperty('_select_value', false);
+											"/>
+
+											<IF EXPR="Screen.AuxData.GetProperty('_select_value') == true">
+												<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+											</IF>
+											<ELSE>
+												<LABEL TITLE="" ALIGN="center"/>
+											</ELSE>
+										</IF>
+									</LOOP>
+								</IF>
+							</IF>
+
+							<!-- Упорядочивание -->
+							<IF EXPR="questElem.type == 'order'">
+
+								<WITH VAR="_vars_order" EXPR="
+									Screen.AuxData.SetProperty('_empty_order', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<!-- если нет ответов по блоку -->
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_order') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_order') != undefined">
+									<LOOP EXPR="resultElem.answers" VAR="answerElem">
+										<IF EXPR="questElem.question_id == answerElem.question_id">
+											<WITH VAR="_arrAnswerValues" EXPR="
+												return String( answerElem.value ).split( ';' );
+											">
+												<LOOP EXPR="_arrAnswerValues" VAR="iAnswerValueElem">
+													<WITH VAR="_answer_value" EXPR="
+														_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+														if(_answer != undefined){
+															Screen.AuxData.SetProperty('order_answer_value', Screen.AuxData.GetProperty('order_answer_value') + _answer.value + '; ');
+														}
+													"></WITH>
+												</LOOP>
+												<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('order_answer_value')" ALIGN="center"/>
+											</WITH>
+										</IF>
+									</LOOP>
+								</IF>
+							</IF>
+
+							<!-- вывод: текст, ссылки на файлы и объекты, строки, даты, числа -->
+							<IF EXPR="questElem.type == 'text' || questElem.type == 'string' || questElem.type == 'number' || questElem.type == 'date' || questElem.type == 'link_to_database_object' || questElem.type == 'file'">
+								
+								<WITH VAR="_vars_other" EXPR="
+									Screen.AuxData.SetProperty('_empty_other', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_other') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_other') != undefined">
+									<WITH VAR="_var_value_other" EXPR="
+										_value_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+										Screen.AuxData.SetProperty('_value_other', _value_other.value.Value);
+									"/>
+									<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('_value_other')" ALIGN="center"/>
+								</IF>
+							</IF>
+
+							<!-- Флаг: да, нет -->
+							<IF EXPR="questElem.type == 'bool'">
+								<!-- <LOOP EXPR="questElem.entries" VAR="entryElem"> -->
+								<WITH VAR="_vars_bool" EXPR="
+									Screen.AuxData.SetProperty('_empty_bool', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+									Screen.AuxData.SetProperty('_arr_bool', ['true', 'false']);
+								"/>
+
+								<LOOP EXPR="Screen.AuxData.GetProperty('_arr_bool')" VAR="boolElem">
+									
+									<!-- если нет ответов по блоку -->
+									<IF EXPR="Screen.AuxData.GetProperty('_empty_bool') == undefined">
+										<LABEL TITLE="" ALIGN="center"/>
+									</IF>
+
+									<IF EXPR="Screen.AuxData.GetProperty('_empty_bool') != undefined">
+										<LOOP EXPR="resultElem.answers" VAR="answerElem">
+											<IF EXPR="questElem.question_id == answerElem.question_id">
+												<IF EXPR="boolElem == answerElem.value">
+													<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+												</IF>
+												<ELSE>
+													<LABEL TITLE="" ALIGN="center"/>
+												</ELSE>
+											</IF>
+										</LOOP>
+										
+									</IF>
+								</LOOP>
+							</IF>
+
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<IF EXPR="Ps.show_comments_in_report">
+								
+								<WITH VAR="_vars_comment" EXPR="
+									Screen.AuxData.SetProperty('_empty_comment', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_comment') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_comment') != undefined">
+									<WITH VAR="_var_value_comment" EXPR="
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										Screen.AuxData.SetProperty('_value_comment', _tmp.comment);
+									"/>
+									<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('_value_comment')" ALIGN="center"/>
+								</IF>
+								
+							</IF>
+						</LOOP>
+					</ROW>
+				</LOOP>
+			</GRID>
+		</IF>
+		<ELSE>
+			
+			<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT__="1" VERT-SCROLL="1">
+				<COLUMNS>
+					<COL WIDTH="30zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="25zr"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<COL WIDTH="20zr"/>
+						<IF EXPR="Ps.show_comments_in_report">
+							<COL WIDTH="20zr"/>
+						</IF>
+					</LOOP>
+				</COLUMNS>
+				<ROW HEADER="1">
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_coll')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('vdb_aim_date')" ALIGN="center"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<LABEL TITLE-EXPR="questElem.title" ALIGN="center"/>
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_comment')" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+				
+				<LOOP EXPR="Ps.poll_results" VAR="resultElem">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( resultElem.id ) )">
+						<LABEL TITLE-EXPR="resultElem.person_fullname"/>
+						<LABEL TITLE-EXPR="resultElem.person_code" ALIGN="center"/>
+						<LABEL TITLE-EXPR="resultElem.start_date" ALIGN="center"/>
+
+						<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+
+							<WITH VAR="_vars" EXPR="
+								Screen.AuxData.SetProperty('order_answer_value', '');										
+							"/>
+
+							<!-- единственный выбор: radiobox, select -->
+							<IF EXPR="questElem.type == 'combo' || questElem.type == 'choice' ">
+								<WITH VAR="_vars_combo_choice" EXPR="
+									Screen.AuxData.SetProperty('_empty_combo_choice', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_combo_choice') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_combo_choice') != undefined">
+									<WITH VAR="_var_value_combo_choice" EXPR="
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+										_combo_choice = ArrayOptFind(questElem.entries, 'OptInt(This.id) == OptInt(_tmp.value.Value)');
+
+										Screen.AuxData.SetProperty('_combo_choice', _combo_choice.value.Value);
+									"/>
+									<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('_combo_choice')" ALIGN="center"/>
+									<!-- <LABEL TITLE="V единственный выбор" ALIGN="center"/> -->
+								</IF>
+							</IF>
+
+							<!-- Множественный выбор -->
+							<IF EXPR="questElem.type == 'select'">
+
+								<WITH VAR="_vars_select" EXPR="
+									Screen.AuxData.SetProperty('_empty_select', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+
+									Screen.AuxData.SetProperty('select_answer_value', '');
+								"/>
+
+								<!-- если нет ответов по блоку -->
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_select') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_select') != undefined">
+
+									<LOOP EXPR="resultElem.answers" VAR="answerElem">
+										<IF EXPR="questElem.question_id == answerElem.question_id">
+											<WITH VAR="_arrAnswerValues" EXPR="
+												return String( answerElem.value ).split( ';' );
+											">
+												<LOOP EXPR="_arrAnswerValues" VAR="iAnswerValueElem">
+													<WITH VAR="_answer_value" EXPR="
+														_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+														if(_answer != undefined){
+															Screen.AuxData.SetProperty('select_answer_value', Screen.AuxData.GetProperty('select_answer_value') + _answer.value + '; ');
+														}
+													"></WITH>
+												</LOOP>
+												<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('select_answer_value')" ALIGN="center"/>
+											</WITH>
+										</IF>
+									</LOOP>
+
+								</IF>
+							</IF>
+
+							<!-- вывод: текст, ссылки на файлы и объекты, строки, даты, числа -->
+							<IF EXPR="questElem.type == 'text' || questElem.type == 'string' || questElem.type == 'number' || questElem.type == 'date' || questElem.type == 'link_to_database_object' || questElem.type == 'file'">
+								
+								<WITH VAR="_vars_other" EXPR="
+									Screen.AuxData.SetProperty('_empty_other', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_other') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_other') != undefined">
+									<WITH VAR="_var_value_other" EXPR="
+										_value_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+										Screen.AuxData.SetProperty('_value_other', _value_other.value.Value);
+									"/>
+									<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('_value_other')" ALIGN="center"/>
+								</IF>
+							</IF>
+
+							<!-- Упорядочивание -->
+							<IF EXPR="questElem.type == 'order'">
+
+								<WITH VAR="_vars_order" EXPR="
+									Screen.AuxData.SetProperty('_empty_order', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<!-- если нет ответов по блоку -->
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_order') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_order') != undefined">
+									<LOOP EXPR="resultElem.answers" VAR="answerElem">
+										<IF EXPR="questElem.question_id == answerElem.question_id">
+											<WITH VAR="_arrAnswerValues" EXPR="
+												return String( answerElem.value ).split( ';' );
+											">
+												<LOOP EXPR="_arrAnswerValues" VAR="iAnswerValueElem">
+													<WITH VAR="_answer_value" EXPR="
+														_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+														if(_answer != undefined){
+															Screen.AuxData.SetProperty('order_answer_value', Screen.AuxData.GetProperty('order_answer_value') + _answer.value + '; ');
+														}
+													"></WITH>
+												</LOOP>
+												<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('order_answer_value')" ALIGN="center"/>
+											</WITH>
+										</IF>
+									</LOOP>
+								</IF>
+							</IF>
+
+							<!-- Флаг: да, нет -->
+							<IF EXPR="questElem.type == 'bool'">
+								<WITH VAR="_vars_bool" EXPR="
+									Screen.AuxData.SetProperty('_empty_bool', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+									Screen.AuxData.SetProperty('_arr_bool', ['true', 'false']);
+								"/>
+
+								<!-- если нет ответов по блоку -->
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_bool') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_bool') != undefined">
+									<WITH VAR="_var_value_other" EXPR="
+										_value_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+										Screen.AuxData.SetProperty('_value_other', _value_other.value.Value);
+									"/>
+
+									<IF EXPR="Screen.AuxData.GetProperty('_value_other') == 'true'">
+										<LABEL TITLE="Да" ALIGN="center"/>
+									</IF>
+									<IF EXPR="Screen.AuxData.GetProperty('_value_other') == 'false'">
+										<LABEL TITLE="Нет" ALIGN="center"/>
+									</IF>
+								</IF>
+							</IF>
+
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<IF EXPR="Ps.show_comments_in_report">
+								
+								<WITH VAR="_vars_comment" EXPR="
+									Screen.AuxData.SetProperty('_empty_comment', ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id'));
+								"/>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_comment') == undefined">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="Screen.AuxData.GetProperty('_empty_comment') != undefined">
+									<WITH VAR="_var_value_comment" EXPR="
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										Screen.AuxData.SetProperty('_value_comment', _tmp.comment);
+									"/>
+									<LABEL TITLE-EXPR="Screen.AuxData.GetProperty('_value_comment')" ALIGN="center"/>
+								</IF>
+								
+							</IF>
+
+						</LOOP>
+					</ROW>
+				</LOOP>
+
+			</GRID>
+
+		</ELSE>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.poll_id"  requireExpr="true" catalogExpr="'poll'" doFillingExpr="true" afterSelectAction="
+					try
+					{
+						TopElem.show_comments_in_report = OpenDoc( UrlFromDocID( TopElem.poll_id ) ).TopElem.show_comments_in_report;
+					}
+					catch(ex)
+					{}
+				"/>
+				
+				<IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue">
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				</IF>
+
+				<TitleLabel VERT-ALIGN="top" ALIGN="left" TITLE="##ms_tools.get_const('xpbpsanwaw')##" >
+					<COMBO WIDTH="316vpx" SOURCE="Ps.poll_result_status">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="all"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('rgni7sf3i4')" VALUE="active"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('eyyo8z5j57')" VALUE="completed"/>
+					</COMBO>
+				</TitleLabel>
+
+				<CHECK SOURCE="Ps.show_comments_in_report" TITLE-EXPR="ms_tools.get_const('vyvoditkomment')" MULTILINE="1"/>
+
+				<ComboLabelEntry SOURCE="TopElem.disp_answers" WIDTH="100%" TITLE-EXPR="'Тип отображения ответов'" entriesExpr="
+					[
+						{ title: ms_tools.get_const('eahmiz4li4'), value: true },
+						{ title: ms_tools.get_const('b2fluvjurb'), value: false }
+					]
+				" afterSelectAction="
+					Ps.is_switched = true;
+				"/>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+			</PANEL>
+		</IF>
+	
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( ! Ps.poll_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const( '8r6y39m5tl' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	if ( Ps.poll_id.HasValue )
+	{
+		task = new BackgroundTask;
+		task.RunOnServer = true;
+		task.ShowProgress = true;
+
+		var curUserID = tools.cur_user_id;
+		var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+		
+		oRes = task.CallMethod( 'tools_report', 'poll_report', [ Ps, curUserID, sApplicationID ] );
+
+		if ( oRes != null || oRes.error != 1 )
+		{
+			TopElem.count_arr = ArrayCount( oRes.poll_results );
+			iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+			TopElem.count_arr = ArrayCount( oRes.poll_results );
+			TopElem.exported_file_link = oRes.exported_file_link;
+
+			Ps.poll.Clear();
+
+			Ps.poll.id = oRes.poll.id;
+			Ps.poll.code = oRes.poll.code;
+			Ps.poll.name = oRes.poll.name;
+
+			Ps.poll.questions.Clear();
+			for(oQuestion in oRes.poll.questions)
+			{
+				_item = Ps.poll.questions.AddChild();
+				_item.question_id = oQuestion.question_id;
+				_item.type = oQuestion.type;
+				_item.title = oQuestion.title;
+
+				if(oQuestion.HasProperty('entries'))
+				{	
+					for(oEntry in oQuestion.entries)
+					{
+						_entry = _item.entries.AddChild();
+						_entry.id = oEntry.id;
+						_entry.value = oEntry.value;
+					}
+				}
+			}
+
+			Ps.poll_results.Clear();
+			for(oPollResult in oRes.poll_results)
+			{
+				_item = Ps.poll_results.AddChild();
+
+				_item.id = oPollResult.id;
+				_item.name = oPollResult.name;
+				_item.start_date = oPollResult.start_date;
+				_item.person_id = oPollResult.person_id;
+				_item.person_fullname = oPollResult.person_fullname;
+				_item.person_code = oPollResult.person_code;
+
+				for(oAnswer in oPollResult.answers)
+				{
+					_answer =_item.answers.AddChild();
+
+					_answer.question_id = oAnswer.question_id;
+					_answer.value = oAnswer.value;
+					_answer.type = oAnswer.type;
+					_answer.comment = oAnswer.comment;
+				}
+			}
+
+			if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+			{
+				
+				if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+				{
+					_str = EvalCodePageUrl( 'x-local://templates/poll_report.html' );
+					sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps ] );
+
+					if ( ! System.IsWebClient )
+					{
+						sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+						CopyUrl( sReportUrl, sReportFilePath );
+						sReportFilePath = UrlToFilePath( sReportUrl );
+					}
+
+					ShellExecute( 'open', sReportFilePath );
+
+				}
+			}
+		}
+
+	} else {
+		Screen.MsgBox( 'Не выбран опрос', ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/poll_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

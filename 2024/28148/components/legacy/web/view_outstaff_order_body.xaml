@@ -1,0 +1,766 @@
+﻿<SPXMLScreen>
+<%
+isNew = curObject == null;
+isUser = isNew || curObject.person_id == curUserID;
+isAgreement = ! isNew && curObject.agreement_person_id == curUserID;
+isBoss = false;
+isEdit = isNew || ( isAgreement && curObject.status == 'formed' ) || ( isUser && curObject.status == 'forming' );
+arrTEOutstaffContracts = [];
+rCostPositionCommon = null;
+sCostCurrencyPositionCommon = '';
+rCostSum = null;
+rBudgetPositionCommon = null;
+iDefaultOutstaffOrderID = null;
+iPositionNum = null;
+bExtra = false;
+
+if ( isNew )
+{
+	curObjectDoc = OpenNewDoc( 'x-local://wtv/wtv_outstaff_order.xmd' );
+	curObject = curObjectDoc.TopElem;
+	curObject.subdivision_id = curUser.position_parent_id;
+
+	catSubdivision = curObject.subdivision_id.OptForeignElem;
+	if ( catSubdivision != undefined )
+		curObject.region_id = catSubdivision.region_id;
+
+	if ( ! curObject.region_id.HasValue )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'neukazanregion', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+else
+{
+	rCostPositionCommon = curObject.cost_hour.Value;
+	sCostCurrencyPositionCommon = curObject.currency.Value;
+	rCostSum = curObject.cost_sum.Value;
+
+	if ( ! isUser && ! isAgreement && curObject.status == 'formed' && curObject.subdivision_id.HasValue )
+	{
+		if ( global_settings.settings.outstaff.outstaff_boss_types.ChildNum > 0 )
+		{
+			xarrFuncManagers = XQuery( "for $elem in func_managers where $elem/person_id = " + curUserID + " and $elem/catalog = 'subdivision' and MatchSome( $elem/boss_type_id, ( " + ArrayMerge( global_settings.settings.outstaff.outstaff_boss_types, "This.PrimaryKey", "," ) + " ) ) return $elem" );
+			if ( ArrayOptFindByKey( xarrFuncManagers, curObject.subdivision_id, 'object_id' ) == undefined )
+			{
+				for ( catFuncManagerElem in xarrFuncManagers )
+					if ( ArrayOptFirstElem( tools.xquery( 'for $elem in subdivisions where IsHierChild( $elem/id, ' + catFuncManagerElem.object_id + ' ) and $elem/id = ' + curObject.subdivision_id + ' order by $elem/Hier() return $elem/id' ) ) != undefined )
+					{
+						isBoss = true;
+						isEdit = true;
+						break;
+					}
+			}
+			else
+			{
+				isBoss = true;
+				isEdit = true;
+			}
+		}
+	}
+}
+
+if ( isEdit )
+{
+	if ( isNew )
+	{
+		curObject.position_common_id = OptInt( CONTEXT.GetOptProperty( 'position_common_id' ), tools_web.get_web_param( curParams, 'outstaff_order_body.tab_list.main_tab.block_list.info_block.default_position_common_id', null, true ) );
+	}
+	else
+	{
+		curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+		curObject.position_common_id = OptInt( CONTEXT.GetOptProperty( 'position_common_id' ), curObject.position_common_id );
+	}
+
+	iSelOutstaffContractID = OptInt( CONTEXT.GetOptProperty( 'outstaff_contract_id' ), null );
+	//curObject.outstaff_contract_id = OptInt( CONTEXT.GetOptProperty( 'outstaff_contract_id' ), curObject.outstaff_contract_id.Value );
+	if ( curObject.position_common_id.HasValue )
+	{
+		xarrOutstaffContracts = XQuery( "for $elem in outstaff_contracts where $elem/status = 'forming' return $elem" );
+		for ( catOutstaffContractElem in xarrOutstaffContracts )
+		{
+			teOutstaffContract = OpenDoc( UrlFromDocID( catOutstaffContractElem.id ) ).TopElem;
+			fldRegion = teOutstaffContract.regions.GetOptChildByKey( curObject.region_id );
+			if ( fldRegion != undefined )
+			{
+				fldPositionCommon = fldRegion.position_commons.GetOptChildByKey( curObject.position_common_id );
+				if ( fldPositionCommon != undefined )
+				{
+					arrTEOutstaffContracts.push( teOutstaffContract );
+					if ( fldPositionCommon.preferable )
+						iDefaultOutstaffOrderID = catOutstaffContractElem.id.Value;
+
+					if ( ( iSelOutstaffContractID == null && ( curObject.outstaff_contract_id == catOutstaffContractElem.id || (  isNew && fldPositionCommon.preferable ) ) ) || ( iSelOutstaffContractID != null && iSelOutstaffContractID == catOutstaffContractElem.id ) )
+					{
+						curObject.outstaff_contract_id = catOutstaffContractElem.id;
+						rCostPositionCommon = fldPositionCommon.cost.Value;
+						sCostCurrencyPositionCommon = fldPositionCommon.currency.Value;
+						curObject.outstaff_provider_id = teOutstaffContract.outstaff_provider_id;
+					}
+				}
+			}
+		}
+		if ( iSelOutstaffContractID == null && ! curObject.outstaff_contract_id.HasValue )
+		{
+			teOutstaffContract = ArrayOptFirstElem( arrTEOutstaffContracts );
+			if ( teOutstaffContract != undefined )
+			{
+				curObject.outstaff_contract_id = teOutstaffContract.id;
+				curObject.outstaff_provider_id = teOutstaffContract.outstaff_provider_id;
+				fldPositionCommon = teOutstaffContract.regions.GetChildByKey( curObject.region_id ).position_commons.GetOptChildByKey( curObject.position_common_id );
+				rCostPositionCommon = fldPositionCommon.cost.Value;
+				sCostCurrencyPositionCommon = fldPositionCommon.currency.Value;
+			}
+		}
+	}
+
+	if ( ! curObject.outstaff_contract_id.HasValue && curObject.position_common_id.HasValue )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'nevozmozhnovychi', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+else
+{
+%>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<%
+}
+
+sPeriodType = CONTEXT.GetOptProperty( 'period_type', curObject.period_type.Value );
+bRefresh = tools_web.is_true( CONTEXT.GetOptProperty( 'refresh_flag' ) );
+sDefaultPeriodType = tools_web.get_web_param( curParams, "outstaff_order_body.default_period_type", "mass", true );
+
+iBudgetPeriod = OptInt( CONTEXT.GetOptProperty( 'budget_period_id' ) );
+if ( iBudgetPeriod == undefined )
+{
+	iBudgetPeriod = curObject.budget_period_id.Value;
+	if ( isNew )
+	{
+		catBudjectPeriod = ArrayOptFirstElem( XQuery( "for $elem in budget_periods where $elem/start_date < date('" + CurDate + "') order by $elem/start_date descending return $elem" ) );
+		if ( catBudjectPeriod != undefined )
+			iBudgetPeriod = catBudjectPeriod.id.Value;
+	}
+}
+dtStart = CONTEXT.GetOptProperty( 'start_date', curObject.start_date.Value );
+dtFinish = CONTEXT.GetOptProperty( 'finish_date', curObject.finish_date.Value );
+if ( iBudgetPeriod != null && dtStart == null && dtFinish == null )
+{
+	teBudgetPeriod = OpenDoc( UrlFromDocID( iBudgetPeriod ) ).TopElem;
+	dtStart = teBudgetPeriod.start_date.Value;
+	dtFinish = teBudgetPeriod.finish_date.Value;
+}
+
+
+if ( isEdit )
+{
+	if ( sDefaultPeriodType != "" )
+		sPeriodType = sDefaultPeriodType;
+
+	sOldPeriodType = CONTEXT.GetOptProperty( 'old_period_type', curObject.period_type.Value );
+	dtOldStart = CONTEXT.GetOptProperty( 'old_start_date', curObject.start_date.Value );
+	dtOldFinish = CONTEXT.GetOptProperty( 'old_finish_date', curObject.finish_date.Value );
+	if ( sOldPeriodType != sPeriodType || dtOldStart != dtStart || dtOldFinish != dtFinish )
+	{
+		sOldPeriodType = curObject.period_type.Value;
+		dtOldStart = curObject.start_date.Value;
+		dtOldFinish = curObject.finish_date.Value;
+
+		curObject.start_date = dtStart;
+		curObject.finish_date = dtFinish;
+		curObject.period_type = sPeriodType;
+		curObject.update_periods();
+	}
+	iPerionCounter = 0;
+	for ( fldPeriodElem in curObject.periods )
+	{
+		iHourCounter = 0;
+		for ( fldHourElem in fldPeriodElem.hours )
+		{
+			for ( sFieldNameElem in [ 'person_num', 'start_hour', 'finish_hour', 'hour_num' ] )
+				fldHourElem.Child( sFieldNameElem ).Value = OptInt( CONTEXT.GetOptProperty( sFieldNameElem + '_' + iPerionCounter + '_' + iHourCounter ), fldHourElem.Child( sFieldNameElem ).Value );
+			iHourCounter++;
+		}
+		iPerionCounter++;
+	}
+
+	if ( curObject.subdivision_id.HasValue && curObject.position_common_id.HasValue )
+	{
+		iPositionNum = 0;
+		xarrSubs = tools.xquery( "for $elem in subs where IsHierChild( $elem/id, " + curObject.subdivision_id + " ) and $elem/basic_collaborator_id != null() order by $elem/Hier() return $elem/id" );
+		if ( ArrayOptFirstElem( xarrSubs ) != undefined )
+		{
+			xarrPositions = XQuery( "for $elem in positions where $elem/position_common_id = " + curObject.position_common_id + " and MatchSome( $elem/id, (" + ArrayMerge( xarrSubs, 'id', ',' ) + ") ) return $elem" );
+			iPositionNum = ArrayCount( xarrPositions );
+		}
+
+		if ( rCostPositionCommon != null )
+		{
+			rBudgetPositionCommon = iPositionNum * rCostPositionCommon;
+			rCostSum = rCostPositionCommon * curObject.periods_sum_person_hour;
+		}
+	}
+%>
+<Edit Name="old_period_type" Hidden="true"><%=HtmlEncode( sOldPeriodType )%></Edit>
+<Edit Name="old_start_date" Hidden="true"><%=HtmlEncode( dtOldStart )%></Edit>
+<Edit Name="old_finish_date" Hidden="true"><%=HtmlEncode( dtOldFinish )%></Edit>
+<Edit Name="subdivision_id" Hidden="true"><%=curObject.subdivision_id%></Edit>
+<Edit Name="region_id" Hidden="true"><%=curObject.region_id%></Edit>
+<Edit Name="outstaff_provider_id" Hidden="true"><%=curObject.outstaff_provider_id%></Edit>
+<Edit Name="cost_hour" Hidden="true"><%=rCostPositionCommon%></Edit>
+<Edit Name="cost_sum" Hidden="true"><%=rCostSum%></Edit>
+<%
+}
+
+sSuccessAction = isNew ? "OPENURL=" + tools_web.get_mode_clean_url( null, "{save_object_id}", { doc_id: curDocID } ) : "REFRESH";
+%>
+<Action Name="OutstaffOrderAction" Source="outstaff_order_change" Success="<%=sSuccessAction%>" Failure="ALERT={messageText}">
+	<Param Name="action" Value="save"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Dialog Name="CommentDialog" Source="dlg_edit_text" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vveditetekst', curLngWeb ) )%>" Close="
+	SET=status_comment,{DialogText};
+	ACTION=OutstaffOrderAction;
+">
+	<Param Name="label" Value="<%=XmlAttrEncode( tools_web.get_web_const( 'c_comment', curLngWeb ) + ':' )%>"/>
+	<Param Name="text" Value="<%=XmlAttrEncode( curObject.comment )%>"/>
+</Dialog>
+<Edit Name="status_comment" Hidden="true"></Edit>
+<Toolbar Class="XAML-toolbar">
+<%
+if ( isEdit )
+{
+%>
+	<Button Class="XAML-button XAML-button-refresh" Click="SET=refresh_flag,true;REFRESH"><%=tools_web.get_web_const( 'c_refresh', curLngWeb )%></Button>
+	<Button Class="XAML-button XAML-button-save" Click="SET=OutstaffOrderAction/action,save;ACTION=OutstaffOrderAction"><%=tools_web.get_web_const( 'c_save', curLngWeb )%></Button>
+<%
+	if ( curObject.status == 'forming' )
+	{
+%>
+	<Button Class="XAML-button XAML-button-proceed" Click="SET=OutstaffOrderAction/action,set_formed;ACTION=OutstaffOrderAction" Enabled="<%=( ! isNew  )%>"><%=tools_web.get_web_const( 'sformirovan', curLngWeb )%></Button>
+<%
+	}
+	if ( isBoss || isAgreement )
+	{
+%>
+	<Button Class="XAML-button XAML-button-proceed" Click="SET=OutstaffOrderAction/action,set_agreed;OPENDIALOG=CommentDialog" Enabled="<%=( curObject.status != 'agreed' )%>"><%=tools_web.get_web_const( 'soglasovat', curLngWeb )%></Button>
+	<Button Class="XAML-button XAML-button-cancel" Click="SET=OutstaffOrderAction/action,set_cancel;OPENDIALOG=CommentDialog" Enabled="<%=( curObject.status != 'cancel' )%>"><%=tools_web.get_web_const( 'veb_to_cancel', curLngWeb )%></Button>
+<%
+	}
+}
+if ( ! isNew && isUser && curObject.status == 'formed' )
+{
+%>
+	<Button Class="XAML-button XAML-button-proceed" Click="SET=OutstaffOrderAction/action,set_forming;ACTION=OutstaffOrderAction"><%=tools_web.get_web_const( 'vppb_do_reject', curLngWeb )%></Button>
+<%
+}
+
+%>
+</Toolbar>
+<%
+function write_catalog_row( sCatalogNameParam, sFieldName, sTitleParam )
+{
+	fldCatalog = sFieldName ? curObject.Child( sFieldName ) : curObject.Child( sCatalogNameParam + '_id' );
+	catCatalog = fldCatalog.HasValue ? fldCatalog.OptForeignElem : null;
+	fldObjectType = curLngCommon.exchange_object_types.GetChildByKey( sCatalogNameParam );
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><![CDATA[<%=( sTitleParam ? sTitleParam : fldObjectType.title )%>:]]></Label>
+<%
+	if ( catCatalog == null )
+	{
+%>
+					<Label/>
+<%
+	}
+	else if ( catCatalog == undefined )
+	{
+%>
+					<Label Class="XAML-error-label"><![CDATA[<%=tools_web.get_web_const( 'c_deleted', curLngWeb )%>]]></Label>
+<%
+	}
+	else
+	{
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldCatalog.Value, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catCatalog.Child( fldObjectType.disp_name ).Value, curLng.short_id )%>]]></Link>
+<%
+	}
+%>
+				</GridRow>
+<%
+}
+
+
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'OutstaffOrderBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'outstaff_order_body.tab_list', 'main;add', true ) ).split( ';' );
+%>
+<TabControl Name="OutstaffOrderBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'outstaff_order_body.tab_list.main_tab.block_list', 'info;detail', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "outstaff_order_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' )
+		{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250" Align="right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curLngCommon.order_status_types.GetChildByKey( curObject.status ).name%>]]></Label>
+				</GridRow>
+<%
+			if ( isEdit )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_position_common', curLngWeb )%>:</Label>
+<%
+				curSelector = {
+					"id": "PositionCommonPeriod",
+					"catalog_name": "position_common",
+					"object_id": curObject.position_common_id.Value,
+					"object_id_item_name": "position_common_id",
+					"xquery_qual": "$elem/allow_outstaff = true()",
+					"check_access": true,
+					"close_action": "REFRESH"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+
+%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'p7kssz5oz1', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( rCostPositionCommon + ( sCostCurrencyPositionCommon == '' ? '' : ' ' + lists.currency_types.GetChildByKey( sCostCurrencyPositionCommon ).short_name ) )%>]]></Label>
+				</GridRow>
+<%
+				if ( iPositionNum != null )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vakantnyhdolzhn', curLngWeb )%>:</Label>
+					<Label><%=iPositionNum%></Label>
+				</GridRow>
+<%
+
+					if ( rBudgetPositionCommon != null )
+					{
+						bExtra = ( rCostPositionCommon != null && rCostSum != null && rCostSum > rBudgetPositionCommon );
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_budget', curLngWeb )%>:</Label>
+<%
+						if ( bExtra )
+						{
+%>
+					<Label Class="XAML-alert-text" NoWrap="true"><%=( rBudgetPositionCommon + ' (' + tools_web.get_web_const( 'prevysheniebyudzh', curLngWeb ) + ')' )%></Label>
+<%
+						}
+						else
+						{
+%>
+					<Label><%=rBudgetPositionCommon%></Label>
+<%
+						}
+%>
+				</GridRow>
+<%
+					}
+				}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_start_date', curLngWeb )%>:</Label>
+					<DatePicker Name="start_date"><![CDATA[<%=( dtStart == '' || dtStart == null ? '' : StrDate( Date( dtStart ), false ) )%>]]></DatePicker>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_finish_date', curLngWeb )%>:</Label>
+					<DatePicker Name="finish_date"><![CDATA[<%=( dtFinish == '' || dtFinish == null ? '' : StrDate( Date( dtFinish ), false ) )%>]]></DatePicker>
+				</GridRow>
+<%
+			}
+			else
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.code%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.name%>]]></Label>
+				</GridRow>
+<%
+				for ( sCatalogNameElem in [ 'outstaff_contract', 'outstaff_provider', 'budget_period', 'subdivision', 'region', 'budget_period' ] )
+					write_catalog_row( sCatalogNameElem );
+			}
+%>
+			</Grid>
+<%
+			if ( tools_web.is_true( tools_web.get_web_param( curParams, "outstaff_order_body.tab_list.main_tab.disp_custom_fields", false, true ) ) )
+			{
+				fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				if( fldCustomElems != null )
+				{
+					curCustomFields = {
+						"id": "SubdivisionCustomFields",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+						"source": curObject.custom_elems,
+						"modify_eval": false
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+				}
+			}
+		}
+
+
+		if ( sTabElem == 'detail' )
+		{
+			if ( isEdit && sDefaultPeriodType == "" )
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250" Align="right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'tipraspredelen', curLngWeb )%>:</Label>
+					<StackPanel Orientation="Horizontal" UsePadding="false">
+						<RadioButton Name="period_type" Value="detail" Checked="<%=( sPeriodType == 'detail' )%>" Change="REFRESH"><%=tools_web.get_web_const( 'detalnopochasam', curLngWeb )%></RadioButton>
+						<Label>&nbsp;&nbsp;</Label>
+						<RadioButton Name="period_type" Value="mass" Checked="<%=( sPeriodType == 'mass' )%>" Change="REFRESH"><%=tools_web.get_web_const( 'massovonavesde', curLngWeb )%></RadioButton>
+					</StackPanel>
+				</GridRow>
+			</Grid>
+<%
+			}
+			else
+			{
+%>
+			<Edit Name="period_type" Hidden="true"><%=HtmlEncode( sDefaultPeriodType )%></Edit>
+<%
+			}
+
+			arrFldColumns = [];
+			fldPeriod = ArrayOptFirstElem( curObject.periods );
+			if ( fldPeriod == undefined )
+			{
+				if ( curObject.subdivision_id.HasValue )
+				{
+					teSubdivision = OpenDoc( UrlFromDocID( curObject.subdivision_id ) ).TopElem;
+					arrFldColumns = ArraySelectByKey( teSubdivision.outstaff.periods, ( sPeriodType != 'detail' ), 'full_time' );
+				}
+				if ( ArrayCount( arrFldColumns ) == 0 )
+					arrFldColumns = ArraySelectByKey( global_settings.settings.outstaff.periods, ( sPeriodType != 'detail' ), 'full_time' );
+			}
+			else
+			{
+				arrFldColumns = fldPeriod.hours;
+			}
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table XAML-todo">
+				<GridColumns>
+					<GridColumn Width="100"/>
+<%
+				for ( fldColumnElem in arrFldColumns )
+				{
+%>
+					<GridColumn Width="80"/>
+<%
+				}
+				if ( sPeriodType == 'mass' )
+				{
+%>
+					<GridColumn Width="80"/>
+					<GridColumn Width="80"/>
+					<GridColumn Width="80"/>
+<%
+				}
+				else
+				{
+%>
+					<GridColumn Width="80"/>
+					<GridColumn Width="80"/>
+<%
+				}
+%>
+					<GridColumn Width="80"/>
+					<GridColumn Width="100%"/>
+				</GridColumns>
+
+				<GridRow Class="XAML-gridrow-header">
+					<Label Class="XAML-grid-header-label"></Label>
+<%
+				for ( fldColumnElem in arrFldColumns )
+				{
+					fldHour = global_settings.settings.outstaff.periods.GetOptChildByKey( fldColumnElem.id );
+%>
+					<Label Class="XAML-grid-header-label" NoWrap="true"><![CDATA[<%=( fldHour == undefined ? fldHour.start_hour : fldHour.name )%>]]></Label>
+<%
+				}
+				if ( sPeriodType == 'mass' )
+				{
+%>
+					<Label Class="XAML-grid-header-label" NoWrap="true"><%=tools_web.get_web_const( 'c_start_time', curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-label" NoWrap="true"><%=tools_web.get_web_const( 'c_finish_time', curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-label" NoWrap="true"><%=tools_web.get_web_const( 'c_hour_duration', curLngWeb )%></Label>
+<%
+				}
+				else
+				{
+%>
+					<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( 'chelovek', curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( 'c_hour_duration', curLngWeb )%></Label>
+<%
+				}
+%>
+					<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( 'c_cost', curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-label"></Label>
+				</GridRow>
+<%
+				iPerionCounter = 0;
+				for ( fldPeriodElem in curObject.periods )
+				{
+
+					iWeekDay = WeekDay( fldPeriodElem.start_date );
+%>
+				<GridRow Class="XAML-grid-row-normal">
+					<Label NoWrap="true" Class="<%=( iWeekDay == 0 || iWeekDay == 6 ? 'XAML-alert-text' : '' )%>"><%=( StrDate( fldPeriodElem.start_date, false ) + ( DateDiff( fldPeriodElem.finish_date, fldPeriodElem.start_date ) == 86400 ? '' : '—' + StrDate( fldPeriodElem.finish_date, false ) ) + ', ' + curLngCommon.week_day_types.GetChildByKey( iWeekDay, 'index' ).short_name )%></Label>
+<%
+					iHourCounter = 0;
+					if ( sPeriodType == 'mass' )
+					{
+						fldHourElem = ArrayOptFirstElem( fldPeriodElem.hours );
+%>
+					<Edit Name="<%=( 'person_num_' + iPerionCounter + '_' + iHourCounter )%>" Width="80" Enabled="<%=isEdit%>"><%=fldHourElem == undefined ? "" : fldHourElem.person_num%></Edit>
+					<Edit Name="<%=( 'start_hour_' + iPerionCounter + '_' + iHourCounter )%>" Width="80" Enabled="<%=isEdit%>"><%=fldHourElem == undefined ? "" : fldHourElem.start_hour%></Edit>
+					<Edit Name="<%=( 'finish_hour_' + iPerionCounter + '_' + iHourCounter )%>" Width="80" Enabled="<%=isEdit%>"><%=fldHourElem == undefined ? "" : fldHourElem.finish_hour%></Edit>
+					<Edit Name="<%=( 'hour_num_' + iPerionCounter + '_' + iHourCounter )%>" Width="80" Enabled="<%=isEdit%>"><%=fldHourElem == undefined ? "" : fldHourElem.hour_num%></Edit>
+<%
+					}
+					else
+					{
+						for ( fldHourElem in fldPeriodElem.hours )
+						{
+%>
+
+<%
+							iHourCounter++;
+						}
+%>
+					<Label><%=fldPeriodElem.sum_person%></Label>
+					<Label><%=fldPeriodElem.sum_person_hour%></Label>
+<%
+					}
+%>
+					<Label><%=( rCostPositionCommon == null ? '' : rCostPositionCommon * fldPeriodElem.sum_person_hour )%></Label>
+					<Label/>
+				</GridRow>
+<%
+					iPerionCounter++;
+				}
+%>
+				<GridRow Class="XAML-grid-row-normal">
+					<Label><%=tools_web.get_web_const( "vagb_summary", curLngWeb )%>:</Label>
+<%
+				if ( sPeriodType == 'mass' )
+				{
+%>
+					<Label><%=curObject.periods_sum_person%></Label>
+					<Label> </Label>
+					<Label> </Label>
+<%
+				}
+				else
+				{
+					for ( fldHourElem in arrFldColumns )
+					{
+%>
+					<Label> </Label>
+<%
+					}
+%>
+					<Label><%=curObject.periods_sum_person%></Label>
+<%
+				}
+%>
+					<Label><%=curObject.periods_sum_person_hour%></Label>
+<%
+			sClass = '';
+			if ( rCostSum != null && bExtra )
+				sClass = 'XAML-alert-text';
+%>
+					<Label Class="<%=sClass%>" NoWrap="true"><%=( rCostSum + ( sClass == '' ? '' : ' (' + tools_web.get_web_const( 'prevysheniebyudzh', curLngWeb ) + ')' ) )%></Label>
+					<Label/>
+				</GridRow>
+			</Grid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   ADD TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'add' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'outstaff_order_body.tab_list.add_tab.block_list', 'info;fields;desc', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "outstaff_order_body.tab_list.add_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_additional", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' )
+		{
+			if ( isEdit )
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250" Align="right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Edit Name="code" Width="250"><![CDATA[<%=CONTEXT.GetOptProperty( 'code', curObject.code )%>]]></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'kontraktnavrem', curLngWeb )%>:</Label>
+<%
+				curSelector = {
+					"id": "OutstaffContract",
+					"catalog_name": "outstaff_contract",
+					"object_id": curObject.outstaff_contract_id.Value,
+					"object_id_item_name": "outstaff_contract_id",
+					"display_object_ids": ArrayMerge( arrTEOutstaffContracts, 'id', ';' ),
+					"check_access": true,
+					"close_action": "REFRESH"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+
+%>
+				</GridRow>
+<%
+				if ( curObject.outstaff_contract_id.Value != iDefaultOutstaffOrderID )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+					<EditBox Name="comment" Width="100%"><![CDATA[<%=CONTEXT.GetOptProperty( 'comment', curObject.comment )%>]]></EditBox>
+				</GridRow>
+<%
+				}
+
+				write_catalog_row( 'outstaff_provider' );
+				write_catalog_row( 'subdivision' );
+				write_catalog_row( 'region' );
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_budget_period', curLngWeb )%>:</Label>
+<%
+				curSelector = {
+					"id": "BudgetPeriod",
+					"catalog_name": "budget_period",
+					"object_id": iBudgetPeriod,
+					"object_id_item_name": "budget_period_id",
+					"check_access": true,
+					"close_action": "REFRESH"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+				if ( isBoss )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vw_reconciler", curLngWeb )%>:</Label>
+<%
+					curSelector = {
+						"id": tools_web.get_web_const( 'agreementperson', curLngWeb ),
+						"catalog_name": "collaborator",
+						"object_id": CONTEXT.GetOptProperty( "agreement_person_id", curObject.agreement_person_id ),
+						"object_id_item_name": "agreement_person_id"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+				}
+				else
+				{
+					write_catalog_row( 'collaborator', 'agreement_person_id', tools_web.get_web_const( "vw_reconciler", curLngWeb ) );
+				}
+%>
+			</Grid>
+<%
+			}
+		}
+
+
+		if ( sTabElem == 'fields' )
+		{
+			fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+			if( fldCustomElems != null )
+			{
+				curCustomFields = {
+					"id": "OutstaffOrderCustomFields",
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+					"source": curObject.custom_elems,
+					"modify_eval": isEdit
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+			}
+		}
+
+
+		if ( sTabElem == 'desc' )
+		{
+            Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

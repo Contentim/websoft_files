@@ -1,0 +1,104 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = curDocID;
+teObject = curDoc;
+
+if ( iObjectID != null && teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+{
+	sName = tools.get_disp_name_value( teObject );
+	sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+
+	var sBlockListParam = String( tools_web.get_web_param( curParams, "object_header.block_list", "image;title;desc", true ) );
+	var arrBlockListParam = sBlockListParam.split( ";" );
+
+	var bDisplayDesc = tools_web.is_true( tools_web.get_web_param( curParams, "object_header.disp_empty_desc", false, true ) );
+	var sDesc = teObject.comment.Value;
+	if ( sDesc != undefined )
+	{
+		if ( StrBegins( sDesc, 'Ps.' ) )
+		{
+			sDesc = teObject.Child( StrRightRangePos( sDesc, 3 ) ).Value;
+		}
+		if ( sDesc != '' )
+		{
+			bDisplayDesc = true;
+		}
+	}
+
+	var sLayout = "v1";
+	switch(sBlockListParam)
+	{
+		case "title;image;desc":
+		{
+			sLayout = bDisplayDesc ? "v1" : "v3";
+			break;
+		}
+		case "image;title;desc":
+		{
+			sLayout = bDisplayDesc ? "v2" : "v4";
+			break;
+		}
+		case "title;image":
+		{
+			sLayout = "v3";
+			break;
+		}
+		case "image;title":
+		{
+			sLayout = "v4";
+			break;
+		}
+		case "title;desc":
+		{
+			sLayout = bDisplayDesc ? "v5" : "v7";
+			break;
+		}
+		case "image;desc":
+		{
+			sLayout = bDisplayDesc ? "v6": "v8";
+			break;
+		}
+		case "title":
+		{
+			sLayout = "v7";
+			break;
+		}
+		case "image":
+		{
+			sLayout = "v8";
+			break;
+		}
+		case "desc":
+		{
+			sLayout = bDisplayDesc ? "v9" : "v7";
+			break;
+		}
+	}
+
+	var sImageType = tools_web.get_web_param( curParams, "object_tile.sImageType", "block", true ); // block/tile
+	var sCustomClass = tools_web.get_web_param( curParams, "object_tile.sCustomClass", "", true );
+	var bDisplayFader = tools_web.is_true( tools_web.get_web_param( curParams, "object_tile.block_list.desc_block.disp_fader", true, true ) );
+%>
+<StackPanel Orientation="Vertical" Class="wtx-object-header">
+	<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+<%
+	if(bDisplayDesc )
+	{
+%>
+		<Label Class="wtx-object-header-title wtx-object-header-title-with-desc"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Label>
+		<Label Class="wtx-object-header-desc-bg"><![CDATA[<%=sDesc%>]]></Label>
+		<Label Class="wtx-object-header-desc"><![CDATA[<%=sDesc%>]]></Label>
+<%
+	}
+	else
+	{
+%>
+		<Label Class="wtx-object-header-title wtx-object-header-title-no-desc"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Label>
+<%
+	}
+%>
+</StackPanel>
+<%
+}
+%>
+</SPXMLScreen>

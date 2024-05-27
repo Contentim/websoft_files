@@ -1,0 +1,326 @@
+﻿<SPXMLScreen>
+<%
+if (curObject == null)
+{
+	curMessageBox = {
+		"type": "error",
+		"text": tools_web.get_web_const( "7bmp7ozlhh", curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+
+}
+else
+{
+%>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<%
+var bThinMode = curDevice.disp_type == "mobile";
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( "StatisticRecBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+iCurTab = 0-1;
+bCanEdit=false
+arrTabListParam = String( tools_web.get_web_param( curParams, "statistic_rec_body.tab_list", "main;data", true ) ).split( ";" );
+%>
+<TabControl Name="StatisticRecBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+	///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+	if ( sTabListParam == "main" )
+	{
+		iCurTab++;
+%>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "osnovnyesveden", curLngWeb ) )%>">
+<%
+
+		bShowCode = OptInt( tools_web.get_web_param( curParams, "statistic_rec_body.tab_list.main_tab.show_code_field", 0, true ),0)==1 ;
+		bShowComment = OptInt( tools_web.get_web_param( curParams, "statistic_rec_body.tab_list.main_tab.show_comment_field", 0, true ),0)==1 ;
+%>
+			<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_info", curLngWeb ) )%>" Expanded="1" Width="100%">
+				<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+					<GridColumns>
+						<GridColumn Width="250" Align="Right"/>
+						<GridColumn/>
+					</GridColumns>
+<%
+					if (bShowCode)
+					{
+%>	
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+<%
+							if (bCanEdit)
+							{
+%>
+								<Edit Name="code" Width="50%"><%=curObject.code%></Edit>						
+<%
+							}
+							else
+							{
+%>
+								<Label><%=tools_web.get_cur_lng_name( curObject.code , curLng.short_id )%></Label>
+<%
+							}
+%>
+						</GridRow>
+<%
+					}
+%>					
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+<%
+							if (bCanEdit)
+							{
+%>
+								<Edit Name="name" Width="50%"><%=curObject.name%></Edit>						
+<%
+							}
+							else
+							{
+%>
+								<Label><%=tools_web.get_cur_lng_name( curObject.name , curLng.short_id )%></Label>
+<%
+							}
+%>
+					</GridRow>
+					
+<%
+					if (curObject.catalog_name.HasValue)
+					{
+						fldCommonElem=curLngCommon.exchange_object_types.GetOptChildByKey(curObject.catalog_name)
+						if (fldCommonElem!=undefined)
+						{
+							strObjectName=fldCommonElem.title + " [" + fldCommonElem.name + "]"
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_object_type", curLngWeb )%>:</Label>
+								<Label><%=strObjectName%></Label>
+							</GridRow>
+<%
+						}
+					}
+
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "rg97wyr0hm", curLngWeb )%>:</Label>
+<%
+						if (bCanEdit)
+						{
+							curSelector = {
+									"id": "notification_type_id",
+									"width": "330",
+									"catalog_name": "notification",
+									"object_id_item_name": "notification_type_id"
+								};
+								if (curObject.notification_type_id.HasValue)
+								{
+									curSelector.SetProperty( "object_id", curObject.notification_type_id);
+								}
+								Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );					
+						}
+						else
+						{
+							sValue =""
+							if ( curObject.notification_type_id.HasValue )
+							{
+								try
+								{
+									sDispName = curLngCommon.exchange_object_types.GetChildByKey( "notification" ).disp_name;
+									sValue = OpenDoc( UrlFromDocID( Int( curObject.notification_type_id ) ).TopElem.EvalPath( sDispName ) );
+								}
+								catch ( err )
+								{
+									sValue = tools_web.get_web_const( "c_deleted", curLngWeb );
+								}
+							}
+%>							
+							<Label><%=HtmlEncode(tools_web.get_cur_lng_name(sValue , curLng.short_id ))%></Label>
+<%
+						}
+%>								
+						</GridRow>
+<%
+					if (bShowComment)
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_comment", curLngWeb )%></Label>
+<%
+							if (bCanEdit)
+							{
+%>
+								<Edit Name="comment" Width="50%" Height="30"><%=curObject.comment%></Edit>						
+<%
+							}
+							else
+							{
+%>							
+								<Label><%=HtmlEncode(curObject.comment)%></Label>
+<%
+							}
+%>
+						</GridRow>
+<%
+					}
+					
+					if (!bCanEdit)
+					{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "rjanfwugnc", curLngWeb )%>:</Label>
+							<Label><%=tools_web.get_cur_lng_name(curObject.period_calc_type.ForeignElem.name, curLng.short_id )%></Label>
+						</GridRow>
+<%
+					}
+%>
+
+				</Grid>
+			</Panel>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+			arrCalcTypes=curObject.period_calc_type.ForeignArray;
+			if(bCanEdit)
+			{
+				for ( iCalcTypeElem in arrCalcTypes)
+				{
+					strAction = "";
+					if (iCalcTypeElem.id == "relative")
+					{
+						strAction="SHOW=SP0;HIDE=SP1";
+					}
+					else
+					{
+						strAction="SHOW=SP1;HIDE=SP0";
+					}
+%>
+				<RadioButton Name="period_calc_type" Value="<%=iCalcTypeElem.id%>" <%=(curObject.period_calc_type==iCalcTypeElem.id?"Checked=\"true\"":"")%> Change="<%=strAction%>"><%=tools_web.get_cur_lng_name(iCalcTypeElem.name, curLng.short_id )%></RadioButton>
+<%
+				}
+			}
+%>
+			</StackPanel>
+
+			<Collection Name="PerioditysCollection">
+				<Data>
+<%
+			for ( fldCategoryDateType in curLngCommon.perioditys )
+			{
+				fldPeriodType = curObject.period_types.GetOptChildByKey( fldCategoryDateType.PrimaryKey );
+				if(fldPeriodType != undefined)
+				{
+%>
+					<Row>
+						<Cell Id="id" Value="<%=XmlAttrEncode( fldCategoryDateType.PrimaryKey )%>"/>
+						<Cell Id="check" Value="<%=XmlAttrEncode( curObject.period_types.ChildByKeyExists( fldCategoryDateType.PrimaryKey ) )%>"/>
+						<Cell Id="period" Value="<%=XmlAttrEncode( fldCategoryDateType.name )%>"/>
+						<Cell Id="before_depth" Value="<%=XmlAttrEncode( fldPeriodType.OptChild("before_depth",""))%>"/>
+						<Cell Id="after_depth" Value="<%=XmlAttrEncode( fldPeriodType.OptChild("after_depth",""))%>"/>
+						<Cell Id="norm_from" Value="<%=XmlAttrEncode( fldPeriodType.OptChild("norm_from",""))%>"/>
+						<Cell Id="norm_to" Value="<%=XmlAttrEncode( fldPeriodType.OptChild("norm_to",""))%>"/>
+					</Row>
+<%
+				}
+			}
+%>
+				</Data>
+			</Collection>
+			<StackPanel Align="center" Name="SP0" Hidden="<%=((curObject.period_calc_type!="relative") ? 1 : 0)%>">
+				<DataGrid Name="PeriodityGrid" Title="<%=tools_web.get_web_const( "c_periodity", curLngWeb )%>" Source="{PerioditysCollection}">
+					<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="1" Editable="true" />
+					<DataGridColumn Title="" Value="check" Width="50" Type="checkbox" Editable="<%=bCanEdit%>" Enabled="<%=bCanEdit%>" Toggle="0"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_period", curLngWeb )%>" Value="period" MinWidth="100" Width1="<%=(bThinMode ? "" : "100")%>" Type="string"/>
+					
+<%
+		if (!bThinMode)
+		{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "mgbip6hh3a", curLngWeb )%>" Value="before_depth" Width="100" Type="string" Editable="<%=bCanEdit%>"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "posle", curLngWeb )%>" Value="after_depth" Width="100" Type="string" Editable="<%=bCanEdit%>"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "normas", curLngWeb )%>" Value="norm_from" Width="100" Type="string" Editable="<%=bCanEdit%>"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "normapo", curLngWeb )%>" Value="norm_to" Width="100" Type="string" Editable="<%=bCanEdit%>"/>
+<%
+		}
+%>
+				</DataGrid>
+			</StackPanel>
+			
+			<StackPanel Orientation="<%=bThinMode ? "" : "Horizontal"%>" Class="XAML-stack-container" Name="SP1" Hidden="<%=((curObject.period_calc_type!="absolute")?1:0)%>">
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "periodc", curLngWeb )%></Label>
+<%
+				if (bCanEdit)
+				{
+%>
+					<DatePicker Name="start_date"><%=StrDate(curObject.start_date,false,false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>							
+					<Label><%=StrDate(curObject.start_date,false,false)%></Label>
+<%
+				}
+%>						
+				<Label Class="XAML-info-grid-title-column"><%=StrNonTitleCase( tools_web.get_web_const( "mkly6lmeds", curLngWeb ) )%></Label>
+<%
+				if (bCanEdit)
+				{
+%>				
+					<DatePicker Name="finish_date"><%=StrDate(curObject.finish_date,false,false)%></DatePicker>
+<%
+				}
+				else
+				{
+%>							
+					<Label><%=StrDate(curObject.finish_date,false,false)%></Label>
+<%
+				}
+%>					
+			</StackPanel>			
+			
+			<Action Name="StatisticRecSaveAction" Source="statistic_rec_save" Success="ALERT={messageText}" Failure="ALERT={messageText}">
+				<Param Name="iSaveObjectID" Value="<%=curObjectID%>"/>
+				<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			</Action>
+			
+			<StackPanel Orientation="<%=bThinMode ? "" : "Horizontal"%>" Align="center" Class="XAML-stack-buttons">
+<%
+				if ( bCanEdit )
+				{
+%>
+					<Button Class="XAML-button XAML-button-save" Click="ACTION=StatisticRecSaveAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+				}
+%>
+			</StackPanel>
+		</TabItem>
+<%
+	}
+
+	///////////////////////////////////////////////   DATA TAB   /////////////////////////////////////////////
+	if ( sTabListParam == "data" )
+	{
+		iCurTab++;
+%>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "raschetnyedannye", curLngWeb ) )%>" Reload="1">
+<%
+		curView = {
+				"id": "StatisticData",
+				"height": "400",
+				"catalog_name": "statistic_data",
+				"xquery_qual": ( "$elem/statistic_rec_id = " + curObjectID ),
+				"disp_link": "false",
+				"disp_filter": "true",
+				"disp_search": "true"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+		</TabItem>
+<%
+	}
+}
+%>
+</TabControl>
+<%
+}
+%>
+</SPXMLScreen>

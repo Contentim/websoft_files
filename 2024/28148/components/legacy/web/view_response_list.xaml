@@ -1,0 +1,79 @@
+﻿<%
+if ( ArrayOptFirstElem( xarrResponse ) == undefined )
+{
+%>
+<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( "netotzyvov", curLngWeb )%>]]></Label>
+<%
+}
+else
+{
+	try
+	{
+		sResponsesParamPrefix;
+		sViewType = tools_web.get_web_param( curParams, sResponsesParamPrefix + ".view_type", "panel", true )
+	}
+	catch( ex )
+	{
+		sResponsesParamPrefix = "";
+		sViewType = "panel";
+	}
+	
+	if( sViewType == "panel" )
+	{
+%>
+<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+
+<%
+		for ( catResponseElem in xarrResponse )
+		{
+			try
+			{
+				teResponse = OpenDoc( UrlFromDocID( catResponseElem.id ) ).TopElem;
+			}
+			catch ( err )
+			{
+				continue;
+			}
+%>
+	<StackPanel Class="XAML-stack-list-item">
+		<Panel Title="<%=StrDate( catResponseElem.create_date, false, false )%>,  <%=catResponseElem.person_fullname%>" Expanded="0" Width="100%" Class="XAML-panel-arrow-left">
+<%
+			fldCustomElems = tools.get_custom_template( "response", catResponseElem.id, teResponse );
+			if ( fldCustomElems != null )
+			{
+				curCustomFields = {
+					"id": catResponseElem.id,
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+					"source": teResponse.custom_elems,
+					"modify_eval": false
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+			}
+%>
+		</Panel>
+	</StackPanel>
+<%
+		}
+%>
+</StackPanel>
+<%
+	}
+	else
+	{
+
+		curView = {
+				"id": "Responses",
+				"disp_search": false,
+				"catalog_name": "response",
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"paging_size": 15,
+				"param_preffix": sResponsesParamPrefix,
+				"xquery_qual": "MatchSome( $elem/id, ( " + ArrayMerge( xarrResponse, "This.id", "," ) + " ) )"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+	}
+}
+%>

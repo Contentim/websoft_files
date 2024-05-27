@@ -1,0 +1,17 @@
+﻿<%
+	phone = tools_web.get_web_param( PARAMETERS, "phone", "", true );
+%>
+<SPXMLScreen Class="XAML-without-padding-and-margin">
+	<HTMLBox>
+		<![CDATA[
+<%
+	if( phone != "" )
+	{
+%>
+			<a href="tel:+7<%=StrReplace( StrReplace( StrReplace( StrReplace( phone, "(", "" ), ")", "" ), " ", "" ), "-", "" )%>">+7 <%=phone%></a>
+<%
+	}
+%>
+		]]>
+	</HTMLBox>
+</SPXMLScreen>

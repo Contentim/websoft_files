@@ -1,0 +1,1274 @@
+﻿<SPXMLScreen>
+<%
+
+// const_start
+var sConstFactStartDate = tools_web.get_web_const( 'fakticheskayadat_1', curLngWeb );
+var sConstPlanEndDate = tools_web.get_web_const( 'planiruemayadat_1', curLngWeb );
+var sConstPlanEndDateFrom = tools_web.get_web_const( 'planiruemayadat_2', curLngWeb );
+var sConstPlanEndDateTo = tools_web.get_web_const( 'planiruemayadat_3', curLngWeb );
+var sConstProjectNameContains = tools_web.get_web_const( 'nazvanieproekt', curLngWeb );
+var sConstTaskNameContains = tools_web.get_web_const( 'nazvaniezadachi', curLngWeb );
+var sConstStartDatePlan = tools_web.get_web_const( 'planiruemayadat_4', curLngWeb );
+var sConstCreateProjectButtonName = tools_web.get_web_const( 'sozdatproekt', curLngWeb );
+var sConstCreateProjectModelQuestion = tools_web.get_web_const( 'sozdatproektpo', curLngWeb );
+// const_end
+/*
+for(elem in CONTEXT)
+{
+	alert(elem+'='+CONTEXT.GetOptProperty(elem))
+}*/
+
+
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+strUpdateList=''
+strDataAndTitlesForExcel=''
+
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+
+bShowProjectTree=tools_web.is_true(tools_web.get_web_param( curParams, "project_management.bShowProjectTree", "1", true ))
+sProjectTreeID='ProjectTree'
+
+iTreeWidth = OptInt(tools_web.get_web_param( curParams, "project_management.bShowProjectTree.iTreeWidth", 200, true ),200)
+iPanelWidth = OptInt(tools_web.get_web_param( curParams, "project_management.bShowProjectTree.iPanelWidth", 650, true ),650)
+iGridHeight = OptInt( tools_web.get_web_param( curParams, "project_management.iGridHeight", 400, true ),400);
+
+strTabList=String( tools_web.get_web_param( curParams, "project_management.tab_list", "all;overdue;all_tasks", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'ProjectManagementBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+bHideDismissed = tools_web.get_web_param( curParams, "project_management.bHideDismissed", "1", true ) == "1";
+bShowHideDismissedFlag = tools_web.get_web_param( curParams, "project_management.bShowHideDismissedFlag", "0", true ) == "1";
+bAddFuncSubordinates = tools_web.get_web_param( curParams, "project_management.bAddFuncSubordinates", "1", true ) == "1";
+
+strOpenLinkType = tools_web.get_web_param( curParams, "project_management.open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW
+
+bUseCustomProjectStatusNames = tools_web.is_true(tools_web.get_web_param( curParams, "project_management.StatusList.bUseCustomProjectStatusNames", "1", true ));
+strDefaultCategory = String( tools_web.get_web_param( curParams,"project_management.strDefaultCategory", "no", true ) )
+iOverrideTamplateID=OptInt(tools_web.get_web_param( curParams, "project_management.iOverrideTamplateID", null, true ),null)
+
+arrProjectDispSettings=[]
+if (global_settings.settings.project.options.use_custom_project_status)
+{
+	arrProjectDispSettings=ArraySelectAll(global_settings.settings.project.project_status_types)
+}
+else
+{
+	arrProjectDispSettings=ArraySelectAll(curLngCommon.project_status_types)
+}
+
+arrProjectTaskDispSettings=[]
+if (global_settings.settings.project_task.options.use_custom_project_task_status)
+{
+	arrProjectTaskDispSettings=ArraySelectAll(global_settings.settings.project_task.project_task_status_types)
+}
+else
+{
+	arrProjectTaskDispSettings=ArraySelectAll(curLngCommon.task_statuses)
+}
+
+strStatusList = String( tools_web.get_web_param( curParams,"project_management.StatusList", "all;project;plan;active;close;cancel", true ) )
+strDefaultStatus = String( tools_web.get_web_param( curParams,"project_management.StatusList.DefaultStatus", "active", true ) )
+arrStatusList=strStatusList.split( ";" );
+arrStatus=[]
+
+for (sStatus in arrStatusList)
+{
+	oNewStatus = new Object();
+	oNewStatus.id=sStatus
+	oNewStatus.name=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )
+	fldStatus=ArrayOptFind(arrProjectDispSettings,'This.id==\''+sStatus+'\'')
+	if (fldStatus!=undefined)
+	{
+		oNewStatus.name=tools_web.get_cur_lng_name(fldStatus.name, curLng.short_id )
+	}
+	else if (sStatus!='all')
+	{
+		continue;
+	}
+
+	oNewStatus.bDefault=(oNewStatus.id==strDefaultStatus)
+	arrStatus.push(oNewStatus)
+}
+
+strTaskStatusList = String( tools_web.get_web_param( curParams,"project_management.TaskStatusList", "all;p;r;0;1;x", true ) )
+strDefaultTaskStatus = String( tools_web.get_web_param( curParams,"project_management.TaskStatusList.DefaultStatus", "all", true ) )
+arrTaskStatusList=strTaskStatusList.split( ";" );
+arrTaskStatus=[]
+
+for (sStatus in arrTaskStatusList)
+{
+	oNewStatus = new Object();
+	oNewStatus.id=sStatus
+	oNewStatus.name=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )
+	fldStatus=ArrayOptFind(arrProjectTaskDispSettings,'This.id==\''+sStatus+'\'')
+	if (fldStatus!=undefined)
+	{
+		oNewStatus.name=tools_web.get_cur_lng_name(fldStatus.name, curLng.short_id )
+	}
+	else if (sStatus!='all')
+	{
+		continue;
+	}
+
+	oNewStatus.bDefault=(oNewStatus.id==strDefaultTaskStatus)
+	arrTaskStatus.push(oNewStatus)
+}
+
+bUseFilters = tools_web.get_web_param( curParams, "project_management.bUseFilters", "0", true ) == "1";
+bFiltersPanelExpanded =bUseFilters&&tools_web.get_web_param( curParams, "project_management.bUseFilters.bShowExpanded", "0", true ) == "1";
+
+bCanCreateProject=tools_web.is_true(tools_web.get_web_param( curParams, "project_management.bCanCreateProject", "0", true ))
+iProjectCreatorsGroupID=OptInt( tools_web.get_web_param( curParams, "project_management.bCanCreateProject.iProjectCreatorsGroupID", null, true ) ,null)
+bLimitProjectCreationByBosses=tools_web.is_true(tools_web.get_web_param( curParams, "project_management.bCanCreateProject.bLimitProjectCreationByBosses", "0", true ))
+
+iProjectCreatorsBossTypeID=OptInt( tools_web.get_web_param( curParams, "project_management.bCanCreateProject.iProjectCreatorsBossTypeID", null, true ) ,null)
+
+
+strSearchFieldCodes=String( tools_web.get_web_param( curParams, "project_management.bUseFilters.search_fields", "org_id;subdivision_id", true ) )
+arrSearchFieldCodes=strSearchFieldCodes.split( ";" )
+
+strProjectDispFieldCodes=String( tools_web.get_web_param( curParams, "project_management.project_disp_fields", "name;status", true ) )
+arrProjectDispFieldCodes=strProjectDispFieldCodes.split( ";" )
+arrProjectDispFieldCodes=ArraySelect(arrProjectDispFieldCodes,"Trim(This)!=''")
+
+strTaskDispFieldCodes=String( tools_web.get_web_param( curParams, "project_management.task_disp_fields", "name;status", true ) )
+arrTaskDispFieldCodes=strTaskDispFieldCodes.split( ";" )
+arrTaskDispFieldCodes=ArraySelect(arrTaskDispFieldCodes,"Trim(This)!=''")
+
+bShowProjectManagers = ArrayOptFind(arrProjectDispFieldCodes,"This=='boss_name'")!=undefined
+bFillManagerWithUser=tools_web.is_true(String( tools_web.get_web_param( curParams, "project_management.bFillManagerWithUser", false, true ) ))
+bSearchOnLoad=tools_web.is_true(tools_web.get_web_param( curParams, "project_management.bSearchOnLoad", false, true ))
+
+if (bUseFilters&&!bShowProjectManagers)
+{
+	arrSearchFieldCodes=ArraySelect(arrSearchFieldCodes,'This!="boss_id"')
+}
+
+bCheckSeeAllRight=tools_web.is_true(String( tools_web.get_web_param( curParams, "project_management.bCheckSeeAllRight", false, true ) ))
+
+bSearchStart=(bUseFilters&&ArrayOptFirstElem(arrSearchFieldCodes)!=undefined)?tools_web.is_true(CONTEXT.GetOptProperty( 'bSearchStart',bSearchOnLoad )):true
+
+strContextFildNames='ProjectManagementBodyTab,bSearchStart'
+if (bShowProjectTree)
+{
+	strContextFildNames=strContextFildNames+',ElemID'
+}
+
+
+if (!bDesctop)
+{
+	arrSearchFieldCodes=ArraySelect(arrSearchFieldCodes,'This!="category"')
+}
+
+if (!bDesctop&&ArrayCount(arrProjectDispFieldCodes)>2)
+{
+	arrTempProjectDispFieldCodes=ArraySelect(arrProjectDispFieldCodes,"(Trim(This)=='name'||Trim(This)=='status')")
+	if (ArrayOptFirstElem(arrTempProjectDispFieldCodes)==undefined)
+	{
+		arrProjectDispFieldCodes=ArrayRange(arrProjectDispFieldCodes,0,2)
+	}
+	else
+	{
+		arrProjectDispFieldCodes=arrTempProjectDispFieldCodes
+	}
+}
+
+if (!bDesctop&&ArrayCount(arrTaskDispFieldCodes)>2)
+{
+	arrTempTaskDispFieldCodes=ArraySelect(arrTaskDispFieldCodes,"(Trim(This)=='name'||Trim(This)=='status')")
+	if (ArrayOptFirstElem(arrTempTaskDispFieldCodes)==undefined)
+	{
+		arrTaskDispFieldCodes=ArrayRange(arrTaskDispFieldCodes,0,2)
+	}
+	else
+	{
+		arrTaskDispFieldCodes=arrTempTaskDispFieldCodes
+	}
+}
+
+sID_curTalentPoolCRTasksViewer='ProjectManagment'
+
+arrFieldPrefixs=['']
+if (bShowProjectTree)
+{
+	arrFieldPrefixs.push("task_filter_field_");
+}
+
+
+iDefaultWidth=bDesctop?"300":"100%"
+
+function DrawFilterField(strCodeNoPrefixParam,strPrefixParam)
+{
+	strCode=strPrefixParam+strCodeNoPrefixParam
+	strContextFildNames=strContextFildNames+","+strCode
+
+	strValue=CONTEXT.GetOptProperty( strCode,'')
+
+	switch(strCodeNoPrefixParam)
+	{
+		case "org_id":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_org", curLngWeb )%>: </Label>
+
+<%
+			curSelector = {
+			"id": strCode,
+			"object_id": strValue,
+			"object_id_item_name": strCode,
+			"multi_select": "false",
+			"show_all": "true",
+			"can_be_empty":"true",
+			"catalog_name": "org",
+			"width":iDefaultWidth
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+			break;
+		}
+		case "subdivision_id":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>: </Label>
+<%
+			curSelector = {
+			"id": strCode,
+			"object_id": strValue,
+			"object_id_item_name": strCode,
+			"multi_select": "false",
+			"can_be_empty":"true",
+			"catalog_name": "subdivision",
+			"width":iDefaultWidth
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+
+			break;
+		}
+		case "group_id":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_group", curLngWeb )%>: </Label>
+<%
+			curSelector = {
+			"id": strCode,
+			"object_id": strValue,
+			"object_id_item_name": strCode,
+			"multi_select": "false",
+			"show_all": "true",
+			"can_be_empty":"true",
+			"catalog_name": "group",
+			"width":iDefaultWidth
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+			break;
+		}
+		case "boss_id":
+		{
+		strTitle=strPrefixParam==''?tools_web.get_web_const( 'c_boss', curLngWeb ):tools_web.get_web_const( 'naznachivshiyzad', curLngWeb )
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(strTitle)%>: </Label>
+<%
+			strName=''
+			if (bFillManagerWithUser&&strValue=='')
+			{
+				strValue=curUserID;
+				strName=curUser.fullname
+			}
+			curSelector = {
+			"id": strCode,
+			"object_id": strValue,
+			"object_name":strName,
+			"object_id_item_name": strCode,
+			"multi_select": "false",
+			"show_all": "true",
+			"can_be_empty":"true",
+			"catalog_name": "collaborator",
+			"width":iDefaultWidth,
+			"selected_object_ids": strValue
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+
+			break;
+		}
+		case "end_date_plan_from":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=sConstPlanEndDateFrom%>: </Label>
+		<DatePicker Name="<%=strCode%>" Format="d.m.Y" Width="110"><%=strValue%></DatePicker>
+<%
+			break;
+		}
+		case "end_date_plan_to":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=sConstPlanEndDateTo%>: </Label>
+		<DatePicker Name="<%=strCode%>" Format="d.m.Y" Width="110"><%=strValue%></DatePicker>
+<%
+			break;
+		}
+		case "status":
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>: </Label>
+		<ComboBox Name="<%=strCode%>" Width="<%=iDefaultWidth%>">
+<%
+			if (strPrefixParam=='')
+			{
+				for(fldStatus in arrStatus)
+				{
+					if (strValue!='')
+					{
+						sSelected = (fldStatus.id==strValue) ? "true" : "false";
+					}
+					else
+					{
+						sSelected = (fldStatus.bDefault) ? "true" : "false";
+					}
+%>
+					<ComboBoxItem Value="<%=fldStatus.id%>" Selected="<%=sSelected%>"><%=XmlAttrEncode(fldStatus.name)%></ComboBoxItem>
+<%
+				}
+			}
+			else
+			{
+				for(fldStatus in arrTaskStatus)
+				{
+					if (strValue!='')
+					{
+						sSelected = (fldStatus.id==strValue) ? "true" : "false";
+					}
+					else
+					{
+						sSelected = (fldStatus.bDefault) ? "true" : "false";
+					}
+
+%>
+					<ComboBoxItem Value="<%=fldStatus.id%>" Selected="<%=sSelected%>"><%=XmlAttrEncode(fldStatus.name)%></ComboBoxItem>
+<%
+				}
+			}
+%>
+		</ComboBox>
+<%
+			break;
+		}
+		case "category":
+		{
+
+			arrCategories=[
+			{"id":"no","name":tools_web.get_web_const( "c_no", curLngWeb ),"bDefault":(strDefaultCategory=="no")},
+			{"id":"status","name":tools_web.get_web_const( "c_status", curLngWeb ),"bDefault":(strDefaultCategory=="status")},
+			{"id":"org","name":tools_web.get_web_const( "c_org", curLngWeb ),"bDefault":(strDefaultCategory=="org")}
+			]
+
+			if (bShowProjectManagers)
+			{
+				arrCategories.push({"id":"boss","name":tools_web.get_web_const( "c_boss", curLngWeb ),"bDefault":(strDefaultCategory=="boss")})
+			}
+%>
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "kategorizaciyap", curLngWeb )%>: </Label>
+		<ComboBox Name="<%=strCode%>" Width="<%=iDefaultWidth%>">
+<%
+				for(fldCategory in arrCategories)
+				{
+					if (strValue!='')
+					{
+						sSelected = (fldCategory.id==strValue) ? "true" : "false";
+					}
+					else
+					{
+						sSelected = (fldCategory.bDefault) ? "true" : "false";
+					}
+%>
+						<ComboBoxItem Value="<%=fldCategory.id%>" Selected="<%=sSelected%>"><%=fldCategory.name%></ComboBoxItem>
+<%
+				}
+%>
+		</ComboBox>
+<%
+			break;
+		}
+		case 'name_contains':
+		{
+			strTitle=strPrefixParam==''?sConstProjectNameContains:sConstTaskNameContains
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(strTitle)%>: </Label>
+		<Edit Name="<%=strCode%>" Width="<%=iDefaultWidth%>"><%=strValue%></Edit>
+<%
+			break;
+		}
+		case 'key_words':
+		{
+%>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "klyuchevyeslovaf", curLngWeb )%>:</Label>
+		<Edit Name="<%=strCode%>" Width="<%=iDefaultWidth%>"><%=strValue%></Edit>
+<%
+			break;
+		}
+		default:
+		{
+%>
+		<Label Class="XAML-info-grid-title-column"><%=strCode%>:</Label>
+		<Edit Name="<%=strCode%>" Width="<%=iDefaultWidth%>"><%=strValue%></Edit>
+<%
+			break;
+		}
+	}
+}
+
+function DrawFilters(strTabNameParam)
+{
+%>
+	<StackPanel Name="<%=strTabNameParam%>FiltersStackPanel" Class="XAML-stack-container">
+<%
+	bShowSearchButton=false
+	if(bUseFilters&&ArrayOptFirstElem(arrSearchFieldCodes)!=undefined)
+	{
+		bShowSearchButton=true;
+		sUpdateAction=''
+%>
+	<Panel Name="<%=strTabNameParam%>FiltersPanel" Title="<%=tools_web.get_web_const( "filtry", curLngWeb )%>" Expanded="<%=bFiltersPanelExpanded%>" Width="100%">
+<%
+		if (bShowProjectTree)
+		{
+			iActiveFilterTab=OptInt( CONTEXT.GetOptProperty( 'ProjectTaskFiltersManagementBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'filter_tab' ), 0 ))
+%>
+			<TabControl Name="ProjectTaskFiltersManagementBodyTab" ActiveTab="<%=iActiveFilterTab%>" Width="100%">
+<%
+		}
+		for (strPrefix in arrFieldPrefixs)
+		{
+			if (bShowProjectTree)
+			{
+				strTitle=strPrefix==''?tools_web.get_web_const( '159pmteyyz', curLngWeb ):tools_web.get_web_const( 'zadachiproekta', curLngWeb )
+%>
+		<TabItem Title="<%=XmlAttrEncode(strTitle)%>">
+<%
+			}
+
+			if (strPrefix=='')
+			{
+				arrFields=arrSearchFieldCodes
+			}
+			else
+			{
+				arrFields=ArraySelect(arrSearchFieldCodes,"This!='category'")
+			}
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="200" Align="right"/>
+					<GridColumn/>
+<%
+					if (ArrayCount(arrFields)>1)
+					{
+%>
+					<GridColumn Width="200" Align="right"/>
+					<GridColumn/>
+<%
+					}
+%>
+				</GridColumns>
+<%
+				iCounter=0
+				for (strCodeNoPrefix in arrFields)
+				{
+					if (!bDesctop||!(iCounter % 2))
+					{
+%>
+					<GridRow>
+<%
+					}
+
+					DrawFilterField(strCodeNoPrefix,strPrefix)
+
+					if (!bDesctop||iCounter % 2)
+					{
+%>
+					</GridRow>
+<%
+					}
+					iCounter++
+				}
+				if (bDesctop&&iCounter % 2)
+				{
+%>
+				<Label></Label>
+				<Label></Label>
+			</GridRow>
+<%
+				}
+%>
+			</Grid>
+<%
+			if (bShowProjectTree)
+			{
+%>
+		</TabItem>
+<%
+			}
+		}
+		if (bShowProjectTree)
+		{
+%>
+</TabControl>
+<%
+		}
+%>
+		</Panel>
+<%
+
+
+
+	}
+%>
+			<Toolbar Class="XAML-toolbar">
+<%
+			if (bShowSearchButton)
+			{
+%>
+				<Button Click="ACTION=RunUpdateAction" Class="XAML-button XAML-button-content"><%=tools_web.get_web_const( 'sf_submit', curLngWeb )%></Button>
+<%
+			}
+
+			if (iProjectCreatorsGroupID!=null||bLimitProjectCreationByBosses||iProjectCreatorsBossTypeID!=null)
+			{
+				bCanCreateProject=false
+				if (iProjectCreatorsGroupID!=null)
+				{
+					bCanCreateProject=(ArrayOptFirstElem(XQuery("for $elem in group_collaborators where $elem/group_id="+iProjectCreatorsGroupID+" and $elem/collaborator_id="+curUserID+" return $elem"))!=undefined)
+				}
+
+				if (bLimitProjectCreationByBosses)
+				{
+					bCanCreateProject=!bCanCreateProject?(ArrayOptFirstElem(XQuery("for $elem in func_managers where $elem/is_native=true() and $elem/person_id="+curUserID+" return $elem"))!=undefined):bCanCreateProject
+				}
+
+				if (iProjectCreatorsBossTypeID!=null)
+				{
+					bCanCreateProject=!bCanCreateProject?(ArrayOptFirstElem(XQuery("for $elem in func_managers where $elem/boss_type_id="+iProjectCreatorsBossTypeID+" and $elem/person_id="+curUserID+" return $elem"))!=undefined):bCanCreateProject
+				}
+			}
+
+			if (bCanCreateProject)
+			{
+%>
+				<Button Click="SET=<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialog/strTextValue,<%=UrlEncode(sConstCreateProjectModelQuestion)%>;SET=<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialog/strButtonsCodes,<%=UrlEncode('yes;no;cancel')%>;SET=<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialogCloseAction,<%=UrlEncode('SET=CreateNewProject/iConfirm,{ButtonPressedNum};ACTION=CreateNewProject;')%>;OPENDIALOG=<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialog;" Class="XAML-button XAML-button-project-new"><%=sConstCreateProjectButtonName%></Button>
+<%
+			}
+%>
+			</Toolbar>
+		</StackPanel>
+	<%
+}
+
+function fnBuildDataGrid(strTabNameParam)
+{
+
+	curCollectionMenu = {
+		"id": StrTitleCase(strTabNameParam),
+		};
+		curCollectionMenu.SetProperty( "catalog_name", "project");
+		curCollectionMenu.SetProperty( "data_grid_id", StrTitleCase(strTabNameParam)+"DataGrid");
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+	<Collection Name="ProjectManagement<%=StrTitleCase(strTabNameParam)%>Collection" Source="project_management_all">
+<%
+		strSetValue='{CheckBoxHideDismissed}'
+		if (!bShowHideDismissedFlag)
+		{
+			strSetValue=bHideDismissed
+		}
+%>
+		<Param Name="bHideDismissed" Value="<%=strSetValue%>"/>
+		<Param Name="bAddFuncSubordinates" Value="<%=XmlAttrEncode(bAddFuncSubordinates)%>"/>
+	  	<Param Name="curUserID" Value="<%=curUserID%>"/>
+		<Param Name="bSearchStart" Value="{bSearchStart}"/>
+		<Param Name="bShowProjectManagers" Value="<%=bShowProjectManagers%>"/>
+		<Param Name="strStatusList" Value="<%=strStatusList%>"/>
+		<Param Name="bOverdue" Value="<%=strTabNameParam=='overdue'?'true':'false'%>"/>
+		<Param Name="strTaskStatusList" Value="<%=strTaskStatusList%>"/>
+		<Param Name="bProjectTree" Value="<%=bShowProjectTree%>"/>
+		<Param Name="bCheckSeeAllRight" Value="<%=bCheckSeeAllRight%>"/>
+		<Param Name="open_link_type" Value="<%=strOpenLinkType%>"/>
+<%
+		for (strCode in arrSearchFieldCodes)
+		{
+%>
+		<Param Name="<%=strCode%>" Value="{<%=strCode%>}"/>
+<%
+		}
+%>
+	</Collection>
+	<Button Click="SET=GetUserData/sUserDataName,project_management_all_collection_<%=curUserID%>_<%=strTabNameParam=='overdue'?'true':'false'%>;SET=excelExportAction/sCollection,project_management_all;SET=excelExportAction/sData,{<%=StrTitleCase(strTabNameParam)%>DataGrid:*};SET=excelExportAction/sMode,datagrid;SET=excelExportAction/sColumnList,{strDataAndTitlesForExcel};ACTION=GetUserData" Width="200" Icon="/icons/16png/excel.png"><%=tools_web.get_web_const( "eksportirovatv", curLngWeb )%></Button>
+	<DataGrid Name="<%=StrTitleCase(strTabNameParam)%>DataGrid" Source="{ProjectManagement<%=StrTitleCase(strTabNameParam)%>Collection}"
+		Height="<%=iGridHeight%>" Selection="multiple" <%=(strTabNameParam!=''?(bDesctop?'Categorized="id:parent_id"':''):'')%>>
+		<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+		<DataGridColumn Title="color" Value="color" Width="50" Type="string" Hidden="true" Ghost="false"/>
+<%
+		i=1;
+		for (strDispFieldCode in arrProjectDispFieldCodes)
+		{
+			switch (strDispFieldCode)
+			{
+				case "name":
+					strTitle=tools_web.get_web_const( 'c_name', curLngWeb )
+					strWidth=200
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+		<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Click="{!open_url_action}" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "status":
+					strTitle=tools_web.get_web_const( 'c_status', curLngWeb )
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_colorsource=color'+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+
+%>
+		<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" ColorSource="color" Ghost="false"/>
+<%
+					 break;
+				case "sub_name":
+
+					strTitle=tools_web.get_web_const( 'c_subd', curLngWeb )
+					strWidth=150
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="subdivision_id" Value="subdivision_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Click="<%=strOpenLinkType%>=<%=tools_web.get_mode_clean_url( null, "{subdivision_id}", { doc_id: curDocID } )%>" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "org_name":
+					strTitle=tools_web.get_web_const( 'c_org', curLngWeb )
+					strWidth=150
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="org_id" Value="org_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Click="<%=strOpenLinkType%>=<%=tools_web.get_mode_clean_url( null, "{org_id}", { doc_id: curDocID } )%>" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "group_name":
+					strTitle=tools_web.get_web_const( 'c_group', curLngWeb )
+					strWidth=150
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "boss_name":
+					strTitle=tools_web.get_web_const( 'vcceb_boss_proj', curLngWeb )
+					strWidth=150
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="boss_ids" Value="boss_ids" Width="50" Type="string" Hidden="true" Ghost="false"/>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "start_date_plan":
+					strTitle=sConstStartDatePlan
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "end_date_plan":
+					strTitle=sConstPlanEndDate
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "start_date_fact":
+					strTitle=sConstFactStartDate
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "end_date_fact":
+					strTitle=tools_web.get_web_const( 'fakticheskayadat', curLngWeb )
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "days_left":
+					strTitle=tools_web.get_web_const( 'vlpb_message10', curLngWeb )
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				case "ready_persent":
+					strTitle=tools_web.get_web_const( 'c_readiness_percent', curLngWeb )
+					strWidth=100
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+				<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					 break;
+				default:
+					strTitle=tools_web.get_web_const( strDispFieldCode, curLngWeb )
+					strWidth='10%'
+					strDataAndTitlesForExcel=strDataAndTitlesForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+ 		<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+					break;
+			}
+			i++
+		}
+%>
+		<Menu Source="{CatalogListMenu<%=StrTitleCase(strTabNameParam)%>}"/>
+	</DataGrid>
+<%
+}
+DrawFilters('')
+
+strRunUpdateActionString='SET=bSearchStart,true;'
+if (bShowProjectTree)
+{
+	strRunUpdateActionString=strRunUpdateActionString+'UPDATE='+sProjectTreeID+';'
+}
+else
+{
+	strRunUpdateActionString=strRunUpdateActionString+'UPDATE=OverdueDataGrid,AllDataGrid;'
+}
+strRunUpdateActionString=strRunUpdateActionString+'STOP'
+%>
+<Edit Name="bSearchStart" Hidden="1"><%=bSearchStart%></Edit>
+<Action Name="RunUpdateAction" Initialize="<%=strRunUpdateActionString%>">
+</Action>
+
+<Action Source="project_management_get_user_data" Name="GetUserData" Success="Set=excelExportAction/sCollectionData,{!sCollectionData};ACTION=excelExportAction" Failure="ALERT={messageText}">
+	<Param Name="sUserDataName" Value=""/>
+</Action>
+
+<Action Source="ExcelExporterAction" Name="excelExportAction" Success="OPENWINDOW=/assessment_excel_export.html?mode=htmlfileurl&htmlfileurl={xls_url}" Failure="ALERT={messageText}">
+	<Param Name="sCollection" Value=""/>
+	<Param Name="sCollectionData" Value=""/>
+	<Param Name="sData" Value=""/>
+	<Param Name="sMode" Value=""/>
+	<Param Name="sColumnList" Value=""/>
+</Action>
+
+<Action Source="project_create_new" Name="CreateNewProject" Success="{!ResultAction}" Failure="ALERT={messageText}">
+	<Param Name="iConfirm" Value=""/>
+	<Param Name="sNewName" Value=""/>
+	<Param Name="iNewID" Value=""/>
+	<Param Name="bProjectTree" Value="<%=bShowProjectTree%>"/>
+</Action>
+
+<Dialog Name="SelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="SET=CreateNewProject/iConfirm,3;SET=CreateNewProject/iNewID,{CatalogListDataGridFullList:^/id};ACTION=CreateNewProject">
+	<Param Name="catalog_name" Value="project"/>
+	<Param Name="multi_select" Value="false"/>
+	<Param Name="xquery_qual" Value="$elem/is_model=true()"/>
+	<Param Name="disp_filter" Value="true"/>
+	<Param Name="show_all" Value="true"/>
+	<Param Name="can_be_empty" Value="false"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+
+<Dialog Name="dlgNewProjectName" Source="dlg_new_project_name" Title="<%=tools_web.get_web_const( 'c_object_name', curLngWeb )%>" Close="SET=CreateNewProject/iConfirm,3;SET=CreateNewProject/sNewName,{new_project_name};ACTION=CreateNewProject;">
+</Dialog>
+
+<Dialog Name="ProjectEditTask" Source="<%=tools_web.get_web_param( curParams, 'project_task_edit_template_code', 'project_task', true )%>" Close="Update={sUpdateElement},<%=sProjectTreeID%>,CatalogListDataGridProjectTask">
+	<Param Name="iSourceObjectId" Value=""/>
+	<Param Name="iTaskId" Value=""/>
+</Dialog>
+
+<Edit Name="<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialogCloseAction" Hidden="1">ALERT={!messageText};</Edit>
+<Dialog Name="<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialog" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_question', curLngWeb ) )%>" Source="view_ask_question_dialog" Width="50%" Close="{!<%=sID_curTalentPoolCRTasksViewer%>ThreeButtonsCustomDialogCloseAction}">
+	<Param Name="strTextValue" Value=""/>
+	<Param Name="strButtonsCodes" Value=""/>
+</Dialog>
+<%
+	if (bShowProjectTree)
+	{
+		if (bDesctop)
+		{
+			iDgWidth = (iPanelWidth + iTreeWidth)+2;
+			iRatio=Math.round(Real(Real(iPanelWidth)/Real(iDgWidth))*100)
+			sPanelWidth=String(iRatio)+'%'
+			sTreeWidth=String(100-iRatio)+'%'
+		}
+		else
+		{
+			iPanelWidth="100%"
+			iTreeWidth="100%"
+		}
+
+		strElemIDValue=CONTEXT.GetOptProperty( 'ElemID','')
+		strContext='"ProjectBodyTab":"'+CONTEXT.GetOptProperty( 'ProjectBodyTab','')+'"';
+%>
+	<Collection Name="ProjectManagementTreeCollection" Source="project_management_all">
+<%
+		strSetValue='{CheckBoxHideDismissed}'
+		if (!bShowHideDismissedFlag)
+		{
+			strSetValue=bHideDismissed
+		}
+%>
+		<Param Name="bHideDismissed" Value="<%=strSetValue%>"/>
+		<Param Name="bAddFuncSubordinates" Value="<%=XmlAttrEncode(bAddFuncSubordinates)%>"/>
+	  	<Param Name="curUserID" Value="<%=curUserID%>"/>
+		<Param Name="bSearchStart" Value="{bSearchStart}"/>
+		<Param Name="bShowProjectManagers" Value="<%=bShowProjectManagers%>"/>
+		<Param Name="strStatusList" Value="<%=strStatusList%>"/>
+		<Param Name="bOverdue" Value="false'"/>
+		<Param Name="strTaskStatusList" Value="<%=strTaskStatusList%>"/>
+		<Param Name="bProjectTree" Value="<%=bShowProjectTree%>"/>
+		<Param Name="bCheckSeeAllRight" Value="<%=bCheckSeeAllRight%>"/>
+<%
+		for (strPrefix in arrFieldPrefixs)
+		{
+			if (strPrefix=='')
+			{
+				arrFields=arrSearchFieldCodes
+			}
+			else
+			{
+				arrFields=ArraySelect(arrSearchFieldCodes,"This!='category'")
+			}
+			for (strCodeNoPrefix in arrFields)
+			{
+				strCode=strPrefix+strCodeNoPrefix
+%>
+		<Param Name="<%=strCode%>" Value="{<%=strCode%>}"/>
+<%
+			}
+		}
+%>
+	</Collection>
+	<Collection Name="PanellTreeCollection" Source="project_tree">
+	  <Param Name="curUserID" Value="<%=curUserID%>"/>
+	</Collection>
+	<Edit Name="ElemID" Hidden="1"><%=strElemIDValue%></Edit>
+	<StackPanel Name="<%=sProjectTreeID%>StackPanel">
+<%
+		if (bDesctop)
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-content-hor-container">
+			<GridColumns>
+				<GridColumn Width="<%=sTreeWidth%>"/>
+				<GridColumn Width="2"/>
+				<GridColumn Width="<%=sPanelWidth%>"/>
+			</GridColumns>
+
+			<GridRow>
+				<Panel Name="ProjectTreePanel" Title="<%=tools_web.get_web_const("159pmteyyz", curLngWeb)%>" Width="100%" Height="<%iGridHeight%>">
+<%
+}
+else
+{
+%>
+		<TabControl Name="sliderTab" DisplayMode="tab" TabsHidden="true" Height="100%">
+			<TabItem  Title="1">
+<%
+}
+
+			//Вызов универсального меню
+			curCollectionMenu = {
+				"catalog_name": "{"+sProjectTreeID+":^/type}"
+			};
+			curCollectionMenu.SetProperty("data_grid_id", sProjectTreeID);
+			curCollectionMenu.SetProperty("selected_data", "{"+sProjectTreeID+"}")
+			curCollectionMenu.SetProperty("id", sProjectTreeID);
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+		%>
+					<Tree Name="<%=sProjectTreeID%>" Source="{ProjectManagementTreeCollection}" DataID="id" DataParent="parent_id"
+					DataTitle="name" DataFatherhood="hasChildren" DataIcon="pict"
+					Click="SET=ElemID,{id};UPDATE=ProjectTreeItemPanel;<%=bDesctop?"":'SET=sliderTab,1'%>" Preservable="1" Width="<%=iTreeWidth%>">
+						<Menu Source="{CatalogListMenu<%=sProjectTreeID%>}"/>
+					</Tree>
+<%
+		if (bDesctop)
+		{
+%>
+				</Panel>
+				<Label/>
+<%
+		}
+		else
+		{
+%>
+			</TabItem>
+			<TabItem Title="2">
+<%
+		}
+%>
+				<Panel Source="project_tree_item" Name="ProjectTreeItemPanel" Title="<%=tools_web.get_web_const("c_desc", curLngWeb)%>" Width="100%" Class="XAML-without-padding-and-margin">
+					<Param Name="iObjectID" Value="{ElemID}"/>
+					<Param Name="strContext" Value="<%=XmlAttrEncode(strContext)%>"/>
+					<Param Name="iOverrideTamplateID" Value="<%=XmlAttrEncode(iOverrideTamplateID)%>"/>
+				</Panel>
+<%
+		if (bDesctop)
+		{
+%>
+			</GridRow>
+		</Grid>
+<%
+		}
+		else
+		{
+%>
+			</TabItem>
+		</TabControl>
+<%
+		}
+%>
+	</StackPanel>
+<%
+}
+else
+{
+%>
+<TabControl Name="ProjectManagementBodyTab" Preservable="1" Width="100%">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		switch(sTabListParam)
+		{
+			case "all":
+			{
+			strTabNameParam=sTabListParam
+%>
+	<TabItem  Class="XAML-tab-with-icon icon-clock" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb ))%>" Click="SHOW=FiltersStackPanel;">
+<%
+		fnBuildDataGrid(sTabListParam)
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "overdue":
+			{
+%>
+	<TabItem  Class="XAML-tab-with-icon icon-clock2" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vaab_selector_overdue', curLngWeb ))%>" Click="SHOW=FiltersStackPanel;">
+<%
+		fnBuildDataGrid(sTabListParam)
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "all_tasks":
+			{
+				strDataAndTitlesTaskForExcel=''
+
+				sDefaultViewParam = tools_web.get_web_param( curParams,"project_management.tab_list.tab_tasks.default_view", "list", true );
+				bShowCalendar = tools_web.is_true(tools_web.get_web_param( curParams, "project_management.tab_list.tab_tasks.show_calendar", "1", true ));
+				bShowList =tools_web.is_true(tools_web.get_web_param( curParams, "project_management.tab_list.tab_tasks.show_list", "1", true ));
+
+				if (sDefaultViewParam == "list"&&!bShowList)
+				{
+					sDefaultViewParam = "calendar"
+				}
+				if (sDefaultViewParam == "calendar"&&!bShowCalendar)
+				{
+					sDefaultViewParam = "list"
+				}
+
+
+				if (!bDesctop)
+				{
+					sDefaultViewParam='list'
+					bShowCalendar=false;
+					bShowList=true;
+
+				}
+
+				sCalendarDefaultView = String( tools_web.get_web_param( curParams, 'project_management.tab_list.tab_tasks.show_calendar.default_view', 'month', true ) );
+				bShowDescInTooltip = tools_web.is_true(tools_web.get_web_param( curParams, "project_management.tab_list.tab_tasks.show_calendar.bShowDescInCalendarItemTooltip", "1", true ));
+
+				strCategories=String( tools_web.get_web_param( curParams,"project_management.tab_list.tab_tasks.show_calendar.categories", "", true ) )
+				if (Trim(strCategories)!='')
+				{
+					arrCategoriesList = strCategories.split( ";" );
+				}
+				else
+				{
+					arrCategoriesList = []
+				}
+				sDefaultCategoryParam = tools_web.get_web_param( curParams, "project_management.tab_list.tab_tasks.show_calendar.show_calendar.default_category", "no", true );
+
+				iCategoryColunmWidth = Int(tools_web.get_web_param( curParams, "project_management.tab_list.tab_tasks.show_calendar.category_column_width", "200", true ));
+
+				sUpdateAction="UPDATE={sUpdateElement}"
+				if(bShowList || bShowCalendar)
+				{
+				
+					arrItems = [];
+					arrRowFilters=[]
+					arrButtons=[]
+					arrComboItems=[]
+					arrComboItems.push( {"value":"all", "title":tools_web.get_web_const( 'vsestatusy', curLngWeb ),})
+					strDefaultStatusValue=""
+					for(fldStatus in arrTaskStatus)
+					{
+						if (fldStatus.bDefault) strDefaultStatusValue=fldStatus.id
+						arrComboItems.push( {"value":fldStatus.id, "title":XmlAttrEncode(tools_web.get_cur_lng_name(fldStatus.name,curLng.short_id ))} )
+					}
+					arrItems.push( {"name":"SelectTaskStatus", "type":"combo", "items": arrComboItems,"width":"200", "change":sUpdateAction,"default":strDefaultStatusValue} );
+					
+				arrButtons.push({ "title": tools_web.get_web_const( "eksportirovatv", curLngWeb ), "click": ("{!TasksExportAction}")})
+%>
+	<TabItem Class="XAML-tab-with-icon icon-tasks" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vsezadachi', curLngWeb ))%>" Click="HIDE=FiltersStackPanel;">
+		<Edit Name="sMode" Hidden="1"><%=(sDefaultViewParam == "list"?"datagrid":"calendar")%></Edit>
+		<Edit Name="sUpdateElement" Hidden="1"><%=(sDefaultViewParam == "list"?"CatalogListDataGridProjectManagementAllTask":"AllTasksCalendar")%></Edit>
+		
+		<Action Name="TaskslistAction" Initialize="
+		SET=sMode,datagrid;HIDE=AllTasksCalendar;SHOW=CatalogListDataGridProjectManagementAllTask;HIDE=CalendarPanel;SET=sUpdateElement,CatalogListDataGridProjectManagementAllTask;<%=sUpdateAction%>"/>
+		<Action Name="TaskstileAction" Initialize="SET=sMode,calendar;HIDE=CatalogListDataGridProjectManagementAllTask;SHOW=AllTasksCalendar;SHOW=CalendarPanel;SET=sUpdateElement,AllTasksCalendar;<%=sUpdateAction%>"/>
+		
+		<Action Name="TasksExportlistAction" Initialize="SET=GetUserData/sUserDataName,project_management_all_tasks_<%=curUserID%>;SET=excelExportAction/sCollection,project_management_all_tasks;SET=excelExportAction/sColumnList,{strDataAndTitlesTaskForExcel};SET=excelExportAction/sMode,{sMode};SET=excelExportAction/sData,{CatalogListDataGridProjectManagementAllTask:*};ACTION=GetUserData"/>
+		<Action Name="TasksExporttileAction" Initialize="SET=GetUserData/sUserDataName,project_management_all_tasks_<%=curUserID%>;SET=excelExportAction/sCollection,project_management_all_tasks;SET=excelExportAction/sColumnList,start=start_date&end=finish_date&format=formatfld&title=name&color=color;SET=excelExportAction/sMode,{sMode};SET=excelExportAction/sData,{AllTasksCalendar};ACTION=GetUserData"/>
+		<Edit Name="TasksExportAction" Hidden="1">ACTION=<%=(sDefaultViewParam == "calendar"?"TasksExporttileAction":"TasksExportlistAction")%></Edit>
+		
+		
+		<Edit Name="UpdateObjectName" Hidden="1"><%=(sDefaultViewParam == "calendar"?"TasksCalendar":"CatalogListDataGridProjectTask")%></Edit>
+		<Edit Name="TasksToggle" Hidden="1"></Edit>
+		<Edit Name="TasksToggleAction" Hidden="1"></Edit>
+<%
+		if (bShowCalendar&&bDesctop)
+		{
+			if (ArrayOptFirstElem(arrCategoriesList)!=undefined)
+			{
+				arrRowFiltersRow=[]
+				oNewRowFilter={"name":"SelectCategory","type":"combo","items":[]}
+				for(sCategory in arrCategoriesList)
+				{
+					if (sCategory == sDefaultCategoryParam)
+					{
+						oNewRowFilter.SetProperty("value",sCategory)
+					}
+					sName = "";
+					switch(sCategory)
+					{
+						case "no":
+							sName = tools_web.get_web_const( "bezkategorizac", curLngWeb ) ;
+							break;
+						case "assigner_id":
+							sName =  tools_web.get_web_const( "naznachivshiyzad", curLngWeb ) ;
+							break;
+						case "obj_name":
+							sName =  tools_web.get_web_const( "c_project", curLngWeb );
+							break;
+					}
+					oNewRowFilter.items.push( {"value":sCategory, "title":sName})
+				}
+				arrRowFiltersRow.push(oNewRowFilter)
+				arrRowFilters.push(arrRowFiltersRow)
+			}
+			else
+			{
+%>
+			<Edit Name="SelectCategory" Hidden="1"><%=sDefaultCategoryParam%></Edit>
+<%
+			}
+		}
+		curFilter = {
+			"id": "TasksFiltersPanel",
+			"action": sUpdateAction,
+			"disp_search": true,
+			"search_field": "TasksSearchField",
+			"search_value": "",
+			"search_width": "200",
+			"buttons": arrButtons,
+			"filters":arrItems,
+			"row_filters": arrRowFilters
+		};
+		
+		if (bShowList && bShowCalendar)
+		{
+			if (bDesctop)
+			{
+				curFilter.SetProperty("selectors","list;tile")
+				curFilter.SetProperty("selectors_field","TasksViewType")
+				curFilter.SetProperty("selectors_value",(sDefaultViewParam == "calendar"?"tile":"list"))
+				curFilter.SetProperty("selectors_action","
+			SET=TasksToggle,Tasks{TasksViewType}Action;SET=TasksToggleAction,"+UrlEncode("ACTION=")+"{TasksToggle}"+UrlEncode("")+";{!TasksToggleAction};
+			SET=TasksExportAction,TasksExport{TasksViewType}Action;SET=TasksExportAction,"+UrlEncode("ACTION=")+"{TasksExportAction}"+UrlEncode("")+";")
+			}
+		}
+		
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+		<Collection Name="ProjectManagementAllTaskCollection" Source="project_management_all_tasks">
+			<Param Name="sSelectedTaskStatus" Value="{SelectTaskStatus}"/>
+			<Param Name="sSelectedCategory" Value="{SelectCategory}"/>
+			<Param Name="sViewType" Value="{sMode}"/>
+			<Param Name="sDispFieldCodes" Value="<%=ArrayMerge(arrTaskDispFieldCodes,"This",";")%>"/>
+			<Param Name="bShowDescInTooltip" Value="<%=bShowDescInTooltip%>"/>
+			<Param Name="strTaskStatusList" Value="<%=strTaskStatusList%>"/>
+			<Param Name="sSearchWord" Value="{TasksSearchField}"/>
+		</Collection>
+
+<%
+				if(bShowCalendar)
+				{
+%>
+		<Calendar Name="AllTasksCalendar" Width="100%" Height="500" DataTitle="name" Hidden="<%=(sDefaultViewParam != "calendar")%>"
+			DataStart="start_date" DataEnd="finish_date" DataFormat="formatfld" Source="{ProjectManagementAllTaskCollection}"
+				DataCategory="category" SelectedView="<%=sCalendarDefaultView%>" MonthCategoryClick="SHOW=RowFiltersPanelTasksFiltersPanel"
+				DayClick="HIDE=RowFiltersPanelTasksFiltersPanel" WeekClick="HIDE=RowFiltersPanelTasksFiltersPanel" Modes="day,month,week,category" MonthClick="HIDE=RowFiltersPanelTasksFiltersPanel" CategoryClick="SHOW=RowFiltersPanelTasksFiltersPanel;"
+				EventClick="SET=ProjectEditTask/iSourceObjectId,{obj_id};SET=ProjectEditTask/iTaskId,{id};OPENDIALOG=ProjectEditTask"
+				DataColor="color"/>
+<%
+				}
+				if(bShowList)
+				{
+					curCollectionMenu = {
+						"id": "ProjectManagementAllTaskMenu",
+						"catalog_name": "task",
+						"selected_data": '{CatalogListDataGridProjectManagementAllTask}'
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+		<DataGrid Name="CatalogListDataGridProjectManagementAllTask" Source="{ProjectManagementAllTaskCollection}"
+			Height="<%=iGridHeight%>" Selection="multiple" Hidden="<%=(sDefaultViewParam != "list")%>">>
+			<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Value="obj_id" DataID="obj_id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+			<DataGridColumn Title="color" Value="color" Width="50" Type="string" Hidden="true" Ghost="false"/>
+<%
+					i=1
+					for (strDispFieldCode in arrTaskDispFieldCodes)
+					{
+						switch (strDispFieldCode)
+						{
+							case "name":
+								strTitle=tools_web.get_web_const( 'c_name', curLngWeb )
+								strWidth=200
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Click="SET=ProjectEditTask/iSourceObjectId,{obj_id};SET=ProjectEditTask/iTaskId,{id};OPENDIALOG=ProjectEditTask" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "executor":
+								strTitle=tools_web.get_web_const( 'otvetstvennyyz_2', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Sortable="True" Click="<%=strOpenLinkType%>=<%=tools_web.get_mode_clean_url( null, "{executor_id}", { doc_id: curDocID } )%>" Ghost="false"/>
+<%
+								break;
+							case "status":
+								strTitle=tools_web.get_web_const( 'c_status', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_colorsource=color'+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" ColorSource="color" Ghost="false"/>
+<%
+								break;
+							case "start_date_plan":
+								strTitle=sConstStartDatePlan
+								strWidth=150
+							strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "plan_date":
+								strTitle=tools_web.get_web_const( 'fakticheskayadat_1', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "end_date_plan":
+								strTitle=tools_web.get_web_const( 'planiruemayadat_1', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "fact_date":
+								strTitle=tools_web.get_web_const( 'fakticheskayadat', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "days_left":
+								strTitle=tools_web.get_web_const( 'vlpb_message10', curLngWeb )
+								strWidth=100
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "obj_name":
+								strTitle=tools_web.get_web_const( 'c_project', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, "{obj_id}", { doc_id: curDocID } )%>" Ghost="false"/>
+<%
+								break;
+							case "value":
+								strTitle=tools_web.get_web_const( 'vdb_aim_value', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+							case "assigner":
+								strTitle=tools_web.get_web_const( 'naznachivshiyzad', curLngWeb )
+								strWidth=150
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+						<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="link" Sortable="True" Click="<%=strOpenLinkType%>=<%=tools_web.get_mode_clean_url( null, "{assigner_id}", { doc_id: curDocID } )%>" Ghost="false"/>
+<%
+								break;
+							default:
+								strTitle=tools_web.get_web_const( strDispFieldCode, curLngWeb )
+								strWidth='10%'
+								strDataAndTitlesTaskForExcel=strDataAndTitlesTaskForExcel+'&c'+i+'_data='+strDispFieldCode+'&c'+i+'_title='+UrlEncode( strTitle)+'&c'+i+'_width='+strWidth+'&c'+i+'_type=string'
+%>
+ 		<DataGridColumn Title="<%=strTitle%>" Value="<%=strDispFieldCode%>" Width="<%=strWidth%>" Type="string" Sortable="True" Ghost="false"/>
+<%
+								break;
+						}
+						i++
+					}
+%>
+
+			<Menu Source="{CatalogListMenuProjectManagementAllTaskMenu}"/>
+		</DataGrid>
+<%
+				}
+%>
+		<Edit Name="strDataAndTitlesTaskForExcel" Hidden="1"><%=strDataAndTitlesTaskForExcel%></Edit>
+	</TabItem>
+<%
+				}
+				break;
+			}
+		}
+	}
+%>
+</TabControl>
+<%
+}
+if (bShowHideDismissedFlag)
+{
+%>
+<CheckBox Class="XAML-checkbox" Name="CheckBoxHideDismissed" Checked="<%=bHideDismissed%>" Change="ACTION=RunUpdateAction"><%=XmlAttrEncode(  tools_web.get_web_const( "c_no_disp_dismiss", curLngWeb ) )%></CheckBox>
+<%
+}
+%>
+<Edit Name="strDataAndTitlesForExcel" Hidden="1"><%=strDataAndTitlesForExcel%></Edit>
+</SPXMLScreen>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>y20bby7q8u</id>
+		<create_date>2024-02-02T18:36:36+00:00</create_date>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<server_agents>
+		<server_agent>
+			<id>0x6103E1FD6F7DF537</id>
+			<code>websoft_task_assessment_finish</code>
+			<name lang-ru:VALUE="##'Автоматически завершать проектную оценку'##"/>
+			<trigger_type>never</trigger_type>
+			<period>1</period>
+			<start_time>00:00</start_time>
+			<finish_time>24:00</finish_time>
+			<all_day>1</all_day>
+			<start_day>1</start_day>
+			<start_week_day>1</start_week_day>
+			<last_run_date>2024-02-02T18:28:44+00:00</last_run_date>
+			<type>code</type>
+			<wvars>
+				<wvar>
+					<name>bCreateNewAppraise</name>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Создавать новая процедура вместо завершаемой?'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sAppraiseName</name>
+					<type>string</type>
+					<description lang-ru:VALUE="##'Шаблон для генерации имени новых процедур'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<exec_code>
+				<code_url>x-local://components/task_assessment/spxml/agents/websoft_task_assessment_finish.bs</code_url>
+			</exec_code>
+			<run_code_url>x-local://components/task_assessment/spxml/agents/websoft_task_assessment_finish.bs</run_code_url>
+			<is_std>1</is_std>
+		</server_agent>
+	</server_agents>
+</data>

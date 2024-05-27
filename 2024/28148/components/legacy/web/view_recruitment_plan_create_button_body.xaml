@@ -1,0 +1,21 @@
+﻿<%
+    sCreateButtonText      = tools_web.get_web_const( 'sozdatplanpodb', curLngWeb );
+    iDefaultBossTypeId     = tools_web.get_web_param( curParams,"recruitment_plan_create_button.default_boss_type_id", "", true );
+    iDefaultBudgetPeriodId = tools_web.get_web_param( curParams,"recruitment_plan_create_button.default_budget_period_id", "", true );
+%>
+
+<SPXMLScreen>
+
+    <Dialog Name="SelectDialog" Source="dlg_recruitmemt_plan_create" Width="450" Title="<%=tools_web.get_web_const( 'planpodboraper', curLngWeb )%>" Close="">
+        <Param Name="catalog_name" Value=""/>
+    </Dialog>
+
+    <Action Name="CreateRecruitmentPlan" Source="recruitment_plan_create" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id : curDocID } )%>">
+        <Param Name="iBossTypeId" Value="<%=iDefaultBossTypeId%>"/>
+        <Param Name="iDefaultBudgetPeriodId" Value="<%=iDefaultBudgetPeriodId%>"/>
+    </Action>
+    <Toolbar Class="XAML-toolbar"> 
+        <Button Class="XAML-button XAML-button-plus" Click="OPENDIALOG=SelectDialog"><%=sCreateButtonText%></Button>	
+    </Toolbar>
+
+</SPXMLScreen>

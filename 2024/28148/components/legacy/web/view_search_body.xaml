@@ -1,0 +1,1196 @@
+﻿<%
+// const_start
+sConstTotal = tools_web.get_web_const( "c_total", curLngWeb );
+sConstCountExpertQuestion = StrNonTitleCase( tools_web.get_web_const( "stateyvbazezna", curLngWeb ) );
+sConstCountForumEntry = StrNonTitleCase( tools_web.get_web_const( "stateyvforume", curLngWeb ) );
+sConstQuestions = tools_web.get_web_const( "voprosyekspert", curLngWeb );
+sConstLibraryMaterials = tools_web.get_web_const( "materialybibli", curLngWeb );
+sConstForumEntry = "Сообщение на форуме";
+// const_end
+%>
+<SPXMLScreen Class="XAML-Search-Body">
+<%
+curUrlQuery = UrlQuery( PAGEURL );
+var bOpenSearchPage = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bOpenSearchPage", false, true ) );
+var bShowStat = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bShowStat", false, true ) );
+var sExpertQuestionsLink = tools_web.get_web_param( curParams, "search_body.sExpertQuestionsLink", "#", true );
+//var sDocumentationLink = tools_web.get_web_param( curParams, "search_body.sDocumentationLink", "#", true );
+var sForumLink = tools_web.get_web_param( curParams, "search_body.sForumLink", "#", true );
+// var bDispAddBlock = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispAddBlock", true, true ) );
+
+var bDispSearchInDocument = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInDocument", true, true ) );
+var bDispSearchInCourse = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInCourse", true, true ) );
+var bDispSearchInLibrary = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInLibrary", true, true ) );
+var bDispSearchInForum = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInForum", true, true ) );
+var bDispSearchInQuestion = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInQuestion", true, true ) );
+var bDispSearchInAttachment = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInAttachment", true, true ) );
+var bDispSearchInTag = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInTag", true, true ) );
+var bDispSearchInKnowledgePart = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInKnowledgePart", true, true ) );
+var bDispSearchInCollaborator = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInCollaborator", true, true ) );
+var bDispSearchInWiki = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInWiki", true, true ) );
+var bDispSearchInWebMode = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bDispSearchInWebMode", true, true ) );
+var bSearchFIO = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.only_fio", true, true ) );
+
+var bShowSearchCategory = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bShowSearchCategory", true, true ) );
+var bShowImage = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bShowImage", true, true ) );
+var sPageSize = tools_web.get_web_param( curParams, "search_body.sPageSize", "10", true );
+var bOpenNewWindow = tools_web.is_true( tools_web.get_web_param( curParams, "search_body.bOpenNewWindow", true, true ) );
+
+sSearchWord = CONTEXT.GetOptProperty( "search_text", curUrlQuery.GetOptProperty( "word", "" ) );
+sSearchWord = StrReplace( sSearchWord, "+", " " );
+sSearchWord = StrReplace( sSearchWord, " or ", "|" );
+sSearchWord = StrReplace( sSearchWord, " OR ", "|" );
+sSearchWord = StrReplace( sSearchWord, " and ", "" );
+sSearchWord = StrReplace( sSearchWord, " AND ", "" );
+
+sSearchInDocument = CONTEXT.GetOptProperty( "search_in_document", curUrlQuery.GetOptProperty( "search_in_document", "1" ) );
+sSearchInCourse = CONTEXT.GetOptProperty( "search_in_course", curUrlQuery.GetOptProperty( "search_in_course", "1" ) );
+sSearchInLibrary = CONTEXT.GetOptProperty( "search_in_library", curUrlQuery.GetOptProperty( "search_in_library", "1" ) );
+sSearchInForum = CONTEXT.GetOptProperty( "search_in_forum", curUrlQuery.GetOptProperty( "search_in_forum", "1" ) );
+sSearchInQuestion = CONTEXT.GetOptProperty( "search_in_question", curUrlQuery.GetOptProperty( "search_in_question", "1" ) );
+sSearchInAttachment = CONTEXT.GetOptProperty( "search_in_attachment", curUrlQuery.GetOptProperty( "search_in_attachment", "1" ) );
+sSearchInCollaborator = CONTEXT.GetOptProperty( "search_in_collaborator", curUrlQuery.GetOptProperty( "search_in_collaborator", "1" ) );
+sSearchInTag = CONTEXT.GetOptProperty( "search_in_tag", curUrlQuery.GetOptProperty( "search_in_tag", "1" ) );
+sSearchInKnowledgePart = CONTEXT.GetOptProperty( "search_in_knowledgepart", curUrlQuery.GetOptProperty( "search_in_knowledgepart", "1" ) );
+sSearchInWiki = CONTEXT.GetOptProperty( "search_in_wiki", curUrlQuery.GetOptProperty( "search_in_wiki", "1" ) );
+sSearchInWebMode = CONTEXT.GetOptProperty( "search_in_wiki", curUrlQuery.GetOptProperty( "search_in_web_mode", "1" ) );
+
+bAddParams = tools_web.is_true( CONTEXT.GetOptProperty( "add_params", curUrlQuery.GetOptProperty( "add_params", true ) ) );
+
+bDispAttachment = ( (tools.sys_db_capability & tools.UNI_CAP_FT_INDEX_BLOBS) != 0 );
+
+sModificationStartDate = CONTEXT.GetOptProperty( "modification_start_date", curUrlQuery.GetOptProperty( "modification_start_date", null ) );
+if ( sModificationStartDate == "" )
+	sModificationStartDate = null;
+
+sModificationFinishDate = CONTEXT.GetOptProperty( "modification_finish_date", curUrlQuery.GetOptProperty( "modification_finish_date", null ) );
+if ( sModificationFinishDate == "" )
+	sModificationFinishDate = null;
+
+if ( bShowStat )
+{
+	curMessageBox = ({
+		"id": "Info",
+		"type": "info",
+		"html": ( sConstTotal + ' ' + sConstCountExpertQuestion + ': <a href="' + sExpertQuestionsLink +'">' + ArrayCount( articles ) + '</a>, ' + sConstCountForumEntry + ': <a href="' + sForumLink +'">' + ArrayCount( forum_entrys ) + '</a>' )
+	});
+	Response.Write(EvalCodePageUrl(global_settings.web_path + "view_message_box.xaml"));
+}
+
+sUpdateAction = bOpenSearchPage ? ('OPENURL=' + tools_web.get_mode_clean_url( 'search', null, { word: '{search_text}', add_params: '{add_params}', search_in_document: '{search_in_document}', search_in_course: '{search_in_course}', search_in_tag: '{search_in_tag}', search_in_knowledgepart: '{search_in_knowledgepart}', search_in_forum: '{search_in_forum}', search_in_question: '{search_in_question}', modification_start_date: '{modification_start_date}', modification_finish_date: '{modification_finish_date}' } )) : 'REFRESH';
+
+curFilter = {
+	'action': sUpdateAction,
+	'disp_search': true,
+	'search_field': "search_text",
+	'search_value': sSearchWord,
+	'search_width': '400',
+	'buttons': [],
+	'row_filters': [
+		[
+			{ 'name': 'selector', 'type': 'selector', 'title': tools_web.get_web_const( "iskatv", curLngWeb ), 'items': [] }
+		],
+		[
+			{ 'name': 'modification_start_date', 'type': 'date', 'title': 'Дата модификации с' },
+			{ 'name': 'modification_finish_date', 'type': 'date', 'title': 'Дата модификации по' }
+		]
+	]
+};
+
+if ( bDispSearchInDocument )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_document', 'title': tools_web.get_web_const( "c_documents", curLngWeb ), 'pressed': sSearchInDocument } );
+if ( bDispSearchInCourse )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_course', 'type': 'date', 'title': tools_web.get_web_const( "aepxbjonzz", curLngWeb ), 'pressed': sSearchInCourse } );
+if ( bDispSearchInLibrary )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_library', 'title': tools_web.get_web_const( "materialybibli", curLngWeb ), 'pressed': sSearchInLibrary } );
+if ( bDispSearchInForum )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_forum', 'title': tools_web.get_web_const( "c_forums", curLngWeb ), 'pressed': sSearchInForum } );
+if ( bDispSearchInQuestion )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_question', 'title': tools_web.get_web_const( "voprosyekspert", curLngWeb ), 'pressed': sSearchInQuestion } );
+if ( bDispSearchInTag )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_tag', 'title': tools_web.get_web_const( "tegi", curLngWeb ), 'pressed': sSearchInTag } );
+if ( bDispSearchInWiki )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_wiki', 'title': 'Статья Wiki', 'pressed': sSearchInWiki } );
+if ( bDispSearchInKnowledgePart )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_knowledgepart', 'title': tools_web.get_web_const( "c_knowledge_part", curLngWeb ), 'pressed': sSearchInKnowledgePart } );
+if ( bDispSearchInCollaborator )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_collaborator', 'title': tools_web.get_web_const( "c_collaborators", curLngWeb ), 'pressed': sSearchInCollaborator } );
+if ( bDispSearchInWebMode )
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_web_mode', 'title': 'Типы страниц', 'pressed': sSearchInWebMode } );
+if ( bDispSearchInAttachment )
+{
+	curFilter.row_filters[ 0 ][ 0 ].items.push( { 'name': 'search_in_attachment', 'title': tools_web.get_web_const( "vdb_files", curLngWeb ), 'pressed': sSearchInAttachment } );
+	curFilter.row_filters[ 1 ].push( { 'name': 'attachment_type', 'type': 'combo', 'title': tools_web.get_web_const( "tipyresursovba", curLngWeb ), 'items': [
+			{ 'title': tools_web.get_web_const( "c_all", curLngWeb ), 'value': 'all' }
+		]
+	} );
+	for ( fldResourceTypeElem in common.resource_types )
+		curFilter.row_filters[ 1 ][ 2 ].items.push( { 'title': fldResourceTypeElem.name.Value, 'value': fldResourceTypeElem.id.Value } );
+}
+if ( sSearchWord != "" )
+	curFilter.buttons.push( { 'name': 'in_results', 'title': tools_web.get_web_const( "iskatvnaydenno", curLngWeb ), 'toggle': true, 'pressed': '' } );
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+if ( ( ! bAddParams && sSearchWord == "" ) || ( bAddParams && sSearchWord == "" && sModificationStartDate == null && sModificationFinishDate == null ) )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+sLastSearchWord = CONTEXT.GetOptProperty( "last_search_text", curUrlQuery.GetOptProperty( "last_search_text", "" ) );
+bInResults = CONTEXT.GetOptProperty( "in_results", curUrlQuery.GetOptProperty( "in_results", "" ) ) == "1" && sLastSearchWord != "";
+sCondition = " doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( sSearchWord ) + " )";
+sConditionFIO = " contains($elem/fullname, " + XQueryLiteral(sSearchWord) + ") ";
+
+if ( bInResults )
+	sCondition += " and doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( sLastSearchWord + '`' ) + " )";
+
+if ( sModificationStartDate != null )
+	sCondition += " and $elem/modification_date > date('" + sModificationStartDate + "')";
+if ( sModificationFinishDate != null )
+	sCondition += " and $elem/modification_date < date('" + sModificationFinishDate + "')";
+
+bSuccessfullSearch = false;
+bHierarchySearch = false;
+
+if (bOpenNewWindow)
+	sOpenType = 'OPENWINDOW=';
+else
+	sOpenType = 'OPENURL=';
+%>
+<Edit Name="last_search_text" Hidden="1"><%=( bInResults ? HtmlEncode( sLastSearchWord ) + " " : "" )%><%=HtmlEncode( sSearchWord )%></Edit>
+<%
+if (bShowSearchCategory)
+{
+%>
+<TabControl ActiveTab="0">
+<%
+
+/* Поиск по документам */
+if ( sSearchInDocument == "1" && bDispSearchInDocument )
+{
+
+xarrObjects = XQuery( "for $elem in documents where ( $elem/site_id = " + curSiteID + " or $elem/site_id = null() ) and" + sCondition + " order by $elem/Hier() return $elem" );// $elem/parent_document_id
+xarrDocument = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( catObjectElem, curUserID, curUser, Session ) )
+		xarrDocument.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrDocument ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+	<Collection Name="DocumentSearch">
+		<Data>
+<%
+	for ( catDocumentElem in xarrDocument )
+	{
+		sAction = sOpenType + tools_web.doc_link(catDocumentElem);
+		sImage = 'images/document.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catDocumentElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catDocumentElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catDocumentElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "c_document", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="doc"/>
+				<Cell Id="action" Value="<%=sAction%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+
+<TabItem Title="<%=tools_web.get_web_const( "c_documents", curLngWeb )%> (<%=ArrayCount( xarrDocument )%>)">
+
+<DataGrid Name="DocumentSearchGrid" ShowHeader="false" Class="SearchGrid" Source="{DocumentSearch}" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!action}" Width="100%"/>
+</DataGrid>
+
+</TabItem>
+<%
+}
+}
+
+/* Осуществляем поиск по курсам */
+
+if ( sSearchInCourse == "1" && bDispSearchInCourse )
+{
+
+xarrObjects = XQuery( "for $elem in courses where" + sCondition + " and $elem/status = 'publish' order by $elem/name return $elem" );
+xarrCourse = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrCourse.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrCourse ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+	<Collection Name="CourseSearch">
+		<Data>
+<%
+	for ( catCourseElem in xarrCourse )
+	{
+	if ( catCourseElem.resource_id != '' &&  catCourseElem.resource_id != null )
+		sImage = 'download_file.html?file_id=' + catCourseElem.resource_id;
+	else
+		sImage = 'images/course.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catCourseElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catCourseElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catCourseElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "c_course", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="course"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "aepxbjonzz", curLngWeb )%> (<%=ArrayCount( xarrCourse )%>)">
+<DataGrid Name="CourseSearchGrid" Class="SearchGrid" Source="{CourseSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+<%
+}
+}
+
+if ( sSearchInLibrary == "1" && bDispSearchInLibrary )
+{
+	xarrObjects = XQuery( "for $elem in library_materials where" + sCondition + " order by $elem/name ascending return $elem" );
+	xarrMaterials = [];
+
+	for ( catObjectElem in xarrObjects )
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrMaterials.push( catObjectElem );
+	if ( ArrayOptFirstElem( xarrMaterials ) != undefined )
+	{
+		bSuccessfullSearch = true;
+%>
+	<Collection Name="MaterialSearch">
+		<Data>
+<%
+	for ( catMaterialElem in xarrMaterials )
+	{
+	if ( catMaterialElem.resource_id != '' &&  catMaterialElem.resource_id != null )
+		sImage = 'download_file.html?file_id=' + catMaterialElem.resource_id;
+	else
+		sImage = 'images/library_material.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catMaterialElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catMaterialElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catMaterialElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "materialbiblio", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="library_material"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=sConstLibraryMaterials%> (<%=ArrayCount( xarrMaterials )%>)">
+<DataGrid Name="MaterialSearchGrid" Class="SearchGrid" Source="{MaterialSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+<%
+	}
+}
+
+
+
+if ( sSearchInForum == "1" && bDispSearchInForum )
+{
+
+xarrObjects = XQuery( "for $elem in forum_entrys where" + sCondition + " order by $elem/forum_id, $elem/create_date descending return $elem" );
+xarrForumEntry = [];
+iObjectID = 0;
+bForumAccess = true;
+
+for ( catObjectElem in xarrObjects )
+{
+	if ( iObjectID != catObjectElem.forum_id )
+	{
+		try
+		{
+			bForumAccess = tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.forum_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session );
+		}
+		catch ( err )
+		{
+			bForumAccess = false;
+		}
+		iObjectID = catObjectElem.forum_id.Value;
+	}
+	if ( ! bForumAccess )
+		continue;
+
+	try
+	{
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrForumEntry.push( catObjectElem );
+	}
+	catch ( err )
+	{
+	}
+}
+
+if ( ArrayOptFirstElem( xarrForumEntry ) != undefined )
+{
+	bSuccessfullSearch = true;
+
+%>
+	<Collection Name="ForumSearch">
+		<Data>
+<%
+	for ( catForumElem in xarrForumEntry )
+	{
+		sImage = 'images/forum_entry.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catForumElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catForumElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catForumElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( sConstForumEntry ) %>"/>
+				<Cell Id="mode" Value="forum_entry"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "vsb_forums", curLngWeb )%> (<%=ArrayCount( xarrForumEntry )%>)">
+<DataGrid Name="ForumSearchGrid" Class="SearchGrid" Source="{ForumSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+<%
+}
+}
+if ( sSearchInTag == "1" && bDispSearchInTag )
+{
+xarrObjects = XQuery( "for $elem in tags where" + sCondition + " order by $elem/name return $elem" );
+xarrTag = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrTag.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrTag ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+
+	<Collection Name="TagSearch">
+		<Data>
+<%
+	for ( catTagElem in xarrTag )
+	{
+	if ( catTagElem.resource_id != '' &&  catTagElem.resource_id != null )
+		sImage = 'download_file.html?file_id=' + catTagElem.resource_id;
+	else
+		sImage = 'images/tag.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catTagElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catTagElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catTagElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "vkmb_tag", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="tag"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "tegi", curLngWeb )%> (<%=ArrayCount( xarrTag )%>)">
+<DataGrid Name="TagSearchGrid" Class="SearchGrid" Source="{TagSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+
+<%
+}
+}
+if ( sSearchInWiki == "1" && bDispSearchInWiki )
+{
+xarrObjectsWiki = XQuery( "for $elem in wiki_articles where" + sCondition + " order by $elem/name return $elem" );
+xarrWiki = [];
+for ( catObjectElem in xarrObjectsWiki )
+{
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+	{
+		try
+		{
+			if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.wiki_base_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+				xarrWiki.push( catObjectElem );
+		}
+		catch (no_wiki_base_id)
+		{
+		}
+	}
+}
+
+if ( ArrayOptFirstElem( xarrWiki ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+
+	<Collection Name="WikiSearch">
+		<Data>
+<%
+	for ( catWikiElem in xarrWiki )
+	{
+	if ( catWikiElem.resource_id != '' &&  catWikiElem.resource_id != null )
+		sImage = 'download_file.html?file_id=' + catWikiElem.resource_id;
+	else
+		sImage = 'images/wiki_article.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catWikiElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catWikiElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catWikiElem.modification_date%>"/>
+				<Cell Id="type" Value="<%="Статья Wiki"%>"/>
+				<Cell Id="mode" Value="wiki_base"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%="Статья Wiki"%> (<%=ArrayCount( xarrWiki )%>)">
+<DataGrid Name="WikiSearchGrid" Class="SearchGrid" Source="{WikiSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+
+<%
+}
+}
+
+if ( sSearchInKnowledgePart == "1" && bDispSearchInKnowledgePart )
+{
+
+xarrObjects = XQuery( "for $elem in knowledge_parts where" + sCondition + " order by $elem/name return $elem" );
+xarrKnowledgePart = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrKnowledgePart.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrKnowledgePart ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+	<Collection Name="KnowledgePartSearch">
+		<Data>
+<%
+	for ( catKPElem in xarrKnowledgePart )
+	{
+	if ( catKPElem.resource_id != '' &&  catKPElem.resource_id != null )
+		sImage = 'download_file.html?file_id=' + catKPElem.resource_id;
+	else
+		sImage = 'images/knowledge_part.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catKPElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catKPElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catKPElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "vkm_knowledge_map", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="knowledge_classifier"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "c_knowledge_part", curLngWeb )%> (<%=ArrayCount( xarrKnowledgePart )%>)">
+<DataGrid Name="KnowledgePartSearchGrid" Class="SearchGrid" Source="{KnowledgePartSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+
+<%
+}
+}
+
+if ( sSearchInQuestion == "1" && bDispSearchInQuestion  )
+{
+	xarrObjects = XQuery( "for $elem in expert_questions where" + sCondition + " order by $elem/question ascending return $elem" );
+
+	xarrQuestionEntry = [];
+	for ( catObjectElem in xarrObjects )
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrQuestionEntry.push( catObjectElem );
+
+	if ( ArrayOptFirstElem( xarrQuestionEntry ) != undefined )
+	{
+		bSuccessfullSearch = true;
+%>
+	<Collection Name="ExpertQuestionSearch">
+		<Data>
+<%
+	for ( catQuestionElem in xarrQuestionEntry )
+	{
+		sImage = 'images/expert_question.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catQuestionElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catQuestionElem.question )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catQuestionElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "cwxzkvdth0", curLngWeb )) %>"/>
+				<Cell Id="mode" Value="expert_answer"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=sConstQuestions%> (<%=ArrayCount( xarrQuestionEntry )%>)">
+<DataGrid Name="ExpertQuestionSearchGrid" Class="SearchGrid" Source="{ExpertQuestionSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{mode}', '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+
+<%
+	}
+}
+
+if ( bDispSearchInCollaborator && sSearchInCollaborator )
+{
+	if (bSearchFIO)
+		xarrObjects = XQuery( "for $elem in collaborators where" + sConditionFIO + " and $elem/is_dismiss = false() order by $elem/fullname ascending return $elem" );
+	else
+		xarrObjects = XQuery( "for $elem in collaborators where" + sCondition + " and $elem/is_dismiss = false() order by $elem/fullname ascending return $elem" );
+
+	if ( ArrayOptFirstElem( xarrObjects ) != undefined )
+	{
+		bSuccessfullSearch = true;
+%>
+	<Collection Name="CollaboratorSearch">
+		<Data>
+<%
+	for ( catPersonElem in xarrObjects )
+	{
+		sImage = 'images/collaborator.png';
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catPersonElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catPersonElem.fullname )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="date" Value="<%=catPersonElem.modification_date%>"/>
+				<Cell Id="type" Value="<%=XmlAttrEncode( tools_web.get_web_const( "c_coll", curLngWeb )) %>"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "c_collaborators", curLngWeb )%> (<%=ArrayCount( xarrObjects )%>)">
+<DataGrid Name="CollaboratorSearchGrid" Class="SearchGrid" Source="{CollaboratorSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+<%
+	}
+}
+if ( sSearchInWebMode == "1" && bDispSearchInWebMode )
+{
+xarrObjectsWebModes = XQuery( "for $elem in web_modes where" + sCondition + " and $elem/searchable_portal = true() order by $elem/name return $elem" );
+xarrResultWebModes = [];
+for ( catObjectElem in xarrObjectsWebModes )
+{
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+	{
+		xarrResultWebModes.push( catObjectElem );
+	}
+}
+
+if ( ArrayOptFirstElem( xarrResultWebModes ) != undefined )
+{
+	bSuccessfullSearch = true;
+%>
+
+	<Collection Name="WebModeSearch">
+		<Data>
+<%
+	for ( catWebMode in xarrResultWebModes )
+	{
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catWebMode.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catWebMode.name )%>"/>
+				<Cell Id="image" Value="" />
+				<Cell Id="date" Value="<%=catWebMode.modification_date%>"/>
+				<Cell Id="code" Value="<%=catWebMode.code%>"/>
+				<Cell Id="type" Value="<%="Тип страниц"%>"/>
+				<Cell Id="mode" Value="web_mode"/>
+				<Cell Id="opentype" Value="<%=XmlAttrEncode( sOpenType )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%="Тип страниц"%> (<%=ArrayCount( xarrResultWebModes )%>)">
+<DataGrid Name="WebModeSearchGrid" Class="SearchGrid" Source="{WebModeSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!opentype}<%=tools_web.get_mode_clean_url( '{code}', null, { doc_id: curDocID } )%>" Width="100%"/>
+</DataGrid>
+</TabItem>
+
+<%
+}
+}
+if ( /* bDispAttachment && */ sSearchInAttachment == "1" && bDispSearchInAttachment )
+{
+	sResourceType = CONTEXT.GetOptProperty( "attachment_type", curUrlQuery.GetOptProperty( "attachment_type", "all" ) );
+	xarrResource = [];
+
+	try
+	{
+		xarrObjects = XQuery( "for $elem in resources where" + sCondition + " and $elem/allow_search = true() return $elem" );
+		for ( catObjectElem in xarrObjects )
+		{
+			teObject = OpenDoc( UrlFromDocID( catObjectElem.id ) ).TopElem
+			if ( ! tools_web.check_access( teObject, curUserID, curUser, Session ) )
+				continue;
+			if ( teObject.resource_type_id.HasValue && ! tools_web.check_access( teObject.resource_type_id, curUserID, curUser, Session ) )
+				continue;
+
+			xarrResource.push( ({
+				'id': catObjectElem.id.Value,
+				'name': catObjectElem.name.Value,
+				'image': catObjectElem.resource_id.Value,
+				'date': catObjectElem.modification_date.Value,
+				'object_id': catObjectElem.id.Value,
+				'object_name': catObjectElem.name.Value
+			}) );
+		}
+
+		xarrResource = ArraySort( xarrResource, 'object_id', '+' );
+	}
+	catch( err )
+	{
+		alert( err );
+	}
+
+	if ( ArrayOptFirstElem( xarrResource ) != undefined )
+	{
+		bSuccessfullSearch = true;
+%>
+	<Collection Name="AttachmentSearch">
+		<Data>
+<%
+	for ( catAttachmentElem in xarrResource )
+	{
+	if ( catAttachmentElem.image != '' &&  catAttachmentElem.image != null )
+		sImage = 'download_file.html?file_id=' + catAttachmentElem.image;
+	else
+		sImage = 'images/resource.png';
+	sUrl = sOpenType + "download_file.html?file_id=" + catAttachmentElem.id + '&amp;sid=' + tools_web.get_sum_sid( catAttachmentElem.id, Session.sid);;
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catAttachmentElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catAttachmentElem.name )%>"/>
+				<Cell Id="image" Value="<%=XmlAttrEncode( sImage )%>" />
+				<Cell Id="openurl" Value="<%=XmlAttrEncode( sUrl )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<TabItem Title="<%=tools_web.get_web_const( "vdb_files", curLngWeb )%> (<%=ArrayCount( xarrResource )%>)">
+<DataGrid Name="AttachmentSearchGrid" Class="SearchGrid" Source="{AttachmentSearch}" ShowHeader="false" PageSize="<%=sPageSize%>" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!openurl}" Width="100%"/>
+</DataGrid>
+
+</TabItem>
+<%
+	}
+}
+%>
+</TabControl>
+<%
+}
+else
+{
+arrSearchAll = [];
+
+if ( sSearchInDocument == "1" && bDispSearchInDocument )
+{
+
+xarrObjects = XQuery( "for $elem in documents where ( $elem/site_id = " + curSiteID + " or $elem/site_id = null() ) and" + sCondition + " order by $elem/Hier() return $elem" );// $elem/parent_document_id
+xarrDocument = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( catObjectElem, curUserID, curUser, Session ) )
+		xarrDocument.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrDocument ) != undefined )
+{
+	for ( catDocumentElem in xarrDocument )
+	{
+		sId = catDocumentElem.id;
+		sName = catDocumentElem.name;
+		sDate = catDocumentElem.modification_date;
+		sType = tools_web.get_web_const( "c_document", curLngWeb );
+		sImage = 'images/document.png';
+		sAction = sOpenType + tools_web.doc_link (catDocumentElem);
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType,  "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInCourse == "1" && bDispSearchInCourse )
+{
+
+xarrObjects = XQuery( "for $elem in courses where" + sCondition + " and $elem/status = 'publish' order by $elem/name return $elem" );
+xarrCourse = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrCourse.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrCourse ) != undefined )
+{
+	for ( catCourseElem in xarrCourse )
+	{
+		sId = catCourseElem.id;
+		sName = catCourseElem.name;
+		sDate = catCourseElem.modification_date;
+		sType = tools_web.get_web_const( "c_course", curLngWeb );
+		if ( catCourseElem.resource_id != '' &&  catCourseElem.resource_id != null )
+			sImage = 'download_file.html?file_id=' + catCourseElem.resource_id;
+		else
+			sImage = 'images/course.png';
+
+		sAction = sOpenType + tools_web.get_mode_clean_url('course', catCourseElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInTag == "1"  && bDispSearchInTag )
+{
+
+xarrObjects = XQuery( "for $elem in tags where" + sCondition + " order by $elem/name return $elem" );
+xarrTag = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrTag.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrTag ) != undefined )
+{
+	for ( catTagElem in xarrTag )
+	{
+		sId = catTagElem.id;
+		sName = catTagElem.name;
+		sDate = catTagElem.modification_date;
+		sType = tools_web.get_web_const( "vkmb_tag", curLngWeb );
+		if ( catTagElem.resource_id != '' &&  catTagElem.resource_id != null )
+			sImage = 'download_file.html?file_id=' + catTagElem.resource_id;
+		else
+			sImage = 'images/tag.png';
+		sAction = sOpenType + tools_web.get_mode_clean_url('tag', catTagElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInLibrary == "1" && bDispSearchInLibrary )
+{
+	xarrObjects = XQuery( "for $elem in library_materials where" + sCondition + " order by $elem/name ascending return $elem" );
+	xarrMaterials = [];
+
+	for ( catObjectElem in xarrObjects )
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrMaterials.push( catObjectElem );
+	if ( ArrayOptFirstElem( xarrMaterials ) != undefined )
+	{
+		for ( catMaterialElem in xarrMaterials )
+		{
+			sId = catMaterialElem.id;
+			sName = catMaterialElem.name;
+			sDate = catMaterialElem.modification_date;
+			sType = tools_web.get_web_const( "materialbiblio", curLngWeb );
+			if ( catMaterialElem.resource_id != '' &&  catMaterialElem.resource_id != null )
+				sImage = 'download_file.html?file_id=' + catMaterialElem.resource_id;
+			else
+				sImage = 'images/library_material.png';
+			sAction = sOpenType + tools_web.get_mode_clean_url('library_material', catMaterialElem.id, ({"doc_id": curDocID}));
+			arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+		}
+	}
+}
+
+if ( sSearchInForum == "1" && bDispSearchInForum )
+{
+
+xarrObjects = XQuery( "for $elem in forum_entrys where" + sCondition + " order by $elem/forum_id, $elem/create_date descending return $elem" );
+xarrForumEntry = [];
+iObjectID = 0;
+bForumAccess = true;
+
+for ( catObjectElem in xarrObjects )
+{
+	if ( iObjectID != catObjectElem.forum_id )
+	{
+		try
+		{
+			bForumAccess = tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.forum_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session );
+		}
+		catch ( err )
+		{
+			bForumAccess = false;
+		}
+		iObjectID = catObjectElem.forum_id.Value;
+	}
+	if ( ! bForumAccess )
+		continue;
+
+	try
+	{
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrForumEntry.push( catObjectElem );
+	}
+	catch ( err )
+	{
+	}
+}
+
+if ( ArrayOptFirstElem( xarrForumEntry ) != undefined )
+{
+	for ( catForumElem in xarrForumEntry )
+	{
+		sId = catForumElem.id;
+		sName = catForumElem.name;
+		sDate = catForumElem.modification_date;
+		sType = sConstForumEntry;
+		sImage = 'images/forum_entry.png';
+		sAction = sOpenType + tools_web.get_mode_clean_url('forum_entry', catForumElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInKnowledgePart == "1" && bDispSearchInKnowledgePart )
+{
+
+xarrObjects = XQuery( "for $elem in knowledge_parts where" + sCondition + " order by $elem/name return $elem" );
+xarrKnowledgePart = [];
+for ( catObjectElem in xarrObjects )
+	if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		xarrKnowledgePart.push( catObjectElem );
+
+if ( ArrayOptFirstElem( xarrKnowledgePart ) != undefined )
+{
+	for ( catKPElem in xarrKnowledgePart )
+	{
+		sId = catKPElem.id;
+		sName = catKPElem.name;
+		sDate = catKPElem.modification_date;
+		sType = tools_web.get_web_const( "vkm_knowledge_map", curLngWeb );
+		if ( catKPElem.resource_id != '' &&  catKPElem.resource_id != null )
+			sImage = 'download_file.html?file_id=' + catKPElem.resource_id;
+		else
+			sImage = 'images/knowledge_part.png';
+		sAction = sOpenType + tools_web.get_mode_clean_url('knowledge_classifier', catKPElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInQuestion == "1" && bDispSearchInQuestion  )
+{
+	xarrObjects = XQuery( "for $elem in expert_questions where" + sCondition + " order by $elem/question ascending return $elem" );
+
+	xarrQuestionEntry = [];
+	for ( catObjectElem in xarrObjects )
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+			xarrQuestionEntry.push( catObjectElem );
+
+	if ( ArrayOptFirstElem( xarrQuestionEntry ) != undefined )
+	{
+
+	for ( catQuestionElem in xarrQuestionEntry )
+	{
+		sId = catQuestionElem.id;
+		sName = catQuestionElem.question;
+		sDate = catQuestionElem.modification_date;
+		sType = tools_web.get_web_const( "cwxzkvdth0", curLngWeb );
+		sImage = 'images/expert_question.png';
+		sAction = sOpenType + tools_web.get_mode_clean_url('expert_answer', catQuestionElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( bDispSearchInCollaborator && sSearchInCollaborator )
+{
+	if (bSearchFIO)
+		xarrObjects = XQuery( "for $elem in collaborators where" + sConditionFIO + " and $elem/is_dismiss = false() order by $elem/fullname ascending return $elem" );
+	else
+		xarrObjects = XQuery( "for $elem in collaborators where" + sCondition + " and $elem/is_dismiss = false() order by $elem/fullname ascending return $elem" );
+
+	if ( ArrayOptFirstElem( xarrObjects ) != undefined )
+	{
+	for ( catPersonElem in xarrObjects )
+	{
+		sId = catPersonElem.id;
+		sName = catPersonElem.fullname;
+		sDate = catPersonElem.modification_date;
+		sType = tools_web.get_web_const( "c_coll", curLngWeb );
+		sImage = 'images/collaborator.png';
+		sAction = sOpenType + tools_web.get_mode_clean_url(null, catPersonElem.id, ({"doc_id": curDocID}));
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( /* bDispAttachment && */ sSearchInAttachment == "1" && bDispSearchInAttachment )
+{
+	sResourceType = CONTEXT.GetOptProperty( "attachment_type", curUrlQuery.GetOptProperty( "attachment_type", "all" ) );
+	xarrResource = [];
+
+	try
+	{
+		xarrObjects = XQuery( "for $elem in resources where" + sCondition + " and $elem/allow_search = true() return $elem" );
+		for ( catObjectElem in xarrObjects )
+		{
+			teObject = OpenDoc( UrlFromDocID( catObjectElem.id ) ).TopElem
+			if ( ! tools_web.check_access( teObject, curUserID, curUser, Session ) )
+				continue;
+			if ( teObject.resource_type_id.HasValue && ! tools_web.check_access( teObject.resource_type_id, curUserID, curUser, Session ) )
+				continue;
+
+			xarrResource.push( ({
+					'id': catObjectElem.id.Value,
+					'name': catObjectElem.name.Value,
+					'image': catObjectElem.resource_id.Value,
+					'date': catObjectElem.modification_date.Value,
+					'object_id': catObjectElem.id.Value,
+					'object_name': catObjectElem.name.Value
+				}) );
+		}
+		xarrResource = ArraySort( xarrResource, 'object_id', '+' );
+	}
+	catch( err )
+	{
+		alert( err );
+	}
+
+	if ( ArrayOptFirstElem( xarrResource ) != undefined )
+	{
+	for ( catAttachmentElem in xarrResource )
+	{
+		sId = catAttachmentElem.id;
+		sName = catAttachmentElem.name;
+		sDate = catAttachmentElem.date;
+		sType = tools_web.get_web_const( "c_file", curLngWeb );
+		if ( catAttachmentElem.image != '' &&  catAttachmentElem.image != null )
+			sImage = 'download_file.html?file_id=' + catAttachmentElem.image;
+		else
+			sImage = 'images/resource.png';
+		sAction = sOpenType + 'download_file.html?file_id=' + catAttachmentElem.id + '&amp;sid=' + tools_web.get_sum_sid( catAttachmentElem.id, Session.sid);
+
+		arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+	}
+}
+}
+
+if ( sSearchInWiki == "1" && bDispSearchInWiki )
+{
+	xarrObjectsWiki = XQuery( "for $elem in wiki_articles where" + sCondition + " order by $elem/name return $elem" );
+	xarrWikiPart = [];
+	for ( catObjectElem in xarrObjectsWiki )
+	{
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		{
+			try {
+				if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.wiki_base_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+					xarrWikiPart.push( catObjectElem );
+			}
+			catch (no_wiki_base_id_in_articles)
+			{
+			}
+		}
+	}
+	if ( ArrayOptFirstElem( xarrWikiPart ) != undefined )
+	{
+		for ( catWikiElem in xarrWikiPart )
+		{
+			sId = catWikiElem.id;
+			sName = catWikiElem.name;
+			sDate = catWikiElem.modification_date;
+			sType = 'Статья Wiki';
+			if ( catWikiElem.resource_id != '' &&  catWikiElem.resource_id != null )
+				sImage = 'download_file.html?file_id=' + catWikiElem.resource_id;
+			else
+				sImage = 'images/wiki_article.png';
+			sAction = sOpenType + tools_web.get_mode_clean_url('wiki_base', catWikiElem.id, ({"doc_id": curDocID}));
+			arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": sImage, "action": sAction } );
+		}
+	}
+}
+if ( sSearchInWebMode == "1" && bDispSearchInWebMode )
+{
+	xarrObjectsWebModes = XQuery( "for $elem in web_modes where" + sCondition + " and $elem/searchable_portal = true() order by $elem/name return $elem" );
+	xarrWebModePart = [];
+	for ( catObjectElem in xarrObjectsWebModes )
+	{
+		if ( tools_web.check_access( OpenDoc( UrlFromDocID ( catObjectElem.PrimaryKey ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem, curUserID, curUser, Session ) )
+		{
+			xarrWebModePart.push( catObjectElem )
+		}
+	}
+	if ( ArrayOptFirstElem( xarrWebModePart ) != undefined )
+	{
+		for ( catWebMode in xarrWebModePart )
+		{
+			sId = catWebMode.id;
+			sName = catWebMode.name;
+			sDate = catWebMode.modification_date;
+			sType = 'Тип страниц';
+
+			sAction = sOpenType + tools_web.get_mode_clean_url(catWebMode.code.Value, null, ({"doc_id": curDocID}));
+			arrSearchAll.push( { "id": sId, "name": sName, "date": sDate, "type": sType, "image": "", "action": sAction } );
+		}
+	}
+}
+if ( ArrayOptFirstElem( arrSearchAll ) != undefined )
+	{
+	arrSearchAll = ArraySort(arrSearchAll,"date","-");
+	bSuccessfullSearch = true;
+%>
+
+	<Collection Name="SearchResult">
+		<Data>
+<%
+		for (itemSearchResult in arrSearchAll)
+		{
+			Response.Write('<Row>');
+			for (sString in itemSearchResult)
+				if (!StrBegins(sString, "_"))
+					Response.Write('<Cell Id="' +sString+ '" Value="' +XmlAttrEncode(itemSearchResult.GetProperty(sString))+ '"/>');
+			Response.Write('</Row>');
+		}
+%>
+		</Data>
+	</Collection>
+
+<DataGrid Name="SearchGrid" Class="SearchGrid" Source="{SearchResult}" PageSize="<%=sPageSize%>" ShowHeader="false" Selection="single">
+<% if (bShowImage)
+{
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>" Value="image" Type="image" Width="50"/>
+<%
+}
+%>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="{!action}" Width="100%"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( "c_type", curLngWeb )%>" Value="type"  Width="200"/>
+</DataGrid>
+
+
+<%
+}
+}
+if ( ! bSuccessfullSearch )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": tools_web.get_web_const( "vsb_error1", curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

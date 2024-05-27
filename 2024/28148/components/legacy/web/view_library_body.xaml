@@ -1,0 +1,1473 @@
+﻿<%
+// const_start
+sConstAllFilters = tools_web.get_web_const( 'vsefiltry', curLngWeb );
+sConstNoRecommended = tools_web.get_web_const( 'netrekomendova', curLngWeb );
+sConstAllSections = "Все разделы";
+sConstNew = "Новые";
+sConstSubscriptions = "Подписки";
+sConstTop = "Популярное";
+// const_end
+
+function CheckAccess(_ID)
+{
+	try
+	{
+		return tools_web.check_access( OpenDoc( UrlFromDocID ( _ID ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem , curUserID, curUser, Session );
+	}
+	catch( err )
+	{
+		return false;
+	}
+}
+
+
+_CURVIEW = true;
+
+
+
+curUrlQuery = UrlQuery( tools_web.transform_fancy_url(PAGEURL) );
+sUpdateList="LibrarySectionsTree";
+
+var bThinMode = curDevice.disp_type == "mobile";
+
+var sLayout = tools_web.get_web_param( curParams, "library.layout", "switch", true );
+
+bCacheObjects = tools_web.is_true(tools_web.get_web_param( curParams, "library.bCacheObjects", "1", true ) );
+iTreeWidth = Int( tools_web.get_web_param( curParams, "library.iTreeWidth", 300, true ));
+//iTreeWidth = 216;
+
+iRootID=OptInt( tools_web.get_web_param( curParams, "library.iRootID",null, true ),null);
+sTabList=String( tools_web.get_web_param( curParams, "library.tab_list", "library;recommended;viewing;search", true ) );
+//arrTabListParam = sTabList.split( ";" );
+var paramListViewTab = ArrayOptFindByKey(PARAMETERS, "ListViewTab", "key");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( "LibraryBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) ));	
+
+sSectionSortField=String( tools_web.get_web_param( curParams, "library.sSectionSortField", "name", true ) );
+
+
+bFlush = curUrlQuery.HasProperty( "flush" );
+bShowClearCacheButton=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowClearCacheButton", "1", true ));
+bShowCover=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowCover", "1", true ) );
+bShowAnnotation=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowAnnotation", "1", true ) );
+bShowPhysicalCol=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowPhysicalCol", "1", true ) );
+bShowDigitalCol=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowDigitalCol", "1", true ) );
+bShowAuthorCol=tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowAuthor", "1", true ) );
+bShowYearColl = tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowYear", "1", true ) );
+bShowViewButton = tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowViewButton", "1", true ) );
+bShowDownloadButton = tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowDownloadButton", "1", true ) );
+bShowTreeExpanded = tools_web.is_true(tools_web.get_web_param( curParams, "library.bShowTreeExpanded", "0", true ) );
+
+bAllowEdit = false;
+
+var iPaging = OptInt( tools_web.get_web_param( curParams, "library.page_size", 0, true ), 0);
+var sTileCode = tools_web.get_web_param( curParams, "library.tile_code", "library_tile", true );
+var iTileColumns = OptInt(tools_web.get_web_param( curParams, "library.tile_columns", 0, true ), 0);
+
+sContextFildNames="LibraryBodyTab,SelectedLibrarySectioID";
+iSelectedLibrarySectionID = curUrlQuery.GetOptProperty("section_id", null);
+iActiveLibrarySliderTab = 0;
+teSection = undefined;
+
+if (iRootID > 0 && iSelectedLibrarySectionID == null)
+	iSelectedLibrarySectionID = iRootID;
+
+if (iSelectedLibrarySectionID != null)
+{
+	if (iSelectedLibrarySectionID == "all")
+		sCurPage = "";
+	else
+		sCurPage = iSelectedLibrarySectionID;
+	
+	iSelectedLibrarySectionID = OptInt(iSelectedLibrarySectionID, null);
+	
+	if (iSelectedLibrarySectionID != null)
+	{
+		teSection = tools.open_doc(iSelectedLibrarySectionID);
+		if (teSection != undefined)
+		{
+			teSection = teSection.TopElem;
+			if (!tools_web.check_access(teSection, curUserID, curUser, Session))
+			{
+				curMessageBox = {
+					"type": "error",
+					"text": tools_web.get_web_const("dostupzapreshen", curLngWeb)
+				};
+				Response.Write("<SPXMLScreen>" + EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) + "</SPXMLScreen>");
+				Cancel();
+			}
+		}
+	}
+	if (iSelectedLibrarySectionID != null || sCurPage == "")
+	{
+		sCurPage = "library";
+	}
+	iActiveLibrarySliderTab = 1;
+}
+else
+{
+	sCurPage = tools_web.get_web_param( curParams, "library.default_view", "", true );
+	
+	if (ArrayOptFind((["library","new","recommended","viewing"]), "This == " + CodeLiteral(sCurPage)) != undefined)
+	{
+		iActiveLibrarySliderTab = 1;
+	}
+	else
+		sCurPage = "library";
+}
+
+sViewType = "list";
+
+
+
+sInitialSectonName = CONTEXT.GetOptProperty("currentlySelectedSectionTitle");
+if (sInitialSectonName == undefined) 
+{
+	switch(sCurPage)
+	{
+		case "library":
+			if (teSection != undefined)
+				sInitialSectonName = XmlAttrEncode(teSection.name.Value);
+			else if (iSelectedLibrarySectionID == null)
+				sInitialSectonName = XmlAttrEncode(sConstAllSections);
+			else
+				sInitialSectonName = XmlAttrEncode(tools_web.get_web_const("c_error", curLngWeb));
+			break;
+		case "recommended":
+			sInitialSectonName = XmlAttrEncode(tools_web.get_web_const( "rekomendovanny", curLngWeb ));
+			break;
+		case "new":
+			sInitialSectonName = sConstNew;
+			break;
+		case "viewing":
+			sInitialSectonName = XmlAttrEncode(tools_web.get_web_const( "moimaterialy", curLngWeb ));
+			break;
+		case "search":
+			sInitialSectonName = XmlAttrEncode(tools_web.get_web_const( "vkpb_search", curLngWeb ));
+			break;
+		case "top":
+			sInitialSectonName = XmlAttrEncode(sConstTop);
+			break;
+		case "subscription":
+			sInitialSectonName = sConstSubscriptions;
+			break;
+	}
+}
+
+
+%><SPXMLScreen>
+<Action Name="CreateMaterial" Source="library_material_create" Success="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", ({"doc_id": curDocID}))%>" Failure="ALERT={messageText}">
+	<Param Name="iSectionId" Value="<%=iSelectedLibrarySectionID%>"/>
+</Action>
+<Action Name="PageRefreshFinish" Initialize="OPENURL=<%=tools_web.get_mode_clean_url("library", curObjectID, ({"doc_id": curDocID}))%>"/>
+<%
+function getRowFilters(sCBName, sVTName)
+{
+
+		var oFilter, aFilters = null;
+		if (bShowDigitalCol || bShowPhysicalCol)
+		{
+			oFilter = ({"name": sCBName, "title": tools_web.get_web_const("formatmateriala", curLngWeb), "type": "combo", "value": "all", "items": ([{"title": sConstAllFilters, "value": "all"}])});
+			aFilters = ([
+				oFilter
+			]);
+			if (bShowDigitalCol)
+				oFilter.items.push(({"title": (tools_web.get_web_const( "cifrovoynosite", curLngWeb )), "value": "has_digital"}));
+			if (bShowPhysicalCol)
+				oFilter.items.push(({"title": (tools_web.get_web_const( "fizicheskiynosi", curLngWeb )), "value": "has_physical"}));
+		}
+	
+		if (curLngCommon.viewing_states.ChildNum > 0)
+		{
+			oFilter = ({"name": sVTName, "title": tools_web.get_web_const("vppb_state", curLngWeb), "type": "combo", "value": "all", "items": ArrayUnion(([{"title": sConstAllFilters, "value": "all"}]), ArrayExtract(curLngCommon.viewing_states, '({"title":This.name.Value, "value": This.id.Value})'))});
+			if (aFilters == null)
+				aFilters = ([]);
+			aFilters.push(oFilter);
+		}
+	
+		if (aFilters != null)
+			return ([aFilters]);
+		else
+			return null;
+}
+
+
+
+function fnBuildDataGrid(arrLibMatParam,sTabName)
+{
+		sCBName = "SelectMatType" + sTabName;
+		sCBValue = CONTEXT.GetOptProperty(sCBName,"all");
+		sContextFildNames = sContextFildNames + "," + sCBName;
+	
+		sVTName = "SelectVT" + sTabName;
+		sVTValue = CONTEXT.GetOptProperty(sVTName,"all");
+		sContextFildNames = sContextFildNames + "," + sVTName;
+	
+		sSearchVal = CONTEXT.GetOptProperty((sTabName + "Search"),"");
+		iPage = null;
+		iPagesTotal = 0;
+	
+		if (DataType(arrLibMatParam) == "string") //xquery conditions
+		{
+			if (arrLibMatParam == "")
+				arrLibMatParam = "1=1";
+			
+			if (sCBValue=="has_physical" || sCBValue=="has_digital")
+			{
+				arrLibMatParam += " and $elem/" + sCBValue + "=true()";
+			}
+			
+			if (sSearchVal != "")
+			{
+				arrLibMatParam += " and doc-contains($elem/id, '" + DefaultDb + "', " + CodeLiteral(sSearchVal) + ")";
+			}
+			
+			arrLibMatParam += " and ($elem/state_id = null() or $elem/state_id = 1)";
+			
+			if (!StrContains(arrLibMatParam, "order by"))
+				arrLibMatParam += " order by $elem/name";
+			
+			arrLibMatParam = tools.xquery("for $elem in library_materials where " + arrLibMatParam + " return $elem/id,$elem/__data");
+			
+			
+			
+			if (iPaging > 0) //PAGING 1 !!!!!!!!!!!!!
+			{
+				iPage = OptInt(CONTEXT.GetOptProperty(sTabName + "PagingPage"), 0);
+				
+				
+				
+			}
+			
+			arrLibMatTEs = ArrayExtract(ArraySelect(ArrayExtract(arrLibMatParam, "tools.open_doc(This.PrimaryKey)"), "This != undefined"), "This.TopElem");
+		}
+		else
+		{
+			if (sCBValue=="has_physical" || sCBValue=="has_digital")
+			{
+				arrLibMatParam=ArraySelectByKey(arrLibMatParam, true, sCBValue);
+			}
+			
+			arrLibMatTEs = ArrayExtract(ArraySelect(ArrayExtract(arrLibMatParam, "tools.open_doc(This.PrimaryKey)"), "This != undefined"), "This.TopElem");
+		
+			if (sSearchVal != "")
+			{
+				arrLibMatTEs = ArraySelect(arrLibMatTEs, "StrContains(This.GetXml('tabs=0&DocHeader=0'), " +CodeLiteral(sSearchVal)+ ")");
+			}
+		
+			arrLibMatTEs = ArraySort(arrLibMatTEs, "name", "+");
+			
+			if (iPaging > 0) //PAGING 2 !!!!!!!!!!!!!!
+			{
+				iPage = OptInt(CONTEXT.GetOptProperty(sTabName + "PagingPage"), 0);
+				
+				
+				
+			}
+			
+		}
+		
+		curFilter = ({
+			"id": sTabName,
+			"action": "REFRESH",
+			"disp_search": true,
+			"search_opened": true,
+			"selectors": "data_grid;tile",
+			"selectors_value": (sViewType == "gallery" ? "tile": "data_grid"),
+			"search_field": (sTabName + "Search"),
+			"search_value": sSearchVal,
+			//"search_width": '600',
+			"buttons": ([])
+		});
+	
+		if (bAllowEdit)
+		{
+			curFilter.buttons.push(({
+				"name": (sTabName + "AllowEditBtn"),
+				"title": tools_web.get_web_const( "veb_add", curLngWeb ),
+				"click": "Action=CreateMaterial"
+			}));
+		}
+		
+		curFilter.row_filters = getRowFilters(sCBName, sVTName);
+		
+	
+		Response.Write(EvalCodePageUrl(global_settings.web_path + "view_filter.xaml"));
+		
+				if (ArrayCount(arrLibMatTEs) == 0)
+				{
+%>
+				<StackPanel Class="XAML-grid-row-empty">
+					<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netmaterialov", curLngWeb )%></Label>
+				</StackPanel>
+<%
+				}
+				else if(sViewType == "list")
+				{
+%>
+					<Grid Width="100%" Class="XAML-grid-table">
+						<GridColumns>
+							<GridColumn Align="left"/>
+<%
+							if(bShowAuthorCol && !bThinMode)
+							{
+%>
+							<GridColumn Width="200" Align="center"/>
+<%
+							}
+							if(bShowYearColl  && !bThinMode)
+							{
+%>
+							<GridColumn Width="100" Align="center"/>
+<%
+							}
+							if (bShowDigitalCol  && !bThinMode)
+							{
+%>							
+							<GridColumn Width="50" Align="center"/>
+<%
+							}
+							if (!bThinMode)
+							{
+%>						
+							<GridColumn Width="100" Align="center"/>
+<%
+							}
+							if (bShowPhysicalCol  && !bThinMode)
+							{
+%>	
+							<GridColumn Width="50" Align="center"/>
+<%
+							}
+							if(!bThinMode && (bShowViewButton || bShowDownloadButton))
+							{
+%>
+							<GridColumn Width="130" Align="center"/>
+<%
+							}
+%>
+						</GridColumns>
+		
+						<GridRow Class="XAML-grid-header-row XAML-gridrow-header" CellClass="XAML-grid-header-cell">
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_name", curLngWeb ))%></Label>
+<%
+							if(bShowAuthorCol  && !bThinMode)
+							{
+%>
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "vfb_author", curLngWeb ))%></Label>
+<%
+							}
+							if(bShowYearColl && !bThinMode)
+							{
+%>
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_imprint_date", curLngWeb ))%></Label>
+<%
+							}
+							if (bShowDigitalCol && !bThinMode)
+							{
+%>
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "cifrovoynosite", curLngWeb ))%></Label>
+<%
+							}
+							if (!bThinMode)
+							{
+%>
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_status", curLngWeb ))%></Label>
+<%
+							}
+							if (bShowPhysicalCol && !bThinMode)
+							{
+%>	
+							<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "fizicheskiynosi", curLngWeb ))%></Label>
+<%
+							}
+							if((bShowViewButton || bShowDownloadButton) && !bThinMode)
+							{
+%>
+								<Label Class="XAML-grid-header-label"><%=tools_web.get_web_const( "td61vzpvze", curLngWeb )%></Label>
+							
+<%
+							}
+%>
+						</GridRow>
+<%
+						var xarrActiveViewingMaterials = new Array();
+						if( ArrayOptFirstElem( arrLibMatTEs ) != undefined )
+						{
+							xarrActiveViewingMaterials = XQuery( "for $elem in library_material_viewings where $elem/person_id = " + curUserID + " and $elem/state_id != 'finished' and MatchSome( $elem/material_id, ( " + ArrayMerge( arrLibMatTEs, "This.id", "," ) + " ) ) return $elem/Fields('material_id')" );
+						}
+						for (teLibMat in arrLibMatTEs)
+						{
+							sImageURL = "pics/1blank.gif";
+							sAnnotation="";
+							sDigital="";
+							try
+							{
+								fldLibMat = ArrayOptFindByKey(arrLibMatParam, teLibMat.id, "id");
+								//teLibMat=OpenDoc( UrlFromDocID ( fldLibMat.id ) ).TopElem
+								
+								if ( global_settings.settings.check_access_on_lists )
+								{
+									try
+									{
+										if ( tools_web.check_access( teLibMat , curUserID, curUser, Session ) == false )
+											continue;
+									}
+									catch( err )
+									{
+										continue;
+									}
+								}
+								
+								if (bShowCover)
+								{
+									if(teLibMat.image.HasValue)
+									{
+										sImageURL = "download_file.html?file_id=" + teLibMat.image + "&sid=" + tools_web.get_sum_sid( teLibMat.image, Session.sid );
+									}
+									else
+									{
+										if(teLibMat.file_name.HasValue && teLibMat.file_name.OptForeignElem != undefined)
+										{
+											sImageURL = "icons/file_types/64/" + (teLibMat.file_name.ForeignElem.type.HasValue ? teLibMat.file_name.ForeignElem.type : "file") + ".png";
+										}		
+									}
+								}
+								if (bShowAnnotation)
+								{
+									if (teLibMat.description.HasValue)
+									{
+										sAnnotation = teLibMat.description;
+									}
+								}
+							}
+							catch(ex)
+							{
+							}
+							
+							if (bShowPhysicalCol)
+							{
+								iPhysicalNumber=(fldLibMat.has_physical?ArrayCount(XQuery("for $elem in library_material_items where $elem/material_id="+teLibMat.id+" and MatchSome( $elem/format_id, ("+ArrayMerge(XQuery("for $elem in library_material_formats where $elem/format_type_id=\'physical\' and MatchSome( $elem/id, ("+StrReplace(teLibMat.library_material_formats,";",",")+") ) return $elem"),"id",",")+" ) )  return $elem/Fields('id')")):0)
+							}
+							if (bShowDigitalCol)
+							{
+								sDigital= (fldLibMat.has_digital?"pics/yes.png":"pics/1blank.gif")
+							}
+							
+							fldMatViewing=ArrayOptFirstElem(XQuery("for $elem in library_material_viewings where $elem/material_id="+teLibMat.id+" and $elem/person_id="+curUserID+" return $elem/Fields('id','state_id')"))
+							
+							//if (sCBValue!="all"&&sCBValue!="has_physical"&&sCBValue!="has_digital"&&((fldMatViewing!=undefined&&fldMatViewing.state_id!=sCBValue)||(fldMatViewing==undefined)))
+							if (sVTValue != "all" && sVTValue != "")
+							if (( fldMatViewing != undefined && fldMatViewing.state_id != sVTValue)|| fldMatViewing == undefined)
+							{
+								if ((sVTValue=="plan" && fldMatViewing==undefined) == false)
+								{
+									continue;
+								}
+							}
+							sStatus=(fldMatViewing!=undefined ? fldMatViewing.state_id.OptForeignElem:undefined);
+							sStatus = (sStatus != undefined ? sStatus.name.Value : "");
+%>
+							<GridRow Class="XAML-grid-row">
+								<StackPanel Orientation="Vertical">
+									<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+									if (bShowCover && !bThinMode)
+									{
+%>
+										<Image MaxWidth="40" MaxHeight="40" Source="<%=sImageURL%>"/>
+<%
+									}
+%>
+										<StackPanel Orientation="Vertical" Width="100%">
+											<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-wrap-container">
+<%
+									if (bShowAnnotation&&sAnnotation!="" && !bThinMode)
+									{
+%>
+												<Image Class="XAML-icon-info" Source="/pics/1blank.gif" Click="TOGGLE=AddPart<%=teLibMat.id+"_"+sTabName%>">
+													<HTMLTip><%=tools_web.get_web_const( "c_annatatsiya", curLngWeb )%></HTMLTip>
+												</Image>
+<%
+									}
+%>
+												<Link Click="OPENURL=<%=tools_web.get_mode_clean_url("library_material", teLibMat.id, ({"doc_id": curDocID}))%>"><%=HtmlEncode(tools_web.get_cur_lng_name( teLibMat.name, curLng.short_id ))%></Link>
+											</StackPanel>
+										</StackPanel>
+									</StackPanel>
+<%
+									if (bShowAnnotation&&sAnnotation!="")
+									{
+%>									
+									<StackPanel Class="XAML-stack-course-map-info" Name="AddPart<%=teLibMat.id+"_"+sTabName%>" Orientation="Vertical" Hidden="1">
+										<HTMLBox>											
+											<![CDATA[
+												<%=tools_web.get_web_desc( sAnnotation, UrlFromDocID( teLibMat.id ), "library_material.desc" )%>
+											]]>
+										</HTMLBox>
+									</StackPanel>		
+<%
+									}
+%>																		
+								</StackPanel>
+<%
+								if(bShowAuthorCol && !bThinMode)
+								{
+%>
+								<Label><%=HtmlEncode(teLibMat.author)%></Label>
+<%
+								}
+								if(bShowYearColl && !bThinMode)
+								{
+%>
+								<Label><%=HtmlEncode(teLibMat.year)%></Label>
+<%
+								}
+								if (bShowDigitalCol && !bThinMode)
+								{
+%>
+								<Image Source="<%=sDigital%>"/>
+<%
+								}
+								if (!bThinMode)
+								{
+%>
+								<Label><%=HtmlEncode(sStatus)%></Label>
+<%
+								}
+								if (bShowPhysicalCol && !bThinMode)
+								{
+%>
+								<Label><%=HtmlEncode(iPhysicalNumber)%></Label>
+<%
+								}
+								if((bShowViewButton || bShowDownloadButton) && !bThinMode)
+								{
+%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+									sReaderUrl = "/view_play_resource.html?info=1&object_id=" + teLibMat.id;
+									
+									if( ( ( teLibMat.file_name.HasValue && teLibMat.file_name != "" ) || teLibMat.library_system_id != 6408848138843285368 ) && sReaderUrl != "" && ( teLibMat.allow_self_viewing || ArrayOptFindByKey( xarrActiveViewingMaterials, teLibMat.id, "material_id" ) != undefined ) )
+									{
+%>
+									<Button Click="OPENWINDOW=<%=UrlEncode(sReaderUrl)%>" Class="XAML-button icon-play"></Button>	
+<%
+									}
+									if(teLibMat.file_name.HasValue && teLibMat.file_name != "" && teLibMat.allow_download)
+									{
+%>
+									<Button Click="OPENURL=download_file.html?file_id=<%=teLibMat.file_name%>&sid=<%=tools_web.get_sum_sid( teLibMat.file_name, Session.sid )%>" Class="XAML-button icon-download"></Button>
+<%
+									}
+%>
+								</StackPanel>
+<%
+								}
+%>
+							</GridRow>
+<%
+						}
+%>
+					</Grid>
+<%
+				}
+				else if(sViewType == "gallery")
+				{
+					iColumnsNum = bThinMode ? 1 : 4;
+					xarrMaterials = new Array();
+					xarrFormats = XQuery( "for $elem in library_material_formats where $elem/format_type_id = 'online_video' return $elem" );
+					for(catFormat in xarrFormats)
+					{
+						xarrMaterials = ArrayUnion(xarrMaterials, XQuery( "for $elem in library_materials where contains($elem/library_material_formats," + catFormat.id + ")  and ($elem/state_id = null() or $elem/state_id = 1) return $elem" ))
+					}
+%>
+					<Grid Width="100%" Class="XAML-grid-tiles">
+						<GridColumns>
+<%
+					for(i=1; i <= iColumnsNum; i++)
+					{
+%>
+							<GridColumn Width="<%=100/iColumnsNum%>%" Align="center"/>
+<%
+					}
+%>
+						</GridColumns>		
+<%
+						iColumsCounter = 0;
+						iMaterialsCount = ArrayCount(arrLibMatTEs);
+						bToClose = false;
+						for (teLibMat in arrLibMatTEs)
+						{						
+							iCoverHeight = 100;
+							sImageURL = "pics/no-image.png";
+							sAnnotation = "";
+							sDigital = "";
+							//teLibMat=OpenDoc( UrlFromDocID ( fldLibMat.id ) ).TopElem;
+							fldLibMat = ArrayOptFindByKey(arrLibMatParam, teLibMat.id, "id");
+							try
+							{						
+								iImageHeight = iCoverHeight;
+								if ( global_settings.settings.check_access_on_lists )
+								{
+									try
+									{
+										if ( tools_web.check_access( teLibMat , curUserID, curUser, Session ) == false )
+											continue;
+									}
+									catch( err )
+									{
+										continue;
+									}
+								}
+								
+								if (bShowCover)
+								{
+									if(teLibMat.image.HasValue)
+									{
+										sImageURL = "download_file.html?file_id=" + teLibMat.image + "&sid=" + tools_web.get_sum_sid( teLibMat.image, Session.sid );
+									}
+									else
+									{
+										if(teLibMat.file_name.HasValue && teLibMat.file_name.OptForeignElem != undefined)
+										{
+											sImageURL = "icons/file_types/64/" + (teLibMat.file_name.ForeignElem.type.HasValue ? teLibMat.file_name.ForeignElem.type : "file") + ".png";
+											iImageHeight = 64;
+										}		
+									}
+								}
+								if (bShowAnnotation)
+								{
+									if (teLibMat.description.HasValue)
+									{
+										sAnnotation=teLibMat.description;
+									}
+								}
+							}
+							catch(ex)
+							{
+							}
+							
+							fldMatViewing=ArrayOptFirstElem(XQuery("for $elem in library_material_viewings where $elem/material_id="+teLibMat.id+" and $elem/person_id="+curUserID+" return $elem/Fields('id','state_id')"))
+							
+							if (sCBValue != "all" && sCBValue != "has_physical" && sCBValue != "has_digital" && ((fldMatViewing != undefined && fldMatViewing.state_id != sCBValue ) || ( fldMatViewing==undefined )))
+							{
+								if ((sCBValue=="plan"&&fldMatViewing==undefined)==false)
+								{
+									continue;
+								}
+							}
+							sStatus=(fldMatViewing!=undefined?fldMatViewing.state_id.ForeignElem.name:"");
+							
+							if(iColumsCounter == iColumnsNum)
+							{
+								bToClose = false;
+%>
+							</GridRow>
+<%
+							}
+							if(iColumsCounter == iColumnsNum)
+								iColumsCounter = 0;
+							if(iColumsCounter == 0)
+							{
+								bToClose = true;
+%>
+							<GridRow Class="XAML-grid-row" Height="270">
+<%
+							}
+							sLinkClickAction = "OPENURL=" + tools_web.get_mode_clean_url("library_material", teLibMat.id, ({"doc_id": curDocID}));
+							sImageClickAction = !teLibMat.use_old_format.Value ? ("SET=MaterialDialog/iMaterialId," + teLibMat.id + ";OPENDIALOG=MaterialDialog") : sLinkClickAction;
+%>
+								<StackPanel Orientation="Vertical" Align="Center" Class="XAML-stack-tile">
+									<!--
+										<StackPanel Orientation="Vertical" Align="Center">
+											<Image Height="<%=iImageHeight%>" Source="<%=sImageURL%>" Click="<%=sImageClickAction%>"/>
+										</StackPanel>
+										-->
+									<StackPanel Orientation="Vertical" Align="Center" Class="XAML-panel-tile-image">
+									<Image Click="<%=sImageClickAction%>" Source="/pics/1blank.gif" Class="XAML-link-tile-image" Height="200" Width="100%">
+										<BackgroundImage Source="<%=XmlAttrEncode( sImageURL )%>"/>
+									</Image>
+									</StackPanel>
+									<StackPanel Class="XAML-stack-tile-title-container">
+										<Link Click="<%=sLinkClickAction%>"  Class="XAML-link-tile-title"><%=HtmlEncode(tools_web.get_cur_lng_name( teLibMat.name, curLng.short_id ))%></Link>
+									</StackPanel>
+									<Label Class="XAML-label-tile-desc"><%=HtmlEncode(teLibMat.author)%></Label>	
+								</StackPanel>
+<%
+							iColumsCounter++;
+						}
+							if(bToClose)
+							{
+%>
+							</GridRow>
+<%
+							}
+%>
+					</Grid>
+<%							
+					
+				}
+				
+				if (iPaging > 0)
+				{
+%>
+					<StackPanel Orientation="Horizontal">
+						<Button Click="<%=("SET=" + sTabName + "PagingPage,0;REFRESH")%>">&lt;&lt;</Button>
+						<Button Click="<%=(iPage > 0 ? "SET=" + sTabName + "PagingPage," + (iPage-1) + ";REFRESH" : "")%>">&lt;</Button>
+						<Edit Width="20" Name="<%=sTabName%>PagingPage"><%=iPage%></Edit>
+						<Label>/ <%=iPagesTotal%></Label>
+						<Button Click="<%=(iPagesTotal <= 0 || iPage >= iPagesTotal-1 ? "" : "SET=" + sTabName + "PagingPage," + (iPage+1) + ";REFRESH")%>">&gt;</Button>
+						<Button Click="<%=(iPagesTotal <= 0 ? "" : "SET=" + sTabName + "PagingPage," + (iPagesTotal-1) + ";REFRESH")%>">&gt;&gt;</Button>
+					</StackPanel>
+<%
+				}
+}
+%>
+<Action Name="UpdateLibraryCache" Source="library_update_cache" Success="UPDATE=<%=sUpdateList%>;REFRESH" Failure="ALERT={messageText}">		
+  	<Param Name="curUserID" Value="<%=curUserID%>"/>
+	<Param Name="iRootID" Value="<%=iRootID%>"/>
+	<Param Name="doc_id" Value="<%=curDocID%>"/>
+	<Param Name="sSectionSortField" Value="<%=sSectionSortField%>"/>
+</Action>
+
+<Dialog Name="MaterialDialog" Source="dlg_library_material" Title="<%=tools_web.get_web_const( "prosmotr", curLngWeb )%>" Width="800" ShowHeader="0">
+	<Param Name="iMaterialId" Value=""/>
+</Dialog>
+<%
+	if (_CURVIEW)
+	{
+%>
+	<Collection Name="LibraryDataCollection" Source="library_data_collection">
+		<Param Name="Mode" Value=""/>
+		<Param Name="bCacheObjects" Value="<%=bCacheObjects%>"/>
+		<Param Name="bFlush" Value="<%=bFlush%>"/>
+	</Collection>
+<%
+	}
+
+	curTitle = {
+		"type": "simple",
+		"title": tools_web.get_web_const( 'c_library', curLngWeb )
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	
+	if (bThinMode || sLayout == "switch")
+	{
+%>
+	<TabControl Name="librarySliderTab" DisplayMode="tab" TabsHidden="true" Height="100%" ActiveTab="<%=CONTEXT.GetOptProperty("librarySliderTab",iActiveLibrarySliderTab)%>">
+<%
+	}
+	else if (sLayout == "panel")
+	{
+%>
+	<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedSectionTitle" Editable="0"><%=sInitialSectonName%></Edit>
+<%
+	}
+	else
+	{
+%>
+		<Grid Width="100%" Class="XAML-grid-content-hor-container">
+			<GridColumns>
+				<GridColumn Width="<%=iTreeWidth%>"/>
+				<GridColumn/>
+			</GridColumns>	
+			<GridRow>
+<%
+	}
+	
+	if (bThinMode || sLayout == "switch")
+	{
+%>
+		<TabItem Title="">
+<%
+	}
+	if (sLayout == "panel")
+	{
+		var sButtonOpenUrlPre = "OPENURL=" + tools_web.get_mode_clean_url("library", null, ({"section_id": "{SECTION_ID}", "doc_id": curDocID}));
+%>
+		<StackPanel Orientation="Wrap">
+<%
+	}
+	else
+	{
+%>
+		<StackPanel Orientation="Vertical">	
+			<Collection Name="LibraryRigidSectonTreeCollection">
+				<Data>
+<%
+	}
+	
+	if (StrContains(sTabList, "recommended"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "recommended")%>"><%=HtmlEncode(tools_web.get_web_const("rekomendovanny", curLngWeb))%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="recommended"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(tools_web.get_web_const("rekomendovanny", curLngWeb))%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	if (StrContains(sTabList, "new"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "new")%>"><%=HtmlEncode(sConstNew)%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="new"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(sConstNew)%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	if (StrContains(sTabList, "viewing"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "viewing")%>"><%=HtmlEncode(tools_web.get_web_const("moimaterialy", curLngWeb))%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="viewing"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(tools_web.get_web_const("moimaterialy", curLngWeb))%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	if (StrContains(sTabList, "subscription"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "subscription")%>"><%=HtmlEncode(sConstSubscriptions)%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="subscription"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(sConstSubscriptions)%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	if (StrContains(sTabList, "search"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "search")%>"><%=HtmlEncode(tools_web.get_web_const("vkpb_search", curLngWeb))%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="search"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(tools_web.get_web_const("vkpb_search", curLngWeb))%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	
+	if (StrContains(sTabList, "top"))
+	{
+		if (sLayout == "panel")
+		{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", "top")%>"><%=HtmlEncode(sConstTop)%></Button>
+<%
+		}
+		else
+		{
+%>
+				<Row>
+					<Cell Id="id" Value="top"/>
+					<Cell Id="name" Value="<%=XmlAttrEncode(sConstTop)%>"/>
+					<Cell Id="icon" Value="/icons/16_text.png"/>
+				</Row>
+<%
+		}
+	}
+	
+	if (sLayout == "panel")
+	{
+	
+		var oBtn, vRes = ArrayOptFirstElem(tools.xquery("for $elem in remote_collections where $elem/code = 'library_section_tree_collection' return $elem/id,$elem/__data"));
+		if (vRes != undefined)
+		{
+			vRes = OpenDoc(UrlFromDocID(vRes.PrimaryKey)).TopElem;
+			vRes.wvars.ObtainChildByKey("iRootID").value = iRootID;
+			vRes.wvars.ObtainChildByKey("doc_id").value = curDocID;
+			vRes.wvars.ObtainChildByKey("sSectionSortField").value = sSectionSortField;
+			vRes.wvars.ObtainChildByKey("bCacheObjects").value = bCacheObjects;
+			vRes.wvars.ObtainChildByKey("bFlush").value = bFlush;
+			
+			vRes = vRes.evaluate("raw", Request);
+			for (oBtn in vRes.result)
+			{
+%>
+			<Button Click="<%=StrReplace(sButtonOpenUrlPre, "{SECTION_ID}", oBtn.id)%>"><%=HtmlEncode(oBtn.name)%></Button>
+<%
+			}
+		}
+%>
+		</StackPanel>
+<%
+	}
+	else
+	{
+%>
+				</Data>
+			</Collection>
+			<Collection Name="LibrarySectionTreeCollection" Source="library_section_tree_collection">
+				<Param Name="iRootID" Value="<%=iRootID%>"/>
+				<Param Name="doc_id" Value="<%=curDocID%>"/>
+				<Param Name="curUserID" Value="<%=curUserID%>"/>
+				<Param Name="sSectionSortField" Value="<%=sSectionSortField%>"/>
+				<Param Name="bCacheObjects" Value="<%=bCacheObjects%>"/>
+				<Param Name="bShowTreeExpanded" Value="<%=bShowTreeExpanded%>"/>			
+				<Param Name="bFlush" Value="<%=bFlush%>"/>
+			</Collection>
+			
+			<Tree Name="LibraryRigidSectionsTree" Source="{LibraryRigidSectonTreeCollection}" DataID="id" DataParent="parent_id" DataTitle="name" DataExpanded="Expanded" DataFatherhood="hasChildren" DataIcon="icon" Click="OPENURL=<%=tools_web.get_mode_clean_url("library", null, ({"section_id": "{id}", "doc_id": curDocID}))%>" Preservable="<%=!bFlush%>">
+			</Tree>
+			
+			<Tree Name="LibrarySectionsTree" Source="{LibrarySectionTreeCollection}" DataID="id" DataParent="parent_id" DataTitle="name" DataExpanded="Expanded" DataFatherhood="hasChildren" DataIcon="icon" Click="OPENURL=<%=tools_web.get_mode_clean_url("library", null, ({"section_id": "{id}", "doc_id": curDocID}))%>" Preservable="<%=!bFlush%>">
+				<Menu Source="{CatalogListMenuLibrarySectionsTree}"/>
+			</Tree>
+		</StackPanel>
+		<Edit Name="SelectedLibrarySectioID" Hidden="1"><%=iSelectedLibrarySectionID%></Edit>
+<%
+		if (bThinMode || sLayout == "switch")
+		{
+%>
+		</TabItem>
+		<TabItem Title="">
+			<Grid Width="100%" Class="XAML-grid-container">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn Width="100%"/>
+				</GridColumns>
+				<GridRow>
+					<Link Click="SET=librarySliderTab,0" Class="icon-arrow-left"></Link>
+					<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedSectionTitle" Editable="0"><%=sInitialSectonName%></Edit>
+				</GridRow>
+			</Grid>
+<%
+		}
+	}
+	if (iActiveLibrarySliderTab > 0 || (!bThinMode && sLayout != "switch"))
+	{	
+		if (_CURVIEW && (sCurPage == "library" && sTabList.indexOf("library") >= 0 || sCurPage == "recommended" && sTabList.indexOf("recommended") >= 0 || sCurPage == "new" && sTabList.indexOf("new") >= 0 || sCurPage == "subscription" && sTabList.indexOf("subscription") >= 0 || sCurPage == "top" && sTabList.indexOf("top") >= 0))
+		{
+%>
+			<StackPanel>
+<%	
+			iPageItemsCount = 0;
+			bAllowEdit = false;
+			
+			sViewType = CONTEXT.GetOptProperty("CatalogListSelectorsLibraryView");
+			
+			if (iSelectedLibrarySectionID != null)
+			{
+				if (teSection != undefined)
+				{
+					/*
+					curTitle = ({"object": teSection});
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+					*/
+					if (tools_web.is_true(tools_web.get_web_param( curParams, "library.section_description", "0", true )))
+					{
+						if (teSection.desc.HasValue)
+						{
+							curDescObject = teSection;
+							curDescObjectID = teSection.id.Value;
+							Response.Write(EvalCodePageUrl(global_settings.web_path + "view_desc.xaml"));
+						}
+					}
+				
+					bAllowEdit = teSection.administrators.ChildByKeyExists(curUserID);
+					
+					if (sViewType == undefined)
+						sViewType = teSection.web_view;
+				}
+			}
+			
+			sViewType = (sViewType == "gallery" || sViewType == "tile" ? "tile" : "data_grid")
+			
+			sColumnsList = "name";
+			
+			if(bShowCover && !bThinMode)
+				sColumnsList = "cover;" + sColumnsList;
+			
+			if(bShowAuthorCol && !bThinMode)
+				sColumnsList += ";author";
+			
+			if(bShowAnnotation && !bThinMode)
+				sColumnsList += ";annotation";
+						
+			if(bShowYearColl  && !bThinMode)
+				sColumnsList += ";year";
+			
+			if (!bThinMode)
+				sColumnsList += ";status";
+			
+			if (bShowDigitalCol  && !bThinMode)
+				sColumnsList += ";has_digital";
+			
+			if (bShowPhysicalCol  && !bThinMode)
+				sColumnsList += ";has_physical";
+				
+			if (bShowViewButton)
+				sColumnsList += ";view_button";
+			
+			if (bShowDownloadButton)
+				sColumnsList += ";download_button";
+			
+			curView = ({
+				"id": "LibraryView",
+				"check_access": false,
+				"disp_selectors": true,
+				"disp_search": (sCurPage != "recommended" && sCurPage != "top"),
+				"disp_filter": false,
+				"selectors": "data_grid;tile",
+				"disp_paging": true,
+				"catalog_name": "library_material",
+				"tile_template": sTileCode,
+				"disp_type": sViewType,
+				"disp_paging": (iPaging > 0),
+				"paging_size": iPaging,
+				"height": null,
+				"row_filters": (sCurPage == "recommended" || sCurPage == "top" ? null : getRowFilters("SelectMatType", "SelectVT")),
+				"collection": {
+					"name": "library_data_collection",
+					"params": ([
+						{"name": "Mode", "value": sCurPage},
+						{"name": "section_id", "value": iSelectedLibrarySectionID},
+						{"name": "columns_list", "value": sColumnsList},
+						{"name": "filters", "value": "mattype={SelectMatType}&viewtype={SelectVT}&search={CatalogListSearchLibraryView}"},
+						{"name": "doc_id", "value": curDocID},
+						{"name": "view_mode", "value": "{CatalogListSelectorsLibraryView}"},
+						{"name": "iRootID", "value": (iRootID)}
+					])
+				}
+			});
+			
+			if (sViewType == "tile" && iTileColumns > 0)
+				curView.tile_columns = iTileColumns;
+			
+			if (sCurPage == "new")
+			{
+				curView.collection.params.push(({"name": "iNDays", "value": (tools_web.get_web_param( curParams, "library.new_days", "1", true ))}));
+			}
+			
+			
+			if (bAllowEdit)
+			{
+				curView.buttons = ([
+					{
+					"name": "addButton",
+					"title": tools_web.get_web_const("veb_add", curLngWeb),
+					"click": "Action=CreateMaterial"
+					}
+				])
+			}
+			
+			if (teSection != undefined)
+			{
+				bSubscribed = (ArrayOptFirstElem(XQuery("for $elem in subscriptions where $elem/person_id = " + curUserID + " and $elem/document_id=" + teSection.id + " and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) return $elem/Fields('id')")) != undefined);
+%>
+				<Action Name="Subscribe" Source="subscription_create" Success="REFRESH">
+					<Param Name="subscription_type" Value="library_section"/>
+					<Param Name="document_id" Value="<%=teSection.id%>"/>
+				</Action>
+				<Action Name="Unsubscribe" Source="subscription_delete" Success="REFRESH">
+					<Param Name="document_id" Value="<%=teSection.id%>"/>
+				</Action>
+<%
+				if (!curView.HasProperty("buttons"))
+					curView.buttons = ([]);
+				if (!bSubscribed)
+				curView.buttons.push((
+					{
+						"name": "SubscribeBtn",
+						"title": tools_web.get_web_const("csubscb_subscript", curLngWeb),
+						"click": "Action=Subscribe",
+						"hidden": !bSubscribed
+					}
+				));
+				else
+				curView.buttons.push((
+					{
+						"name": "UnsubscribeBtn",
+						"title": tools_web.get_web_const("vfb_del_subscript", curLngWeb),
+						"click": "Action=Unsubscribe",
+						"hidden": bSubscribed
+					}
+				));
+			}
+			
+			Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list.xaml"));
+%>
+			</StackPanel>
+<%
+		}
+		else if (sCurPage == "library" && sTabList.indexOf("library") >= 0)
+		{
+%>
+			<StackPanel Width="100%">
+<%
+			
+			if (iSelectedLibrarySectionID == null)
+			{
+				//arrLibMat=XQuery("for $elem in library_materials where $elem/section_id = "+(iRootID!=null?iRootID:"null()")+" return $elem");
+				//arrLibMat=tools.xquery("for $elem in library_materials return $elem/id,$elem/has_physical,$elem/has_digital,$elem/__data");
+				arrLibMat = "";
+				sViewType = (CONTEXT.GetOptProperty("FilterSelectorslibrary") == "tile" ? "gallery": "list");
+				
+			}
+			else if (teSection != undefined)
+			{
+				bAllowEdit = teSection.administrators.ChildByKeyExists(curUserID);
+				sViewType = CONTEXT.GetOptProperty("FilterSelectors" + sCurPage);
+				if (sViewType != undefined)
+					sViewType = (sViewType == "tile" ? "gallery": "list");
+				else
+					sViewType = teSection.web_view;
+				
+				
+				arrSubSections=tools.xquery("for $elem in library_sections where IsHierChild( $elem/id, " + iSelectedLibrarySectionID + " ) order by $elem/Hier() return $elem/Fields('id')");
+				
+				aSectionsToShow = ([(iSelectedLibrarySectionID)]);
+				
+				if ( global_settings.settings.check_access_on_lists )
+					arrSubSections = ArraySelect(arrSubSections, "CheckAccess(This.id)");
+				
+				for (fldSection in arrSubSections)
+				{
+					aSectionsToShow.push(fldSection.PrimaryKey.Value);
+				}
+				
+				if (StrContains(sTabList, "subscription"))
+				{
+					bSubscribed = (ArrayOptFirstElem(XQuery("for $elem in subscriptions where $elem/person_id = " + curUserID + " and $elem/document_id=" + teSection.id + " and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) return $elem/Fields('id')")) != undefined);
+%>
+					<Action Name="Subscribe" Source="subscription_create" Success="TOGGLE=SubscribeBtnContainter,UnsubscribeBtnContainter">
+						<Param Name="subscription_type" Value="library_section"/>
+						<Param Name="document_id" Value="<%=teSection.id%>"/>
+					</Action>
+					<Action Name="Unsubscribe" Source="subscription_delete" Success="TOGGLE=SubscribeBtnContainter,UnsubscribeBtnContainter">
+						<Param Name="document_id" Value="<%=teSection.id%>"/>
+					</Action>
+					<StackPanel Name="SubscribeBtnContainter" Hidden="<%=bSubscribed%>">
+						<Button Click="ACTION=Subscribe"><%=tools_web.get_web_const("csubscb_subscript", curLngWeb)%></Button>
+					</StackPanel>
+					<StackPanel Name="UnsubscribeBtnContainter" Hidden="<%=!bSubscribed%>">
+						<Button Click="ACTION=Unsubscribe"><%=tools_web.get_web_const("vfb_del_subscript", curLngWeb)%></Button>
+					</StackPanel>
+<%
+				}
+				
+				if (tools_web.is_true(tools_web.get_web_param( curParams, "library.section_description", "0", true )))
+				{
+					if (teSection.desc.HasValue)
+					{
+						curDescObject = teSection;
+						curDescObjectID = teSection.id.Value;
+						Response.Write(EvalCodePageUrl(global_settings.web_path + "view_desc.xaml"));
+					}
+				}
+				
+				
+				//arrLibMat = tools.xquery("for $elem in library_materials where MatchSome($elem/section_id, (" + ArrayMerge(aSectionsToShow, "This", ",") +")) return $elem/id,$elem/has_physical,$elem/has_digital,$elem/__data");
+				arrLibMat = "MatchSome($elem/section_id, (" + ArrayMerge(aSectionsToShow, "This", ",") +"))";
+			}
+			
+			//if (ArrayOptFirstElem(arrLibMat)!=undefined)
+			{ 
+				fnBuildDataGrid(arrLibMat,sCurPage);		
+			}
+%>	
+			</StackPanel>
+<%
+		}
+		else if (sCurPage == "recommended" && sTabList.indexOf("recommended") >= 0)
+		{
+			bBuildAgain = false;
+			if (bCacheObjects)
+			{
+				try
+				{
+					oUserData = tools_web.get_user_data("library__recommended_" + Request.Session.sid);
+					if(bFlush||oUserData==null)
+					{
+						throw "update cache";
+					}
+					else
+					{
+						arrLibraryRequiredObjects = oUserData.arrLibraryRequiredObjects;
+					}
+				}
+				catch(ex)
+				{
+					//alert(ex)
+					bBuildAgain=true
+				}
+			}
+			else
+			{
+				bBuildAgain = true;
+			}
+			if (bBuildAgain)
+			{
+
+				arrLibraryRequiredObjects = tools_web.get_recommended_materials(curUserID,"",true,iRootID);
+				
+				if (bCacheObjects)
+				{
+					oData = new Object;
+					oData.SetProperty("arrLibraryRequiredObjects",arrLibraryRequiredObjects)
+					tools_web.set_user_data("library__recommended_" + Request.Session.sid, oData, 86400 );
+				}
+
+			}
+
+			if (ArrayOptFirstElem(arrLibraryRequiredObjects)!=undefined)
+			{
+				sViewType = (CONTEXT.GetOptProperty("FilterSelectors" + sCurPage) == "tile" ? "gallery": "list");
+				fnBuildDataGrid(arrLibraryRequiredObjects,sCurPage);
+			}
+			else
+			{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%=sConstNoRecommended%>]]></Label>
+<%
+			}
+
+		}
+		else if (sCurPage == "new" && sTabList.indexOf("new") >= 0)
+		{
+			iNDays = OptInt(tools_web.get_web_param( curParams, "library.new_days", "1", true ), null);
+			if (iNDays > 0)
+			{
+				dFrom = DateOffset(DateNewTime(Date()), (0 - (iNDays * 86400)));
+				//arrLibMat=tools.xquery("for $elem in library_materials where $elem/creation_date >= " +XQueryLiteral(dFrom)+ " order by $elem/creation_date descending return $elem/id,$elem/has_physical,$elem/has_digital,$elem/__data");
+				arrLibMat = "$elem/creation_date >= " +XQueryLiteral(dFrom)+ " order by $elem/creation_date descending";
+			}
+			else
+				arrLibMat = new Arrray();
+			sViewType = (CONTEXT.GetOptProperty("FilterSelectors" + sCurPage) == "tile" ? "gallery": "list");
+			
+			fnBuildDataGrid(arrLibMat,sCurPage);
+		}
+		else if (sCurPage == "top" && sTabList.indexOf("top") >= 0)
+		{
+			arrLibMat = ArraySelectAll(tools.xquery("for $elem in library_material_viewings order by $elem/material_id return $elem/material_id"));
+			
+			var oMat, aMats = ArrayExtract(ArraySelectDistinct(xQ, "material_id"), "({'material_id': This.material_id.Value, 'c': null})");
+			for (oMat in aMats)
+			{
+				oMat.c = ArrayCount(ArraySelectByKey(xQ, oMat.material_id, 'material_id'));
+			}
+			
+			arrLibMat = tools.xquery("for $elem in library_materials where MatchSome($elem/id,(" +ArrayMerge(aMats, "This.material_id", ",")+ ")) and ($elem/state_id = null() or $elem/state_id = 1) return $elem/id,$elem/has_physical,$elem/has_digital,$elem/__data");
+			
+			arrLibMat = ArraySort(xQ, "ArrayOptFindBySortedKey(aMats, This.id, 'material_id').c", "+");
+			
+			sViewType = (CONTEXT.GetOptProperty("FilterSelectors" + sCurPage) == "tile" ? "gallery": "list");
+			
+			fnBuildDataGrid(arrLibMat,sCurPage);
+		}
+		else if (sCurPage == "subscription" && sTabList.indexOf("subscription") >= 0)
+		{
+				var xarrSubSections = XQuery("for $elem in subscriptions where $elem/person_id = " + curUserID + " and $elem/type = 'library_section' and $elem/document_id != null() and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) return $elem/Fields('id','document_id')");
+				
+				if ( global_settings.settings.check_access_on_lists )
+					xarrSubSections = ArraySelect(xarrSubSections, "CheckAccess(This.document_id)");
+				
+				aSectionsToShow = ([]);
+				
+				for (catSsub in xarrSubSections)
+				{
+					aSectionsToShow.push(catSsub.document_id);
+					
+					arrSubSections=tools.xquery("for $elem in library_sections where IsHierChild( $elem/id, " + catSsub.document_id + " ) order by $elem/Hier() return $elem/Fields('id')");
+						
+					
+					if ( global_settings.settings.check_access_on_lists )
+						arrSubSections = ArraySelect(arrSubSections, "CheckAccess(This.id)");
+					
+					for (fldSection in arrSubSections)
+					{
+						aSectionsToShow.push(fldSection.PrimaryKey.Value);
+					}
+					
+				}
+			
+				arrLibMat = "MatchSome($elem/section_id, (" +ArrayMerge(aSectionsToShow, "This", ",")+ ")) order by $elem/creation_date descending";
+				
+				sViewType = (CONTEXT.GetOptProperty("FilterSelectors" + sCurPage) == "tile" ? "gallery": "list");
+				
+				fnBuildDataGrid(arrLibMat,sCurPage);
+		}
+		else if (sCurPage == "viewing" && sTabList.indexOf("viewing") >= 0)
+		{
+			sID = "MyMaterials";
+			
+			curView = {
+				"id": sID,
+				"height": "",
+				"catalog_name": "library_material_viewing",
+				"xquery_qual": ("$elem/person_id = " + curUserID),
+				"disp_search": "true",
+				"disp_filter": "true",
+				"paging_size": 20,
+				"sort_direct": "-",
+				"show_all": "false",
+				"list_columns": "material_id.ForeignElem.name;last_viewing_date;duration;state_id",
+				"is_data_grid": "true"
+			};
+			curView.SetProperty("disp_link", "true");			
+			curView.SetProperty("link_mode", "library_material");
+			curView.SetProperty("link_object_field", "material_id");
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+		else if (sCurPage == "search" && sTabList.indexOf("search") >= 0)
+		{
+%>
+		<StackPanel>
+<%
+			curFilter = ({
+				"action": "SET=SearchLibraryCollection/bSearchStart,true;UPDATE=LibraryMaterialGrid",
+				"disp_search": true,
+				"search_opened": true,
+				"search_field": "key_words",
+				"search_value": CONTEXT.GetOptProperty("key_words",""),
+				"search_width": '600',
+				"buttons": ([]),
+				"row_filters": ([
+					[
+						{"name": "name", "type": "string", "title": (tools_web.get_web_const("c_name", curLngWeb))},
+						{"name": "imprint_date", "type": "string", "title": (tools_web.get_web_const("c_imprint_date", curLngWeb))},
+						{"name": "author", "type": "string", "title": (tools_web.get_web_const("vfb_author", curLngWeb))}
+					],
+					[
+						{"name": "isbn", "type": "string", "title": "ISSN/ISBN"},
+						{"name": "has_digital", "type": "checkbox", "title": tools_web.get_web_const("cifrovoynosite", curLngWeb)},
+						{"name": "has_physical", "type": "checkbox", "title": tools_web.get_web_const("fizicheskiynosi", curLngWeb)},
+					],
+					[
+						{"name": "library_material_type_id", "title": tools_web.get_web_const( "vidmateriala", curLngWeb ), "type": "foreign_elem", "catalog_name": "library_material_type"},
+						{"name": "library_material_format_id", "title": tools_web.get_web_const( "formatmateriala", curLngWeb ), "type": "foreign_elem", "catalog_name": "library_material_format"}
+					]
+				])
+			});
+		
+			sContextFildNames += ",key_words,name,imprint_date,author,isbn,has_digital,has_physical,library_material_type_id,library_material_format";
+			
+			Response.Write(EvalCodePageUrl(global_settings.web_path + "view_filter.xaml"));
+
+			curCollectionMenu = {
+				"id": "LibraryMaterialGridM",
+				"catalog_name": "library_material",
+				"data_grid_id": "LibraryMaterialGrid"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+		<Collection Name="SearchLibraryCollection" Source="library_search_collection">
+			<Param Name="key_words" Value="{key_words}"/>
+			<Param Name="name" Value="{name}"/>
+			<Param Name="imprint_date" Value="{imprint_date}"/>
+			<Param Name="author" Value="{author}"/>
+			<Param Name="isbn" Value="{isbn}"/>
+			<Param Name="has_digital" Value="{has_digital}"/>
+			<Param Name="has_physical" Value="{has_physical}"/>
+			<Param Name="library_material_type_id" Value="{library_material_type_id}"/>
+			<Param Name="library_material_format_id" Value="{library_material_format_id}"/>
+			<Param Name="bSearchStart" Value="false"/>
+			<Param Name="iRootID" Value="<%=iRootID%>"/>
+		</Collection>	
+		<DataGrid Name="LibraryMaterialGrid" Source="{SearchLibraryCollection}" Selection="multiple" Width="100%" PageSize="15">
+			<DataGridColumn Value="id" Hidden="true" Ghost="false"/>
+<%
+			if (!bThinMode)
+			{
+%>
+			<DataGridColumn Value="icons/16png/library_material.png" Type="fixedimage" Width="30"/>
+<%
+			}
+%>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url("library_material", "{id}", ({"doc_id": curDocID}))%>" Sortable="true"/>
+<%
+			if (!bThinMode)
+			{
+%>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "vfb_author", curLngWeb )%>" Value="author" Width="200" Type="sing" Sortable="true"/>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_imprint_date", curLngWeb )%>" Value="year" Width="150" Type="sing" Sortable="true"/>
+		 	<DataGridColumn Title="ISSN/ISBN" Value="isbn" Width="100" Type="sing" Sortable="true"/>
+			<Menu Source="{CatalogListMenuLibraryMaterialGridM}"/>	
+<%
+			}
+%>
+		</DataGrid>
+		</StackPanel>
+<%
+		}
+
+	}
+		
+	if (bThinMode || sLayout == "switch")
+	{
+%>
+		</TabItem>
+	</TabControl>
+<%
+	}
+	else if (sLayout == "panel")
+	{
+		// do nothing
+	}
+	else
+	{
+%>
+			</GridRow>
+		</Grid>
+<%
+	}
+%>
+
+
+<%
+if (bShowClearCacheButton&&bCacheObjects)
+{
+%>
+<Button Class="XAML-button XAML-button-refresh" Click="ACTION=UpdateLibraryCache"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+}
+%>
+<ContextGroup Name="AllSendContext" Items="<%=sContextFildNames%>"/>	
+</SPXMLScreen>

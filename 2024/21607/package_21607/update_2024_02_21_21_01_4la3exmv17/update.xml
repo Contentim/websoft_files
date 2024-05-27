@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>4la3exmv17</id>
+		<create_date>2024-02-21T21:01:26+00:00</create_date>
+		<server_version>2023.2.839 (2024-02-10)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7B</id>
+			<code>123</code>
+			<name VALUE="##'Вы были включены в состав участников мероприятия'##"/>
+			<subject VALUE="##'Вы были включены в состав участников мероприятия'##"/>
+			<body>&lt;%&#10;if ( ObjectType(Text) == 'JsObject')&#10;{&#10;%&gt;&#10;Вы были включены в состав участников мероприятия "&lt;%=Text.event_name%&gt;", которое состоится &lt;%=StrDate(Text.event_start_date, true, false)%&gt;&#10;&lt;%&#10;}&#10;else&#10;{&#10;%&gt;&#10;Вы были включены в состав участников мероприятия "&lt;%=Text%&gt;".&#10;&lt;%&#10;}&#10;%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7D</id>
+			<code>125</code>
+			<name VALUE="##'Подчиненный сотрудник был включен в состав участников мероприятия'##"/>
+			<subject VALUE="##'Подчиненный сотрудник был включен в состав участников мероприятия'##"/>
+			<body>&lt;%&#10;if ( ObjectType(Text) == 'JsObject')&#10;{&#10;%&gt;&#10;Подчиненный сотрудник - &lt;%=Text.collaborator_fullname%&gt;, был включен в состав участников мероприятия "&lt;%=Text.event_name%&gt;", которое состоится &lt;%=StrDate(Text.event_start_date, true, false)%&gt;&#10;&lt;%&#10;}&#10;else&#10;{&#10;%&gt;&#10;Подчиненный сотрудник - &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=objDoc.middlename%&gt;, был включен в состав участников мероприятия "&lt;%=Text%&gt;".&#10;&lt;%&#10;} //end if else&#10;%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

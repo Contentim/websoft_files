@@ -1,0 +1,195 @@
+﻿<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+curDescObjectID = iLearningTaskID = OptInt( oParamSource.GetOptProperty( 'learning_task_id' ), null );
+curDescObject = teLearningTask = OpenDoc( UrlFromDocID( iLearningTaskID ) ).TopElem;
+iEducationPlanID = OptInt( oParamSource.GetOptProperty( 'education_plan_id' ), null );
+iEventID = OptInt( oParamSource.GetOptProperty( 'event_id' ), null );
+
+isExpert = ArrayOptFindByKey( teLearningTask.experts, curUserID, "person_id" ) != undefined;
+isLector = false;
+sState = 'process';
+iLearningTaskResultID = null;
+teLearningTaskResult = null;
+
+if ( iEducationPlanID == null )
+{
+	catEducationPlan = ArrayOptFirstElem( XQuery( "for $elem in education_plans where $elem/person_id = " + curUserID + " and $elem/event_id = " + iEventID + " return $elem/Fields('id')" ) );
+	if ( catEducationPlan != undefined )
+		iEducationPlanID = catEducationPlan.id.Value;
+}
+catLearningTaskResult = ArrayOptFirstElem( XQuery( "for $elem in learning_task_results where $elem/person_id = " + curUserID + " and $elem/learning_task_id = " + iLearningTaskID + ( iEducationPlanID == null ? "" : " and $elem/education_plan_id = " + iEducationPlanID ) + " return $elem/Fields('id')" ) );
+if ( catLearningTaskResult != undefined )
+{
+	iLearningTaskResultID = catLearningTaskResult.id.Value;
+	teLearningTaskResult = OpenDoc( UrlFromDocID( iLearningTaskResultID ) ).TopElem;
+	sState = teLearningTaskResult.status_id.Value;
+
+	if ( iEventID == null )
+	{
+		catEducationPlan = teLearningTaskResult.education_plan_id.OptForeignElem;
+		if ( catEducationPlan != undefined )
+			iEventID = catEducationPlan.event_id.Value;
+	}
+}
+if ( iEventID != null )
+{
+	try
+	{
+		teEvent = OpenDoc( UrlFromDocID( iEventID ) ).TopElem;
+		for( fldLector in teEvent.lectors )
+		{
+			catLector = fldLector.PrimaryKey.OptForeignElem;
+			if ( catLector != undefined && catLector.person_id == curUserID )
+			{
+				isLector = true;
+				break;
+			}
+		}
+	}
+	catch ( err )
+	{
+		alert( err );
+	}
+}
+
+if ( sState == 'process' && ( isExpert || isLector ) )
+	sState = 'evaluation';
+
+sSuccessAction = ISDIALOG ? "CLOSEDIALOG" : "ALERT=" + "Результат сохранен." ;//+ ";SHOW=ActionsGrid;";
+%>
+<SPXMLScreen>
+<Action Name="LearningTaskResultChangeAction" Source="learning_task_result_change" Success="<%=XmlAttrEncode( sSuccessAction )%>" Failure="ALERT={messageText}">
+	<Param Name="action" Value="create"/>
+	<Param Name="learning_task_id" Value="<%=iLearningTaskID%>"/>
+	<Param Name="learning_task_result_id" Value="<%=iLearningTaskResultID%>"/>
+	<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+if ( sState != 'process' )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": ( sState == 'evaluated' ? "Задание выполнено и оценено экспертом." : "Задание выполнено и ожидает оценки экспертом." )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+
+if ( curDescObject.desc.HasValue )
+{
+	if ( ISDIALOG )
+	{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-overflow" Height="300" Width="100%" UsePadding="false">
+<%
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+	if ( ISDIALOG )
+	{
+%>
+	</StackPanel>
+<%
+	}
+}
+%>
+	<Grid Width="100%" Class="XAML-grid-container">
+		<GridColumns>
+			<GridColumn Width="120"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+			<EditBox Name="Desc" Width="100%" Enabled="<%=( sState == 'process' )%>"><![CDATA[<%=( teLearningTaskResult == null ? '' : teLearningTaskResult.desc )%>]]></EditBox>
+		</GridRow>
+<%
+if ( sState == 'process' )
+{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>:</Label>
+			<ResourceField Name="SelectedFile" CanSelect="false" Width="100%" Source="resources" Class="icon-folder-open-o"/>
+		</GridRow>
+<%
+}
+else
+{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_file", curLngWeb )%>:</Label>
+<%
+	bDispCloseTag = true;
+	fldFile = ArrayOptFirstElem( teLearningTaskResult.files );
+	if ( fldFile != undefined )
+	{
+		catResource = fldFile.PrimaryKey.OptForeignElem;
+		if ( catResource != undefined )
+		{
+%>
+			<Link Click="OPENWINDOW=<%=tools_web.get_object_source_url( 'resource', catResource.id )%>"><![CDATA[<%=catResource.name%>]]></Link>
+<%
+			bDispCloseTag = false;
+		}
+	}
+	if ( bDispCloseTag )
+	{
+%>
+			<Label/>
+<%
+	}
+%>
+		</GridRow>
+<%
+	if ( sState == 'evaluated' )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%='Коментарий эксперта'%>:</Label>
+			<EditBox Name="Comment" Width="100%" Enabled="false"><![CDATA[<%=teLearningTaskResult.comment%>]]></EditBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%='Оценка эксперта'%>:</Label>
+			<Edit Name="Mark" Width="100%" Enabled="false" Editable="false"><![CDATA[<%=teLearningTaskResult.mark%>]]></Edit>
+		</GridRow>
+<%
+	}
+}
+%>
+
+	</Grid>
+<%
+if(sState=="process" || (isExpert || isLector))
+if ( ISDIALOG )
+{
+%>
+	<Grid Name="ActionsGrid" Width="100%" Class="XAML-dialog-buttons-grid">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="HIDE=ActionsGrid;ACTION=LearningTaskResultChangeAction">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+else if ( sState != 'evaluated' )
+{
+%>
+	<Grid Name="ActionsGrid" Width="100%" Class="XAML-dialog-buttons-grid">
+		<GridColumns>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Button Class="XAML-button" Width="100" Click="HIDE=ActionsGrid;ACTION=LearningTaskResultChangeAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

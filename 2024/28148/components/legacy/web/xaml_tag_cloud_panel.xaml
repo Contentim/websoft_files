@@ -1,0 +1,102 @@
+﻿<SPXMLScreen>
+<%
+	function draw_tag_cloud()
+	{
+		function get_child( role_id )
+		{
+			for( elem in ArrayDirect( XQuery( "for $i in roles where $i/catalog_name = 'tag' and $i/parent_role_id = " + role_id + " return $i" ) ) )
+			{
+				arrTags = ArrayUnion( arrTags, ArrayDirect( XQuery( "for $i in tags where MatchSome( $i/role_id, ( " + elem.id.Value + " ) ) " + cond + " return $i" ) ) )
+				get_child( elem.id.Value );
+			}
+		}
+		
+		arrTags = new Array();
+		RoleID = OptInt( tools_web.get_web_param( PARAMETERS, 'RoleID', '', true ) );
+		TagIDCloud = OptInt( tools_web.get_web_param( PARAMETERS, 'TagIDCloud', '', true ) );
+		KeyWord = tools_web.get_web_param( PARAMETERS, 'KeyWordTagCloud', '', true );
+		NewUrl = tools_web.get_web_param( PARAMETERS, 'NewUrl', '', true );
+		NewUrl = NewUrl + '&amp;tag_role_id=' + RoleID + '&amp;key_word_tag=' + KeyWord + '&amp;type_visible_tag=' + tools_web.get_web_param( PARAMETERS, 'TypeVisibleTag', 'spisok', true );
+		cond = '';
+		if( KeyWord != '' )
+		{
+			cond = ( RoleID != undefined ? " and " : " where " ) + ' ( contains($i/name, ' + XQueryLiteral( KeyWord ) + ' ) or contains($i/code, ' + XQueryLiteral( KeyWord ) + ' ) )'
+		}
+		if( RoleID != undefined || true )
+		{
+
+			if( RoleID == 0 )
+				arrTags = ArrayDirect( XQuery( "for $i in tags where IsEmpty( $i/role_id ) = true() " + cond + " return $i" ) );
+			else if( RoleID != undefined )
+			{
+				arrTags = ArrayDirect( XQuery( "for $i in tags where MatchSome( $i/role_id, ( " + RoleID + " ) ) " + cond + " return $i" ) );
+				get_child( RoleID );
+			}
+			else
+				arrTags = ArrayDirect( XQuery( "for $i in tags " + cond + " return $i" ) );
+			
+			arrTags = ArraySelectDistinct( arrTags, "This.id.Value" );
+			arrTagObject = new Array();
+			min_cnt = 0;
+			max_cnt = 0;
+			for( tag in arrTags )
+			{
+				cnt = ArrayCount( XQuery( "for $i in tagged_objects where $i/tag_id = " + tag.id.Value + " return $i" ) );
+				if( min_cnt > cnt )
+					min_cnt = cnt;
+				if( max_cnt < cnt )
+					max_cnt = cnt;
+				obj = new Object();
+				obj.id = tag.id.Value;
+				obj.tag_name = tag.name.Value;
+				obj.name = tag.name.Value + '(' + cnt + ')';
+				obj.cnt = cnt;
+				arrTagObject[ ArrayCount( arrTagObject ) ] = obj;
+
+			}
+			if( ArrayCount( arrTagObject ) > 0 )
+			{
+				max_size = 40;
+				min_size = 15;
+				if( max_cnt != min_cnt )
+					iDel = false;
+				else
+					iDel = true;
+%>
+				<StackPanel Orientation="Wrap" Class="XAML-stack-container">
+<%
+						for ( oTagElem in ArraySort( arrTagObject, "This.name", "+" ) )
+						{
+							if( oTagElem.cnt == 0 )
+								curSize = min_size;
+							else
+								curSize = ( iDel ? min_size : ( min_size + ( max_size * ( oTagElem.cnt - min_cnt ) )/max_cnt ) > max_size ? max_size : ( min_size + ( max_size * ( oTagElem.cnt - min_cnt ) )/max_cnt ) );
+								
+							sClassName = tools.random_string( 12, "qwertyuiopasdfghjklzxcvbnm" );
+%>
+						<HTMLBox><![CDATA[	<style>
+												.<%=sClassName%> { font-size: <%=curSize%>px; }
+											</style>]]></HTMLBox>
+<%
+							if( oTagElem.cnt == 0 )
+							{
+%>
+								<Label Class="<%=sClassName%>"><%=HtmlEncode( tools_web.get_cur_lng_name( oTagElem.name, curLng.short_id ) )%></Label>
+<%
+							}
+							else
+							{
+%>
+								<Link Class="<%=sClassName%>" Click="SET=currentlySelectedKnowledgeTitle,<%=UrlEncode( tools_web.get_cur_lng_name( oTagElem.tag_name, curLng.short_id ) )%>;SET=TagIDCloud,<%=oTagElem.id%>;SET=KnowledgeTagTab,1;UPDATE=TagCloudPanel{TagCloudTabE};"><%=HtmlEncode( tools_web.get_cur_lng_name( oTagElem.name, curLng.short_id ) )%></Link>
+<%
+							}
+						}
+%>
+				</StackPanel>
+<%
+			}
+		}
+	}
+	draw_tag_cloud()
+%>
+</SPXMLScreen>

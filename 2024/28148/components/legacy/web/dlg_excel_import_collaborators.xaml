@@ -1,0 +1,36 @@
+﻿<SPXMLScreen>
+<%
+	oEvent = ArrayOptFirstElem(tools.read_object(String(PARAMETERS.GetOptProperty( 'select_data'))));
+	//alert("EventId: " + oEvent.id);
+
+	iEventId = Int(oEvent.id);
+	
+	//sAddAction = "SET=TargetData,{CatalogListDataGridSelList:*};SET=SelectedData,{CatalogListDataGridFullList};CONTEXT=NULL;UPDATE=CatalogListDataGridSelList";
+	sOkAction = "ACTION=SelectCollaboratorFileAction;";
+%>
+	<Action Name="SelectCollaboratorFileAction" Source="event_excel_import_collaborator" Success="ALERT={messageText};CLOSEDIALOG">
+		<Param Name="ResourseId" Value="{CollaboratFile}"/>
+		<Param Name="EventId" Value="<%=iEventId%>"/>
+		<Param Name="UserId" Value="<%=curUserID%>"/>
+	</Action>
+
+	<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="120" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+		
+		<GridRow>
+			<Label Class="XAML-grid-label-name" Width="120"><%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Adapt="true">
+				<ResourceField Width="100" Name="CollaboratFile" Source="event_resources"/>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+		
+	<Label/>
+	<Toolbar Width="">
+			<Button Class="XAML-button" Click="<%=sOkAction%>">OK</Button>
+			<Button Class="XAML-button" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</Toolbar>
+</SPXMLScreen>

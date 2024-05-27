@@ -1,0 +1,365 @@
+﻿<SPXMLScreen>
+<%
+sNavigationListDoc = CONTEXT.GetOptProperty( 'sNavigationListDoc', tools_web.get_web_param( curParams, 'navigation_list.doc_id', '', true ) );
+if (sNavigationListDoc!='' && sNavigationListDoc!=null)
+	{
+		useDocID = Int(sNavigationListDoc);
+		curDocIdCard = OpenDoc( UrlFromDocID( useDocID ) ).TopElem;
+		curDocIdName = curDocIdCard.name;
+	}
+else
+	{
+	useDocID = curDocID;
+	}
+	if (sNavigationListDoc!='' && sNavigationListDoc!=null)
+	{
+%>
+<Label Class="XAML-label-header-1"><%=curDocIdName%></Label>
+<%
+	}		
+	
+if ( useDocID != null )
+{
+	sSearch = CONTEXT.GetOptProperty( 'DocChildSearch', '' );
+	try
+	{
+		if ( sNavigationListViewType == 'default' )
+			throw 'default';
+	}
+	catch ( err )
+	{
+		sNavigationListViewType = CONTEXT.GetOptProperty( 'sNavigationListViewType', tools_web.get_web_param( curParams, 'navigation_list.view_type', 'list', true ) );
+	}
+
+	bDispViewSelector = tools_web.is_true( tools_web.get_web_param( curParams, "doc_body.tab_list.child_tab.disp_view_selector", false, true ) );
+	xarrDocumentsAll = XQuery( "for $elem in documents where $elem/parent_document_id = " + useDocID + " and ( $elem/site_id = " + curSiteID + " or $elem/site_id = null() )" + ( sSearch == "" ? "" : " and doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( sSearch ) + " )" ) + " order by $elem/position return $elem" );
+
+
+	if ( sNavigationListViewType == 'list' || sNavigationListViewType == 'list_adv' || sNavigationListViewType == 'tab' || sNavigationListViewType == 'grid' )
+	{
+		xarrDocuments = [];
+		for ( catDocumentElem in xarrDocumentsAll )
+		{
+			teDocument = OpenDoc( UrlFromDocID( catDocumentElem.id ) ).TopElem;
+			if ( global_settings.settings.check_access_on_lists && ! tools_web.check_access( teDocument, curUserID, curUser, Request.Session ) )
+				continue;
+
+			xarrDocuments.push( teDocument );
+		}
+	}
+	else
+	{
+		xarrDocuments = xarrDocumentsAll;
+		if ( global_settings.settings.check_access_on_lists )
+			xarrDocuments = ArraySelect( xarrDocuments, 'tools_web.check_access(This,' + curUserID + ',curUser,Request.Session)' );
+	}
+
+	bShowFilters = false;
+	bHasDocuments = ArrayOptFirstElem( xarrDocuments ) != undefined;
+	if ( bHasDocuments || sSearch != "" )
+	{
+		try
+		{
+			if ( bNavigationListDispSearch == 'default' )
+				throw 'default';
+		}
+		catch ( err )
+		{
+			bNavigationListDispSearch = tools_web.is_true( tools_web.get_web_param( curParams, 'navigation_list.disp_search', true, true ) );
+		}
+		if ( bNavigationListDispSearch || bDispViewSelector )
+		{
+			curFilter = {
+				'selectors': ( bDispViewSelector ? 'list;list_adv;tile;structure' : '' ),
+				'selectors_field': 'sNavigationListViewType',
+				'selectors_value': sNavigationListViewType,
+				'disp_search': bNavigationListDispSearch,
+				'search_field': 'DocChildSearch',
+				'search_width': '400'
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+			bShowFilters = bDispViewSelector;
+		}
+	}
+	if ( ! bShowFilters )
+	{
+%>
+	<Edit Name="sNavigationListViewType" Hidden="true"><![CDATA[<%=sNavigationListViewType%>]]></Edit>
+<%
+	}
+
+	if ( bHasDocuments )
+	{
+		switch ( sNavigationListViewType )
+		{
+			case 'tab':
+%>
+<TabControl Name="DocChildTab" ActiveTab="0">
+<%
+				for ( catDocumentElem in xarrDocuments )
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( catDocumentElem.name, curLng.short_id ) )%>">
+		<HTMLBox>
+			<%=HtmlEncode( tools_web.get_web_desc( catDocumentElem.text_area, UrlFromDocID( catDocumentElem.id ), 'document.text_area' ) )%>
+		</HTMLBox>
+	</TabItem>
+<%
+				}
+%>
+</TabControl>
+<%
+				break;
+
+			case 'tile':
+				if ( false )
+				{
+%>
+<Collection Name="DocChildCollection" Source="navigation_list">
+	<Param Name="search_text" Value="{DocChildSearch}"/>
+</Collection>
+<%
+				}
+				else
+				{
+%>
+<Collection Name="DocChildCollection">
+<Data>
+<%
+					for ( catDocumentElem in xarrDocuments )
+					{
+						sHrefStr = tools_web.doc_link( catDocumentElem );
+%>
+<Row>
+<Cell Id="id" Value="<%=catDocumentElem.id%>"/>
+<Cell Id="desc" Value="Ps.comment"/>
+<Cell Id="url" Value="<%=XmlAttrEncode( sHrefStr )%>"/>
+</Row>
+<%
+					}
+%>
+</Data>
+</Collection>
+<%
+				}
+%>
+<TileView Name="DocChildTile" Width="100%" TileHeight="300" DataSource="{DocChildCollection}" TemplateSource="object_tile"/>
+<%
+				break;
+
+			case 'structure':
+%>
+<Collection Name="DocChildCollection" Source="navigation_list">
+	<Param Name="search_text" Value="{DocChildSearch}"/>
+	<Param Name="view_type" Value="{sNavigationListViewType}"/>
+</Collection>
+<WTTree
+			Type="map"
+			Class=""
+			ElementForm="rect"
+			Connector="rect"
+			MarkerStart="circle"
+			MarkerEnd="arrow"
+			ElementClass="wt-sitemap-item"
+			ElementLayout="fonticon|text=name"
+			ElementWidth="200"
+			ElementHeight="48"
+			ElementFontIcon="icon-folder-o-ico"
+			InterElement="16"
+			InterLevel="48"
+			DisplayToggle="true"
+			TogglerClass=""
+			TogglerRadius="8"
+			DisplayTips="true"
+			TipLayout="title=name;image=image|text=desc"
+			AllowZoom="true"
+			ZoomPosition="center"
+
+			Name="DocChildMap"
+			Width="100%"
+			Height="300"
+			Source="{DocChildCollection}"
+
+			DataID="id"
+			DataParent="parent_id"
+			DataTitle="name"
+			DataText="desc"
+			DataColor="color"
+			DataImage="image"
+
+			Orientation="left"
+			Alignment="left"
+			NodeMode="full"
+
+			LevelsOpen="3"
+
+			NodeClick="OPENURL={url}"
+/>
+<%
+				break;
+
+		case 'list_adv':
+			try
+			{
+				if ( sNavigationListViewListAdvComponents == 'default' )
+					throw 'default';
+			}
+			catch ( err )
+			{
+				sNavigationListViewListAdvComponents = tools_web.get_web_param( curParams, 'navigation_list.list_adv_components', 'date;like;dislike;image', true );
+			}
+			arrListAdvComponents = sNavigationListViewListAdvComponents.split( ';' );
+			bDispLike = ArrayOptFind( arrListAdvComponents, "This=='like'" ) != undefined;
+			bDispDislike = ArrayOptFind( arrListAdvComponents, "This=='dislike'" ) != undefined;
+
+			if ( bDispLike || bDispDislike )
+			{
+				catLikes = XQuery( "for $elem in likes where MatchSome( $elem/object_id, (" + ArrayMerge( xarrDocuments, 'id', ',' ) + ") ) return $elem/Fields('object_id','weight')" );
+			}
+%>
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+			for ( catDocumentElem in xarrDocuments )
+			{
+				sHrefStr = ( catDocumentElem.attributes.is_link && StrLowerCase( catDocumentElem.attributes.link_target ) == '_blank' ? 'OPENWINDOW=' : 'OPENURL=' ) + tools_web.doc_link( catDocumentElem );
+				sObjectImageUrl = catDocumentElem.resource_id.HasValue ? tools_web.get_object_source_url( 'resource', catDocumentElem.resource_id ) : '/images/document.png';
+%>
+	<GridRow>
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Image Orientation="Vertical" Class="wt-informer wt-info-image XAML-image-list-image" Source="pics/1blank.gif">
+					<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+				<StackPanel Orientation="Vertical">
+					<Grid Class="XAML-grid-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+<%
+				if ( bDispLike )
+				{
+%>
+							<GridColumn/>
+<%
+				}
+				if ( bDispDislike )
+				{
+%>
+							<GridColumn/>
+<%
+				}
+%>
+						</GridColumns>
+
+						<GridRow>
+							<StackPanel Orientation="Vertical" Class="">
+								<Link  Class="XAML-link-list-item-title" Click="<%=XmlAttrEncode( sHrefStr )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catDocumentElem.name, curLng.short_id )%>]]></Link>
+<%
+				if ( ArrayOptFind( arrListAdvComponents, "This=='date'" ) != undefined )
+				{
+%>
+								<Label Class="XAML-label-list-item-label"><![CDATA[<%=StrDate( catDocumentElem.create_date, false, false )%>]]></Label>
+<%
+				}
+%>
+							</StackPanel>
+<%
+				if ( bDispLike )
+				{
+%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+									<Image Source="/pics/1blank.gif" Class="XAML-image-like"/>
+									<Label><![CDATA[<%=ArrayCount( ArraySelect( catLikes, 'object_id==' + catDocumentElem.id + '&&weight==1' ) )%>]]></Label>
+								</StackPanel>
+<%
+				}
+				if ( bDispDislike )
+				{
+%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+									<Image Source="/pics/1blank.gif" Class="XAML-image-dislike"/>
+									<Label><![CDATA[<%=ArrayCount( ArraySelect( catLikes, 'object_id==' + catDocumentElem.id + '&&weight==0-1' ) )%>]]></Label>
+								</StackPanel>
+<%
+				}
+%>
+						</GridRow>
+					</Grid>
+<%
+				if(catDocumentElem.comment.HasValue)
+				{
+%>
+					<Label Class="XAML-grid-list-desc XAML-label-list-item-desc"><![CDATA[<%=catDocumentElem.comment%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+			}
+%>
+</Grid>
+<%
+			break;
+
+		default:
+%>
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+			for ( catDocumentElem in xarrDocuments )
+			{
+				sHrefStr = ( catDocumentElem.attributes.is_link && StrLowerCase( catDocumentElem.attributes.link_target ) == '_blank' ? 'OPENWINDOW=' : 'OPENURL=' ) + tools_web.doc_link( catDocumentElem );
+%>
+	<GridRow>
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="32"/>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Link Click="<%=XmlAttrEncode( sHrefStr )%>" Class="icon-file-text-o"></Link>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<Link Click="<%=XmlAttrEncode( sHrefStr )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catDocumentElem.name, curLng.short_id )%>]]></Link>
+
+<%
+				if ( catDocumentElem.comment.HasValue )
+				{
+%>
+				<Label Class="XAML-grid-list-desc"><![CDATA[<%=catDocumentElem.comment%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+			}
+%>
+</Grid>
+<%
+			break;
+		}
+	}
+	else if ( sSearch != "" )
+	{
+%>
+	<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+<%
+	}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,52 @@
+﻿<%
+sID_curSelector = curSelector.GetOptProperty( 'id', '' );
+sIDEditName = curSelector.GetOptProperty( 'object_id_item_name', 'ObjectIDEdit' + sID_curSelector );
+sDispNameEditName = 'ObjectNameEdit' + sID_curSelector;
+
+sCatalogName_curSelector = curSelector.GetOptProperty( "catalog_name" );
+sSelectorObjectID = curSelector.GetOptProperty( "object_id" );
+iSelectorObjectID = OptInt( sSelectorObjectID, null );
+sSelectorObjectName = curSelector.GetOptProperty( "object_name", "" );
+if ( iSelectorObjectID != null && sSelectorObjectID != "#empty#" && sSelectorObjectName == "" )
+{
+	try
+	{
+		teObject_curSelector = OpenDoc( UrlFromDocID( iSelectorObjectID ) ).TopElem;
+		sSelectorObjectName = tools_web.get_cur_lng_name( tools.get_disp_name_value( teObject_curSelector ), curLng.short_id );
+	}
+	catch ( err )
+	{
+		sSelectorObjectName = tools_web.get_web_const( 'c_deleted', curLngWeb );
+	}
+}
+bCanBeEmpty_curSelector = tools_web.is_true( curSelector.GetOptProperty( 'can_be_empty', false ) );
+%>
+<Dialog Name="SelectDialog<%=sID_curSelector%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="Set=<%=sDispNameEditName%>,{CatalogListDataGridFullList:^/disp};Set=<%=sIDEditName%>,{CatalogListDataGridFullList:^/id};<%=curSelector.GetOptProperty( 'close_action', '' )%>" Height="90%">
+	<Param Name="catalog_name" Value="<%=sCatalogName_curSelector%>"/>
+	<Param Name="multi_select" Value="false"/>
+	<Param Name="view_type" Value="<%=curSelector.GetOptProperty( 'view_type', '' )%>"/>
+	<Param Name="xquery_qual" Value="<%=XmlAttrEncode( curSelector.GetOptProperty( 'xquery_qual', '' ) )%>"/>
+	<Param Name="check_access" Value="<%=curSelector.GetOptProperty( 'check_access', 'false' )%>"/>
+	<Param Name="selected_object_ids" Value="<%=curSelector.GetOptProperty( 'selected_object_ids', '' )%>"/>
+	<Param Name="display_object_ids" Value="<%=curSelector.GetOptProperty( 'display_object_ids', '' )%>"/>
+	<Param Name="disp_filter" Value="<%=tools_web.is_true( curSelector.GetOptProperty( 'disp_filter', ( curDevice.disp_type == "" ) ) )%>"/>
+	<Param Name="filter_id" Value="<%=curSelector.GetOptProperty( 'filter_id', '#empty#' )%>"/>
+	<Param Name="show_all" Value="<%=tools_web.is_true( curSelector.GetOptProperty( 'show_all', global_settings.settings.show_all_persons ) )%>"/>
+	<Param Name="typein" Value="<%=tools_web.is_true( curSelector.GetOptProperty( 'typein', false ) )%>"/>
+	<Param Name="can_be_empty" Value="false"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	<Param Name="list_columns" Value="<%=curSelector.GetOptProperty( 'list_columns', '' )%>"/>
+</Dialog>
+<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+	<Edit Name="<%=sIDEditName%>" Hidden="1"><%=( sSelectorObjectID == "#empty#" ? "#empty#" : iSelectorObjectID )%></Edit>
+	<Edit Name="<%=sDispNameEditName%>" Width="<%=curSelector.GetOptProperty( 'width', '300' )%>" Height="<%=curSelector.GetOptProperty( 'height', '' )%>" Editable="false" Class="XAML-input-selector <%=curSelector.GetOptProperty( 'class', '' )%>"><![CDATA[<%=sSelectorObjectName%>]]></Edit>
+	<Button Click="OPENDIALOG=SelectDialog<%=sID_curSelector%>" Class="XAML-button-content XAML-button-selector icon-folder-open-o"></Button>
+<%
+if ( bCanBeEmpty_curSelector )
+{
+%>
+	<Button Click="Set=<%=sDispNameEditName%>,;Set=<%=sIDEditName%>,<%=( sSelectorObjectID == "#empty#" ? "#empty#" : "" )%>;<%=curSelector.GetOptProperty( 'close_action', '' )%>" Class="XAML-button-content XAML-button-selector icon-close"></Button>
+<%
+}
+%>
+</StackPanel>

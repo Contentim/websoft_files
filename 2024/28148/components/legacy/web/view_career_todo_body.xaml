@@ -1,0 +1,1290 @@
+﻿<%
+// const_start
+var sConstNoConnectedTasks = 'Вы не можете предпринимать никаких действий с данным типом задачи';
+var sConstReadMaterial = 'Прочитать материал';
+var sConstPassEducationMethod = 'Пройти учебную программу';
+var sConstPassAssessmentAppraise = 'Пройти процедуру оценки';
+var sConstDefence='Защитить диплом';
+var sConstTask='Выполнить задачу';
+var sConstTaskPassed='Выполнено успешно';
+var sConstTaskFailed='Выполнено неуспешно';
+var sConstTaskCancel='Отменено';
+var sConstModeTitle='Задачи развития карьеры';
+var sConstTasksLeft = 'Осталось задач';
+var sConstNoStage = 'Этап не указан';
+var sConstSelectUser = 'Выбрать сотрудника';
+// const_end
+%>
+<SPXMLScreen>
+<%
+var sTitleRight = tools_web.get_web_param( curParams, "career_todo.const.right_title", 'Следующий', true )
+var sTitleLeft = tools_web.get_web_param( curParams, "career_todo.const.left_title", 'Предыдущий', true )
+var bShowUserSelect=tools_web.is_true(tools_web.get_web_param( curParams, "career_todo.bShowUserSelect", false, true ));
+var bShowUserEditButton=tools_web.is_true(tools_web.get_web_param( curParams, "career_todo.bShowUserEditButton", true, true ));
+var iSelectedObjectID=null;
+var bShowTitel=true;
+var bShowDescInline=false
+try
+{
+	oCareerReserveViewer=PARAMETERS
+	bShowTitel=false
+}
+catch(ex)
+{
+	try
+	{
+		oCareerReserveViewer=curCareerReserveViewer
+	}
+	catch(ex)
+	{
+		oCareerReserveViewer={}
+	}
+}
+
+
+sID_curCareerReserveViewer = oCareerReserveViewer.GetOptProperty( 'id', '' );
+iObjectID=OptInt(oCareerReserveViewer.GetOptProperty( 'iObjectID', null ), null );
+if (iObjectID!=null)
+{
+	iOverrideTamplateID=OptInt(oCareerReserveViewer.GetOptProperty( 'iOverrideTamplateID',null  ), null );
+	if (iOverrideTamplateID!=null)
+	{
+		bShowUserSelect=false;
+		fldOverrideWebTemplate=ArrayOptFirstElem(tools.xquery("for $elem in override_web_templates where $elem/id="+iOverrideTamplateID+" return $elem/id"))
+		if (fldOverrideWebTemplate!= undefined )
+		{
+			temp_teOverrideWebTemplate = tools_web.get_override_web_template( iOverrideTamplateID, Session, Env.GetOptProperty( 'curUserID', null ), Env.GetOptProperty( 'curUser', null ), Env.curAnonymousAccess, curActiveWebTemplate, true );
+			if ( temp_teOverrideWebTemplate != undefined )
+			{
+				curParams = new SafeObject;
+				tools_web.set_web_params(curParams, temp_teOverrideWebTemplate.wvars, true );
+				Request.Session.Env.SetProperty("curParams", curParams);
+			}
+		}
+	}
+}
+
+if (bShowUserSelect)
+{
+	if (iSelectedObjectID==null)
+	{
+		iSelectedObjectID = OptInt(CONTEXT.GetOptProperty("selected_object_id",null),null)
+	}
+}
+
+var sDefaultImageUrl="/images/document.png"
+var sDispType=curDevice.disp_type
+var bDesctop=sDispType != "mobile"
+var iDefaultWidth=!bDesctop?"100%":"300"
+
+bIsMobile = (curDevice.disp_type == "mobile");
+bHideTitles = bIsMobile && tools_web.is_true(tools_web.get_web_param( curParams, "career_todo.bHideTitlesInMobile", false, true ));
+sModeTitle= String( tools_web.get_web_param( curParams, "career_todo.sModeTitle", sConstModeTitle, true ) );
+strPositionType=String( tools_web.get_web_param( curParams, "career_todo.position_type", "adaptation", true ) ); //position;position_common;adaptation
+strTaskOpenLinkType = tools_web.get_web_param( curParams, "career_todo.task_open_link_type", "OPENWINDOW", true ); //OPENURL;OPENWINDOW;dialog
+iCriticalDaysCount = Int( tools_web.get_web_param( curParams, "career_todo.iCriticalDaysCount", "1", true ));
+arrTabListParam = String( tools_web.get_web_param( curParams, "career_todo.tab_list", "active;plan;passed;failed;cancel;all", true ) ).split( ";" );
+strInformersPosition=String( tools_web.get_web_param( curParams, "career_todo.informers_position", "top", true ) )
+strInformersCodes=String( tools_web.get_web_param( curParams, "career_todo.disp_informers_list", "completed;task_left;days_left;passed;tutors", true ) )	
+strTutorInformerType=String( tools_web.get_web_param( curParams, "career_todo.disp_informers_list.tutors_type", "text", true ) )	
+bShowTilesIcon = tools_web.is_true(tools_web.get_web_param( curParams, "career_todo.tab_list.bShowTilesIcon", false, true ));
+
+strTaskGroupType= tools_web.get_web_param( curParams, "career_todo.task_group_type", "status", true ); //status;stage;no
+strTaskSortType= tools_web.get_web_param( curParams, "career_todo.task_group_type.sort_type", "no", true ); //start_date;name;no
+strStagesShowType= tools_web.get_web_param( curParams, "career_todo.task_group_type.stage_show_type", "all", true ); //active_passed_failed;active_passed_failed_plan;all
+
+strInformersPosition=(strInformersPosition!='top'&&strInformersPosition!='bottom'?"top":strInformersPosition)
+arrInformersCodes=strInformersCodes.split( ";" )
+arrInformersCodes=ArraySelect(arrInformersCodes,"Trim(This)!=''")
+
+curInformers = ({
+		"informers": []
+	});
+		
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab"+sID_curCareerReserveViewer+"\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : "0");
+
+iRawSeconds = DateToRawSeconds( Date() );
+dCriticalDate = RawSecondsToDate(iRawSeconds + 86400 * iCriticalDaysCount);
+
+
+if (iObjectID!=null)
+{
+	fldCareerReserve=ArrayOptFirstElem( tools.xquery( "for $elem in career_reserves where $elem/person_id = " + curUserID + " and $elem/id= "+iObjectID+" return $elem/id" ) )
+}
+else if (iSelectedObjectID!=null)
+{
+	fldCareerReserve=ArrayOptFirstElem( tools.xquery( "for $elem in career_reserves where $elem/id= "+iSelectedObjectID+" return $elem/id" ) )
+}
+else
+{
+	fldCareerReserve=ArrayOptFirstElem( tools.xquery( "for $elem in career_reserves where $elem/person_id = " + curUserID + " and $elem/status = 'active' and $elem/start_date<=date('"+DateNewTime(CurDate,23,59,59)+"') and $elem/position_type='"+strPositionType+"' order by $elem/start_date return $elem/id" ) )
+}
+teCareerReserve=null
+
+if (Trim(strTaskOpenLinkType)=='')
+{
+	strTaskOpenLinkType="OPENWINDOW"
+}
+
+if(!StrEnds(Trim(strTaskOpenLinkType), "="))
+{
+	strTaskOpenLinkType += "=";
+}
+
+if (bShowUserSelect)
+{
+	if (fldCareerReserve!=undefined)
+	{
+		iSelectedObjectID=fldCareerReserve.id
+	}
+	arrSubCareerReserves=tools.xquery( "for $elem in talent_pool_func_managers where $elem/catalog='career_reserve' and $elem/person_id=" + curUserID + " return $elem/object_id")
+	arrCareerReserves=[]
+	if (ArrayOptFirstElem(arrSubCareerReserves)!=undefined)
+	{
+		arrCareerReserves=tools.xquery( "for $elem in career_reserves where $elem/status = 'active' and $elem/start_date<=date('"+DateNewTime(CurDate,23,59,59)+"') and $elem/position_type='"+strPositionType+"' and (MatchSome($elem/id, (" + ArrayMerge(arrSubCareerReserves, "This.object_id", ",") + ")) or $elem/person_id = " + curUserID + ")order by $elem/start_date return $elem/id" )
+	}
+	if (ArrayOptFirstElem(arrCareerReserves)!=undefined)
+	{
+%>
+<Edit Name="selected_object_id" Hidden="1"><%=iSelectedObjectID%></Edit>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="50%"/>
+		<GridColumn/>
+	</GridColumns>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstSelectUser)%>:</Label>					
+<%
+			sID = "selected_object_id";
+			curSelector = {
+				"id": sID,
+				"catalog_name": "career_reserve",
+				"object_id": iSelectedObjectID,
+				"multi_select": "false",
+				"width":"100%",
+				"xquery_qual":"MatchSome($elem/id, (" + ArrayMerge(arrCareerReserves, "This.id", ",") + "))",
+				"show_all": "true",
+				"close_action": ("SET=selected_object_id,{CatalogListDataGridFullList:^/id};REFRESH")
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+	</GridRow>
+</Grid>
+<%
+	}
+}
+
+
+
+if (fldCareerReserve!=undefined)
+{
+	try
+	{
+		teCareerReserve=OpenDoc( UrlFromDocID(fldCareerReserve.id ) ).TopElem
+	}
+	catch(ex)
+	{
+	}
+}
+
+function getObjectImageUrl(fldObjectParam)
+{
+	var sUrl=sDefaultImageUrl
+	if (fldObjectParam!=undefined)
+	{
+		sUrl=tools_web.get_object_image_url( fldObjectParam, true );
+	}
+	return sUrl
+}
+
+function getDispTaskObject(fldTaskParam,sShowParam)
+{
+	var oValues = null;
+	try
+	{
+		strName=tools_web.get_cur_lng_name( RValue(fldTaskParam.name), curLng.short_id )
+		strLabel=tools_web.get_web_const( 'deystvieneopre', curLngWeb )
+		strURL="ALERT="+(sConstNoConnectedTasks)
+		sObjectImageUrl=sDefaultImageUrl
+		if (strName=='')
+		{
+			strName=tools_web.get_web_const( 'vrb_not_specified', curLngWeb )
+		}
+		
+		try
+		{
+			bHasComment=fldTaskParam.ChildExists("person_comment")&&fldTaskParam.person_comment.HasValue
+		}
+		catch(ex)
+		{
+			bHasComment=false
+		}
+		
+		if ((fnCheckRight('career_reserve_task_see_person_comment')&&bHasComment)||fnCheckRight('career_reserve_task_edit_person_comment'))
+		{
+			strURL=("Set=CommentDialog"+sID_curCareerReserveViewer+"/iObjectId,"+fldCareerReserve.id+";Set=CommentDialog"+sID_curCareerReserveViewer+"/task_id,"+fldTaskParam.id+";OPENDIALOG=CommentDialog"+sID_curCareerReserveViewer+";")
+		}
+		
+		switch ( fldTaskParam.type )
+		{
+			case 'learning':
+				strLabel=tools_web.get_web_const( "proytielektron", curLngWeb )
+				if ( fldTaskParam.object_id.HasValue || fldTaskParam.active_learning_id.HasValue )
+				{
+					
+					fldActiveLearn=fldTaskParam.active_learning_id.OptForeignElem
+					fldCourse=fldTaskParam.object_id.OptForeignElem
+					sObjectImageUrl=getObjectImageUrl(fldCourse)
+					if(fldActiveLearn!=undefined&&fldCourse!=undefined)
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldActiveLearn.id, { course_id: fldCourse.id, sid: tools_web.get_sum_sid(fldActiveLearn.id, Request.Session.sid), doc_id: curDocID } )
+					}
+					else if (fldActiveLearn!=undefined&&fldCourse==undefined)
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldActiveLearn.id, { sid: tools_web.get_sum_sid(fldActiveLearn.id, Request.Session.sid), doc_id: curDocID } )
+					}
+					else if (fldActiveLearn==undefined&&fldCourse!=undefined)
+					{
+						fldFinishedCourse=ArrayOptFirstElem(XQuery('for $elem in learnings where $elem/course_id='+fldCourse.id+' and $elem/person_id='+teCareerReserve.person_id+' order by $elem/last_usage_date descending return $elem'))
+						if (fldFinishedCourse!=undefined)
+						{
+							strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldFinishedCourse.id, { doc_id: curDocID } )
+						}
+						else
+						{
+							strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldCourse.id, { doc_id: curDocID } )
+						}
+					}
+					else
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( "active_learning", null, { doc_code: "active_learnings", doc_id: curDocID } )
+					}
+					
+				}
+				break;
+			case 'test_learning':
+				strLabel=tools_web.get_web_const( "proytitest", curLngWeb )
+				if ( fldTaskParam.object_id.HasValue || fldTaskParam.active_test_learning_id.HasValue )
+				{
+					
+					fldActiveLearn=fldTaskParam.active_test_learning_id.OptForeignElem
+					fldTest=fldTaskParam.object_id.OptForeignElem
+					sObjectImageUrl=getObjectImageUrl(fldTest)
+					if(fldActiveLearn!=undefined&&fldTest!=undefined)
+					{								
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldActiveLearn.id, { assessment_id: fldTest.id, sid: tools_web.get_sum_sid(fldActiveLearn.id, Request.Session.sid), doc_id: curDocID } )
+					}
+					else if (fldActiveLearn!=undefined&&fldTest==undefined)
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldActiveLearn.id, { sid: tools_web.get_sum_sid(fldActiveLearn.id, Request.Session.sid), doc_id: curDocID } )
+					}
+					else if (fldActiveLearn==undefined&&fldTest!=undefined)
+					{
+						fldFinishedTest=undefined
+						if (fldTaskParam.active_test_learning_id.HasValue)
+						{
+							fldFinishedTest=ArrayOptFirstElem(XQuery('for $elem in test_learnings where $elem/active_test_learning_id='+fldTaskParam.active_test_learning_id+' order by $elem/last_usage_date descending return $elem'))
+						}
+						if (fldFinishedTest!=undefined)
+						{
+							strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldFinishedCourse.id, { doc_id: curDocID } )
+						}
+						else
+						{
+							strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldTest.id, { doc_id: curDocID } )
+						}
+					}
+					else
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( "active_test_learning", null, { doc_code: "active_test_learnings", doc_id: curDocID } )
+					}
+				}
+				break;
+			case 'document_learning':
+				strLabel=sConstReadMaterial
+				if ( fldTaskParam.type_document == 'absolute_doc' )
+				{
+					strLinkPreffix='http://'
+					if (StrBegins(fldTaskParam.link_document,'http:/')||StrBegins(fldTaskParam.link_document,'https:/'))
+					{
+						strLinkPreffix=''
+					}
+					strURL = strTaskOpenLinkType + strLinkPreffix + fldTaskParam.link_document.Value;
+				}
+				else
+				{
+					if ( fldTaskParam.object_id.HasValue )
+					{
+						sObjectImageUrl=getObjectImageUrl(fldTaskParam.object_id.OptForeignElem)
+						switch(fldTaskParam.type_document)
+						{
+							case 'portal_doc':
+							{
+								strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( "doc", null, { doc_id: fldTaskParam.object_id } );
+								break;
+							}
+							case 'resource':
+							//case 'library_material':
+							{
+								strURL = strTaskOpenLinkType + tools_web.get_object_source_url( "resource", fldTaskParam.object_id, {type: "library_material"} );
+								break;
+							}
+							default:
+							{
+								strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldTaskParam.object_id, { doc_id: curDocID } )
+							}
+						}
+					}
+				}
+				break;
+			case 'education_method':
+				strLabel=sConstPassEducationMethod
+				fldEduMethod=fldTaskParam.object_id.OptForeignElem
+				sObjectImageUrl=getObjectImageUrl(fldEduMethod)
+				if ( fldEduMethod!= undefined )
+				{
+					
+					fldEvent=fldTaskParam.event_id.OptForeignElem
+					fldEventResult=fldTaskParam.event_result_id.OptForeignElem
+					
+					if(fldEvent!=undefined&&fldEventResult!=undefined)
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( "event_result", null, { event_id: fldEvent.id, person_id: teCareerReserve.person_id, doc_id: curDocID } )
+					}
+					else if(fldEvent!=undefined&&fldEventResult==undefined)
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldEvent.id, { doc_id: curDocID } )
+					}
+					else
+					{
+						strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldEduMethod.id, { doc_id: curDocID } )
+					}
+				}
+				break;
+			case 'assessment_appraise':
+				strLabel=sConstPassAssessmentAppraise
+				fldProc=fldTaskParam.assessment_appraise_result_id.OptForeignElem
+				sObjectImageUrl='/images/assessment_appraise.png'
+				if ( fldProc!= undefined )
+				{
+					sObjectImageUrl=getObjectImageUrl(fldProc)
+					//strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( "assessment_appraise", null, { assessment_appraise_id: fldProc.id.Value, doc_id: curDocID } )
+					strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldProc.id, { doc_id: curDocID } )
+				}
+				break;
+			case 'poll_procedure':
+				var iObjID;
+				if(fldTaskParam.poll_result_id.HasValue)
+				{
+					iObjID = fldTaskParam.poll_result_id.OptForeignElem;
+					iObjID = iObjID != undefined ?  iObjID.poll_id.Value : "";
+				}
+				else if(fldTaskParam.poll_procedure_id.HasValue)
+				{
+					iObjID = fldTaskParam.poll_procedure_id.Value;
+				}
+				else if(fldTaskParam.object_id.HasValue)
+				{
+					strURL = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldTaskParam.object_id.Value, { doc_id: curDocID } )
+					strLabel=tools_web.get_web_const( "40764kbju5", curLngWeb )
+				}
+				
+				if( OptInt(iObjID) != undefined )
+				{
+					strURL = strTaskOpenLinkType + "/poll_launch.html?object_id=" + StrInt(iObjID);
+					strLabel=tools_web.get_web_const( "neobhodimoproy_1", curLngWeb )
+
+					if(fldTaskParam.start_date.HasValue && Date() < Date(fldTaskParam.start_date.Value))
+						strURL = "";
+				}
+				break;
+			case 'defence':
+				strLabel=sConstDefence
+				break;
+			case 'task':
+				sObjectImageUrl='/images/task.png';
+				strLabel=sConstTask
+				break;
+		}
+	
+		oTaskValue = ({
+			"icon_class":"icon-warning-color icon-warning2-ico",
+			"type": fldTaskParam.type,
+			"name": strName,
+			"iChildrenTasks":0
+			
+		})
+		
+		if (fldTaskParam.GetOptProperty("status")!=undefined)
+		{
+			oTaskValue.SetProperty("status",fldTaskParam.status.Value)
+			oTaskValue.SetProperty("action", strURL)
+			oTaskValue.SetProperty("actionLabel", strLabel)
+			oTaskValue.SetProperty("value",(fldTaskParam.plan_date.HasValue?fldTaskParam.plan_date.XmlValue:""))
+			oTaskValue.SetProperty("date",(fldTaskParam.plan_date.HasValue?StrDate( fldTaskParam.plan_date, false, false ):""))
+			oTaskValue.SetProperty("strDate",(fldTaskParam.plan_date.HasValue?tools_web.get_date_remain_string( fldTaskParam.plan_date, curLngWeb ):tools_web.get_web_const( "bezsroka", curLngWeb )))
+		}
+		
+		if (oTaskValue.type=='stage')
+		{
+			if (fldTaskParam.id!=null)
+			{
+				arrChildren=ArraySelectByKey( arrSortedTasks, fldTaskParam.id, 'parent_task_id' )
+			}
+			else
+			{
+				arrChildren=ArraySelect( arrSortedTasks, 'This.parent_task_id.HasValue==false&&This.type!="stage"' )
+			}
+			iChildrenTasks=ArrayCount(arrChildren)
+			iDoneTasks=ArrayCount(ArraySelectByKey( arrChildren, 'passed', 'status' ))
+			oTaskValue.SetProperty("iPercent",0)
+
+			if (iChildrenTasks!=0)
+				oTaskValue.SetProperty("iPercent",Real(StrRealFixed(Real(Real(iDoneTasks)/Real(iChildrenTasks))*Real(100),0)));
+			oTaskValue.SetProperty("iChildrenTasks",iChildrenTasks);
+		}
+		
+		if (sShowParam=='full')
+		{
+
+			oTaskValue.SetProperty("sObjectImageUrl",sObjectImageUrl);
+			if (fldTaskParam.id!=null)
+			{
+				bTaskEditable=false
+				if (!fldTaskParam.forbid_task_portal_edit)
+				{
+					if (!fldTaskParam.start_edit_date.HasValue||(fldTaskParam.start_edit_date.HasValue&&fldTaskParam.start_edit_date<=CurDate))
+					{
+						bTaskEditable=true
+					}
+				}
+				if (bShowEditButton)
+				{
+					bAllowEdit = (fnCheckTaskEditRights(bTaskEditable)||(fldTask.type=='defence'&&fldTask.commission_persons.ChildByKeyExists(curUserID)));
+					if (bAllowEdit)
+					{
+						oTaskValue.SetProperty( "OpenButtonTitle",tools_web.get_web_const( "c_edit", curLngWeb ))
+						oTaskValue.SetProperty( "bShowOpenButton",bAllowEdit)
+					}
+					else
+					{					
+						oTaskValue.SetProperty( "bShowOpenButton",true)
+					}
+				}
+			}
+			oTaskValue.SetProperty( "bShowDeleteButton",oTaskValue.iChildrenTasks==0&&!fldTaskParam.forbid_task_portal_edit&&!teCareerReserve.forbid_tasks_edit&&fnCheckRight('career_reserve_delete_task'))
+		}
+		if (oTaskValue.type=='stage')
+		{
+			if (fldTaskParam.GetOptProperty("desc")!=undefined&&fldTaskParam.desc.HasValue)
+			{
+				oTaskValue.SetProperty( "desc",fldTaskParam.desc)
+			}
+		}
+		oTaskValue.SetProperty("PrimaryKey",fldTaskParam.PrimaryKey);
+		oValues=oTaskValue
+	}
+	catch(ex)
+	{
+		alert('getDispTaskObject error: '+ex);
+	}
+	return oValues
+}
+
+if (teCareerReserve!=null)
+{
+	bShowEditButton=((bShowUserEditButton&&teCareerReserve.person_id==curUserID)||teCareerReserve.person_id!=curUserID)
+	arrToDoItems=[]
+	
+	strTargetPosName=tools_web.get_web_const("c_deleted", curLngWeb)
+	//strCareerLink = strTaskOpenLinkType + tools_web.get_mode_clean_url( "talent_pool_cr_card", fldCareerReserve.id, { doc_id: curDocID } )
+	strCareerLink = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldCareerReserve.id, { doc_id: curDocID } )
+
+	fldTargetPos=undefined
+	if (teCareerReserve.position_type!='name')
+	{
+		if (teCareerReserve.position_type=='adaptation')
+		{
+			strTargetPosName = tools_web.get_web_const('vcrb_adaptation', curLngWeb )+'. '+tools_web.get_cur_lng_name( teCareerReserve.person_id.sd.position_name, curLng.short_id );
+		}
+		else
+		{													
+			fldTargetPos=(teCareerReserve.position_type=='position'?teCareerReserve.position_id.OptForeignElem:teCareerReserve.position_common_id.OptForeignElem)
+			if (fldTargetPos!=undefined)
+			{
+				strTargetPosName = tools_web.get_cur_lng_name(fldTargetPos.name, curLng.short_id );
+			}
+			else
+			{
+				strTargetPosName = tools_web.get_cur_lng_name((teCareerReserve.position_type=='position'?teCareerReserve.position_id.sd.name:teCareerReserve.position_common_id.sd.name), curLng.short_id );
+			}
+			strTargetPosName = (teCareerReserve.position_type=='position_common'?tools_web.get_web_const('vcrb_target_position_common', curLngWeb ):tools_web.get_web_const('vcrb_target_position', curLngWeb ))+'. '+strTargetPosName
+		}
+	}
+	else
+	{
+		strTargetPosName = tools_web.get_web_const('c_position', curLngWeb )+'. '+tools_web.get_cur_lng_name( teCareerReserve.position_name, curLng.short_id );
+	}
+	
+	xarrBossTypes = tools.get_object_relative_boss_types(curUserID, fldCareerReserve.id);
+	xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+	
+	strActionCodeList=String( "career_reserve_task_edit_name;career_reserve_task_edit_type;career_reserve_task_edit_status;career_reserve_task_edit_dates;career_reserve_task_edit_mentor;career_reserve_task_edit_mark;career_reserve_task_edit_desc;career_reserve_task_edit_person_comment;career_reserve_task_edit_mentor_comment;career_reserve_task_edit_commission;career_reserve_task_edit_comp;career_reserve_task_start_edit_date;career_reserve_task_edit_files;career_reserve_task_edit_parent")
+	arrActionCodes = strActionCodeList.split( ";" );
+	
+	xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+	xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+	
+	function fnCheckRight(sAction,bTaskEditableParam)
+	{
+		var bTaskEditable=true
+		if (bTaskEditableParam!=undefined&&bTaskEditableParam!=null)
+		{
+			bTaskEditable=bTaskEditableParam
+		}
+		var bResult=false
+		if(curUser.access.access_role == "admin")
+			bResult=true;
+		fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sAction + "'") ;
+		if (fldAction!=undefined)
+		{
+			if (bTaskEditable)
+			{
+				bResult=true
+			}
+			else
+			{
+				bResult=ArrayOptFind(arrActionCodes, "This == '" + fldAction.action + "'")==undefined 
+			}
+		}
+		
+		if (!bTaskEditable&&!bResult&&StrContains(sAction,"_see_",true))
+		{
+			sCode=StrReplace(sAction,"_see_","_edit_")
+			fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sCode + "'") ;
+			if (fldAction!=undefined)
+			{
+				bResult=true
+			}
+		}
+		
+		return bResult
+	}
+
+	function fnCheckTaskEditRights(bTaskEditableParam)
+	{
+		var bTaskEditable=true
+		if (bTaskEditableParam!=undefined&&bTaskEditableParam!=null)
+		{
+			bTaskEditable=bTaskEditableParam
+		}
+		if(curUser.access.access_role == "admin")
+				return true;
+				
+		if (bTaskEditable)
+		{
+			for (sActionCode in arrActionCodes)
+			{
+				if (fnCheckRight(sActionCode,bTaskEditable))
+				{
+					return true
+				}
+			}
+		}
+		return false;
+	}
+	
+	arrSortedTasks=teCareerReserve.tasks
+	if(strTaskSortType!='no')
+	{
+		if (strTaskSortType=="start_date")
+		{
+			arrSortedTasks=ArraySort(arrSortedTasks,"This.start_date","+","This.plan_date","+")
+		}
+		else
+		{
+			arrSortedTasks=ArraySort(arrSortedTasks,"This.name","+")
+		}
+	}
+	
+	for (fldTask in arrSortedTasks)
+	{
+		try
+		{
+	
+			oValues = getDispTaskObject(fldTask,'simple')
+			if (oValues!=null)
+			{
+				oValues.SetProperty( "icon_class", "icon-warning-color icon-warning2-ico" );
+				if ( fldTask.plan_date.HasValue && (fldTask.status=='active'|| fldTask.status=='plan') )
+				{
+					oValues.SetProperty( "exceeded", (fldTask.plan_date < CurDate) );
+					oValues.SetProperty( "indefinite", false );
+					oValues.SetProperty( "critical", (fldTask.plan_date < dCriticalDate) );
+					oValues.SetProperty( "future", (fldTask.plan_date >= CurDate) );
+				}
+				else
+				{
+					oValues.SetProperty( "exceeded", false );
+					oValues.SetProperty( "indefinite", true );
+					oValues.SetProperty( "critical", false );
+					oValues.SetProperty( "future", false );
+				}
+				
+				if ( oValues.critical == true && oValues.exceeded == false && oValues.indefinite == false )
+				{
+					oValues.SetProperty( "icon_class","icon-critical-color icon-fire2-ico");
+				}
+				if ( oValues.exceeded == true )
+				{
+					oValues.SetProperty( "icon_class", "icon-critical-color icon-fire2-ico");
+				}
+				if ( oValues.future== true && oValues.critical == false && oValues.exceeded == false && oValues.indefinite == false )
+				{
+					oValues.SetProperty( "icon_class", "icon-hour-glass-ico");
+				}
+				
+				arrToDoItems.push( oValues );
+			}
+		}
+		catch(ex)
+		{
+			alert(ex)
+		}
+	}
+	
+	for (strCode in arrInformersCodes)
+	{
+		
+		iCompleteCount = ArrayCount(ArraySelect(arrSortedTasks,"This.status=='passed'||This.status=='failed'"))
+		if (strCode=='completed')
+		{
+			iNotCanceledCount=ArrayCount(ArraySelect(arrSortedTasks,"This.status!='cancel'&&This.type!='stage'"))
+			curInformers.informers.push( {
+				"type": "scale_number",
+				"title": tools_web.get_web_const( 'mndn3f98h2', curLngWeb ),
+				"count": iCompleteCount,
+				"max_count": iNotCanceledCount
+			} );
+		}
+		else if (strCode=='days_left')
+		{
+			if (teCareerReserve.plan_readiness_date.HasValue)
+			{
+				curInformers.informers.push( {
+					"type": "number",
+					"title": tools_web.get_web_const( 'vlpb_message10', curLngWeb ),
+					"value": StrRealFixed(Real(DateDiff(teCareerReserve.plan_readiness_date,Date()))/86400,0)   
+				} );
+			}
+		}
+		else if (strCode=='passed')
+		{
+			iPassedCount = ArrayCount(ArraySelect(arrSortedTasks,"This.status=='passed'&&This.type!='stage'"))
+			curInformers.informers.push( {
+				"type": "scale_number",
+				"title": tools_web.get_web_const( 'uspeshno', curLngWeb ),
+				"count": iPassedCount,
+				"max_count": iCompleteCount
+			} );
+		}
+		else if (strCode=='tutors')
+		{
+			
+			arrTaskTutors=QueryCatalogByKeys('collaborators','id',ArrayExtract(ArraySelect(arrSortedTasks,"This.tutor_id.HasValue"),"This.tutor_id"))
+			arrTutorsCounts=[]
+			
+			for (fldTaskTutor in arrTaskTutors)
+			{
+				arrTutorsCounts.push({"fldTutor":fldTaskTutor,"iCountTasks":ArrayCount(ArraySelect(arrSortedTasks,"This.tutor_id=="+fldTaskTutor.id.Value))})
+			}
+			fldMaxTaskTutor=ArrayOptFirstElem(ArraySort(arrTutorsCounts,"This.iCountTasks","-"))
+			if (fldMaxTaskTutor!=undefined)
+			{
+				fldTaskTutor=fldMaxTaskTutor.fldTutor
+				strFullname=fldTaskTutor.fullname;
+				strLink = strTaskOpenLinkType + tools_web.get_mode_clean_url( null, fldTaskTutor.id, { doc_id: curDocID } )
+				if (strTutorInformerType=="image")
+				{
+					arrFIO=String(Trim(strFullname)).split(' ');
+					try
+					{	
+						strFIO=PersonShortName(arrFIO[0],arrFIO[1],arrFIO[2]);
+					}
+					catch(e)
+					{
+						strFIO=strFullname;
+					}
+					sUrl = tools_web.get_object_source_url( 'person', fldTaskTutor.id,"200x200" );
+					curInformers.informers.push( {
+						"type": "link_image",
+						"url": sUrl,
+						"titleTop":tools_web.get_web_const( 'c_mentor', curLngWeb ),
+						"titleBottom":strFIO,
+						"link":strLink
+					} );
+				}
+				else
+				{
+					curInformers.informers.push( {
+						"type": "link_text",
+						"titleTop":tools_web.get_web_const( 'c_mentor', curLngWeb ),
+						"title": strFullname,
+						"link":strLink
+					} );
+				}
+			}
+		}
+	}
+
+	if (ArrayOptFirstElem(curInformers.informers)==undefined)
+	{
+		strInformersPosition='top'
+	}
+	
+	function fnBuildTasksGrid (sStatusParam)
+	{
+		sTitle = ''
+		sTabIcon=''
+		if (sStatusParam!='all')
+		{
+			arrItems=ArraySelect(arrToDoItems,"This.status=='"+sStatusParam+"'")
+		}
+		else
+		{
+			arrItems=arrToDoItems
+		}
+		iCountItems=ArrayCount(arrItems)
+		if (!bHideTitles)
+		{
+			if ( sStatusParam == "active" )
+			{	
+				sTabIcon='icon-play-circle-o'
+				sTitle = tools_web.get_web_const( "rgni7sf3i4", curLngWeb );
+			}
+			else if ( sStatusParam == "plan" )
+			{	
+				sTabIcon='icon-clock-o'
+				sTitle = tools_web.get_web_const( "36a7fx6wlh", curLngWeb );
+			}
+			else if ( sStatusParam == "passed" )
+			{	
+				sTabIcon='icon-flag'
+				sTitle = sConstTaskPassed;
+			}
+			else if ( sStatusParam == "failed" )
+			{	
+				sTabIcon='icon-arrow-circle-o-down'
+				sTitle = sConstTaskFailed;
+			}
+			else if ( sStatusParam == "cancel" )
+			{	
+				sTabIcon='icon-remove'			
+				sTitle = sConstTaskCancel;
+			}	
+			else if ( sStatusParam == "all" )
+			{	
+				sTabIcon='icon-clipboard2'			
+				sTitle = tools_web.get_web_const( "f0j4vfoxrb", curLngWeb );
+			}
+			sTitle=sTitle+ " (" + iCountItems + ")"
+		
+		}
+		
+		sIconClass=""
+		if (bShowTilesIcon)
+			sIconClass='Class="'+sTabIcon+'"'
+		
+%>
+			<TabItem <%=sIconClass%> Title="<%=sTitle%>">
+				<Grid Width="100%" Class="XAML-todo XAML-grid-list-container" Adapt="true">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+<%
+					if(iCountItems>0)
+					{
+						for( oItemElem in arrItems )
+						{
+							fnBuildTask(oItemElem)
+						}
+					}
+					else
+					{
+%>
+						<GridRow Class="XAML-grid-row-empty">
+							<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netzadach", curLngWeb )%></Label>
+						</GridRow>
+<%
+					}
+%>
+					</Grid>
+			</TabItem>
+<%
+	}
+	
+function fnBuildInformers()
+{
+%>
+	<StackPanel Class="XAML-stack-tiles-container" Adapt="true" Orientation="Horizontal">
+
+<%		
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+	</StackPanel>
+<%
+}
+
+function fnBuildStageHeader(oTaskParam,iLeftIndexParam,iRightIndexParam)
+{
+	strName=oTaskParam.GetOptProperty( "name",null )
+	if (strName!=null&&strName!='')
+	{	
+
+		iLeftIndex=OptInt(iLeftIndexParam,null)
+		iRightIndex=OptInt(iRightIndexParam,null)
+%>
+	<GridRow>
+		<Grid>
+			<GridColumns>
+				<GridColumn Width="20"/>
+				<GridColumn Width="100%"/>
+				<GridColumn Width="20"/>
+			</GridColumns>
+			<GridRow>
+				<StackPanel Orientation="Horizontal">
+<%
+				if (iLeftIndex!=null)
+				{
+%>
+					<Link Click="SET=StageListViewTab<%=sID_curCareerReserveViewer%>,<%=iLeftIndex%>" Class="icon-arrow-left"></Link>
+					<Label/>
+					<Link Click="SET=StageListViewTab<%=sID_curCareerReserveViewer%>,<%=iLeftIndex%>"><%=XmlAttrEncode( sTitleLeft )%></Link>
+<%
+				}
+%>
+				</StackPanel>
+				<StackPanel>
+				<Label Class="XAML-task-stage-header"><![CDATA[<%=oTaskParam.GetOptProperty( "name","" )%>]]></Label>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal">
+<%
+				if (iRightIndex!=null)
+				{
+%>
+					<Link Click="SET=StageListViewTab<%=sID_curCareerReserveViewer%>,<%=iRightIndex%>"><%=XmlAttrEncode( sTitleRight )%></Link>
+					<Label/>
+					<Link Click="SET=StageListViewTab<%=sID_curCareerReserveViewer%>,<%=iRightIndex%>" Class="icon-arrow-right"></Link>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+	}
+}
+
+function fnBuildTask(oTaskParam)
+{
+	var bShowImage = oTaskParam.HasProperty("sObjectImageUrl")
+
+	if (oTaskParam.type=='stage')
+	{
+%>
+	<GridRow>	
+		<StackPanel Orientation="Vertical">
+<%
+			strName=oTaskParam.GetOptProperty( "name",null )
+			if (strName!=null&&strName!='')
+			{	
+%>	
+			<Label/>		
+			<Label Class="XAML-task-stage-header"><![CDATA[<%=strName%>]]></Label>		
+<%
+			}
+%>
+			<HTMLBox><![CDATA[
+						   <div class="task-progress-bar-outer">
+								<div class="task-progress-bar-container task-progress-bar-inner" style="width:<%=oTaskParam.GetProperty( "iPercent" )%>%"><%=oTaskParam.GetProperty( "iPercent" )%>%</div>
+						   </div>
+						]]>
+			</HTMLBox>
+			<Label/>
+
+			<StackPanel Orientation="Horizontal" Adapt="true">
+<%
+				if (false&&oTaskParam.HasProperty( "desc"))
+				{
+%>
+					<Link  Click="Toggle=DescTaskPanel<%=oTaskParam.PrimaryKey%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ))%></Link>
+					<Label/>
+<%
+				}
+				if (tools_web.is_true(oTaskParam.GetOptProperty( "bShowOpenButton",0)))
+				{
+%>
+				<Link  Click="SET=TaskId<%=sID_curCareerReserveViewer%>,<%=oTaskParam.PrimaryKey%>;SET=ObjectId<%=sID_curCareerReserveViewer%>,<%=fldCareerReserve.id%>;OPENDIALOG=CREditTask<%=sID_curCareerReserveViewer%>"><%=XmlAttrEncode(oTaskParam.GetOptProperty( "OpenButtonTitle",tools_web.get_web_const( "c_open", curLngWeb ) ) )%></Link>
+				<Label/>
+<%
+				}
+				if (tools_web.is_true(oTaskParam.GetOptProperty( "bShowDeleteButton",0)))
+				{
+%>
+				<Link  Click="CONFIRM=<%=XmlAttrEncode(tools_web.get_web_const( "os5m6mi7yu", curLngWeb ))%>;SET=ObjectId<%=sID_curCareerReserveViewer%>,<%=fldCareerReserve.id%>;SET=<%=sID_curCareerReserveViewer%>CRRunAction/sAction,delete_task;SET=<%=sID_curCareerReserveViewer%>CRRunAction/sSelectedObjects,<%=UrlEncode(tools.object_to_text([{"id":RValue(oTaskParam.PrimaryKey)}],'json'))%>;ACTION=<%=sID_curCareerReserveViewer%>CRRunAction;"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ))%></Link>
+<%
+				}
+%>
+			</StackPanel>
+<%
+				if (oTaskParam.HasProperty( "desc"))
+				{
+%>
+				<StackPanel Name="DescTaskPanel<%=oTaskParam.PrimaryKey%>" Hidden="0">
+					<Label/>
+					<HTMLBox><![CDATA[<%=HtmlEncode(oTaskParam.GetOptProperty( "desc",""))%>]]></HTMLBox>
+				</StackPanel>
+<%
+				}
+%>
+			<Label/>
+		</StackPanel>
+	</GridRow>
+<%
+	}
+	else
+	{
+%>
+	<GridRow>	
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+				<GridColumn Width="20"/>
+			</GridColumns>
+			<GridRow>
+<%
+		if (bShowImage)
+		{
+%>
+			<Image Orientation="Vertical" Class="wt-informer wt-info-image XAML-image-list-image" Source="pics/1blank.gif">
+				<BackgroundImage Source="<%=XmlAttrEncode( oTaskParam.sObjectImageUrl )%>"/>
+			</Image>
+<%
+		}
+		else
+		{
+%>
+			<Label Class="<%=oTaskParam.icon_class%>"></Label>
+<%
+		}
+		sAddClass = ""
+		switch ( oTaskParam.status)
+		{
+			case "failed":
+			{
+				sAddClass = "color-failed";
+				break;
+			}
+			case "passed":
+			{
+				sAddClass = "color-success";
+				break;
+			}
+			default:
+			{
+				sAddClass=tools_web.get_class_for_status( oTaskParam.status );
+				break;
+			}
+		}
+%>
+			<StackPanel Orientation="Vertical">
+				<StackPanel Name="MainTaskPanel<%=oTaskParam.PrimaryKey%>" Orientation="Vertical" Hidden="0">
+					<Link  Class="XAML-link-list-item-title" Click="<%=XmlAttrEncode( oTaskParam.GetProperty( "action" ) )%>"><![CDATA[<%=oTaskParam.GetProperty( "name" )%>]]></Link>
+					<Label><![CDATA[<%=oTaskParam.GetProperty( "actionLabel" )%>]]></Label>
+					<Label Class="XAML-label-list-item-desc"><%=( oTaskParam.GetProperty( "date" ) != "" ? oTaskParam.GetProperty( "date" ) : oTaskParam.GetProperty( "strDate" ) )%></Label>	
+					<Label Class="XAML-label-status <%=sAddClass%> XAML-nomargin"><%=( oTaskParam.GetProperty( "status" ) != "" ? curLngCommon.career_reserve_status_types.GetChildByKey( oTaskParam.status ).name : "" )%></Label>
+				</StackPanel>
+<%
+				if (oTaskParam.HasProperty( "desc"))
+				{
+%>
+				<StackPanel Name="DescTaskPanel<%=oTaskParam.PrimaryKey%>" Hidden="1">
+					<HTMLBox><![CDATA[<%=HtmlEncode(oTaskParam.GetOptProperty( "desc",""))%>]]></HTMLBox>
+				</StackPanel>
+<%
+				}
+%>
+			</StackPanel>
+			<StackPanel Orientation="Vertical">
+<%
+				if (oTaskParam.HasProperty( "desc"))
+				{
+%>
+					<Link  Click="Toggle=DescTaskPanel<%=oTaskParam.PrimaryKey%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ))%></Link>
+<%
+				}
+				if (tools_web.is_true(oTaskParam.GetOptProperty( "bShowOpenButton",0)))
+				{
+%>
+				<Link  Click="SET=TaskId<%=sID_curCareerReserveViewer%>,<%=oTaskParam.PrimaryKey%>;SET=ObjectId<%=sID_curCareerReserveViewer%>,<%=fldCareerReserve.id%>;OPENDIALOG=CREditTask<%=sID_curCareerReserveViewer%>"><%=XmlAttrEncode(oTaskParam.GetOptProperty( "OpenButtonTitle",tools_web.get_web_const( "c_open", curLngWeb ) ) )%></Link>
+<%
+				}
+				if (tools_web.is_true(oTaskParam.GetOptProperty( "bShowDeleteButton",0)))
+				{
+%>
+				<Link  Click="CONFIRM=<%=XmlAttrEncode(tools_web.get_web_const( "os5m6mi7yu", curLngWeb ))%>;SET=ObjectId<%=sID_curCareerReserveViewer%>,<%=fldCareerReserve.id%>;SET=<%=sID_curCareerReserveViewer%>CRRunAction/sAction,delete_task;SET=<%=sID_curCareerReserveViewer%>CRRunAction/sSelectedObjects,<%=UrlEncode(tools.object_to_text([{"id":oTaskParam.PrimaryKey.Value}],'json'))%>;ACTION=<%=sID_curCareerReserveViewer%>CRRunAction;"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ))%></Link>
+<%
+				}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+</GridRow>
+<%
+	}
+}
+
+%>
+	<Edit Name="TaskId<%=sID_curCareerReserveViewer%>" Hidden="1"></Edit>
+	<Edit Name="ObjectId<%=sID_curCareerReserveViewer%>" Hidden="1"></Edit>
+	<Edit Name="<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialogCloseAction" Hidden="1">ALERT={!messageText};</Edit>
+	<Edit Name="PersonCommentSuccessAction<%=sID_curCareerReserveViewer%>" Hidden="1"></Edit>
+	<Action Name="<%=sID_curCareerReserveViewer%>CRRunAction" Source="talent_pool_cr_actions" Success="ALERT={messageText};REFRESH" Failure="ALERT={messageText}">
+	  <Param Name="iObjectId" Value="{ObjectId<%=sID_curCareerReserveViewer%>}"/>
+	  <Param Name="sAction" Value=""/>
+	  <Param Name="sSelectedObjects" Value=""/>
+	  <Param Name="sSetSelectedObjects" Value=""/>
+	  <Param Name="sNeedUpdateList" Value=""/>
+	  <Param Name="bConfirm" Value=""/>
+	</Action>
+	<Dialog Name="CREditTask<%=sID_curCareerReserveViewer%>" Source="talent_pool_cr_task_edit" Close="REFRESH" Width="80%">
+		<Param Name="iObjectId" Value="{ObjectId<%=sID_curCareerReserveViewer%>}"/>
+		<Param Name="task_id" Value="{TaskId<%=sID_curCareerReserveViewer%>}"/>
+	</Dialog>
+	<Dialog Name="CommentDialog<%=sID_curCareerReserveViewer%>" Source="dlg_edit_career_task_simple" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vdb_aim_task", curLngWeb ) )%>" Close="">	
+		<Param Name="iObjectId" Value=""/>	
+		<Param Name="task_id" Value=""/>				
+	</Dialog>
+	<Dialog Name="<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialog" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_question', curLngWeb ) )%>" Source="view_ask_question_dialog" Width="50%" Close="{!<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialogCloseAction}">
+		<Param Name="strTextValue" Value=""/>
+		<Param Name="strButtonsCodes" Value=""/>
+	</Dialog>
+	<Dialog Name="SelectDialog<%=sID_curCareerReserveViewer%>TypicalDevelopmentProgramm" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'f89jhp79yo', curLngWeb ) )%>" Close="Set=<%=sID_curCareerReserveViewer%>CRRunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialog/strTextValue,<%=UrlEncode(tools_web.get_web_const( 'vs0x9eauzv', curLngWeb ))%>;SET=<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialog/strButtonsCodes,<%=UrlEncode('yes;no;cancel')%>;SET=<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialogCloseAction,<%=UrlEncode('SET='+sID_curCareerReserveViewer+'CRRunAction/bConfirm,{ButtonPressedNum};ACTION='+sID_curCareerReserveViewer+'CRRunAction;')%>;OPENDIALOG=<%=sID_curCareerReserveViewer%>ThreeButtonsCustomDialog;">
+			<Param Name="catalog_name" Value="typical_development_program"/>
+			<Param Name="multi_select" Value="true"/>
+			<Param Name="view_type" Value="typical_development_program"/>
+			<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+<%
+	if (bShowTitel)
+	{
+		if(curMode=="career_todo")
+		{
+			strTargetPosName=tools_web.get_cur_lng_name( sModeTitle, curLng.short_id )+". "+strTargetPosName
+		}
+		
+		curTitle = {
+			"object": teCareerReserve,
+			"type":"simple",
+			"title":strTargetPosName
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	}
+	if (false)
+	{
+%>
+	<StackPanel Class="XAML-stack-tile-title-container">
+		<Link Click="<%=strCareerLink%>" Class="XAML-link-tile-title"><![CDATA[<%=XmlAttrEncode(strTargetPosName)%>]]></Link>
+	</StackPanel>
+<%
+	}
+
+	if (strInformersPosition=='top')
+	{
+		fnBuildInformers()
+	}
+	
+	arrButtons=[]
+	if (!teCareerReserve.forbid_tasks_edit)
+	{
+		if(fnCheckRight('career_reserve_add_task'))
+		{
+			arrButtons.push( { "title": tools_web.get_web_const( 'dobavitzadachu', curLngWeb ), "click": ( "SET=CREditTask"+sID_curCareerReserveViewer+"/iObjectId,"+fldCareerReserve.id+";SET=CREditTask"+sID_curCareerReserveViewer+"/task_id,new;OPENDIALOG=CREditTask"+sID_curCareerReserveViewer+"" ) } );
+		}
+		if(fnCheckRight('career_reserve_add_typical_task'))
+		{
+			arrButtons.push( { "title": tools_web.get_web_const( 'f89jhp79yo', curLngWeb ), "click": ( "SET="+sID_curCareerReserveViewer+"CRRunAction/iObjectId,"+fldCareerReserve.id+";SET="+sID_curCareerReserveViewer+"CRRunAction/sAction,assign_typical_development_program;OPENDIALOG=SelectDialog"+sID_curCareerReserveViewer+"TypicalDevelopmentProgramm" ) } );
+		}
+	}
+	
+	if (ArrayOptFirstElem(arrButtons)!=undefined)
+	{
+%>
+	<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="true">	
+<%
+		for (fldButton in arrButtons)
+		{
+%>
+		<Button Class="XAML-button" Click="<%=fldButton.click%>"><%=HtmlEncode(fldButton.title)%></Button>
+		
+<%
+		}
+%>
+	</StackPanel>
+<%
+	}
+	
+	if (strTaskGroupType=='status')
+	{
+%>
+		<TabControl Name="ListViewTab<%=sID_curCareerReserveViewer%>" ActiveTab="<%=paramListViewTab%>" Class="XAML-uni-content-container XAML-uni-content-container" Adapt="true">
+<%
+		for ( sTabListParam in arrTabListParam )
+		{
+			fnBuildTasksGrid(sTabListParam)
+		}
+%>
+		</TabControl>
+<%
+	}
+	else
+	{
+		// Stages 
+	
+		iCarrentTab=0
+		arrStages=[]
+		
+		if(strTaskSortType!='no')
+		{
+			if (strTaskSortType=="start_date")
+			{
+				arrSortedTasks=ArraySort(arrSortedTasks,"This.start_date","+","This.plan_date","+")
+			}
+			else
+			{
+				arrSortedTasks=ArraySort(arrSortedTasks,"This.name","+")
+			}
+		}
+		
+
+		arrStages=ArraySelect( arrSortedTasks, 'This.parent_task_id.HasValue==false&&This.type=="stage"' )
+		if (strStagesShowType!='all')
+		{
+			strWhere=""
+			for (sStatus in strStagesShowType.split("_"))
+			{
+				strWhere=strWhere+(strWhere!=""?"||":"")+"This.status=="+CodeLiteral(sStatus)
+			}
+			arrStages=ArraySelect( arrStages, strWhere )
+		}
+
+		arrTasksNoStage=ArraySelect( arrSortedTasks, 'This.parent_task_id.HasValue==false&&This.type!="stage"' )
+		sNoStageTitle=sConstNoStage
+		if (ArrayOptFirstElem(arrStages)==undefined)
+		{
+			sNoStageTitle=tools_web.get_web_const( 'vdb_aims', curLngWeb )
+		}
+		if (ArrayOptFirstElem(arrTasksNoStage)!=undefined)
+		{
+			arrStages.push({"id":null,"name":sNoStageTitle,"type":"stage","PrimaryKey":null})
+		}
+		
+		arrTabTasks=[]
+		arrTabs=[]
+		iIndex=0
+		for (fldStage in arrStages)
+		{
+			oValues = getDispTaskObject(fldStage,'full')
+			if (oValues!=null)
+			{
+				arrTabTasks.push(oValues)
+				if (oValues.GetOptProperty("status","")=="active")
+				{
+					iCarrentTab++
+				}
+			}
+			
+			if (fldStage.id!=null)
+			{
+				arrChildren=ArraySelectByKey( arrSortedTasks, fldStage.id, 'parent_task_id' )
+			}
+			else
+			{
+				arrChildren=ArraySelect( arrSortedTasks, 'This.parent_task_id.HasValue==false&&This.type!="stage"' )
+			}
+			for (fldTask in arrChildren)
+			{
+				oValues = getDispTaskObject(fldTask,'full')
+				if (oValues!=null)
+				{
+					arrTabTasks.push(oValues)
+				}
+			}
+			
+			
+			if (ArrayOptFirstElem(arrTabTasks)!=undefined&& strTaskGroupType=='stage')
+			{
+				arrTabs.push({"name":fldStage.name,"Index":iIndex,"arrTabTasks":arrTabTasks})
+				arrTabTasks=[]
+				iIndex++
+			}
+		}
+
+		if (ArrayOptFirstElem(arrTabTasks)!=undefined)
+		{
+			arrTabs.push({"name":(strTaskGroupType=='stage'?sNoStageTitle:""),"Index":iIndex,"arrTabTasks":arrTabTasks})
+			iIndex++
+		}
+		
+		iCarrentTab=iCarrentTab>=iIndex?(iIndex>0?iIndex-1:0):iCarrentTab	
+%>
+		<TabControl Name="StageListViewTab<%=sID_curCareerReserveViewer%>" ActiveTab="<%=iCarrentTab%>" Class="XAML-uni-content-container XAML-uni-content-container" Adapt="true" TabsHidden="true">
+<%
+		for (fldTab in arrTabs)
+		{
+			iLeftIndex=null
+			iRightIndex=fldTab.Index+1
+			if (fldTab.Index>0)
+			{
+				iLeftIndex=fldTab.Index-1
+			}
+			if (iRightIndex==iIndex)
+			{
+				iRightIndex=null
+			}
+%>
+		<TabItem Title="<%=XmlAttrEncode(fldTab.name)%>">
+			<Grid Width="100%" Class="XAML-todo XAML-grid-list-container" Adapt="true">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+						</GridColumns>
+<%
+			fnBuildStageHeader(fldTab,iLeftIndex,iRightIndex)
+			for (fldTask in fldTab.arrTabTasks)
+			{
+				if (strTaskGroupType=='stage'&&fldTask.type=="stage")
+				{
+					fldTask.name=null
+				}
+				fnBuildTask(fldTask)
+			}
+%>
+			</Grid>
+		</TabItem>
+<%
+		}
+%>
+
+		</TabControl>
+<%
+	}
+	if (strInformersPosition=='bottom')
+	{
+		fnBuildInformers()
+	}
+}
+%>
+</SPXMLScreen>

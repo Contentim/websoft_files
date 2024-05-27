@@ -1,0 +1,41 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+teResource = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+sObjectImageUrl = tools_web.get_object_source_url( 'resource', iObjectID );
+sClickAction = "OPENDIALOG=LearningRecordResourceDialog";
+sComment = PARAMETERS.GetOptProperty( "comment", "" );
+sStateID = PARAMETERS.GetOptProperty( "state_id", "" );
+%>
+	<Dialog Name="LearningRecordResourceDialog" Source="dlg_learning_record_resource" Title="<%=teResource.name + " (" + teResource.doc_info.creation.date + ")"%>" Close="SET=SaveComment/resource_id,<%=iObjectID%>;SET=SaveComment/comment,{sDialogComment};ACTION=SaveComment" Width="800">
+		<Param Name="object_id" Value="<%=iObjectID%>"/>
+		<Param Name="can_edit" Value="<%=PARAMETERS.GetOptProperty( "can_edit" )%>"/>
+		<Param Name="comment" Value="<%=sComment%>"/>
+	</Dialog>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+		<StackPanel Class="XAML-stack-tile-image-container">
+			<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Source="<%=XmlAttrEncode( sObjectImageUrl )%>" Height="180" Width="240"/>
+		</StackPanel>
+		
+		<StackPanel Class="XAML-stack-tile-title-container">
+			<Label>
+				<![CDATA[<%=teResource.doc_info.creation.date%>]]>
+			</Label>
+			<Label Class="<%=tools_web.get_class_for_status( sStateID )%>">
+				<![CDATA[<%=curLngCommon.learning_record_statuss.GetOptChildByKey( sStateID ).name%>]]>
+			</Label>
+			<Label>
+				<![CDATA[<%=sComment%>]]>
+<%
+if( sComment != "" )
+{
+%>
+				<HTMLTip><![CDATA[<%=sComment%>]]></HTMLTip>
+<%
+}
+%>
+			</Label>
+			
+		</StackPanel>
+	</StackPanel>
+</SPXMLScreen>

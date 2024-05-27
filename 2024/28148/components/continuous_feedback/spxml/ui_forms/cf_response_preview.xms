@@ -1,0 +1,268 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="" STD-MARGINS="0" PADDING="0vpx 5vpx 24vpx 0vpx" INIT-ACTION="
+	if ( Screen.AuxData.GetOptProperty('cf_response_prev_form', '') == '' )
+	{
+		Screen.SetCurrentPageByTitle('Информация'); 
+		Screen.AuxData.SetProperty('cf_response_prev_form', '1');
+	}
+	Cancel();
+	">
+
+<USE FORM="//wtv/app_general.xms"/>
+<WITH VAR="oPerson" EXPR="
+	if (Ps.type == 'project_participant')
+	{
+		var oProjectPart = Ps.object_id.OptForeignElem;
+		if (oProjectPart != undefined)
+			return ArrayOptFirstElem(tools.xquery('for $elem in collaborators where $elem/id = ' + oProjectPart.object_id + ' return $elem'));
+	}
+	else if (Ps.type == 'collaborator')
+	{
+		oCollaborator = Ps.object_id.OptForeignElem;
+		if (oCollaborator != undefined)
+			return oCollaborator;
+	}
+	">
+<WITH VAR="iAccessLevel" EXPR="
+	var teApplication = tools_app.cur_application.Object;
+	var iCurUserAppLevel = OptInt( tools.get_cur_user_application_access_level( teApplication.id ), 1 );
+	return iCurUserAppLevel;
+">
+
+<WITH VAR="oRemoteAction" EXPR="ms_tools.get_remote_actions_by_cur_application( 'response' )">
+<WindowCustomTitleBar titleExpr="oPerson.fullname + ' - Обратная связь'" fullBtnExpr="
+		if (iAccessLevel == 1)
+			return false;
+		
+		if (Ps.status == 'done')
+			return ( ArrayOptFind( oRemoteAction, 'This.code == \'EditResponseContinuousFeedback\'') != undefined );
+		else
+			return [];
+" fullActionCodeIDExpr="
+		if (iAccessLevel == 1)
+			return false;
+		if (Ps.status == 'done')
+		{
+			oAction = ArrayOptFind( oRemoteAction, 'This.code == \'EditResponseContinuousFeedback\'') != undefined;
+			if (oAction != undefined)
+				return oAction.code;
+			else
+				return false;
+		}
+		else
+			return false;
+" arrBtnsExpr="
+		arrBtns = [];
+		if (iAccessLevel == 1) return arrBtns;
+
+		var arrMenuActions = ArrayIntersect( oRemoteAction, ['ResponseChangeState','DeleteResponse'], 'This.code', 'This' );
+		if ( ArrayOptFirstElem ( arrMenuActions ) != undefined)
+		{
+			var _arr = [];
+			for (act in arrMenuActions)
+			{
+				wvState = ArrayOptFind(act.wvars, 'This.name == \'sState\'');
+				if (wvState != undefined)
+				{
+					if ((Ps.status == 'cancel' &amp;&amp; wvState.value == 'cancel') || (Ps.status != 'cancel' &amp;&amp; wvState.value == 'return_to_work'))
+					{
+						continue;
+					}
+					else
+					{
+						_arr.push(act);
+					}
+				}
+				else
+				{
+					_arr.push(act)
+				}
+			}
+
+			arrBtns.push( { type: 'img', style: 'all', title: 'Действия', actions: ArraySelectAll( _arr ) } );
+		}
+
+		return arrBtns;
+	"/>
+
+<LINE STD-MARGINS="0">
+
+	<ui2_minimizable_tree SWITCH-TYPE="selector" TARGET="main_selector" NO-IMAGES="0" NO-TOP-LEVEL-IMAGES="0" OPEN-MINIMIZED="1"/>
+
+	<SELECTOR NAME="main_selector">
+		
+		<PAGE TITLE="##'Информация'##" IMAGE-URL="//wtv/app_pict/icon16_info.svg">
+			<PANEL WIDTH="100%" PADDING="24vpx" VERT-SPACING="16vpx" STD-MARGINS="1" HEIGHT="100%" VERT-SCROLL="1" MIN-WIDTH="1075px">
+				<LINE ADAPTIVE="0" WIDTH="100%" STD-MARGINS="0" CHILD-VERT-ALIGN="top">
+					<PANEL VERT-SPACING="4vpx" PADDING="0vpx 0vpx 0vpx 0vpx" WIDTH="100%">
+						<LINE WIDTH="100%" CHILD-VERT-ALIGN="top">
+							<PANEL HEIGHT="100vpx" WIDTH="100vpx" SIZE-LIMIT="1" BK-IMAGE-URL-EXPR="
+								if ( !System.IsWebClient )
+								{
+									return '';
+								}
+								var _sUrl = oPerson.pict_url;
+
+								if ( _sUrl != '' &amp;&amp; !StrContains( _sUrl, '://' ) &amp;&amp; StrContains( _sUrl, 'download_file.html' ) &amp;&amp; StrContains( _sUrl, 'file_id' ) )
+								{
+									var _oQuery = UrlQuery( _sUrl );
+									if ( _oQuery != undefined )
+									{
+										var _iFileId =  OptInt( _oQuery.GetOptProperty( 'file_id' ) );
+										if ( _iFileId != undefined )
+										{
+											var _docResource = tools.open_doc( _iFileId );
+											if ( _docResource != undefined &amp;&amp; _docResource.TopElem.file_url.HasValue )
+											{
+												_sUrl = _docResource.TopElem.file_url;
+											}
+										}
+									}
+								}
+								if ( _sUrl == '' )
+								{
+									_sUrl = 'x-local://wt/web/pics/nophoto.png';
+								}
+								if ( !StrContains( _sUrl, '://' ) )
+								{
+									_sUrl = UrlAppendPath( tools_web.set_url_protocol( tools.lds_address ), _sUrl );
+								}
+								return _sUrl;
+							">
+								<IF EXPR="!System.IsWebClient">
+									<IMAGE URL-EXPR="
+										var _sUrl = oPerson.pict_url;
+										if ( _sUrl != '' &amp;&amp; !StrContains( _sUrl, '://' ) &amp;&amp; StrContains( _sUrl, 'download_file.html' ) &amp;&amp; StrContains( _sUrl, 'file_id' ) )
+										{
+											var _oQuery = UrlQuery( _sUrl );
+											if ( _oQuery != undefined )
+											{
+												var _iFileId =  OptInt( _oQuery.GetOptProperty( 'file_id' ) );
+												if ( _iFileId != undefined )
+												{
+													var _docResource = tools.open_doc( _iFileId );
+													if ( _docResource != undefined &amp;&amp; _docResource.TopElem.file_url.HasValue )
+													{
+														_sUrl = _docResource.TopElem.file_url;
+													}
+												}
+											}
+										}
+										if ( _sUrl == '' )
+										{
+											_sUrl = 'x-local://wt/web/pics/nophoto.png';
+										}
+										if ( !StrContains( _sUrl, '://' ) )
+										{
+											_sUrl = UrlAppendPath( tools_web.set_url_protocol( tools.lds_address ), _sUrl );
+										}
+										return _sUrl;
+									" HEIGHT="100vpx" ALIGN="center" VERT-ALIGN="center" STD-MARGINS="0" PADDING="0vpx 0vpx 0vpx 0vpx"/>
+								</IF>
+							</PANEL>
+							<PANEL VERT-SPACING="4vpx" PADDING="0vpx 24vpx 0vpx 24vpx">
+								<LABEL TITLE-EXPR="oPerson.fullname" MULTILINE="1" FONT-SIZE="16vpx" FONT-WEIGHT="800"/>
+								<IF EXPR="Ps.type == 'project_participant'">
+									<LABEL TITLE-EXPR="
+										oProjectPart = Ps.object_id.OptForeignElem;
+										return (oProjectPart != undefined ? (oProjectPart.project_id.OptForeignElem != undefined ? 'Проект: ' + oProjectPart.project_id.OptForeignElem.name : '') : '');
+									" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								</IF>
+								<LABEL TITLE-EXPR="
+									if (oPerson.position_name != '')
+										return 'Должность: ' + oPerson.position_name;
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									if (oPerson.position_parent_name != '')
+										return 'Подразделение: ' + oPerson.position_parent_name;
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									if (Ps.person_id.HasValue)
+										return 'Оценивает: ' + Ps.person_fullname;
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									if (Ps.owner_person_id.HasValue)
+										return 'Инициатор: ' + Ps.owner_person_id.OptForeignElem.fullname
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									if (Ps.plan_date.HasValue)
+										return 'Оценить до: ' + StrDate(Ps.plan_date, false);
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									if (Ps.done_date.HasValue)
+										return 'Оценено: ' + StrDate(Ps.done_date, false);
+									else
+										return '';
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+							</PANEL>
+							<PANEL STD-MARGINS="0" WIDTH="80vpx" ALIGN="right" CHILD-VERT-ALIGN="center" PADDING="4vpx 4vpx 4vpx 4vpx" BK-COLOR-EXPR="
+									if ( Ps.status == 'plan' )
+									{
+										return '255,163,4';
+									}
+									else if (Ps.status == 'done')
+									{
+										return '140,202,9';
+									}
+									else
+									{
+										return '140,126,208';
+									}
+								">
+								<LABEL MULTILINE="1" FONT-SIZE="10vpx" ALIGN="center" STD-MARGINS="1" VERT-ALIGN="center" TITLE-EXPR="
+									if ( Ps.status == 'plan' )
+									{
+										return 'Ждет оценки';
+									}
+									else if (Ps.status == 'done')
+									{
+										return 'Оценка дана';
+									}
+									else
+									{
+										return 'Отменено';
+									}
+								" FONT-WEIGHT="200" TEXT-COLOR="255,255,255"/>
+							</PANEL>
+						</LINE>
+					</PANEL>
+				</LINE>
+				
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<IF EXPR="ArrayCount(Ps.custom_elems) > 0">
+					<LOOP EXPR="Ps.custom_elems" VAR="_elem">
+						<PANEL VERT-SPACING="4vpx" PADDING="0vpx 0vpx 0vpx 0vpx" WIDTH="100%">
+							<LINE WIDTH="100%" CHILD-VERT-ALIGN="top">
+								<LABEL TITLE-EXPR="
+								fldCustomFields  = tools.get_custom_template ( 'response', Ps.Doc.DocID, Ps ).fields;
+								fldName = ArrayOptFind(fldCustomFields, 'This.name == _elem.name');
+								if (fldName != undefined)
+								{
+									return fldName.title + ': ' +  _elem.value;
+								}
+								" MULTILINE="1" FONT-SIZE="14px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+							</LINE>
+						</PANEL>
+					</LOOP>
+				</IF>
+
+			</PANEL>
+		</PAGE>
+			
+	</SELECTOR>
+
+</LINE>
+</WITH>
+</WITH>
+</WITH>
+</SPXML-SCREEN>

@@ -1,0 +1,37 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	curKnowlegedDoc;
+	curKnowlegedID;
+}
+catch ( err )
+{
+	curKnowlegedDoc = curObjectID == null ? curDoc : curObject;
+	curKnowlegedID = curObjectID == null ? curDocID : curObjectID;
+}
+
+try
+{
+	sParamPrefix;
+}
+catch( ex )
+{
+	sParamPrefix = "";
+}
+curView = {
+	"id": "ObjectKnowledgeParts" + curKnowlegedID,
+	"height": "",
+	"title": "",
+	"catalog_name": "knowledge_part",
+	"disp_filter": "false",
+	"disp_search": "false",
+	"hide_empty": true,
+	"link_action": "OPENURL=" + tools_web.get_mode_clean_url( "knowledge_classifier", "{id}" ),
+	"hide_action": "SHOW=ObjectKnowledgeParts" + curKnowlegedID + "Mess;",
+	"param_preffix": sParamPrefix,
+	"collection": { "name": "object_knowledge_parts", "params": [ { "name": "object_id", "value": curKnowlegedID } ] }
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</SPXMLScreen>

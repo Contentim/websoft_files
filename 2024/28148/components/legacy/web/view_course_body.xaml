@@ -1,0 +1,812 @@
+﻿<SPXMLScreen>
+<%
+arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.block_list', 'object_header;object_messages;object_recommend;object_buttons;object_tabs', true ) ).split( ";" );
+//xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, (" + ArrayMerge( arrBlockListParam, "CodeLiteral(This)", "," ) + ") ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('id','zone','custom_web_template_id','wvars_num')" ) );
+
+var iSubpersonsCollectionID = OptInt(tools_web.get_web_param( curParams, "course_body.tab_list.subperson_tab.subpersons_collection", "", true ), 0);
+var catSubpersonsCollection = ArrayOptFind(XQuery("for $elem in remote_collections where $elem/id = " + iSubpersonsCollectionID + " return $elem/Fields('id','code')"), "This.id == iSubpersonsCollectionID");
+
+function drowInfoGrid()
+{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+			if ( ! curObject.mastery_score.HasValue && curObject.max_score.HasValue  )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_max_score", curLngWeb )%>:</Label>
+					<Label><%=curObject.max_score%></Label>
+				</GridRow>
+<%
+			}
+			else
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_pass_score", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curObject.mastery_score.HasValue ? ( curObject.mastery_score + ( curObject.max_score > 0.0 ? "  ( " + StrReal( curObject.mastery_score * 100.0 / curObject.max_score, 0 ) + "% )" : "" ) ) : tools_web.get_web_const( "vrb_not_specified", curLngWeb ) )%>]]></Label>
+				</GridRow>
+<%
+			}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_day_duration", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curObject.duration.HasValue ? curObject.duration : tools_web.get_web_const( "vrb_not_specified", curLngWeb ) )%>]]></Label>
+				</GridRow>
+			</Grid>
+<%
+}
+
+for ( sBlockListElem in arrBlockListParam )
+{
+
+if ( sBlockListElem == "object_custom_block" )
+{
+	for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+	{
+		tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+		Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+	}
+}
+
+if ( sBlockListElem == 'object_desc' )
+{
+	if ( curObject.desc.HasValue || curObject.comment.HasValue )
+	{
+		if ( ! curObject.desc.HasValue )
+		{
+			curDesc = {
+				"text": curObject.comment.Value
+			};
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+
+	}
+}
+
+if ( sBlockListElem == 'object_main_info' )
+{
+	drowInfoGrid();
+}
+
+if ( sBlockListElem == 'object_header' )
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+if ( sBlockListElem == 'object_messages' )
+{
+
+curMessageBox = {
+	"id": "CourseInfo",
+	"type": "info",
+	"buttons": []
+};
+
+dStartLaunch = tools_web.is_true( tools_web.get_web_param( curParams, 'course_body.start_launch', false, true ) );
+catLearningFirstElem = ArrayOptFirstElem( XQuery( "for $elem in active_learnings where $elem/person_id = " + curUserID + " and $elem/course_id = " + curObjectID + " return $elem/Fields('id','course_id')" ) );
+if ( catLearningFirstElem != undefined )
+{
+	curMessageBox.SetProperty( "text", tools_web.get_web_const( 'dannyykursvamu', curLngWeb ) );
+	curMessageBox.buttons.push( {
+		"title": tools_web.get_web_const( 'vlpb_next', curLngWeb ),
+		"click": ( dStartLaunch ? ( "OPENWINDOW=course_activate.html?launch=1&launch_id=1&doc_id=" + curDocID + "&course_id=" + curObjectID + "&sid=" + tools_web.get_sum_sid( curObjectID, Session.sid ) ) : ( "OPENURL=" + tools_web.get_mode_clean_url( "learning_proc", catLearningFirstElem.id, { course_id: catLearningFirstElem.course_id.Value, start: 1, doc_id: curDocID } ) ) ),
+		"add_class": "XAML-button-important",
+		"hide_buttons": true
+	} );
+}
+else
+{
+	if ( curObject.yourself_start )
+	{
+		curMessageBox.SetProperty( "text", tools_web.get_web_const( 'dannyykursdost', curLngWeb ) );
+		curMessageBox.buttons.push( {
+			"title": tools_web.get_web_const( 'vcorb_b_start', curLngWeb ),
+			"click": ( ( dStartLaunch ? "OPENWINDOW" : "OPENURL" ) + "=/course_activate.html?doc_id=" + curDocID + "&course_id=" + curObjectID + "&sid=" + tools_web.get_sum_sid( curObjectID, Session.sid ) ) + ( dStartLaunch ? "&launch=1&launch_id=1" : "" ),
+			"add_class": "XAML-button-important",
+			"hide_buttons": true
+		} );
+	}
+	else
+	{
+		sRequestTypeCode = tools_web.get_web_param( curParams, 'course_body.default_request_type_code', 'request_course', true );
+		catRequestType = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/object_type = 'course' and $elem/code = " + XQueryLiteral( sRequestTypeCode ) + " return $elem/Fields('id')" ) );
+		if ( catRequestType == undefined )
+		{
+			curMessageBox.SetProperty( "text", tools_web.get_web_const( 'vcorb_message3', curLngWeb ) );
+		}
+		else
+		{
+			if ( ArrayOptFirstElem( XQuery( "for $elem in requests where $elem/status_id = 'active' and $elem/person_id = " + curUserID + " and $elem/object_id = " + curObjectID + " and $elem/request_type_id=" + catRequestType.id + " return $elem" ) ) != undefined )
+			{
+				curMessageBox.SetProperty( "text", tools_web.get_web_const( 'vypodalizayavku_3', curLngWeb ) );
+			}
+			else
+			{
+				curMessageBox.SetProperty( "text", tools_web.get_web_const( 'chtobyizuchatdan', curLngWeb ) );
+				curMessageBox.buttons.push( {
+					"title": tools_web.get_web_const( 'c_text_create_request', curLngWeb ),
+					"click": ( "OPENURL=" + tools_web.get_mode_clean_url( "request", null, { request_type_id: catRequestType.id.Value, request_object_id: curObjectID, type: "course", "new": 1, doc_id: curDocID } ) ),
+					"hide_buttons": true
+				} );
+			}
+		}
+	}
+}
+if ( curMessageBox.GetOptProperty( 'text', '' ) != '' )
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+
+}
+
+if ( sBlockListElem == 'object_recommend' )
+{
+
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_recommend_block.xaml" ) );
+
+}
+
+if ( sBlockListElem == 'object_tabs' )
+{
+
+xarrOperations = [];
+if ( curObject.education_org_id.HasValue && ArrayOptFirstElem( XQuery( "for $elem in education_org_lectors where $elem/education_org_id = " + curObject.education_org_id + " and $elem/person_id = " + curUserID + " return $elem" ) ) != undefined )
+{
+	xarrProviderBossTypes = XQuery( "for $elem in boss_types where $elem/code = 'course_provider' return $elem" );
+	xarrOperations = tools.get_relative_operations_by_boss_types( xarrProviderBossTypes );
+}
+
+iDefaultTabCourseBody = OptInt( CONTEXT.GetOptProperty( 'CourseBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list', 'main;add;history;response;competence;subperson;helpdesc', true ) ).split( ';' );
+if ( curDevice.disp_type != "" )
+{
+	arrTabListParam = ArrayIntersect( ["main","add"], arrTabListParam, "This", "This" );
+}
+
+sTabsDispType = tools_web.get_web_param( curParams, 'course_body.tabs_disp_type', 'w', true );
+%>
+<TabControl Name="CourseBodyTab" ActiveTab="<%=iDefaultTabCourseBody%>" Width="100%" TabsLocation="<%=sTabsDispType%>" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	if ( curDevice.disp_type == "" )
+		arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list.main_tab.block_list', 'desc;info;map;tutors', true ) ).split( ';' );
+	else
+		arrBlockListParam = ["desc","info","map"];
+
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_main', 'zone' );
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "custom" && ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+		{
+			for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+			{
+				tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+				Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+			}
+		}
+
+		if ( sTabElem == 'desc' && ( curObject.desc.HasValue || curObject.comment.HasValue ) )
+		{
+			if ( ! curObject.desc.HasValue )
+			{
+				curDesc = {
+					"text": curObject.comment.Value
+				};
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+			<Label Class="XAML-label-spacer"/>
+<%
+		}
+
+		if ( sTabElem == "info" )
+		{
+			drowInfoGrid();
+%>
+			<Label Class="XAML-label-spacer"/>
+<%
+		}
+
+		if ( sTabElem == "map" )
+		{
+
+
+	function drawInfoBarScore( iScoreParam, iMaxScoreParam )
+	{
+%>
+		<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle">
+<%
+		if( iMaxScoreParam != null && iMaxScoreParam != 0 )
+		{
+%>
+			<ProgressBar FullScale="100" Value="<%=StrReal( iScoreParam * 100.0 / iMaxScoreParam, 0 )%>" Size="60" Vertical="false" FitContainer="false" Class="wt-progress-plain"/>
+			<Label NoWrap="true" Align="center" Class="wt-progress-bar-string"><%=( StrReal( iScoreParam, 1 ) + ( iMaxScoreParam != null ? '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxScoreParam : '' ) )%></Label>
+<%
+		}
+		else
+		{
+%>
+			<!--<ProgressBar FullScale="100" Value="0" Size="60" Vertical="false" FitContainer="false" Class="wt-progress-plain wt-progress-hidden"/>-->
+			<Label NoWrap="true" Align="center"><%=tools_web.get_web_const( 'c_pass_score', curLngWeb )%></Label>
+			<Label NoWrap="true" Align="center"><%=( StrReal( iScoreParam, 1 ) )%></Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+	}
+
+
+
+
+	function put_doc_xml( _code, iIdentParam, sTypeParam )
+	{
+		var arrChildParts = ArraySelect( curObject.parts, 'This.is_visible&&This.parent_part_code==' + CodeLiteral( _code ) );
+
+		for ( fldPartElem in arrChildParts )
+		{
+			sPartIdent = tools.random_string( 6 );
+
+			sImgType = fldPartElem.type;
+			switch ( fldPartElem.type )
+			{
+				case 'lesson':
+				{
+					sImgText = tools_web.get_web_const( 'c_course_module', curLngWeb );
+					sImgClass = 'icon-newspaper-o';
+					break;
+				}
+				case 'test':
+				{
+					sImgText = tools_web.get_web_const( 'c_test', curLngWeb );
+					sImgClass = 'icon-question-circle-o';
+					break;
+				}
+				case 'inline':
+				{
+					sImgText = tools_web.get_web_const( 'vfb_text', curLngWeb );
+					sImgClass = 'icon-bars';
+					break;
+				}
+				case 'activity':
+				{
+					sImgText = tools_web.get_web_const( 'c_activity', curLngWeb );
+					sImgClass = 'icon-youtube-play';
+					break;
+				}
+				default:
+				{
+					sImgText = tools_web.get_web_const( 'c_folder', curLngWeb );
+					sImgType = "folder";
+					sImgClass = 'icon-folder-o';
+					break;
+				}
+			}
+			sImgUrl = "/pics/1blank.gif";
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100%"/>
+		</GridColumns>
+		<GridRow>
+			<Image Source="<%=sImgUrl%>" Class="XAML-course-map-indent XAML-course-map-indent-<%=iIdentParam%>"></Image>
+<%
+			if ( fldPartElem.type == 'folder' )
+			{
+%>
+				<StackPanel Orientation="Vertical" Width="100%" Class="wt-course-map-item wt-course-map-item-<%=fldPartElem.type%>">
+					<Grid Width="100%">
+						<GridColumns>
+							<GridColumn/>
+							<GridColumn/>
+							<GridColumn Width="100%"/>
+						</GridColumns>
+						<GridRow>
+							<Label Class="wt-course-element-icon <%=sImgClass%>">
+								<HTMLTip><%=sImgText%></HTMLTip>
+							</Label>
+							<Label Class="wt-course-element-switch-tangle"/>
+							<StackPanel Orientation="Vertical" Class="">
+								<Label><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+							</StackPanel>
+						</GridRow>
+					</Grid>
+				</StackPanel>
+<%
+			}
+			else
+			{
+%>
+				<StackPanel Orientation="Vertical" Width="100%" Class="wt-course-map-item wt-course-map-item-<%=fldPartElem.type%>">
+					<Grid Width="100%">
+						<GridColumns>
+							<GridColumn/>
+							<GridColumn/>
+							<GridColumn Width="100%"/>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+
+							<Label Class="wt-course-element-icon <%=sImgClass%>">
+								<HTMLTip><%=sImgText%></HTMLTip>
+							</Label>
+<%
+				if ( curDevice.disp_type == "" )
+				{
+%>
+							<StackPanel Orientation="Vertical" Class="">
+								<StackPanel Name="IconAddInfoShow<%=sPartIdent%>" UsePadding="false">
+									<Link Class="wt-course-element-switch wt-course-element-switch-collapsed" Click="HIDE=IconAddInfoShow<%=sPartIdent%>;SHOW=IconAddInfoHide<%=sPartIdent%>;SHOW=AddInfo<%=sPartIdent%>">
+										<HTMLTip><%=tools_web.get_web_const( 'pokazatpodrobn', curLngWeb )%></HTMLTip>
+									</Link>
+								</StackPanel>
+								<StackPanel Name="IconAddInfoHide<%=sPartIdent%>" Hidden="true" UsePadding="false">
+									<Link Class="wt-course-element-switch wt-course-element-switch-expanded" Click="HIDE=IconAddInfoHide<%=sPartIdent%>;SHOW=IconAddInfoShow<%=sPartIdent%>;HIDE=AddInfo<%=sPartIdent%>">
+										<HTMLTip><%=tools_web.get_web_const( 'skrytpodrobnuyu', curLngWeb )%></HTMLTip>
+									</Link>
+								</StackPanel>
+							</StackPanel>
+<%
+				}
+				else
+				{
+%>
+							<Label Class="wt-course-element-switch-replace"/>
+<%
+				}
+%>
+							<StackPanel Orientation="Vertical" Class="">
+								<Label><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+							</StackPanel>
+<%
+							if ( fldPartElem.mastery_score.HasValue )
+							{
+								drawInfoBarScore( fldPartElem.mastery_score.Value, fldPartElem.max_score.Value );
+							}
+							else
+							{
+%>
+								<Label Class="wt-course-progress-tangle"/>
+<%
+							}
+%>
+						</GridRow>
+<%
+				if ( curDevice.disp_type == "" )
+				{
+%>
+						<GridRow Class="wt-plain-row">
+
+							<Label Class="wt-course-element-icon-tangle"/>
+							<Label Class="wt-course-element-switch-tangle"/>
+
+							<StackPanel Orientation="Vertical" Class="wt-plain-stack">
+								<StackPanel Class="wt-course-map-info" Name="AddInfo<%=sPartIdent%>" Orientation="Vertical" Hidden="1">
+									<Label Class="wt-course-map-info-name"><%=( fldPartElem.is_mandatory ? tools_web.get_web_const( 'vceb_is_mandatory', curLngWeb ) : tools_web.get_web_const( 'neobyazatelnyyr', curLngWeb ) )%>.</Label>
+<%
+									if ( fldPartElem.type != 'inline' && fldPartElem.set_status_side == 'lms' )
+									{
+%>
+										<Label Class="wt-course-map-info-name"><%=( tools_web.get_web_const( 'statusrazdelau', curLngWeb ) + '. ' + tools_web.get_web_const( 'c_pass_score', curLngWeb ) + ': ' + ( fldPartElem.mastery_score.HasValue ? fldPartElem.mastery_score : '-' ) )%>.</Label>
+<%
+									}
+%>
+									<StackPanel Class="wt-plain-stack" Orientation="Horizontal">
+										<Grid>
+											<GridColumns>
+												<GridColumn/>
+												<GridColumn/>
+											</GridColumns>
+<%
+									if ( fldPartElem.desc.HasValue )
+									{
+%>
+													<GridRow>
+														<Label Class="wt-course-map-info-name"><%=tools_web.get_web_const( 'c_desc', curLngWeb )%>:</Label>
+														<Label Class="wt-course-map-info-value"><![CDATA[<%=fldPartElem.desc%>]]></Label>
+													</GridRow>
+<%
+									}
+									if ( fldPartElem.start_day.HasValue )
+									{
+%>
+												<GridRow>
+													<Label Class="wt-course-map-info-name"><%=tools_web.get_web_const( 'denplaniruemog', curLngWeb )%>:</Label>
+													<Label Class="wt-course-map-info-value"><%=fldPartElem.start_day%></Label>
+												</GridRow>
+<%
+									}
+									if ( fldPartElem.duration_day.HasValue )
+									{
+%>
+												<GridRow>
+													<Label Class="wt-course-map-info-name"><%=tools_web.get_web_const( 'planiruemayapro', curLngWeb )%>:</Label>
+													<Label Class="wt-course-map-info-value"><%=fldPartElem.duration_day%></Label>
+												</GridRow>
+<%
+									}
+									if ( fldPartElem.attempts_num > 1 )
+									{
+%>
+												<GridRow>
+													<Label Class="wt-course-map-info-name"><%=tools_web.get_web_const( 'c_attempt_num', curLngWeb )%>:</Label>
+													<Label Class="wt-course-map-info-value"><%=fldPartElem.attempts_num%></Label>
+												</GridRow>
+<%
+									}
+%>
+									</Grid>
+									</StackPanel>
+								</StackPanel>
+
+							</StackPanel>
+
+							<Label/>
+						</GridRow>
+<%
+				}
+%>
+					</Grid>
+				</StackPanel>
+<%
+			}
+%>
+		</GridRow>
+	</Grid>
+<%
+			put_doc_xml( fldPartElem.code, iIdentParam + 1, sTypeParam );
+		}
+	}
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'kartakursa', curLngWeb ) )%>" Width="100%">
+
+			<StackPanel Name="CoursePartsTiles" Orientation="Vertical" Height="100%" Class="XAML-stack-container">
+<%
+			put_doc_xml( '', 0, 'tile' );
+%>
+			</StackPanel>
+
+		</Panel>
+
+		<Label Class="XAML-label-spacer"/>
+<%
+		}
+
+		if ( sTabElem == 'tutors' && curObject.persons.ChildNum != 0 )
+		{
+			curPersonsList = {
+				"title": tools_web.get_web_const( "vkpb_experts", curLngWeb ),
+				"persons": curObject.persons,
+				"primary_key": "person_id",
+				"array_fields": [
+					{ "field_name": "type" }
+				]
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   ADD TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'add' )
+{
+	iCurTab++;
+	sBlockListParam = tools_web.get_web_param( curParams, 'course_body.tab_list.add_tab.block_list', 'files;course_forums;catalogs', true );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.add_tab", "", true );
+%>
+	<TabItem Class="icon-file-text-o" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'c_materials', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	curMaterials = {
+		"blocks": sBlockListParam,
+		"param_preffix": "course_body.tab_list.add_tab.block_list"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_materials.xaml" ) );
+%>
+	</TabItem>
+<%
+}
+
+
+
+
+///////////////////////////////////////////////   HISTORY TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'history' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list.history_tab.block_list', 'learnings;all_learnings', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.history_tab", "", true );
+%>
+	<TabItem Class="icon-history" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'istoriyaobucheniya', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'learnings' )
+		{
+%>
+		<StackPanel Name="LearningsEmptyMess" Hidden="true" Width="100%">
+			<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( 'istoriyaprohozhd_1', curLngWeb )%>]]></Label>
+		</StackPanel>
+<%
+			curView = {
+				"id": "LastLearnings",
+				"title": tools_web.get_web_const( 'vashaistoriyaizu', curLngWeb ),
+				"height": "",
+				"catalog_name": "learning",
+				"xquery_qual": ( "$elem/person_id = " + curUserID + " and $elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"list_columns": "start_usage_date;last_usage_date;state_id;score",
+				"hide_empty": true,
+				"hide_action": "SHOW=LearningsEmptyMess;",
+				"param_preffix": "course_body.tab_list.history_tab.block_list.learnings_block"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+%>
+		<Label Class="XAML-label-spacer"/>
+<%
+		if ( sTabElem == 'all_learnings' && ArrayOptFindByKey( curObject.persons, curUserID, 'person_id' ) != undefined )
+		{
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-tiles-container">
+<%
+			iActLearnCount = ArrayCount( XQuery( "for $elem in active_learnings where $elem/course_id = " + curObjectID + " return $elem" ) );
+			xarrLearnings = tools.xquery( "for $elem in learnings where $elem/course_id = " + curObjectID + " return $elem/score" );
+			iLearnCount = ArrayCount( xarrLearnings );
+			curInformers = ({
+				"informers": [
+					{ "type": "number", "title": tools_web.get_web_const( 'c_course_process', curLngWeb ), "value": iActLearnCount },
+					{ "type": "number", "title": tools_web.get_web_const( 'c_course_finished', curLngWeb ), "value": iLearnCount }
+
+				]
+			});
+			if ( iLearnCount != 0 )
+			{
+				iAvgSum = ArraySum( xarrLearnings, "score" ) / iLearnCount;
+				iLearnCompleteCount = ArrayCount( tools.xquery( "for $elem in learnings where $elem/course_id = " + curObjectID + " and ( $elem/state_id = 2 or $elem/state_id = 3 ) return $elem/id" ) );
+				iLearnCompletePercent = Int( ( Real( iLearnCompleteCount ) / Real( iLearnCount) ) * 100.0 );
+
+				curInformers.informers.push( { "type": "score", "title": tools_web.get_web_const( 'oiy3763cg8', curLngWeb ), "score": iAvgSum, "max_score": curObject.max_score.Value, "mastery_score": curObject.mastery_score.Value } );
+				curInformers.informers.push( { "type": "number", "title": tools_web.get_web_const( 'uspeshnozavershe', curLngWeb ), "value": ( iLearnCompletePercent + ' %' ) } )
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+		</StackPanel>
+		<Label Class="XAML-label-spacer"/>
+<%
+			curView = {
+				"id": "ActiveLearnings",
+				"title": tools_web.get_web_const( 'seychasizuchayutd', curLngWeb ),
+				"height": "",
+				"catalog_name": "active_learning",
+				"xquery_qual": ( "$elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_menu": "true",
+				"data_fields": "person_id",
+				"list_columns": "person_fullname;start_usage_date;last_usage_date;state_id;score",
+				"hide_empty": true,
+				"param_preffix": "course_body.tab_list.history_tab.block_list.all_learnings_block"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+		<Label Class="XAML-label-spacer"/>
+<%
+			curView = {
+				"id": "Learnings",
+				"title": tools_web.get_web_const( 'izuchilidannyyk', curLngWeb ),
+				"height": "",
+				"catalog_name": "learning",
+				"xquery_qual": ( "$elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_menu": "true",
+				"data_fields": "person_id",
+				"list_columns": "person_fullname;last_usage_date;state_id;score",
+				"hide_empty": true,
+				"param_preffix": "course_body.tab_list.history_tab.block_list.all_learnings_block"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   RESPONSE TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'response' && curObject.allow_disp_response )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list.response_tab.block_list', 'responses', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.response_tab", "", true );
+%>
+	<TabItem Class="icon-edit" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( '9pllz8peh0', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="true">
+<%
+	if ( iDefaultTabCourseBody == iCurTab )
+	{
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == 'responses' )
+			{
+				xarrResponse = XQuery( 'for $elem in responses where $elem/object_id = ' + curObjectID + ' order by $elem/create_date descending return $elem' );
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_response_list.xaml" ) );
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   COMPETENCE TAB   /////////////////////////////////////////////
+if ( false && sTabListParam == "competence" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "course_body.tab_list.competence_tab.block_list", "competences", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.competence_tab", "", true );
+%>
+	<TabItem Class="icon-server" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "ass_competences", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "competences" )
+		{
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_competence_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   SUBPERSON TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'subperson' )
+{
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list.subperson_tab.block_list', 'subpersons', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.subperson_tab", "", true );
+
+	xarrFuncManagers = XQuery( 'for $elem in func_managers where $elem/person_id = ' + curUserID + ' return $elem' );
+	if ( ArrayOptFirstElem( xarrFuncManagers ) != undefined )
+	{
+		iCurTab++;
+%>
+	<TabItem Class="icon-users2" Title="<%=XmlAttrEncode( sTabTitle == "" ? "Подчиненные" : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="1">
+<%
+		if ( iDefaultTabCourseBody == iCurTab )
+		{
+			for ( sTabElem in arrBlockListParam )
+			{
+				if ( sTabElem == 'subpersons' )
+				{
+					if (catSubpersonsCollection != undefined)
+						curParams.SetProperty("subpersons_collection", catSubpersonsCollection.code);
+
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_sub_person_list.xaml" ) );
+				}
+			}
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+
+
+
+///////////////////////////////////////////////   HELPDESC TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'helpdesc' && tools.check_operation_rights( xarrOperations, curUser, 'show_course_helpdesc' ) )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_body.tab_list.helpdesc_tab.block_list', 'requests', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.helpdesc_tab", "", true );
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'c_requests', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="1">
+<%
+	if ( iDefaultTabCourseBody == iCurTab )
+	{
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == 'requests' )
+			{
+				catRequestType = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/code = 'request_course' return $elem" ) );
+				if ( catRequestType != undefined )
+				{
+					curView = {
+						"id": "WF",
+						"height": "",
+						"title": tools_web.get_web_const( 'c_requests', curLngWeb ),
+						"disp_paging": true,
+						"paging_size": 100,
+						"catalog_name": "request",
+						"external_eval": "workflow_condition_requests",
+						"xquery_qual": ( "$elem/object_id = " + curObjectID + " and $elem/request_type_id = " + catRequestType.id ),
+						"disp_search": true,
+						"sort_index": 0,
+						"sort_direct": "-",
+						"disp_filter": true,
+						"filter_mode": "custom",
+						"filter_items": ([
+							{ "id": "status_id_switcher_work", "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": CONTEXT.GetOptProperty( 'status_id_switcher_work', 'active' ), "action": "REFRESH" }
+						]),
+						"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+						"list_columns": "create_date;code;person_fullname;status_id"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				}
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   CUSTOM TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'custom_tab' )
+{
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		iCurTab++;
+		sTabTitle = tools_web.get_web_param( curParams, "course_body.tab_list.custom_tab", "", true );
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+}
+%>
+</TabControl>
+<%
+}
+
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,65 @@
+﻿<GridRow>	
+	<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "razreshitvhodbe", curLngWeb )%>:</Label>
+	<CheckBox Name="allow_guest_login" <%=(curObject.allow_guest_login ? "Checked=\"true\"" : "")%>></CheckBox>
+</GridRow>
+	<%
+					if(curObject.allow_guest_login)
+					{
+	%>
+<GridRow>
+		<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "ssylkadlyagoste", curLngWeb )%>:</Label>
+		<Link Click="OPENWINDOW=<%=UrlSchema(Request.Url)%>://<%=Request.UrlHost%>/vclass/webinar_starter.html?room=<%=curObjectID%>&guest=1"><%=UrlSchema(Request.Url)%>://<%=Request.UrlHost%>/vclass/webinar_starter.html?room=<%=curObjectID%>&guest=1</Link>
+</GridRow>
+	<%
+					}
+	%>
+<%
+					if(curObject.record_exists)
+					{
+%>
+<GridRow>
+	<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "razreshitprosmo", curLngWeb )%>:</Label>
+	<CheckBox Name="show_record" <%=(curObject.show_record ? "Checked=\"true\"" : "")%>></CheckBox>
+</GridRow>
+<GridRow>
+	<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "377i8b2tx7", curLngWeb )%>:</Label>
+	<CheckBox Name="allow_record_download" <%=(curObject.allow_record_download ? "Checked=\"true\"" : "")%>></CheckBox>
+</GridRow>
+<%
+					}
+%>
+<GridRow>
+		<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "veb_webinar_url", curLngWeb )%>:</Label>
+		<ComboBox Name="vclass_host" Width="250" SelectedItem="<%=curObject.vclass_host%>">
+		<%
+		
+					for ( sHost in teWebinarSystem.get_setting('hosts').entries)
+					{
+		%>
+			  <ComboBoxItem Value="<%=sHost.name%>"><%=sHost.name%></ComboBoxItem>
+		<%
+					}
+		%>
+		</ComboBox>
+</GridRow>
+	<%
+					if(ArrayCount(global_settings.settings.vclass_hosts) > 2)
+					{
+	%>
+<GridRow>
+	<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "1wgrauz139", curLngWeb )%></Label>
+	<CheckBox Name="use_reserve_server" Class="XAML-grid-checkbox-name" <%=(curObject.use_reserve_server ? "Checked=\"true\"" : "")%>></CheckBox>	
+</GridRow>
+	<%
+					}
+	%>
+<GridRow>
+	<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "shirinakanaladl", curLngWeb )%>:
+		<HTMLTip>
+			<![CDATA[
+				<%=tools_web.get_web_const( "shirinakanaladl_2", curLngWeb )%>
+			]]>
+		</HTMLTip>
+	</Label>
+	<Edit Name="bandwidth" Width="250"><%=curObject.bandwidth%></Edit>
+</GridRow>

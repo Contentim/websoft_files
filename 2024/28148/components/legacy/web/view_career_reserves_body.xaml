@@ -1,0 +1,303 @@
+﻿<%
+// const_start
+var sConstNoCareerReserve = 'У вас нет этапов развития карьеры';
+// const_end
+%>
+<SPXMLScreen>
+<%
+var bHidePersonnelReservePanel=OptInt( tools_web.get_web_param( curParams, 'career_reserves_body.hide_personnel_reserve_panel', '0', true ),0 )==1
+
+var sAllStatuses="plan;active;passed;failed;cancel"
+var sStatuses=String( tools_web.get_web_param( curParams,"career_reserves_body.statuses",sAllStatuses , true ) )
+if (Trim(sStatuses)=="")
+{
+	sStatuses=sAllStatuses
+}
+
+var sAllTypes="position;position_common;name"
+var sTypes=String( tools_web.get_web_param( curParams,"career_reserves_body.position_types",sAllTypes , true ) )
+if (Trim(sTypes)=="")
+{
+	sTypes=sAllTypes
+}
+
+var iTreeWidth = 216;
+var iNameLength=15
+var sPaneView = "card";
+if (curDevice.disp_type != "mobile")
+	sPaneView = tools_web.get_web_param( curParams, "career_reserves_body.sPaneView", "column", true );
+	
+var sInitialElemID = OptInt(CONTEXT.GetOptProperty("sSelectedCareerReserve", 0),0);
+
+function getCareerReserveName(fldCareerReserveParam,bFullParam)
+{
+	
+	var bAddPrefix= tools_web.is_true(bFullParam)
+	if (!bFullParam)
+	{
+		bAddPrefix=(sPaneView == "switch")
+	}
+
+	var fldTargetPos=undefined
+	var strTargetPosName=tools_web.get_cur_lng_name( fldCareerReserveParam.position_name, curLng.short_id )
+
+	
+	var strPositionPrefix = tools_web.get_web_const('c_position', curLngWeb )
+
+	if (fldCareerReserveParam.position_type=='adaptation')
+	{
+		strPositionPrefix = tools_web.get_web_const('vcrb_adaptation', curLngWeb );
+	}
+	else if (fldCareerReserveParam.position_type=='position_common')
+	{	
+		strPositionPrefix = tools_web.get_web_const('c_position_common', curLngWeb );
+	}
+
+	
+	if (fldCareerReserveParam.position_type!='name'&&fldCareerReserveParam.position_type!='adaptation')
+	{												
+		fldTargetPos=(fldCareerReserveParam.position_type=='position'?fldCareerReserveParam.position_id.OptForeignElem:fldCareerReserveParam.position_common_id.OptForeignElem)
+		if (fldTargetPos!=undefined)
+		{
+			strTargetPosName = tools_web.get_cur_lng_name(fldTargetPos.name, curLng.short_id );
+		}
+	}
+	
+	if (!bAddPrefix)
+	{
+		strTargetPosName=StrCharCount(  strTargetPosName ) > iNameLength ? Trim(StrLeftCharRange(  strTargetPosName, iNameLength )) + '...' :  strTargetPosName;
+	}
+	if (strTargetPosName!="")
+	{
+		strTargetPosName = (bAddPrefix?(strPositionPrefix+". "):"")+strTargetPosName;
+	}
+	else
+	{
+		strTargetPosName = strPositionPrefix
+	}
+	return strTargetPosName
+}
+
+
+fldPersonnelReserve=ArrayOptFirstElem(XQuery("for $elem in personnel_reserves where $elem/person_id="+curUserID+" and $elem/status='in_reserve' order by $elem/include_reserve_date descending return $elem"))
+
+if (!bHidePersonnelReservePanel)
+{
+	if (fldPersonnelReserve!=undefined)
+	{
+		fldCareerReserveType=fldPersonnelReserve.career_reserve_type_id.OptForeignElem
+		
+
+		strText=tools_web.get_web_const( 'vysostoitevkad', curLngWeb )
+		if (fldCareerReserveType!=undefined)
+		{
+			strText=strText+'<br/>'+tools_web.get_web_const( 'tiprezerva', curLngWeb )+": "+tools_web.get_cur_lng_name( fldCareerReserveType.name, curLng.short_id )
+		}
+		if (fldPersonnelReserve.include_reserve_date.HasValue)
+		{
+			strText=strText+'<br/>'+tools_web.get_web_const( 'qpltbj1sg1', curLngWeb )+": "+StrDate(fldPersonnelReserve.include_reserve_date,false,false)
+		}
+		
+		curMessageBox = {
+			"id": "PersonnelReserveMessageBox",
+			"type": "info",
+			"text": strText
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+}
+
+strWhere="where $elem/person_id = " + curUserID +" and $elem/start_date<=date('"+DateNewTime(CurDate,23,59,59)+"')"
+strAddWhere=''
+arrStatuses = String( sStatuses ).split( ';' );	
+for(sStatus in arrStatuses)
+{
+	if(sStatus != '')
+	{
+		if(strAddWhere != '')
+			strAddWhere += ' or ';
+		strAddWhere += (' $elem/status=\'' + sStatus + '\'');
+	}
+}
+strWhere = strWhere+(strWhere != ''?' and ':'where')+' (' + strAddWhere + ')';
+
+strAddWhere=''
+arrTypes = String( sTypes ).split( ';' );	
+for(sType in arrTypes)
+{
+	if(sType != '')
+	{
+		if(strAddWhere != '')
+			strAddWhere += ' or ';
+		strAddWhere += (' $elem/position_type=\'' + sType + '\'');
+	}
+}
+strWhere = strWhere+(strWhere != ''?' and ':'where')+' (' + strAddWhere + ')';
+
+arrCareerReserves= tools.xquery( "for $elem in career_reserves " + strWhere +" order by $elem/start_date return $elem" ) 
+iCountCareerReserves=ArrayCount (arrCareerReserves)
+if (iCountCareerReserves==0)
+{
+	curMessageBox = {
+			"id": "NoCareerReserveMessageBox",
+			"type": "warning",
+			"text": sConstNoCareerReserve
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+else
+{
+	bShowTree=iCountCareerReserves>1
+	fldCurrentCareerReserve=ArrayOptFind(arrCareerReserves,"This.id=="+sInitialElemID)
+	if (fldCurrentCareerReserve==undefined)
+	{
+		fldCurrentCareerReserve=ArrayOptFirstElem(arrCareerReserves)
+	}
+	
+	if (sPaneView == "switch")
+	{
+%>
+		<TabControl Name="sliderTab" DisplayMode_="onehandedconcertina" TabsHidden="true" Class="XAML-tabcontrol-invisible" MinHeight="500" TabsWidth="1" ActiveTab="<%=CONTEXT.GetOptProperty("sliderTab","")%>">
+<%
+	}
+	else if (sPaneView == "card")
+	{
+%>
+		<TabControl Name="sliderTab" DisplayMode="tab" TabsHidden="true" Height="100%" ActiveTab="<%=CONTEXT.GetOptProperty("sliderTab","")%>">
+<%
+	}
+	else
+	{
+%>
+	
+		<Grid Class="XAML-grid-content-hor-container">
+			<GridColumns>
+<%
+		if(bShowTree)
+		{
+%>
+		<GridColumn Width="<%=iTreeWidth%>"/>
+<%				
+		}
+%>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+<%
+	}
+	if(bShowTree)
+	{
+			
+		if (sPaneView == "switch" || sPaneView == "card")
+		{
+%>
+		<TabItem Title="">
+<%
+		}
+%>
+	<Collection Name="PanelTreeCollection">
+		<Data>
+<%
+		for (fldCareerReserve in arrCareerReserves)
+		{	
+			
+			strTargetPosName=getCareerReserveName(fldCareerReserve,false)
+			strTargetPosTitle=getCareerReserveName(fldCareerReserve,true)				
+%>
+			<Row>
+				<Cell Id="id" Value="<%=fldCareerReserve.id.Value%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode(strTargetPosName)%>"/>
+				<Cell Id="title" Value="<%=XmlAttrEncode(strTargetPosTitle)%>"/>
+				<Cell Id="hasChildren" Value="false"/>
+			</Row>
+<%
+		}
+%>
+		</Data>
+	</Collection>
+	<Tree Name="CareerReservesTree" Source="{PanelTreeCollection}" DataID="id" DataParent="parent_id"
+	DataTitle="name" DataFatherhood="false" DataIcon="icon"
+	Click="SET=sSelectedCareerReserveTitle,{title};SET=sSelectedCareerReserve,{id};SET=sliderTab,1;;UPDATE=CareerReserveItemPanel;" Preservable="1">	
+	</Tree>
+<%
+		if (sPaneView == "switch" || sPaneView == "card")
+		{
+%>
+		</TabItem>
+<%
+		}
+	}
+		
+		
+	if (sPaneView == "switch" )
+	{
+%>
+			<TabItem>
+<%
+	}
+	else if	(sPaneView == "card")
+	{
+%>
+			<TabItem Title="<%=tools_web.get_web_const( "strukturaorgan", curLngWeb )%>">
+<%
+	}
+	
+%>
+	<StackPanel Orientation="Vertical">
+		<Grid Width="100%" Class="XAML-grid-container">
+			<GridColumns>
+<%
+	if (sPaneView == "card" && bShowTree || sPaneView == "switch")
+	{
+%>
+			<GridColumn/>
+<%
+	}
+%>		
+			<GridColumn Width="100%"/>
+		</GridColumns>
+
+		<GridRow>
+<%
+	if (sPaneView == "card" && bShowTree || sPaneView == "switch")
+	{
+%>
+			<Link Click="SET=sliderTab,0" Class="icon-arrow-left"></Link>
+<%
+	}
+%>		
+			<Edit Class="XAML-edit-label XAML-edit-label-title" Name="sSelectedCareerReserveTitle" Editable="0"><%=getCareerReserveName(fldCurrentCareerReserve,true)%></Edit>		
+	
+		</GridRow>
+	</Grid>
+	
+	<Edit Hidden="1" Name="sSelectedCareerReserve"><%=fldCurrentCareerReserve.id%></Edit>
+	<Edit Hidden="1" Name="showTree" Value="<%=bShowTree ? 1 : 0%>"/>
+	<Panel Source="career_todo" Name="CareerReserveItemPanel" Title="<%=tools_web.get_web_const("c_desc", curLngWeb)%>" ShowHeader="false" Width="100%" Class="XAML-without-padding-and-margin">
+		<Param Name="iObjectID" Value="{sSelectedCareerReserve}"/>
+		<Param Name="iOverrideTamplateID" Value="<%=OptInt( tools_web.get_web_param( curParams, 'career_reserves_body.iOverrideTamplateID', null, true ),null )%>"/>
+	</Panel>
+	</StackPanel>
+<%
+	if (sPaneView == "switch" || sPaneView == "card")
+	{
+%>
+		</TabItem>
+<%
+	}
+	if (sPaneView == "switch" || sPaneView == "card")
+	{
+%>
+	</TabControl>
+<%
+	}
+	else
+	{
+%>
+		</GridRow>
+	</Grid>
+<%
+	}
+}
+%>
+</SPXMLScreen>

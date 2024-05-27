@@ -1,0 +1,398 @@
+﻿<SPXMLScreen>
+	<HTMLBox>
+		<![CDATA[
+			<style>
+				.XAML-grid-outstaff-hours>table,.XAML-grid-outstaff-hours-header>table {/*border-collapse: collapse;*/}
+				.XAML-grid-outstaff-hours>table>tbody>tr>td{/*border: 1px #000000 solid;*/}
+				.XAML-grid-outstaff-hours-header>table>tbody>tr>td{/*border: 1px #000000 solid;*/ background: #f2f4f7;}
+				.XAML-without-padding-and-margin-top-end { padding-top: 0px !important; padding-bottom: 0px !important; margin: 0px !important; width: 100%; top: 0px !important }
+				.XAML-outstaff-text-red>div>div>div>input {color: #FF0000 }
+				.XAML-PanelKnowledge .x-panel-header { display: none; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%;  }
+				.XAML-PanelKnowledge .x-panel-body { top: 0px !important; padding: 0px !important; border: 0px; margin: 0px !important; }
+				.XAML-PanelKnowledge-with-top .x-panel-header { display: none; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%;  }
+				.XAML-PanelKnowledge-with-header .x-panel-header { display: block ; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%; }
+				.XAML-without-padding-and-margin { padding: 0px !important; margin: 0px !important; width: 100%; top: 0px !important }
+				.XAML-without-padding-and-margin-right { padding: 0px !important; margin: 0px !important; text-align: right; }
+				.XAML-stack-background-border { background-color: #F5F5F5; border-width: 1px; border-style:solid; border-color: #dbdbdb; padding: 5px; margin: 5px;}
+				.XAML-grid-info-table>table>tbody>tr>td:first-child{	width: <%=curDevice.disp_type == "mobile" ? "100%" : "310px"%> !important; }
+			</style>
+		]]>
+	</HTMLBox>
+<%
+function check_access()
+{
+	if( objectDoc.person_id == curUserID && objectDoc.status == "forming" )
+		return true;
+	else
+		return false;
+}
+
+function check_boss( name )
+{
+	return curUser.access.access_role == name;
+}
+
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if( ISDIALOG )
+	objectID = OptInt( oParamSource.GetOptProperty( "object_id" ) );
+else
+	objectID = curObjectID;
+codeStage = oParamSource.GetOptProperty( "stage_code" );
+
+function is_upr()
+{
+	aRoles = String( oParamSource.GetOptProperty( "upr_roles", "upr" ) ).split( ";" );
+	return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+}
+
+hour_diff = OptInt( oParamSource.GetOptProperty( "hour_diff" ), 5 );
+
+isWTcollaborator = OptInt( oParamSource.GetOptProperty( "isWTcollaborator" ), 1 );
+
+isHr = check_boss( "hr" );
+isOutsorcing = check_boss( "outsorcing" );
+isUpr = is_upr();
+
+objectDoc = null;
+if( objectID != undefined )
+	objectDoc = OpenDoc( UrlFromDocID( objectID ) ).TopElem;
+if( !ISDIALOG )
+	objectDoc = curObject;
+	
+stageDoc = objectDoc.stages.GetOptChildByKey( codeStage );
+
+if( stageDoc == undefined )
+{
+%>
+	<Label>Not Stage</Label>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+%>
+	<Edit Name="ConfirmLabel" Hidden="1"></Edit>
+	<Edit Name="ShowCancel" Hidden="1"></Edit>
+	<Edit Name="ActionCancel" Hidden="1"></Edit>
+	<Edit Name="ActionSelectObject" Hidden="1"></Edit>
+	<Dialog Name="ConfirmObject" Width="400" Source="dlg_show_confirm" Title="<%="Выберите"%>" Close="{!ActionSelectObjectTemp};">
+		<Param Name="label" Value="{ConfirmLabel}"/>
+		<Param Name="show_cancel" Value="{ShowCancel}"/>
+		<Param Name="action_cancel" Value="{ActionCancel}"/>
+		<Param Name="action_ok" Value="{ActionSelectObject}"/>
+	</Dialog>
+	<Dialog Name="SelectObject" Source="dlg_select" Title="<%="Выберите"%>" Close="{!ActionSelectObject}">
+		<Param Name="catalog_name" Value=""/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="xquery_qual" Value=""/>
+	</Dialog>
+	<Action Name="OutStaffEfuvAction" Source="outstaff_form_efuv_action" Success="{!messageText};CLOSEDIALOG;" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="action" Value=""/>
+		<Param Name="stage_code" Value="<%=codeStage%>"/>
+		<Param Name="object_id" Value="<%=objectID%>"/>
+		<Param Name="hour_diff" Value="<%=hour_diff%>"/>
+		<Param Name="rewrite_plan_hours" Value="<%=oParamSource.GetOptProperty( "rewrite_plan_hours" )%>"/>
+		<Param Name="default_value_custom_fields" Value="<%=UrlEncode( oParamSource.GetOptProperty( "default_value_custom_fields" ) )%>"/>
+		<Param Name="partlial_presense_restrictions" Value="<%=UrlEncode( oParamSource.GetOptProperty( "partlial_presense_restrictions" ) )%>"/>
+		<Param Name="round_working_hour" Value="<%=UrlEncode( oParamSource.GetOptProperty( "round_working_hour" ) )%>"/>
+		<Param Name="open_replace_new_window" Value="<%=oParamSource.GetOptProperty( "open_replace_new_window" )%>"/>
+	</Action>
+	
+	<StackPanel Orientation="Horizontal" Adapt="true">
+<%
+	if( ISDIALOG )
+	{
+%>
+		<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG;"><%="Закрыть"%></Button>
+<%
+	}
+	printForm = ArrayOptFirstElem( XQuery( "for $i in print_forms where $i/code = 'outstaff_efuv' return $i" ) );
+	if( printForm != undefined && ( isUpr || isHr || isOutsorcing ) && stageDoc.is_assist && ( stageDoc.outstaff_order_execution_status_type == "partial_attend" || stageDoc.outstaff_order_execution_status_type == "attend" || stageDoc.outstaff_order_execution_status_type == "replacement" )  )
+	{
+%>
+		<Button Class="XAML-button" Click="OPENWINDOW=/outstaff_print_form.html?object_id=<%=objectID%>&stage_code=<%=codeStage%>&print_form_id=<%=printForm.id%>"><%="Печатная форма Word"%></Button>
+<%
+	}
+	if( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" )
+	{
+%>
+		<Button Class="XAML-button"  Click="SET=OutStaffEfuvAction/action,fix_form;ACTION=OutStaffEfuvAction;"><%="Исправить форму"%></Button>
+<%
+	}
+	bFoundReplaceRequest = false;
+	outstaffReplace = ArrayOptFirstElem( XQuery( "for $i in request_types where $i/code = 'outstaff_replace' return $i" ) );
+	if( outstaffReplace != undefined )
+	{
+		outstaffReplaceRequest = ArrayOptFirstElem( XQuery( "for $i in requests where $i/code = '" + codeStage + "' and $i/object_id = " + objectID + " and $i/request_type_id = " + outstaffReplace.id + " order by $i/create_date descending return $i" ) );
+		if( outstaffReplaceRequest != undefined )
+		{
+			bFoundReplaceRequest = true;
+		}
+	}
+%>
+		<StackPanel Name="ButtonReplacement" Hidden="<%=stageDoc.outstaff_order_execution_status_type == "not_attend" || stageDoc.outstaff_order_execution_status_type == "no_admission" || stageDoc.outstaff_order_execution_status_type == "replacement" || bFoundReplaceRequest ? 0 : 1%>">
+<%
+		sAction = "SET=OutStaffEfuvAction/action,open_replacement;ACTION=OutStaffEfuvAction;";
+%>
+			<Button Class="XAML-button" Width="200" Click="<%=sAction%>">Заявка на замену</Button>
+		</StackPanel>
+	</StackPanel>
+
+	<Grid Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Align="left"/>
+			<GridColumn Align="left"/>
+		</GridColumns>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Вид услуги"%></Label>
+			<Edit Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Editable="false"><%=objectDoc.position_common_id.HasValue ? objectDoc.position_common_id.ForeignElem.name : ""%></Edit>
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%='Провайдер'%></Label>
+			<Label><%=objectDoc.outstaff_provider_id.HasValue ? objectDoc.outstaff_provider_id.ForeignElem.name : ""%></Label>
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Плановая дата оказания услуги"%></Label>
+			<Label><%=StrDate( stageDoc.date, false, false )%></Label>
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Фактическая дата оказания услуги"%></Label>
+			<DatePicker Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Enabled="<%=( ( isUpr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type != "replacement" ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) ) && false%>" Name="StartDateFact"><%=stageDoc.fact_date.HasValue ? StrDate( stageDoc.fact_date, false, false ) : StrDate( stageDoc.date, false, false )%></DatePicker>
+		</GridRow>
+
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="ФИО сотрудника"%></Label>
+<%
+		if( ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+		{
+			if( isWTcollaborator == 1 )
+			{
+				if( ( isUpr && !stageDoc.is_assist ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+				{
+%>
+			<StackPanel Orientation="Horizontal">
+				<Edit Name="PersonIDOutStaff" Hidden="1"><%=stageDoc.collaborator_id%></Edit>
+				<Edit Name="FIOOutStaff" Editable="false" Width="98%"><%=stageDoc.collaborator_id.HasValue ? stageDoc.collaborator_id.ForeignElem.fullname : ""%></Edit>
+				<Button Class="XAML-button" Width="30" Click="SET=ActionSelectObject,<%=UrlEncode( "SET=FIOOutStaff,{CatalogListDataGridFullList:^/disp};SET=PersonIDOutStaff,{CatalogListDataGridFullList:^/id};" )%>;SET=SelectObject/catalog_name,collaborator;SET=SelectObject/xquery_qual,<%=UrlEncode( "$elem/is_outstaff = true()" )%>;OPENDIALOG=SelectObject;">...</Button>
+			</StackPanel>
+<%
+				}
+				else
+				{
+%>
+			<Label><%=stageDoc.collaborator_id.HasValue ? stageDoc.collaborator_id.ForeignElem.fullname : ""%></Label>
+<%
+				}
+			}
+			else
+			{
+				if( ( isUpr && !stageDoc.is_assist ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+				{
+%>
+			<Edit  Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Name="CommentForPerson"><%=stageDoc.provider_person_fullname%></Edit>
+<%
+				}
+				else
+				{
+%>
+			<Label><%=stageDoc.provider_person_fullname%></Label>
+<%
+				}
+			}
+		}
+		else
+		{
+%>	
+			<Label><%=stageDoc.provider_person_fullname.HasValue ? stageDoc.provider_person_fullname : ( stageDoc.collaborator_id.HasValue ? stageDoc.collaborator_id.ForeignElem.fullname : "" )%></Label>
+<%
+		}
+%>
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Статус"%></Label>
+<%
+	if( isUpr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "attend" )
+	{
+%>
+			<ComboBox Name="Status" Enabled="<%=DateNewTime( Date(), 00, 00, 00 ) == DateNewTime( stageDoc.date, 00, 00, 00 )%>" SelectedItem="<%=stageDoc.outstaff_order_execution_status_type%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" >
+				<ComboBoxItem Value="attend"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "attend" ).name%></ComboBoxItem>
+				<ComboBoxItem Value="not_attend"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "not_attend" ).name%></ComboBoxItem>
+				<ComboBoxItem Value="no_admission"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "no_admission" ).name%></ComboBoxItem>
+				<ComboBoxItem Value="partial_attend"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "partial_attend" ).name%></ComboBoxItem>
+			</ComboBox>
+<%
+	}
+	else if( isUpr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "replacement" )
+	{
+
+%>
+
+			<ComboBox Name="Status" Enabled="<%=DateNewTime( Date(), 00, 00, 00 ) == DateNewTime( stageDoc.date, 00, 00, 00 )%>" SelectedItem="<%=stageDoc.outstaff_order_execution_status_type%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" >
+				<ComboBoxItem Value="replacement"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "replacement" ).name%></ComboBoxItem>
+				<ComboBoxItem Value="partial_attend"><%=common.outstaff_order_execution_status_types.GetOptChildByKey( "partial_attend" ).name%></ComboBoxItem>
+			</ComboBox>
+
+<%
+
+	}
+	else
+	{
+%>	
+			<Label><%=(stageDoc.outstaff_order_execution_status_type.HasValue ? stageDoc.outstaff_order_execution_status_type.ForeignElem.name : "")%></Label>
+			<!--<Edit Name="Status" Hidden="1"><%=stageDoc.outstaff_order_execution_status_type%></Edit>-->
+<%
+	}
+%>	
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Плановое время начала оказания услуги"%></Label>
+			<Label><%=StrTime( stageDoc.date, false, false )%></Label>
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Фактическое время начала оказания услуги"%></Label>
+<%
+	if( ( isUpr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type != "replacement" ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+	{
+%>
+			<StackPanel Class="XAML-without-padding-and-margin" Orientation="Horizontal">
+				<ComboBox Name="TimeHourStartFact" SelectedItem="<%=stageDoc.fact_date.HasValue ? Hour( stageDoc.fact_date ) : Hour( stageDoc.date )%>" Width="60" >
+<%
+		for( j = ( stageDoc.fact_date.HasValue ? Hour( stageDoc.fact_date ) : 0 ); j <= 23; j++ )
+		{
+%>
+					<ComboBoxItem Value="<%=j%>"><%=StrInt( j, 2 )%></ComboBoxItem>
+<%
+		}
+%>
+				</ComboBox>
+				<Label><%=" : "%></Label>
+				<ComboBox Name="TimeMinuteStartFact" SelectedItem="<%=stageDoc.fact_date.HasValue ? Minute( stageDoc.fact_date ) : Minute( stageDoc.date )%>" Width="60" >
+<%
+		for( j = 0; j <= 59; j++ )
+		{
+%>
+					<ComboBoxItem Value="<%=j%>"><%=StrInt( j, 2 )%></ComboBoxItem>
+<%
+		}
+%>
+				</ComboBox>
+			</StackPanel>
+<%
+	}
+	else
+	{
+%>	
+			<Label><%=stageDoc.fact_date.HasValue ? StrTime( stageDoc.fact_date ) : ""%></Label>
+<%
+	}
+%>	
+		</GridRow>
+		<GridRow Height="40">
+			<Label  Class="XAML-info-grid-title-column"><%="Объём оказанных услуг"%></Label>
+<%
+	if( ( isUpr && !stageDoc.is_assist ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+	{
+%>
+			<ComboBox Name="ValueHour" SelectedItem="<%=stageDoc.hours_worked%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" >
+<%
+		for( j = 1; j <= OptInt( stageDoc.hour_num, 1 ); j++ )
+		{
+%>
+				<ComboBoxItem Value="<%=j%>"><%=j%></ComboBoxItem>
+<%
+		}
+%>
+			</ComboBox>
+<%
+	}
+	else
+	{
+%>	
+			<Label><%=stageDoc.hours_worked%></Label>
+<%
+	}
+	
+%>	
+		</GridRow>
+	</Grid>
+<%
+	fldCustomElems = tools.get_custom_template( 'outstaff_order_execution_stage', objectID, stageDoc );
+	if ( fldCustomElems != null )
+	{
+		fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+		
+		if ( ArrayCount( fldWebCustomFields ) != 0 )
+		{
+			arrCustomFieldNames = Array();
+			curCustomFields = {
+						"width": ( curDevice.disp_type == "mobile" ? "100%" : "300" ),
+						"template": fldCustomElems,
+						"fields": fldWebCustomFields,
+						"source": stageDoc.custom_elems,
+						"modify_eval": ( isUpr && !stageDoc.is_assist ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ),
+						"combo_box_width": 200,
+						"disp_pages": true
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		}
+	}
+%>
+	<Grid Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Align="left"/>
+			<GridColumn Align="left"/>
+		</GridColumns>
+		<GridRow Height="40">
+			<StackPanel Class="XAML-without-padding-and-margin" Orientation="Horizontal">
+				<Label NoWrap="1"><%="Подтверждение от магазина"%></Label>
+			</StackPanel>
+<%
+	if( isUpr && !stageDoc.is_assist && ( stageDoc.outstaff_order_execution_status_type == "replacement" || stageDoc.outstaff_order_execution_status_type == "attend" ) )
+	{
+%>
+			<StackPanel Class="XAML-without-padding-and-margin" Orientation="Horizontal">
+				<Button Enabled="<%=DateNewTime( Date(), 00, 00, 00 ) >= DateNewTime( Date( stageDoc.date ), 00, 00, 00 )%>" Class="XAML-button" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Click="SET=OutStaffEfuvAction/action,confirm_data;ACTION=OutStaffEfuvAction;"><%="Данные формы подтверждаю"%></Button>
+				<Edit Name="IsAssist" Hidden="1"><%=stageDoc.is_assist%></Edit>
+			</StackPanel>
+<%
+	}
+	else
+	{
+%>
+			<StackPanel Name="StackPanelIsAssist" Hidden="<%=!stageDoc.is_assist%>">
+				<CheckBox Name="IsAssist" Enabled="false" Checked="<%=stageDoc.is_assist%>"/>
+			</StackPanel>
+<%
+	}
+%>
+		</GridRow>
+	</Grid>
+<%
+	if( ( isUpr || isHr ) && !stageDoc.is_assist )
+	{
+%>
+	<Label Width="<%=curDevice.disp_type == "mobile" ? "100%" : "560"%>"><%="Внимание! Нажимая кнопку, вы подтверждаете правильность указанной в форме информации. После нажатия кнопки, редактирование формы будет запрещено"%></Label>
+<%
+	}
+%>
+	<StackPanel>
+		<Label  Class="XAML-info-grid-title-column"><%="Комментарий"%></Label>
+<%
+
+	if( ( isUpr && !stageDoc.is_assist ) || ( isHr && !stageDoc.is_assist && stageDoc.outstaff_order_execution_status_type == "not_created" ) )
+	{
+%>
+		<EditBox Width="<%=curDevice.disp_type == "mobile" ? "100%" : "560"%>" Name="Comment"><%=stageDoc.comment%></EditBox>
+<%
+	}
+	else
+	{
+%>	
+			<Label Width="<%=curDevice.disp_type == "mobile" ? "100%" : "560"%>"><%=stageDoc.comment%></Label>
+<%
+	}
+%>
+	</StackPanel>
+
+</SPXMLScreen>

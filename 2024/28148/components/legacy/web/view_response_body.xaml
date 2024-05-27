@@ -1,0 +1,185 @@
+﻿<SPXMLScreen>
+<%
+if ( curObjectID == null )
+{
+	curObject = OpenNewDoc( 'x-local://wtv/wtv_response.xmd' ).TopElem;
+	curObject.person_id = curUserID;
+	tools.common_filling( 'collaborator', curObject, curUserID, curUser );
+	curResponseTypeID = null;
+
+	if ( curUrlQuery.HasProperty( 'response_type_id' ) )
+	{
+		curResponseTypeID = Int( curUrlQuery.response_type_id );
+		curResponseType = OpenDoc( UrlFromDocID( curResponseTypeID ) ).TopElem;
+		tools.common_filling( 'response_type', curObject, curResponseTypeID, curResponseType );
+	}
+	else if ( curUrlQuery.HasProperty( 'response_type_code' ) )
+	{
+		responseTypeArray = XQuery( "for $elem in response_types where $elem/code = " + XQueryLiteral( String( curUrlQuery.response_type_code ) ) + " return $elem/Fields('id')" );
+		responseTypeArrayFirstElem = ArrayOptFirstElem( responseTypeArray );
+		if ( responseTypeArrayFirstElem != undefined )
+		{
+			curResponseTypeID = responseTypeArrayFirstElem.id.Value;
+			curResponseType = OpenDoc( UrlFromDocID( curResponseTypeID ) ).TopElem;
+			tools.common_filling( 'response_type', curObject, curResponseTypeID, curResponseType );
+		}
+	}
+	else
+	{
+		if ( curUrlQuery.HasProperty( 'type' ) )
+			curObject.type = curUrlQuery.type;
+	}
+}
+else
+{
+	curResponseTypeID = curObject.response_type_id.Value;
+	curResponseType = OpenDoc( UrlFromDocID( curResponseTypeID ) ).TopElem;
+}
+
+curResponseObjectID = OptInt( curUrlQuery.GetOptProperty( 'response_object_id' ), null );
+curResponseObject = null;
+if ( curResponseObjectID != null )
+{
+	try
+	{
+		curResponseObject = OpenDoc( UrlFromDocID( curResponseObjectID ) ).TopElem;
+		curObject.object_id = curResponseObjectID;
+		tools.common_filling( 'object', curObject, curResponseObjectID, curResponseObject );
+	}
+	catch ( err )
+	{
+		curResponseObjectID = null;
+	}
+}
+
+sCode = tools.random_string( 6 );
+%>
+
+<Label Class="XAML-object-title-label"><![CDATA[<%=( curObjectID != null ? StrDate( curObject.create_date, false ) + ' ' + curObject.person_fullname : ( curResponseTypeID != null ? tools_web.get_cur_lng_name( curResponseType.name, curLng.short_id ) : '' ) )%>]]></Label>
+
+<%
+if ( curObject.person_id == curUserID || ( curObjectID == null && ArrayOptFirstElem( XQuery( "for $elem in responses where $elem/person_id = " + curUserID + " and $elem/response_type_id = " + curResponseTypeID + " and $elem/object_id = " + curObject.object_id + " return $elem/Fields('id')" ) ) == undefined ) )
+{
+	strSuccessAction = '';
+	if ( curResponseTypeID != null )
+	{
+		switch ( curResponseType.create_redirect )
+		{
+			case 'main':
+				strSuccessAction = "OPENURL=/home";
+				break;
+
+			case 'back':
+				sRedirectMode = curUrlQuery.GetOptProperty( 'redirect_mode', '' );
+				if ( sRedirectMode == '' )
+				{
+					sRedirectMode = curObject.type;
+				}
+				iRedirectObjectID = OptInt( curUrlQuery.GetOptProperty( 'redirect_object_id' ), null );
+
+				if (iRedirectObjectID==null)
+				{
+					iRedirectObjectID = curObject.object_id;
+				}
+				strSuccessAction="OPENURL=" + tools_web.get_mode_clean_url( UrlEncode( sRedirectMode ), iRedirectObjectID, { doc_id: curDocID } );
+				break;
+		}
+	}
+	if ( strSuccessAction == '' )
+	{
+		iID = ArrayOptFirstElem( XQuery( "for $elem in documents where $elem/code = 'responses' return $elem/Fields('id')" ) );
+		iID = iID == undefined ? curDocID : iID.id;
+		strSuccessAction = "OPENURL=" + tools_web.get_mode_clean_url( "responses", null, { doc_id: iID } );
+	}
+%>
+<Action Name="ResponseSaveAction_<%=sCode%>" Source="response_create" Success="<%=XmlAttrEncode(strSuccessAction)%>" Failure="ALERT={messageText}">
+	<Param Name="object_id" Value="<%=curObject.object_id%>"/>
+	<Param Name="response_type_id" Value="<%=curObject.response_type_id%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Toolbar Class="XAML-toolbar">
+
+	<Button Class="XAML-button XAML-button-save" Click="ACTION=ResponseSaveAction_<%=sCode%>"><%=tools_web.get_web_const( 'c_save', curLngWeb )%></Button>
+
+</Toolbar>
+<%
+}
+%>
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_info', curLngWeb ) )%>" Expanded="1" Width="100%">
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+	if ( curObject.type.HasValue )
+	{
+		fldCommonCatalog = curLngCommon.exchange_object_types.GetOptChildByKey( curObject.type );
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=fldCommonCatalog.title%>:</Label>
+<%
+		if ( curObject.object_id.HasValue )
+		{
+			try
+			{
+				if ( ! curObject.object_name.HasValue )
+				{
+					curResponseObject = OpenDoc( UrlFromDocID( curObject.object_id ) ).TopElem;
+					curObject.object_name = tools.get_disp_name_value( curResponseObject );
+				}
+				sObjectName = tools_web.get_cur_lng_name( curObject.object_name, curLng.short_id );
+			}
+			catch ( err )
+			{
+				sObjectName = tools_web.get_web_const( "c_deleted", curLngWeb );
+			}
+			if ( fldCommonCatalog.web_template.HasValue )
+			{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.object_id, { doc_id: curDocID } )%>"><![CDATA[<%=sObjectName%>]]></Link>
+		</GridRow>
+<%
+			}
+			else
+			{
+%>
+			<Label><![CDATA[<%=sObjectName%>]]></Label>
+		</GridRow>
+<%
+			}
+		}
+		else
+		{
+%>
+			<Label/>
+		</GridRow>
+<%
+		}
+	}
+%>
+	</Grid>
+</Panel>
+
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_additional', curLngWeb ) )%>" Expanded="1" Width="100%">
+<%
+fldCustomElems = tools.get_custom_template( curObject.Name, curObject.response_type_id, curObject );
+if ( fldCustomElems != null )
+{
+	curCustomFields = {
+		"id": ( "Response" + sCode ),
+		"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+		"source": curObject.custom_elems,
+		"modify_eval": ( curObjectID == null ),
+		"width": tools_web.get_web_param( curParams, 'response_body.width_field_title_column', '250', true ),
+		"condition_action": "REFRESH"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+}
+%>
+</Panel>
+<%
+if ( curObjectID == null )
+	Request.Session.Env.curObject = curObject;
+%>
+</SPXMLScreen>

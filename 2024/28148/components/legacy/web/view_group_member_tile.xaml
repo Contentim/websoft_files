@@ -1,0 +1,78 @@
+﻿<SPXMLScreen>
+<%
+	var sPictUrl = null;
+	var sColumn,aColumnsList = String(PARAMETERS.GetOptProperty("columns_list","")).split(";");
+
+	var iPicWidth = OptInt( PARAMETERS.GetOptProperty("pic_width",150) , 150 );
+	var iPicHeight = OptInt( PARAMETERS.GetOptProperty("pic_height",150) , 150 );
+	
+	for ( sColumn in aColumnsList )
+	{
+		switch ( sColumn )
+		{
+			case 'pict_url':
+				sPictUrl = PARAMETERS.GetOptProperty("pict_url");
+				if (sPictUrl == undefined || sPictUrl == "")
+					sPictUrl = "/pics/nophoto.jpg";
+				break;
+
+			case 'person_url':
+				sPictUrl = "person_icon.html?id=" + PARAMETERS.GetOptProperty( "id" ) + "&type="+iPicWidth+"x"+iPicHeight;
+				break;
+		}
+	}
+
+	var bLinkShow = tools_web.is_true( PARAMETERS.GetOptProperty( "disp_link" ) );
+	function printElem(sText)
+	{
+		if (sText != "")
+		{
+			if (bLinkShow)
+			{
+%>
+		<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, PARAMETERS.GetOptProperty("id"), { doc_id: curDocID } )%>"><%=sText%></Link>
+<%
+				bLinkShow = false;
+			}
+			else
+			{
+%>
+		<Label><%=sText%></Label>
+<%
+			}
+		}
+	}
+%>
+	<Grid>
+		<GridColumns>
+<%
+		if (sPictUrl != null)
+		{
+%>
+			<GridColumn Width="<%=(iPicWidth+5)%>"/>
+<%
+		}
+%>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+<%
+		if (sPictUrl != null)
+		{
+%>
+			<StackPanel>
+				<Image Source="<%=sPictUrl%>"/>
+			</StackPanel>
+<%
+		}
+%>
+			<StackPanel>
+<%
+				for (sColumn in aColumnsList)
+					if (sColumn != "pict_url")
+						printElem(PARAMETERS.GetOptProperty(sColumn, ""));
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

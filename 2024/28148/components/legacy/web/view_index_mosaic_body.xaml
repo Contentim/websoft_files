@@ -1,0 +1,402 @@
+﻿<SPXMLScreen>
+<%
+arrContextFildNames = [ "StatisticMosaicBodyTab", "TempDestinationEditStatisticRecGrid","EditColNum","EditContext"];
+iContextCounter=ArrayCount(arrContextFildNames)
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( "StatisticMosaicBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+iCurTab = 0-1;
+alert(tools_web.get_web_param( curParams, "statistic_mosaic_body.tab_list", "xxx", true ))
+arrTabListParam = String( tools_web.get_web_param( curParams, "statistic_mosaic_body.tab_list", "graph;table", true ) ).split( ";" );
+strDefaultGraphType=String( tools_web.get_web_param( curParams, "statistic_mosaic_body.default_graph_type", "line", true ) );
+sSelectedStatisticCodes=String( tools_web.get_web_param( curParams, "statistic_mosaic_body.default_statistics", "", true ) );
+
+bHideSelectPanel=OptInt( tools_web.get_web_param( curParams, "statistic_mosaic_body.hide_select_panel", "0", true ),0 )==1;
+iColNum=OptInt( tools_web.get_web_param( curParams, "statistic_mosaic_body.columns_num", "0", true ), 1);
+sGraphWidth=String( tools_web.get_web_param( curParams, "statistic_mosaic_body.graph_width", "100%", true ));
+
+sTitle = (curDoc != null) ? curDoc.name : tools_web.get_web_const( 'kaleydoskoppok', curLngWeb );
+
+arrSelectedStatisticCodes = String(sSelectedStatisticCodes).split(",");
+arrSelectedStatistics = new Array();
+for(sCode in arrSelectedStatisticCodes)
+{
+	xarrStatistics = XQuery("for $elem in statistic_recs where $elem/code='" + sCode + "' return $elem");
+	if(ArrayOptFirstElem(xarrStatistics) != undefined)
+	{
+		arrSelectedStatistics.push(ArrayOptFirstElem(xarrStatistics).id);
+	}	
+}
+
+CONTEXT.GetOptProperty( "TempDestinationEditStatisticRecGrid")
+if(ArrayCount(arrSelectedStatistics) == 0)
+{
+	arrTempSelectedStatisticRec = ArrayExtract( tools.read_object(CONTEXT.GetOptProperty( "TempDestinationEditStatisticRecGrid", [] )), "id" );
+}
+else
+{
+	arrTempSelectedStatisticRec = (CONTEXT.HasProperty( "TempDestinationEditStatisticRecGrid") ) ? ArrayExtract( tools.read_object(CONTEXT.GetOptProperty( "TempDestinationEditStatisticRecGrid", [] )), "id" ) : arrSelectedStatistics;
+}
+//CONTEXT.GetOptProperty( "TempDestinationEditStatisticRecGrid", [] );
+iSelectedStatisticRecCounter=0;
+
+strDataString = CONTEXT.GetOptProperty( "EditContext","");
+arrSendData = strDataString.split(";");
+
+bListArray=false;
+if (ArrayOptFirstElem(arrTempSelectedStatisticRec)!=undefined)
+{
+	bListArray=true
+	arrSelectedStatisticRec=Array()
+
+	for (iRecElem in arrTempSelectedStatisticRec)
+	{
+		try
+		{
+			oSelectedStatisticRec = new Object;
+			oSelectedStatisticRec.id = Int(iRecElem);
+			oSelectedStatisticRec.graph_type = strDefaultGraphType;
+			arrSelectedStatisticRec[iSelectedStatisticRecCounter] = oSelectedStatisticRec;
+			iSelectedStatisticRecCounter++
+		}
+		catch(ex)
+		{
+		}
+	}
+}
+else
+{
+	arrSelectedStatisticRec=Array()
+
+	for (iSendDataElem in arrSendData)
+	{
+		try
+		{
+			arrTemp=iSendDataElem.split("|")
+			oSelectedStatisticRec= new Object;
+			oSelectedStatisticRec.id=Int(arrTemp[0])
+			oSelectedStatisticRec.graph_type=arrTemp[1]
+			arrSelectedStatisticRec[iSelectedStatisticRecCounter]=oSelectedStatisticRec;
+			iSelectedStatisticRecCounter++
+		}
+		catch(ex)
+		{
+		}
+	}
+}
+
+
+if (bListArray)
+{
+	for (iSendDataElem in arrSendData)
+	{	
+		try
+		{
+			arrTemp = iSendDataElem.split("|");
+			fldCurSelectedStatisticRec = ArrayOptFind(arrSelectedStatisticRec,"Int(This.id)=="+Int(arrTemp[0]));
+			if(fldCurSelectedStatisticRec != undefined)
+			{
+				fldCurSelectedStatisticRec.graph_type=arrTemp[1];
+			}
+		}
+		catch(ex)
+		{
+		}
+	}
+}
+
+iStatisticRecCounter=ArrayCount(arrSelectedStatisticRec);
+
+%>
+<!--Actions-->
+<Action Name="SendContext" Source="index_mosaic_send_context" Success="SET=EditContext,{data}" Failure="ALERT={messageText}">
+	<Param Name="strDataString" Value="{EditContext}"/>
+	<Param Name="iElemID" Value=""/>
+	<Param Name="strGraphType" Value=""/>
+</Action>
+<!--Actions end-->
+
+<Label Class="XAML-object-title-label"><%=sTitle%></Label>
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "vyborpokazatel", curLngWeb ) + ( iStatisticRecCounter > 0 ? ". " + tools_web.get_web_const( "25uqebdpa0", curLngWeb ) + " (" + iStatisticRecCounter + ")" : "" ) )%>" Expanded="<%=(bHideSelectPanel?(iStatisticRecCounter==0?true:false):true)%>" Width="100%">
+<%
+//alert(ArrayMerge( ArrayExtract( arrSelectedStatisticRec, "id" ), "This", ";" ))
+	curSelectorList = {
+		"id": "StatisticRecGrid",
+		"height": "400",
+		"catalog_name": "statistic_rec",
+		"disp_link": "true",
+		"list_columns": "name",
+		"link_field_index": 0,
+		"selected_object_ids": ArrayMerge( ArrayExtract( arrSelectedStatisticRec, "id" ), "This", ";" ),
+		"close_action": "CONTEXT=AllSendContext;REFRESH"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+	<Button Class="XAML-button XAML-button-select" Click="OPENDIALOG=SelectDialogStatisticRecGrid"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+</Panel>
+
+<TabControl Name="StatisticMosaicBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+
+	///////////////////////////////////////////////   TAB   /////////////////////////////////////////////
+	if ( sTabListParam == "table"||sTabListParam == "graph")
+	{
+		iCurTab++;
+		
+		strTabItemTitle=(sTabListParam == "graph"?tools_web.get_web_const( "grafiki", curLngWeb ):tools_web.get_web_const( "tablicy", curLngWeb ))
+		
+%>
+		<TabItem Title="<%=XmlAttrEncode( strTabItemTitle )%>">
+<%
+		iTableCounter = 0;
+		iColCounter = iStatisticRecCounter > 1 ? iColNum : iStatisticRecCounter;
+		if (iColCounter>1)
+		{
+		
+%>
+		<Grid Width="100%">
+			<GridColumns>
+<%
+			iColumnWidth=(100/iColCounter)
+			for(iParamElem=0;iParamElem<iColCounter;iParamElem++)
+			{
+			
+%>
+				<GridColumn Width="<%=iColumnWidth%>%"/>
+<%
+			}
+%>
+			</GridColumns>
+<%
+		}
+		iColTempCounter=0
+		for (fldStatisticRec in arrSelectedStatisticRec)
+		{
+			try
+			{
+				teStatisticRec=OpenDoc( UrlFromDocID(Int(fldStatisticRec.id))).TopElem
+			}
+			catch(ex)
+			{
+				continue;
+			}
+
+			
+			if (!StrContains(strDataString, fldStatisticRec.id, true))
+			{
+				strDataString=strDataString+fldStatisticRec.id+"|"+fldStatisticRec.graph_type+";"
+			}
+			bNewRow = (iColTempCounter==0)
+
+			if (bNewRow&&(iColCounter>1))
+			{
+%>
+			<GridRow>
+<%
+			}
+			
+			strElmNameSuffix=fldStatisticRec.id + (sTabListParam == "table"?"Grid":"Graph")	
+			fldFirstPeriodType=ArrayOptFirstElem(teStatisticRec.period_types)
+			
+			sAdditinalInfoCode = ""
+			if(teStatisticRec.detail_web_template_id.HasValue && teStatisticRec.detail_web_template_id.OptForeignElem != undefined)
+			{
+				sAdditinalInfoCode = teStatisticRec.detail_web_template_id.ForeignElem.code;
+%>
+			<Dialog Name="AdditinalInfoDialog<%=strElmNameSuffix%>" Source="<%=sAdditinalInfoCode%>" Width="800" Height="650" Title="<%=tools_web.get_web_const( 'vnrqm9djn5', curLngWeb )%>">
+				<Param Name="sAdditinalInfo" Value=""/>
+			</Dialog>
+<%
+			}
+%>
+			
+			<StackPanel Name="SP<%=strElmNameSuffix%>">
+<%
+			if ( sTabListParam != "table")
+			{
+%>
+				<Edit Name="EditPperiodType<%=strElmNameSuffix%>" Hidden="1"><%=fldFirstPeriodType!=undefined?fldFirstPeriodType.type:""%></Edit>
+<%
+			}
+%>
+				<Collection Name="StatisticRecDatasCollection<%=strElmNameSuffix%>" Source="index_mosaic_statistic_data_collection">
+					<Param Name="iStatisticRecID" Value="<%=fldStatisticRec.id%>"/>
+					<Param Name="sPeriodType" Value="<%=(sTabListParam == "table"?"{StatisticRecDatasCollectionType"+strElmNameSuffix+"}":"{EditPperiodType"+strElmNameSuffix+"}")%>"/>
+					<Param Name="bGraph" Value="<%=(sTabListParam == "graph")%>"/>
+					<Param Name="sGraphType" Value="<%=fldStatisticRec.graph_type%>"/>
+					<Param Name="sStatisticRecName" Value="<%=teStatisticRec.name%>"/>
+					<Param Name="bShowNorm" Value="{CBShowNorm<%=strElmNameSuffix%>}"/>
+					<Param Name="dDispStartDate" Value="{DPDispStartDate<%=strElmNameSuffix%>}"/>
+					<Param Name="sDispStartHours" Value="{CBDispStartHours<%=strElmNameSuffix%>}"/>
+					<Param Name="sDispStartMinutes" Value="{CBDispStartMinutes<%=strElmNameSuffix%>}"/>
+					<Param Name="dDispEndDate" Value="{DPDispEndDate<%=strElmNameSuffix%>}"/>
+					<Param Name="sDispEndHours" Value="{CBDispEndHours<%=strElmNameSuffix%>}"/>
+					<Param Name="sDispEndMinutes" Value="{CBDispEndMinutes<%=strElmNameSuffix%>}"/>
+					
+				</Collection>
+<%
+				if ( sTabListParam == "table")
+				{
+%>
+				<DataGrid Name="StatisticRecDataGrid<%=strElmNameSuffix%>" Title="<%=XmlAttrEncode(tools_web.get_cur_lng_name(teStatisticRec.name, curLng.short_id ))%>" Source="{StatisticRecDatasCollection<%=strElmNameSuffix%>}" Height="200" Width="100%" ShowHeader="1">
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_period", curLngWeb )%>" Value="date_disp" Width="40%" <%=(sAdditinalInfoCode==""? "Type=\"string\"": ("Type=\"link\" Click=\"SET=AdditinalInfoDialog" + strElmNameSuffix + "/sAdditinalInfo,{additinal_info};OPENDIALOG=AdditinalInfoDialog" + strElmNameSuffix + "\""))%>/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_value", curLngWeb )%>" Value="value" Width="20%" Type="string"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "normas", curLngWeb )%>" Value="norm_from" Width="20%" Type="string"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "normapo", curLngWeb )%>" Value="norm_to" Width="20%" Type="string"/>
+				</DataGrid>
+<%
+				}
+				else
+				{
+				alert(sGraphWidth)
+%>
+					<Label Class="XAML-object-title-label"><%=XmlAttrEncode(tools_web.get_cur_lng_name(teStatisticRec.name, curLng.short_id ))%></Label>
+
+					<Chart Name="StatisticRecDataGraph<%=strElmNameSuffix%>" Width="<%=sGraphWidth%>" Scrollable="1" Height="200" 
+						Legend="ne"  DataChartID="caption" DataCategory="x" DataValue="y" Source="{StatisticRecDatasCollection<%=strElmNameSuffix%>}" DataColor="strColor" Click="SET=AdditinalInfoDialog<%=strElmNameSuffix%>/sAdditinalInfo,{additinal_info};OPENDIALOG=AdditinalInfoDialog<%=strElmNameSuffix%>"/>
+					
+					<StackPanel Orientation="Horizontal" Align="center" Class="XAML-stack-filter">
+						<RadioButton Name="ChartType<%=strElmNameSuffix%>" Value="line" <%=(fldStatisticRec.graph_type=="area"?"Checked=\"true\"":"")%> Change="SET=SendContext/iElemID,<%=fldStatisticRec.id%>;SET=StatisticRecDatasCollection<%=strElmNameSuffix%>/sGraphType,line;UPDATE=StatisticRecDataGraph<%=strElmNameSuffix%>"><%=XmlAttrEncode( tools_web.get_web_const( "vcrb_graph", curLngWeb ) )%></RadioButton>
+						<RadioButton Name="ChartType<%=strElmNameSuffix%>" Value="bar" <%=(fldStatisticRec.graph_type=="bar"?"Checked=\"true\"":"")%>  Change="SET=SendContext/iElemID,<%=fldStatisticRec.id%>;SET=StatisticRecDatasCollection<%=strElmNameSuffix%>/sGraphType,bar;UPDATE=StatisticRecDataGraph<%=strElmNameSuffix%>"><%=XmlAttrEncode( tools_web.get_web_const( "gistogramma_1", curLngWeb ) )%></RadioButton>
+						<RadioButton Name="ChartType<%=strElmNameSuffix%>" Value="area" <%=(fldStatisticRec.graph_type=="area"?"Checked=\"true\"":"")%> Change="SET=SendContext/iElemID,<%=fldStatisticRec.id%>;SET=StatisticRecDatasCollection<%=strElmNameSuffix%>/sGraphType,area;UPDATE=StatisticRecDataGraph<%=strElmNameSuffix%>"><%=XmlAttrEncode( tools_web.get_web_const( 'soblastyami', curLngWeb ) )%></RadioButton>
+					</StackPanel>
+<%					
+				}
+%>
+				<StackPanel Orientation="Horizontal" Align="center" Class="XAML-stack-filter">
+<%
+			if(teStatisticRec.period_calc_type == "relative" || teStatisticRec.period_calc_type == "absolute")
+			{
+				if ( fldFirstPeriodType != undefined)
+				{
+%>
+					<Label><%=tools_web.get_web_const( "periodichnostvy", curLngWeb )%>:</Label>
+					<ComboBox Name="StatisticRecDatasCollectionType<%=strElmNameSuffix%>" SelectedItem="<%=fldFirstPeriodType.type%>" <%=(sTabListParam != "table"?"Change=\"SET=EditPperiodType"+strElmNameSuffix+",{StatisticRecDatasCollectionType"+strElmNameSuffix+"}\"":"")%> Width="100">
+<%
+					for (iPeriodType in teStatisticRec.period_types)
+					{
+						if (curLngCommon.perioditys.ChildByKeyExists( iPeriodType.type ))
+						{
+%>
+						<ComboBoxItem Value="<%=iPeriodType.type%>"><%=curLngCommon.perioditys.GetChildByKey( iPeriodType.type ).name%></ComboBoxItem>
+<%
+						}
+					}
+%>
+					</ComboBox>
+<%
+				}
+			}
+			else if(teStatisticRec.period_calc_type == "none") 
+			{
+%>
+				<Label><%=tools_web.get_web_const( 't1y74xh7qn', curLngWeb )%>:</Label>
+					<StackPanel Orientation="Horizontal">
+						<DatePicker Name="DPDispStartDate<%=strElmNameSuffix%>"></DatePicker>
+						<ComboBox Name="CBDispStartHours<%=strElmNameSuffix%>" Width="45">
+							<%
+								for(i=0; i<24; i++)
+								{
+									sTime = (i>=10) ? i : ("0" + i);
+							%>
+								<ComboBoxItem Value="<%=i%>"><%=sTime%></ComboBoxItem>
+							<%			
+								}
+							%>
+						</ComboBox>
+						<ComboBox Name="CBDispStartMinutes<%=strElmNameSuffix%>" Width="45">
+							<%
+								for(i=0; i<60; i=i+5)
+								{
+									sTime = (i>=10) ? i : ("0" + i);
+							%>
+								<ComboBoxItem Value="<%=i%>"><%=sTime%></ComboBoxItem>
+							<%			
+								}
+							%>
+						</ComboBox>
+					</StackPanel>	
+					<Label><%=StrNonTitleCase( tools_web.get_web_const( 'mkly6lmeds', curLngWeb ) )%>:</Label>
+					<StackPanel Orientation="Horizontal">
+						<DatePicker Name="DPDispEndDate<%=strElmNameSuffix%>"></DatePicker>
+						<ComboBox Name="CBDispEndHours<%=strElmNameSuffix%>" Width="45">
+							<%
+								for(i=0; i<24; i++)
+								{
+									sTime = (i>=10) ? i : ("0" + i);
+							%>
+								<ComboBoxItem Value="<%=i%>"><%=sTime%></ComboBoxItem>
+							<%			
+								}
+							%>
+						</ComboBox>
+						<ComboBox Name="CBDispEndMinutes<%=strElmNameSuffix%>" Width="45">
+							<%
+								for(i=0; i<60; i=i+5)
+								{
+									sTime = (i>=10) ? i : ("0" + i);
+							%>
+								<ComboBoxItem Value="<%=i%>"><%=sTime%></ComboBoxItem>
+							<%			
+								}
+							%>
+						</ComboBox>
+					</StackPanel>
+<%				
+			}
+			//strRefreshClick=(sTabListParam == "table" ? "UPDATE=StatisticRecDataGrid"+strElmNameSuffix : "UPDATE={Edit"+strElmNameSuffix+"}")
+			strRefreshClick=(sTabListParam == "table" ? "UPDATE=StatisticRecDataGrid"+strElmNameSuffix : ("UPDATE=StatisticRecDataGraph" + strElmNameSuffix));
+			
+%>
+					<CheckBox Name="CBShowNorm<%=strElmNameSuffix%>"><%=tools_web.get_web_const( "vyvoditnormu", curLngWeb )%></CheckBox>
+					<Edit Name="Edit<%=strElmNameSuffix%>" Hidden="1"><%=fldStatisticRec.graph_type!="BarChart"?"A":"B"%>StatisticRecDataGraph<%=strElmNameSuffix%></Edit>	
+					<Button Class="XAML-button XAML-button-refresh" Name="Button<%=strElmNameSuffix%>" Click="<%=strRefreshClick%>"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+				</StackPanel>
+			</StackPanel>
+			
+<%
+			iTableCounter++
+			iColTempCounter++
+			bNewRow = (iColTempCounter==iColCounter) 
+			if (bNewRow&&(iColCounter>1))
+			{
+				iColTempCounter=0
+%>
+				</GridRow>
+<%
+			}
+
+		}
+		
+		if (iColCounter>1)
+		{
+			if (iTableCounter%iColNum)
+			{
+			
+				for (i=iTableCounter;i%iColNum;i++)
+				{
+%>
+				<StackPanel>
+				</StackPanel>
+<%
+					if(i>30) break;		
+				}
+%>			
+			</GridRow>
+<%		
+			}
+%>
+		</Grid>
+<%
+		}
+		
+%>
+		</TabItem>
+<%
+	}
+}
+%>
+</TabControl>
+<Edit Name="EditContext" Hidden="1"><%=strDataString%></Edit>	
+<ContextGroup Name="AllSendContext" Items="<%=ArrayMerge( arrContextFildNames, "This", "," )%>"/>			
+</SPXMLScreen>

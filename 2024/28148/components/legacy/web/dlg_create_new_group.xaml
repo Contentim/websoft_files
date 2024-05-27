@@ -1,0 +1,82 @@
+﻿<SPXMLScreen>
+
+<%
+sSelectData = UrlDecode(PARAMETERS.GetOptProperty( "select_data", "" ));
+strUserIds = ArrayMerge(ArrayExtract( tools.read_object( sSelectData ), "id" ),"This",";");
+%>
+	<Action Name="CreateGroupAction" Source="create_new_group" Success="ALERT={messageText};CLOSEDIALOG">
+	    <Param Name="sSelectedUsers" Value='<%=strUserIds%>'/>
+		<Param Name="GroupCode" Value='{dlg_group_code}'/>
+		<Param Name="GroupName" Value='{dlg_group_name}'/>
+		<Param Name="BossTypeID" Value='{type_boss_id}'/>
+	</Action>
+	
+	<Grid Class="XAML-grid-info-table" Adapt="1" Width="100%">
+<%
+	//(curDevice.disp_type != "mobile" ? "Width='500'" : "Width='200'")
+	//if (curDevice.disp_type != "mobile")
+	//{
+%>
+		<GridColumns>
+			<GridColumn Width="70" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+<%
+	//}
+	//else
+	//{
+	//}
+%>		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="70"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+			<Edit Name="dlg_group_code" Width="100%"></Edit>
+		</GridRow> 
+		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="70"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+			<Edit Name="dlg_group_name" Width="100%"></Edit>
+		</GridRow>
+		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="70"><%=tools_web.get_web_const( "c_manager_type", curLngWeb )%>:</Label>
+			
+<%
+			try
+			{
+				iSelectedBossTypeId = OptInt(CONTEXT.GetOptProperty("type_boss_id", null),null);
+				
+				fldBossType = ArrayOptFirstElem(XQuery("for $elem in boss_types where $elem/id=" + iSelectedBossTypeId + " return $elem"));
+				strObjectName = (fldBossType != undefined ? fldBossType.name : "") ;
+			}
+			catch(ex)
+			{
+				iSelectedBossTypeId = null;
+				strObjectName = "";
+			}
+			
+			curSelector = {
+				"id": "type_boss_id",
+				"width": "100%",
+				"catalog_name": "boss_type",
+				"object_id_item_name": "type_boss_id",
+				"object_id": iSelectedBossTypeId,
+				"object_name":  strObjectName,
+				"can_be_empty": "true"
+				
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>				
+		</GridRow>
+		
+		
+	</Grid>
+<%
+	sCreateAction = "ACTION=CreateGroupAction;";
+%>		
+	<Label/>
+	<Toolbar Width="">
+		    <Button Class="XAML-button XAML-button-ok"  Click="<%=sCreateAction%>"><%=tools_web.get_web_const( "c_create", curLngWeb )%></Button>
+			<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		
+	</Toolbar>	
+</SPXMLScreen>	

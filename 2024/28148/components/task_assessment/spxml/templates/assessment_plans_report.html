@@ -1,0 +1,38 @@
+﻿<HTML>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+		<table border="1" cellpadding="2" cellspacing="0">
+		  <tr valign="middle">
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_coll')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+			<td width="300px" bgcolor="#FFCC99">Задач</td>
+			<td width="300px" bgcolor="#FFCC99">Оценка</td>
+		  </tr>
+		<%
+
+		arrAssessmentPlans = Ps.data_assessment_plans
+
+		for (var i = 0; i < ArrayCount(arrAssessmentPlans); i++) {
+			_assessment_plan = arrAssessmentPlans[i]
+		%>
+
+		<%if (i % 2 === 0) { %>
+			<tr valign="middle">
+		<% } else { %>
+			<tr valign="middle" bgcolor="#f1f0f0">
+		<% } %>
+			<td><%=_assessment_plan.person_fullname%></td>
+			<td><%=_assessment_plan.person_position_name%></td>
+			<td><%=_assessment_plan.person_subdivision_name%></td>
+			<td><%=_assessment_plan.person_org_name%></td>
+			<td><%=_assessment_plan.task_count%></td>
+			<td><%=_assessment_plan.assessment_count%></td>
+		  </tr>
+		<%
+		}
+		%>
+		</table>
+	</body>
+</HTML>

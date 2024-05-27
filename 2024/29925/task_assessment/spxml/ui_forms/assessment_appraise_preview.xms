@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" TITLE-EXPR="ms_tools.get_const('vppb_procedure')" BEFORE-INIT-ACTION="
+	if (Ps.view.plan_selection_way!='plan' &amp;&amp; Ps.view.plan_selection_way!='pa')
+		Ps.view.plan_selection_way = 'plan'
+">
+
+<USE FORM="//wtv/app_general.xms"/>
+<USE FORM="//wtv/wtv_general_ass.xms"/>
+
+<WindowCustomTitleBar titleExpr="Ps.name" fullBtnExpr="
+	var teApplication = task_assessment.get_component_application();
+	var iCurUserAppLevel = OptInt( tools.get_cur_user_application_access_level( teApplication.id ), 1 );
+
+	if (iCurUserAppLevel == 1 || iCurUserAppLevel == 3 ) {
+		return false;
+	}
+	else if(iCurUserAppLevel == 5) {
+		docAssessmentAppraise = tools.open_doc(OptInt(Ps.id,0));
+		teAssessmentAppraise = docAssessmentAppraise.TopElem;
+		creation_user_id = OptInt(teAssessmentAppraise.doc_info.creation.user_id,0);
+		
+		if(creation_user_id == OptInt(tools.cur_user_id,0)) {
+			return true;
+		}
+
+		return false;
+	}
+	else {
+		return true;
+	}
+		
+" arrBtnsExpr="return []" fullActionCodeIDExpr="'TaskAssessmentAppraiseAddChange'" fullFormExpr="'x-local://components/task_assessment/spxml/ui_forms/assessment_appraise.xms'"/>
+
+<LINE STD-MARGINS="0">
+	<PANEL STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1" HEIGHT="100%" WIDTH="100%">
+
+		<ITEM TYPE="code_name_base" sourceCodeExpr="true"/>
+		<LINE>
+			<TitleLabel TITLE-EXPR="ms_tools.get_const('c_start_date')">
+				<LABEL TITLE-EXPR="StrDate(Ps.start_date, false, false)" WIDTH="150vpx"/>
+			</TitleLabel>
+			<TitleLabel TITLE-EXPR="ms_tools.get_const('3bywib72ya')">
+				<LABEL TITLE-EXPR="StrDate(Ps.end_date, false, false)" WIDTH="150vpx"/>
+			</TitleLabel>
+			<TitleLabel TITLE-EXPR="'Администратор процедуры'">
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.person_id" catalogExpr="'collaborator'" titleExpr="''" WIDTH="316vpx" READ-ONLY-EXPR="true"/>
+			</TitleLabel>
+		</LINE>
+		<LINE>
+			<TitleLabel TITLE-EXPR="'Бюджетный период'">
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.custom_elems.ObtainChildByKey( 'bp_assessment' ).value" catalogExpr="'budget_period'" titleExpr="''" WIDTH="316vpx"/>
+			</TitleLabel>
+		</LINE>
+		<LINE>
+			<LABEL TITLE-EXPR="ms_tools.get_const('c_status')"/>
+			<LABEL TITLE-EXPR="
+				catStatus = TopElem.status.OptForeignElem;
+				return (catStatus != undefined ? (RValue(catStatus.name) == 'Архив' ? 'Завершена' : RValue(catStatus.name)) : '')
+			" BOLD="1"/>
+		</LINE>
+		
+		<ITEM TYPE="comment_base"/>
+
+		<WITH VAR="iCountPlans" EXPR="ArrayCount(tools.xquery('for $elem in assessment_plans where $elem/assessment_appraise_id = ' + Ps.id + ' return $elem/Fields(\'id\')'));">
+			<LINE>
+				<LABEL TITLE-EXPR="'Всего фокус персон в процедуре'"/>
+				<LABEL TITLE-EXPR="iCountPlans" BOLD="1"/>
+			</LINE>
+		</WITH>
+		<WITH VAR="iCountPas" EXPR="ArrayCount(tools.xquery('for $elem in pas where $elem/assessment_appraise_id = ' + Ps.id + ' return $elem/Fields(\'id\')'));">
+			<LINE>
+				<LABEL TITLE-EXPR="'Всего анкет'"/>
+				<LABEL TITLE-EXPR="iCountPas" BOLD="1"/>
+			</LINE>
+		</WITH>
+		<WITH VAR="iCountIsDonePas" EXPR="ArrayCount(tools.xquery('for $elem in pas where $elem/assessment_appraise_id = ' + Ps.id + ' and $elem/is_done = 1 return $elem/Fields(\'id\')'));">
+			<LINE>
+				<LABEL TITLE-EXPR="'Всего завершенных анкет'"/>
+				<LABEL TITLE-EXPR="iCountIsDonePas" BOLD="1"/>
+			</LINE>
+		</WITH>
+	</PANEL>
+</LINE>
+
+</SPXML-SCREEN>

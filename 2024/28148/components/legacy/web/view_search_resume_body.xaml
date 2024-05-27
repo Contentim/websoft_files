@@ -1,0 +1,1134 @@
+﻿<SPXMLScreen>
+<%
+/*alert('--> CONTEXT ')*/
+//for (elem in CONTEXT)
+//{
+//    alert(elem + "=" + CONTEXT.GetProperty(elem))
+//}
+/*alert(' CONTEXT <--')*/
+
+Env         = Request.Session.Env;
+curUrlQuery = UrlQuery(PAGEURL);
+
+strPersonSearchFieldCodes = String( tools_web.get_web_param( curParams, 'search_resume.person_search_fields', '',            true ) );
+strBlackListColor         = String( tools_web.get_web_param( curParams, 'search_resume.black_list_color',     '250,150,150', true ) );
+
+arrPersonSearchFieldCodes = strPersonSearchFieldCodes.split(';');
+arrPersonSearchFieldCodes = ArraySelect(arrPersonSearchFieldCodes, "Trim(This) != ''");
+
+strSearchFieldCodes       = String(tools_web.get_web_param(curParams, 'search_resume.resume_search_fields', '', true));
+arrSearchFieldCodes       = strSearchFieldCodes.split(';');
+arrSearchFieldCodes       = ArraySelect(arrSearchFieldCodes,"Trim(This) != ''");
+
+strDispFieldCodes         = String(tools_web.get_web_param(curParams, 'search_resume.resume_disp_fields', 'fullname;resume_name', true));
+arrDispFieldCodes         = strDispFieldCodes.split(';');
+arrDispFieldCodes         = ArraySelect(arrDispFieldCodes,"Trim(This) != ''");
+
+bSearchAll                = tools_web.get_web_param( curParams, 'search_resume.bSearchAll', '1', true ) == '1';
+bHasComp                  = tools_web.get_web_param( curParams, 'search_resume.bHasComp',   '1', true ) == '1';
+bHasSkills                = tools_web.get_web_param( curParams, 'search_resume.bHasSkills', '1', true ) == '1';
+
+bResumeTwoColumnFields    = tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bResumeTwoColumnFields',   '0',     true ) );
+//bShowResumesFlag          = tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bShowResumesFlag',         'true',  true ) );
+bShowResumesFlag          = tools_web.get_web_param( curParams, 'search_resume.bShowResumesFlag', '0', true ) == '1';  
+
+bShowTitle                = tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bShowTitle',               'true',  true ) );
+bShowResumesCreateButton  = tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bShowResumesCreateButton', 'false', true ) );
+bCheckAccess              = tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bCheckAccess', global_settings.settings.check_access_on_lists, true));
+
+strPersonLinkType         = tools_web.get_web_param(curParams, 'search_resume.person_link_type', 'collaborator', true);
+
+bHasResume                = tools_web.is_true((CONTEXT.HasProperty('resume_exist') ? CONTEXT.GetOptProperty('resume_exist', 0) : UrlDecode(curUrlQuery.GetOptProperty('resume_exist', 0))));
+bHasResume                = bHasResume == false ? tools_web.is_true( tools_web.get_web_param( curParams, 'search_resume.bHasResume', '0', true ) ) : bHasResume;
+strContextFildNames       = 'MyAccountBodyTab,SelectSkills,SelectCompetences,key_words,experience_in_company,experience_in_current_position,min_age,max_age,sex,in_career_reserve,resume_exist,activity_result,only_final,start_date,end_date';
+
+iPageSize                 = Int( tools_web.get_web_param( curParams, 'search_resume.resume_disp_fields.page_size', 10, true ));
+
+bDispAttachment           = true;
+bSearchStart              = curUrlQuery.HasProperty('search_start') ? tools_web.is_true(UrlDecode(curUrlQuery.GetOptProperty('search_start','0'))) : false;
+strKeyWords               = CONTEXT.HasProperty('key_words') ? CONTEXT.GetOptProperty('key_words',''):UrlDecode(curUrlQuery.GetOptProperty('key_words',''));
+
+sDispType                 = curDevice.disp_type;
+bDesctop                  = sDispType != 'mobile';
+
+if (!bDesctop && bResumeTwoColumnFields)
+{
+    bResumeTwoColumnFields = false;
+}
+
+iDefaultSelectorWidth   = bDesctop ? "213" : "100%";
+iDefaultTextEditWidth   = bDesctop ? "300" : "100%";
+iDefaultNumberEditWidth = bDesctop ? "300" : "100%";
+iDefaultComboWidth      = bDesctop ? "300" : "100%";
+iDatePickerWidth        = bDesctop ? "140" : "100%";
+
+if (ArrayOptFind(arrDispFieldCodes, "This == 'experience_in_company'") == undefined)
+{
+    if (ArrayOptFind(arrPersonSearchFieldCodes, "This == 'experience_in_company'") != undefined || ArrayOptFind(arrSearchFieldCodes, "This == 'exp_years'") != undefined)
+    {
+        arrDispFieldCodes.push('experience_in_company');
+    }
+}
+
+if (ArrayOptFind(arrDispFieldCodes, "This == 'experience_in_current_position'") == undefined)
+{
+    if (ArrayOptFind(arrPersonSearchFieldCodes, "This == 'experience_in_current_position'") != undefined)
+    {
+        arrDispFieldCodes.push('experience_in_current_position');
+    }
+}
+
+if (ArrayOptFind(arrDispFieldCodes, "This == 'in_career_reserve'") == undefined)
+{
+    if (ArrayOptFind(arrPersonSearchFieldCodes, "This == 'in_career_reserve'") != undefined)
+    {
+        arrDispFieldCodes.push('in_career_reserve');
+    }
+}
+
+if (!bDesctop && ArrayCount(arrDispFieldCodes) > 2)
+{
+    arrTempDispFieldCodes = ArraySelect(arrDispFieldCodes, "(Trim(This) == 'fullname' || Trim(This) == 'resume_name')")
+    if (ArrayOptFirstElem(arrTempDispFieldCodes) == undefined)
+    {
+        arrDispFieldCodes = ArrayRange(arrDispFieldCodes, 0, 2);
+    }
+    else
+    {
+        arrDispFieldCodes = arrTempDispFieldCodes;
+    }
+}
+
+arrSortedProfessionalAreas=ArraySort(curLngCommon.professional_areas,'This.name','+');
+
+//--Competences
+stringCompIDs = '';
+try
+{
+    strContextComp = CONTEXT.SelectCompetences;
+
+    if (StrBegins(strContextComp, '[', true))
+    {
+        arrCompIDs    = tools.read_object(strContextComp);
+        stringCompIDs = ArrayMerge(arrCompIDs, 'This', ';');
+    }
+    else
+    {
+        arrCompIDs    = strContextComp.split(';')
+        stringCompIDs = strContextComp;
+    }
+
+    //arrComps=XQuery("for $elem in competences where MatchSome($elem/id, (" + StrReplace(stringCompIDs,";",",") + ")) order by $elem/name ascending return $elem")
+}
+catch(ex)
+{
+//alert(ex)
+    arrCompIDs = Array();
+}
+
+arrComps = [];
+
+for (strComp in arrCompIDs)
+{
+    if (strComp != '')
+    {
+        try
+        {
+            teComp = OpenDoc(UrlFromDocID(Int(strComp))).TopElem;
+        }
+        catch(ex)
+        {
+            continue;
+        }
+
+        if (ArrayOptFirstElem(teComp.scales) != undefined)
+        {
+            oComp           = new Object;
+            oComp.name      = teComp.name;
+            oComp.arrScales = teComp.scales;
+            oComp.strName   = 'comp_' + strComp + '_scale';
+            oComp.strValue  = CONTEXT.GetOptProperty(oComp.strName, '');
+            
+            strContextFildNames = strContextFildNames + ',' + oComp.strName;
+            arrComps.push(oComp);
+        }
+    }
+}
+
+//--
+stringSkillIDs = '';
+xarrSkills     = [];
+try
+{
+    strContextSkill = CONTEXT.SelectSkills;
+    if (StrBegins(strContextSkill, '[', true))
+    {
+        arrSkillIDs    = tools.read_object(strContextSkill);
+        stringSkillIDs = ArrayMerge(arrSkillIDs, 'This', ';');
+    }
+    else
+    {
+        arrSkillIDs    = strContextSkill.split(';');
+        stringSkillIDs = strContextSkill;
+    }
+
+    xarrTempSkills = XQuery("for $elem in skills where MatchSome($elem/id, (" + StrReplace(stringSkillIDs, ';', ',') + ")) order by $elem/name ascending return $elem");
+    xarrSkills     = ArrayUnion(xarrSkills, xarrTempSkills);
+
+    while (ArrayOptFirstElem(xarrTempSkills) != undefined)
+    {
+        xarrTemp2Skills = [];
+        for (fldSkill in xarrTempSkills)
+        {
+            if (CONTEXT.HasProperty('SelectSkills' + fldSkill.id))
+            {
+                arrSkillIDs     = '';
+                strContextSkill = CONTEXT.GetProperty('SelectSkills' + fldSkill.id)
+
+                if (StrBegins(strContextSkill, '[', true))
+                {
+                    arrSkillIDs = tools.read_object(strContextSkill);
+                }
+                else
+                {
+                    arrSkillIDs = strContextSkill.split(';');
+                }
+
+                xarrTemp2Skills = ArrayUnion(xarrTemp2Skills, XQuery("for $elem in skills where MatchSome($elem/id, (" + ArrayMerge(arrSkillIDs, 'This',',') + ")) order by $elem/name ascending return $elem"));
+            }
+        }
+        xarrTempSkills = xarrTemp2Skills;
+        xarrSkills     = ArrayUnion(xarrSkills,xarrTempSkills);
+    }
+}
+catch(ex)
+{
+    //alert(ex)
+    xarrSkills = Array();
+}
+
+arrSkills     = Array();
+iSkillCounter = 0;
+
+function fnGetSkillLevels (fldSkillParam)
+{
+    var arrLevels = [];
+    try
+    {
+        if (fldSkillParam.use_parent_levels && fldSkillParam.parent_id.HasValue && fldSkillParam.parent_id.OptForeignElem != undefined)
+        {
+            arrLevels = fnGetSkillLevels(fldSkillParam.parent_id.OptForeignElem);
+        }
+        else
+        {
+            skillDoc  = OpenDoc(UrlFromDocID(fldSkillParam.id)).TopElem;
+            arrLevels = skillDoc.levels
+        }
+    }
+    catch(err)
+    {
+        alert('fnGetSkillLevels error: ' + err)
+    }
+    return arrLevels
+}
+
+for (fldSkill in xarrSkills)
+{
+    oSkill                   = new Object;
+    oSkill.id                = fldSkill.id;
+    oSkill.name              = fldSkill.name;
+    oSkill.skill_parent_id   = fldSkill.parent_id;
+    oSkill.arrScales         = fnGetSkillLevels(fldSkill);
+    oSkill.strName           = 'Skill_' + fldSkill.id + '_scale';
+    oSkill.strValue          = CONTEXT.GetOptProperty(oSkill.strName, '');
+    strContextFildNames      = strContextFildNames + ',' + oSkill.strName;
+    strContextFildNames      = strContextFildNames + ',SelectSkills' + fldSkill.id;
+    
+    arrSkills[iSkillCounter] = oSkill;
+    iSkillCounter++;
+}
+//alert(ArrayCount(arrSkills))
+
+function fnBuildSkillLevel(fldSkillParam)
+{
+    if (ArrayOptFirstElem(fldSkillParam.arrScales) != undefined)
+    {
+%>
+        <ComboBox Name = '<%=fldSkillParam.strName%>' SelectedItem = '<%=fldSkillParam.strValue%>' Width = '<%=iDefaultComboWidth%>'>
+<%
+                for (fldScale in  fldSkillParam.arrScales)
+                {
+%>
+                <ComboBoxItem Value = '<%=fldScale.id%>'><%=tools_web.get_cur_lng_name(fldScale.name, curLng.short_id)%></ComboBoxItem>
+<%
+                }
+%>
+        </ComboBox>
+<%
+    }
+    else
+    {
+%>
+        <Label></Label>
+<%
+    }
+}
+
+function fnBuildSkill(iParentIDParam)
+{
+    var iParentID    = null;
+    var bHasChildren = false;
+    
+    try
+    {
+        iParentID = OptInt(iParentIDParam, null);
+    }
+    catch(ex)
+    {
+    }
+
+    var arrBuildSkills = ArraySelect(arrSkills, 'This.skill_parent_id == ' + (iParentID == null ? 'null' : iParentID));
+
+    for (fldSkill in arrBuildSkills)
+    {
+        bHasChildren = false;
+        arrChildren  = ArraySelect(arrSkills, 'This.skill_parent_id == ' + fldSkill.id);
+        
+        try
+        {
+            if (ArrayOptFirstElem(arrChildren) != undefined)
+            {
+                bHasChildren = true;
+            }
+            else if (ArrayOptFirstElem(arrChildren) == undefined && ArrayOptFirstElem(XQuery("for $elem in skills where $elem/parent_id = " + fldSkill.id + " return $elem")) != undefined)
+            {
+                bHasChildren = true;
+            }
+        }
+        catch(ex)
+        {
+            alert(ex)
+        }
+
+        if (bHasChildren)
+        {
+%>
+            <GridRow>
+                <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_cur_lng_name(fldSkill.name, curLng.short_id)%></Label>
+                <StackPanel>
+                    <Edit Name = 'SelectSkills<%=fldSkill.id%>' Hidden = '1'><%=ArrayMerge(arrChildren, 'This.id', ';')%></Edit>
+                    <Button Click = 'SET=SelectDialogCloseActionSkill,<%=UrlEncode16('SET=SelectSkills' + fldSkill.id + ',{CatalogListDataGridSelList:*/id}')%>;Set=SelectDialogSkill/selected_object_ids,{SelectSkills<%=fldSkill.id%>};Set=SelectDialogSkill/xquery_qual,$elem/parent_id=<%=fldSkill.id%>;OPENDIALOG=SelectDialogSkill;' Class = 'XAML-button XAML-button-plus'><%=tools_web.get_web_const('c_choose', curLngWeb)%></Button>
+                </StackPanel>
+            </GridRow>
+<%
+            if ( ArrayOptFirstElem(arrChildren) != undefined )
+            {
+%>
+                <%fnBuildSkill(fldSkill.id)%> 
+<%
+            }
+        }
+        else
+        {
+%>
+            <GridRow>
+                <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_cur_lng_name(fldSkill.name, curLng.short_id)%></Label>
+                <%fnBuildSkillLevel(fldSkill)%>
+            </GridRow>
+<%
+        }
+    }
+
+}
+
+%>
+
+<Edit Name ='SelectCompetences' Hidden = '1'><%=stringCompIDs%></Edit>
+<Edit Name = 'SelectDialogCloseActionCompetence' Hidden = '1'></Edit>
+<Dialog Name = 'SelectDialogCompetence' Source = 'dlg_select' Title = '<%=XmlAttrEncode(tools_web.get_web_const('0mzyraf76u', curLngWeb))%>' Close='{!SelectDialogCloseActionCompetence};SET=SelectCompetences,{CatalogListDataGridSelList:*/id};CONTEXT=AllSendContext;REFRESH'>
+    <Param Name = 'catalog_name'        Value = 'competence'/>
+    <Param Name = 'multi_select'        Value = 'true'/>
+    <Param Name = 'view_type'           Value = ''/>
+    <Param Name = 'xquery_qual'         Value = ''/>
+    <Param Name = 'check_access'        Value = 'false'/>
+    <Param Name = 'selected_object_ids' Value = '{SelectCompetences}'/>
+    <Param Name = 'display_object_ids'  Value = ''/>
+    <Param Name = 'disp_filter'         Value = ''/>
+    <Param Name = 'filter_id'           Value = ''/>
+    <Param Name = 'secid'               Value = '<%=tools_web.get_secid(Session.sid)%>'/>
+</Dialog>
+
+<Edit Name = 'SelectSkills' Hidden = '1'><%=stringSkillIDs%></Edit>
+<Edit Name = 'SelectDialogCloseActionSkill' Hidden = '1'></Edit>
+<Dialog Name = 'SelectDialogSkill' Source = 'dlg_select' Title = '<%=XmlAttrEncode(tools_web.get_web_const('0mzyraf76u', curLngWeb))%>' Close = '{!SelectDialogCloseActionSkill};CONTEXT=AllSendContext;REFRESH'>
+    <Param Name = 'catalog_name'        Value = 'skill'/>
+    <Param Name = 'multi_select'        Value = 'true'/>
+    <Param Name = 'view_type'           Value = ''/>
+    <Param Name = 'xquery_qual'         Value = ''/>
+    <Param Name = 'check_access'        Value = 'false'/>
+    <Param Name = 'selected_object_ids' Value = ''/>
+    <Param Name = 'display_object_ids'  Value = ''/>
+    <Param Name = 'disp_filter'         Value = ''/>
+    <Param Name = 'filter_id'           Value = ''/>
+    <Param Name = 'categorized'         Value = 'false'/>
+</Dialog>
+
+<Collection Name = 'SearchPersonCollection' Source = 'SearchPersonCollection'>
+    <!-- <Param  Name = 'resume_exist'      Value = '<%=bShowResumesFlag ? '{resume_exist}' : bHasResume%>'/> -->
+    <Param  Name = 'context'           Value = '{CONTEXT}'/>
+    <Param  Name = 'bSearchAll'        Value = '<%=bSearchAll%>'/>
+    <Param  Name = 'bCheckAccess'      Value = '<%=bCheckAccess%>'/>
+    <Param  Name = 'bSearchStart'      Value = '<%=bSearchStart%>'/>
+    <Param  Name = 'SelectCompetences' Value = '{SelectCompetences}'/>
+    <Param  Name = 'strDispFieldCodes' Value = '<%=ArrayMerge(arrDispFieldCodes, 'This', ';')%>'/>
+    <Param  Name = 'strPersonLinkType' Value = '<%=strPersonLinkType%>'/>
+    <Param  Name = 'strBlackListColor' Value = '<%=strBlackListColor%>'/>
+<%
+    for (strCode in arrPersonSearchFieldCodes)
+    {
+        if (strCode == 'period')
+        {
+%>
+            <Param Name = 'start_date' Value = '{start_date}'/>
+            <Param Name = 'end_date'   Value = '{end_date}'/>
+<%
+        }
+        else
+        {
+%>
+            <Param Name = '<%=strCode%>' Value = '{<%=strCode%>}'/>
+<%
+        }
+    }
+
+    for (strCode in arrSearchFieldCodes)
+    {
+%>
+    <Param Name = '<%=strCode%>' Value = '{<%=strCode%>}'/>
+<%
+    }
+    for (fldComp in arrComps)
+    {
+%>
+    <Param Name = '<%=fldComp.strName%>' Value = '{<%=fldComp.strName%>}'/>
+<%
+    }
+    if (ArrayOptFirstElem(arrSkills) != undefined)
+    {
+%>
+    <Param Name = 'SelectSkills' Value = '<%=ArrayMerge(arrSkills, 'This.id', ';')%>'/>
+<%
+        for (fldSkill in arrSkills)
+        {
+%>
+    <Param Name = '<%=fldSkill.strName%>' Value = '{<%=fldSkill.strName%>}'/>
+<%
+        }
+    }
+%>
+
+</Collection>
+
+<%
+    if (bShowTitle)
+    {
+%>
+        <Label Class = 'XAML-object-title-label'><%=tools_web.get_web_const('doc_person_search', curLngWeb)%></Label>
+<%
+    }
+    
+    if ( ArrayOptFirstElem(arrPersonSearchFieldCodes) != undefined || bShowResumesFlag )
+    {
+%>
+        <Grid Class = 'XAML-grid-info-table' Width = '100%' Adapt = 'true'>
+            <GridColumns>
+                <GridColumn/>
+                <GridColumn/>
+            </GridColumns>
+
+<%
+        for (strCode in arrPersonSearchFieldCodes)
+        {
+            if (strCode == 'key_words')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('klyuchevyeslovaf', curLngWeb)%>:</Label>
+                    <Edit Name = 'key_words' Width = '<%=iDefaultTextEditWidth%>'><%=strKeyWords%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'experience_in_company')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('opytrabotyvkom', curLngWeb)%>:</Label>
+                    <Edit  Name = 'experience_in_company' Width = '<%=iDefaultNumberEditWidth%>'><%=CONTEXT.GetOptProperty('experience_in_company', '')%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'experience_in_current_position')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('opytrabotyvtek', curLngWeb)%>:</Label>
+                    <Edit Name = 'experience_in_current_position' Width = '<%=iDefaultNumberEditWidth%>'><%=CONTEXT.GetOptProperty('experience_in_current_position', '')%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'min_age')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('c_min_age', curLngWeb)%>:</Label>
+                    <Edit Name = 'min_age' Width = '<%=iDefaultNumberEditWidth%>'><%=CONTEXT.GetOptProperty('min_age', '')%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'max_age')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('c_max_age', curLngWeb)%>:</Label>
+                    <Edit Name = 'max_age' Width = '<%=iDefaultNumberEditWidth%>'><%=CONTEXT.GetOptProperty('max_age', '')%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'sex')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vpb_sex', curLngWeb)%>:</Label>
+                    <ComboBox Name = 'sex' SelectedItem = '<%=CONTEXT.GetOptProperty('sex','all')%>' Width = '<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+                        <ComboBoxItem Value = 'w'><%=tools_web.get_web_const('vpb_w', curLngWeb)%></ComboBoxItem>
+                        <ComboBoxItem Value = 'm'><%=tools_web.get_web_const('vpb_m', curLngWeb)%></ComboBoxItem>
+                    </ComboBox>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'in_career_reserve')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('prebyvanievkad', curLngWeb)%>:</Label>
+<%
+                    strValue = tools_web.is_true(CONTEXT.GetOptProperty('in_career_reserve', null));
+                    strValue = ( strValue != true ? '' : 'true' );
+%>
+                    <CheckBox Name = 'in_career_reserve' Value = '<%=strValue%>' Checked = '<%=strValue%>'></CheckBox>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'activity_result')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('rezultatydeyate', curLngWeb)%>:</Label>
+                    <Edit Name = 'activity_result' Width = '<%=iDefaultTextEditWidth%>'><%=CONTEXT.GetOptProperty('activity_result', '')%></Edit>
+                </GridRow>
+<%
+            }
+            else if (strCode == 'only_final')
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('pripoiskekompe', curLngWeb)%>:</Label>
+<%
+                    strValue = tools_web.is_true(CONTEXT.GetOptProperty('only_final', null));
+                    strValue = (strValue != true ? '' : 'true');
+%>
+                    <CheckBox Name = 'only_final' Value = '<%=strValue%>' Checked = '<%=strValue%>'></CheckBox>
+                </GridRow>
+<%
+            }
+            else if ( strCode == 'period' )
+            {
+%>
+                <GridRow>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('pripoiskekompe_1', curLngWeb)%>:</Label>
+                    <StackPanel Class = 'XAML-stack-container' Orientation = 'Horizontal'>
+<%
+                        strValue = CONTEXT.GetOptProperty( 'start_date', null );
+                        strValue = ( strValue != null ? StrDate( Date(strValue), false, false) : '' );
+%>
+                        <DatePicker Name = 'start_date' Format = 'd.m.Y' Width = "<%=iDatePickerWidth%>"><%=strValue%></DatePicker>
+                        <Label>-</Label>
+<%
+                        strValue = CONTEXT.GetOptProperty( 'end_date', null );
+                        strValue = ( strValue != null ? StrDate( Date(strValue), false, false ) : '' );
+%>
+                        <DatePicker Name = 'end_date' Format = 'd.m.Y' Width = "<%=iDatePickerWidth%>"><%=strValue%></DatePicker>
+                    </StackPanel>
+                </GridRow>
+<%
+            }
+        }
+        
+        if (bShowResumesFlag)
+        {
+%>
+            <GridRow>
+                <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('nalichierezyume', curLngWeb)%>:</Label>
+                <CheckBox Name = 'resume_exist' Change = 'TOGGLE=ResumeFieldGrid' Value = '<%=bHasResume%>' Checked = '<%=bHasResume%>'></CheckBox>
+            </GridRow>
+<%
+        }
+%>
+        </Grid>
+<%
+    }
+
+    if (ArrayOptFirstElem(arrSearchFieldCodes) != undefined)
+    {
+%>
+        <StackPanel Name = 'ResumeFieldGrid' Hidden = '<%=!bHasResume%>' Class = 'XAML-stack-container' Adapt = 'true'>
+        <Grid Class = 'XAML-grid-info-table' Width = '100%' Adapt = 'true'>
+            <GridColumns>
+                <GridColumn/>
+                <GridColumn/>
+<%
+        if (bResumeTwoColumnFields)
+        {
+            if (ArrayCount(arrSearchFieldCodes) > 1)
+            {
+%>
+                <GridColumn Align = 'right'/>
+                <GridColumn/>
+<%
+            }
+        }
+%>
+            </GridColumns>
+<%
+        iCounter = 0;
+        for (strCode in arrSearchFieldCodes)
+        {
+            if (bResumeTwoColumnFields)
+            {
+                if (!(iCounter % 2))
+                {
+%>
+                    <GridRow>
+<%
+                }
+            }
+            else
+            {
+%>
+                    <GridRow>
+<%
+            }
+
+            strValue = (CONTEXT.HasProperty(strCode) ? CONTEXT.GetOptProperty(strCode, '') : UrlDecode(curUrlQuery.GetOptProperty(strCode, '')));
+            strContextFildNames = strContextFildNames + ',' + strCode;
+
+            switch(strCode)
+            {
+                case 'resume_name':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('zhelaemayadolzhno_2', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+            }
+                case 'academic_degree':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('uchenayastepen', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'academic_heading':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('uchenoezvanie', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'phone':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('uf_phone', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'mobile_phone':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('emoqzexw7p', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'work_phone':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('dd2zo2k2mj', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'email':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('emailsoderzhit', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'address':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('adressoderzhit', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'region_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vrb_region', curLngWeb)%>:</Label>
+<%
+                    curSelector = {
+                    'id': strCode,
+                    'object_id': strValue,
+                    'object_id_item_name': strCode,
+                    'multi_select': 'false',
+                    'catalog_name': 'region',
+                    'can_be_empty': true,
+                    'width': iDefaultSelectorWidth
+                    };
+                    Response.Write(EvalCodePageUrl(global_settings.web_path + 'view_selector.xaml'));
+
+                break;
+                }
+                case 'schedule_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('grafikraboty', curLngWeb)%>:</Label>
+<%
+                    curSelector = {
+                    'id': strCode,
+                    'object_id': strValue,
+                    'object_id_item_name': strCode,
+                    'multi_select': 'false',
+                    'catalog_name': 'work_schedule',
+                    'can_be_empty': true,
+                    'width': iDefaultSelectorWidth
+                    };
+                    Response.Write(EvalCodePageUrl(global_settings.web_path + 'view_selector.xaml'));
+
+                break;
+                }
+                case 'exp_years':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vrb_service', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultNumberEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'min_wage':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('minimalnyyurov', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultNumberEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'max_wage':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('maksimalnyyuro', curLngWeb)%>:</Label>
+                    <Edit Name = '<%=strCode%>' Width = '<%=iDefaultNumberEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+                }
+                case 'family_status':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vrb_family_status', curLngWeb)%>:</Label>
+                    <ComboBox Name = '<%=strCode%>' SelectedItem = '<%=CONTEXT.GetOptProperty(strCode,'all')%>' Width = '<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+                        <ComboBoxItem Value = 'married'><%=tools_web.get_web_const('vrb_married', curLngWeb)%></ComboBoxItem>
+                        <ComboBoxItem Value = 'not_married'><%=tools_web.get_web_const('vrb_unmarried', curLngWeb)%></ComboBoxItem>
+                        <ComboBoxItem Value = 'divorced'><%=tools_web.get_web_const('vrb_divorcee', curLngWeb)%></ComboBoxItem>
+                    </ComboBox>
+<%
+                break;
+                }
+                case 'educ_type_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vrb_education', curLngWeb)%>:</Label>
+                    <ComboBox Name = '<%=strCode%>' SelectedItem = '<%=CONTEXT.GetOptProperty(strCode,'all')%>' Width = '<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+<%
+                    for (_educ_type in curLngCommon.educ_types)
+                    {
+%>
+                        <ComboBoxItem Value = '<%=_educ_type.id%>'><%=_educ_type.name%></ComboBoxItem>
+<%
+                    }
+%>
+                    </ComboBox>
+<%
+                break;
+                }
+                case 'currency_type_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('c_currency_type', curLngWeb)%>:</Label>
+                    <ComboBox Name = '<%=strCode%>' SelectedItem = '<%=CONTEXT.GetOptProperty(strCode,'all')%>' Width = '<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+<%
+                    for (fldCurrency in lists.currency_types)
+                    {
+%>
+                        <ComboBoxItem Value = '<%=fldCurrency.id%>'><%=fldCurrency.name%></ComboBoxItem>
+<%
+                    }
+%>
+                    </ComboBox>
+<%
+                break;
+                }
+                case 'employment_type_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('c_employment_type', curLngWeb)%>:</Label>
+                    <ComboBox Name = '<%=strCode%>' SelectedItem = '<%=CONTEXT.GetOptProperty(strCode,'all')%>' Width = '<%=iDefaultComboWidth%>'>
+                        <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+<%
+                    for (fldEmpType in curLngCommon.employment_types)
+                    {
+%>
+                        <ComboBoxItem Value = '<%=fldEmpType.id%>'><%=fldEmpType.name%></ComboBoxItem>
+<%
+                    }
+%>
+                    </ComboBox>
+<%
+                break;
+                }
+                case 'profession_area_id':
+                {
+%>
+                    <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vrb_professional_field', curLngWeb)%>:</Label>
+<%
+                    curSelector = {
+                    'id': strCode,
+                    'object_id': strValue,
+                    'object_id_item_name': strCode,
+                    'multi_select': 'false',
+                    'catalog_name': 'professional_area',
+                    'can_be_empty': true,
+                    'width': iDefaultSelectorWidth
+                    };
+                    Response.Write(EvalCodePageUrl(global_settings.web_path + 'view_selector.xaml'));
+
+                break;
+                }
+                case 'attechment_file':
+                {
+                    if (bDispAttachment)
+                    {
+%>
+                        <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_web_const('vcb_attachments', curLngWeb)%>:</Label>
+                        <ComboBox Name = '<%=strCode%>' SelectedItem = '<%=CONTEXT.GetOptProperty(strCode,'all')%>' Width = '<%=iDefaultComboWidth%>'>
+                            <ComboBoxItem Value = 'all'><%=tools_web.get_web_const('f0j4vfoxrb', curLngWeb)%></ComboBoxItem>
+<%
+                        for (fldResourceTypeElem in curLngCommon.resource_types)
+                        {
+%>
+                            <ComboBoxItem Value = '<%=fldResourceTypeElem.id%>'><%=fldResourceTypeElem.name%></ComboBoxItem>
+<%
+                        }
+%>
+                        </ComboBox>
+<%
+                    }
+                    else
+                    {
+                        if (!bResumeTwoColumnFields)
+                        {
+%>
+                            <Image Source = 'pics/1blank.gif'/>
+                            <Image Source = 'pics/1blank.gif'/>
+<%
+                            if (!(iCounter % 2))
+                            {
+%>
+                    </GridRow>
+<%
+                            }
+                        }
+                        else
+                        {
+                            if (!(iCounter % 2))
+                            {
+%>
+                    </GridRow>
+<%
+                            }
+                        }
+                        continue;
+                    }
+                    break;
+                }
+                default:
+                {
+%>
+                <Label Class = 'XAML-info-grid-title-column'><%=strCode%>:</Label>
+                <Edit Name = '<%=strCode%>' Width = '<%=iDefaultTextEditWidth%>'><%=strValue%></Edit>
+<%
+                break;
+            }
+        }
+        if (bResumeTwoColumnFields)
+        {
+            if (iCounter % 2)
+            {
+%>
+    </GridRow>
+<%
+            }
+        }
+        else
+        {
+%>
+    </GridRow>
+<%
+        }
+        iCounter++ 
+    }
+        if (bResumeTwoColumnFields)
+        {
+            if (iCounter % 2)
+            {
+
+%>
+        <Label></Label>
+        <Label></Label>
+    </GridRow>
+<%
+            }
+        }
+%>
+</Grid>
+</StackPanel>
+<%
+    }
+
+    if (bHasComp)
+    {
+%>
+        <StackPanel Name = 'CompFieldGrid' Adapt = 'true'>
+<%
+        if (ArrayOptFirstElem(arrComps) != undefined)
+        {
+%>
+            <Grid Class = 'XAML-grid-info-table' Width = '100%' Adapt = 'true'>
+                <GridColumns>
+                    <GridColumn Width = '50%'/>
+                    <GridColumn/>
+                </GridColumns>
+                <GridRow Class = 'XAML-gridrow-header'>
+                    <Label Class = 'XAML-grid-header-label'><%=tools_web.get_web_const('ass_competence', curLngWeb)%></Label>
+                    <Label Class = 'XAML-grid-header-label'><%=tools_web.get_web_const('vdb_aim_value', curLngWeb)%></Label>
+                </GridRow>
+<%
+                for (fldComp in arrComps)
+                {
+                    if (ArrayOptFirstElem(fldComp.arrScales) != undefined)
+                    {
+%>
+                        <GridRow>
+                            <Label Class = 'XAML-info-grid-title-column'><%=tools_web.get_cur_lng_name(fldComp.name, curLng.short_id)%></Label>
+                            <ComboBox Name = '<%=fldComp.strName%>' SelectedItem = '<%=fldComp.strValue%>' Width = '<%=iDefaultComboWidth%>'>
+<%
+                        for (fldScale in fldComp.arrScales)
+                        {
+%>
+                            <ComboBoxItem Value = '<%=fldScale.id%>'><%=tools_web.get_cur_lng_name(fldScale.name, curLng.short_id)%></ComboBoxItem>
+<%
+                        }
+%>
+                            </ComboBox>
+                        </GridRow>
+<%
+                    }
+                }
+%>
+            </Grid>
+<%
+        }
+%>
+        </StackPanel>
+
+<%
+    }
+
+    if (bHasSkills)
+    {
+%>
+    <StackPanel Name = 'SkillFieldGrid' Adapt = 'true'>
+<%
+        if (ArrayOptFirstElem(arrSkills) != undefined)
+        {
+%>
+            <Grid Class = 'XAML-grid-info-table' Adapt = 'true' Width = '100%'>
+                <GridColumns>
+                    <GridColumn/>
+                    <GridColumn/>
+                </GridColumns>
+                <%fnBuildSkill(null)%>
+            </Grid>
+<%
+        }
+%>
+    </StackPanel>
+<%
+    }
+%>
+    <StackPanel Class = 'XAML-stack-container' Width = '100%' Adapt = 'true' Orientation = 'Horizontal'>
+<%
+    if (bHasComp)
+    {
+%>
+        <Button Click = 'OPENDIALOG=SelectDialogCompetence;' Class = 'XAML-button XAML-button-plus'><%=tools_web.get_web_const('ass_competences', curLngWeb)%></Button>
+<%
+    }
+    if (bHasSkills)
+    {
+%>
+        <Button Click = 'SET=SelectDialogCloseActionSkill,<%=UrlEncode16('SET=SelectSkills,{CatalogListDataGridSelList:*/id}')%>;Set=SelectDialogSkill/selected_object_ids,{SelectSkills};Set=SelectDialogSkill/xquery_qual,$elem/parent_id=null();OPENDIALOG=SelectDialogSkill;' Class = 'XAML-button XAML-button-plus'><%=tools_web.get_web_const('navyki', curLngWeb)%></Button>
+<%
+    }
+%>
+        <Button Click = 'SET=SearchPersonCollection/bSearchStart,true;SHOW=PersonGrid;UPDATE=PersonGrid' Class = 'XAML-button XAML-button-content-standalone'><%=tools_web.get_web_const('sf_submit', curLngWeb)%></Button>
+<%
+    if (bShowResumesCreateButton)
+    {
+        Request.Session.Env.SetProperty( 'sStartMode', curMode );
+%>
+    <Button Click="OPENURL=<%=tools_web.get_mode_clean_url( 'resume', null, { doc_id : Env.GetOptProperty('curDocID', '') } )%>" Class = 'XAML-button XAML-button-new'><%=tools_web.get_web_const('sozdatrezyume', curLngWeb)%></Button>
+<%
+    }
+%>
+    </StackPanel>
+<%
+    curCollectionMenu = {
+            'id' : 'PersonGridM',
+            'catalog_name' : (bHasResume ? 'resume' : 'collaborator'),
+            'data_grid_id' : 'PersonGrid'
+        };
+        Response.Write(EvalCodePageUrl(global_settings.web_path + 'view_catalog_list_menu.xaml'));
+
+%>
+
+<DataGrid Name = 'PersonGrid' Hidden = '1' Source = '{SearchPersonCollection}' Selection = 'multiple' Width = '100%' PageSize = '<%=iPageSize%>'>
+
+    <DataGridColumn Value = 'id' Hidden = 'true' Ghost = '0'/>
+
+<%
+    if (curDevice.disp_type != 'mobile')
+    {
+        for (strDispFieldCode in arrDispFieldCodes)
+        {
+            switch (strDispFieldCode)
+            {
+                case 'vacancy_star':
+%>
+ 	<DataGridColumn Value = 'icon' Title = '' Width = '24' Type = 'image' ColorSource = 'color'/>
+<%
+                    break;
+                case 'fullname':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('c_fio', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Width = '200' Type = 'link' Click = 'OPENWINDOW={person_link}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'org_name':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('c_org', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'link' Click = 'OPENWINDOW={org_link}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'position_parent_name':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('c_subd', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'link' Click = 'OPENWINDOW={position_parent_link}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'position_name':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('c_position', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'experience_in_company':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('opytvkompaniil', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'experience_in_current_position':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('opytnadolzhnost', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'min_wage':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('minimalnyyurov', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'max_wage':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('maksimalnyyuro', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'currency_type':
+%>
+ 	<DataGridColumn Title = '<%=tools_web.get_web_const('c_currency_type', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'in_career_reserve':
+%>
+    <DataGridColumn Title = '<%=tools_web.get_web_const('vkr', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'age':
+%>
+    <DataGridColumn Title = '<%=tools_web.get_web_const('vrb_age', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                case 'resume_name':
+%>
+    <DataGridColumn Title = '<%=tools_web.get_web_const('c_resume', curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'link' Click = 'OPENWINDOW={resume_link}' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+                default:
+%>
+    <DataGridColumn Title = '<%=tools_web.get_web_const(strDispFieldCode, curLngWeb)%>' Value = '<%=strDispFieldCode%>' Type = 'string' Sortable = 'true' ColorSource = 'color'/>
+<%
+                    break;
+            }
+        }
+    }
+    else
+    {
+        if (ArrayOptFind(arrDispFieldCodes, "This == 'resume_name'") != undefined)
+        {
+%>
+        <DataGridColumn Title = '<%=tools_web.get_web_const('c_fio', curLngWeb)%>' Value = 'fullname' Width = '<%=bDesctop ? 200 : ''%>' Type = 'link' Click = 'OPENWINDOW={person_link}' Sortable = 'true' ColorSource = 'color'/>
+        <DataGridColumn Title = '<%=tools_web.get_web_const('c_resume', curLngWeb)%>' Value = 'resume_name' Width = '<%=bDesctop ? 200 : ''%>' Type = 'link' Click = 'OPENWINDOW={resume_link}' Sortable = 'true' ColorSource = 'color'/>
+<%
+        }
+    }
+%>
+ 
+</DataGrid>
+
+<ContextGroup Name = 'AllSendContext' Items = '<%=strContextFildNames%>'/>
+</SPXMLScreen>

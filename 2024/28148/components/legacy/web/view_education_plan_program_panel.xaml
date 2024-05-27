@@ -1,0 +1,593 @@
+﻿<SPXMLScreen>
+<%
+	function CheckRights( sAction )
+	{
+		return ( ArrayOptFind( xarrOperationsRights, "This.action == '" + sAction + "'" ) != undefined );
+	}
+	function write_main()
+	{
+		var curTitle = {
+			"object": teEducationPlan
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+		xarrBossTypes = tools.get_object_relative_boss_types( curUserID, iEducationPlanID );
+
+		xarrOperations = tools.get_relative_operations_by_boss_types( xarrBossTypes );
+		xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && StrContains(','+This.operation_catalog_list.Value+',', ',education_plan,')");
+		xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0 && StrContains(','+This.operation_catalog_list.Value+',', ',education_plan,')");
+		xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+		if ( teEducationPlan.compound_program_id.HasValue )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_compound_prog", curLngWeb )%>:</Label>
+<%
+			catCompoundProgram = teEducationPlan.compound_program_id.OptForeignElem;
+			if ( catCompoundProgram == undefined )
+			{
+%>
+			<Label Class="XAML-deleted"><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teEducationPlan.compound_program_id, { doc_id: curDocID } )%>"><%=catCompoundProgram.name%></Link>
+<%
+			}
+%>
+		</GridRow>
+<%
+		}
+
+		if ( teEducationPlan.budget_period_id.HasValue )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>
+<%
+			catBudgetPerion = teEducationPlan.budget_period_id.OptForeignElem;
+			if ( catBudgetPerion == undefined )
+			{
+%>
+			<Label Class="XAML-deleted"><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Label><%=tools_web.get_cur_lng_name( catBudgetPerion.name, curLng.short_id )%></Label>
+<%
+			}
+%>
+		</GridRow>
+<%
+		}
+
+		if ( teEducationPlan.group_id.HasValue )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_group", curLngWeb )%>:</Label>
+<%
+			catGroup = teEducationPlan.group_id.OptForeignElem;
+			if ( catGroup == undefined )
+			{
+%>
+			<Label Class="XAML-deleted"><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teEducationPlan.group_id, { doc_id: curDocID } )%>"><%=catGroup.name%></Link>
+<%
+			}
+%>
+		</GridRow>
+<%
+		}
+
+		if ( teEducationPlan.tutor_id.HasValue && ( CheckRights("education_plan_show_tutor") || CheckRights("education_plan_edit_tutor") ) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_tutor_main", curLngWeb )%>:</Label>
+<%
+			catTutor = teEducationPlan.tutor_id.OptForeignElem;
+			if ( catTutor == undefined )
+			{
+%>
+			<Label Class="XAML-deleted"><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teEducationPlan.tutor_id, { doc_id: curDocID } )%>"><%=catTutor.fullname%></Link>
+<%
+			}
+%>
+		</GridRow>
+<%
+		}
+		if ( (CheckRights("education_plan_show_date") || CheckRights("education_plan_edit_date")) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "u6lvp7f029", curLngWeb )%>:</Label>
+			<Label><%=StrDate( teEducationPlan.plan_date, true, false )%></Label>
+		</GridRow>
+<%
+		}
+
+		if ( (CheckRights("education_plan_show_date") || CheckRights("education_plan_edit_date")) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>:</Label>
+			<Label><%=StrDate( teEducationPlan.finish_date, true, false )%></Label>
+		</GridRow>
+<%
+		}
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vppb_state", curLngWeb )%>:</Label>
+			<Label><%=curLngCommon.learning_states.GetChildByKey( teEducationPlan.state_id ).name%></Label>
+		</GridRow>
+<%
+		if ( (CheckRights("education_plan_show_result") || CheckRights("education_plan_edit_result")) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_readiness_percent", curLngWeb )%>:</Label>
+			<Label><%=(teEducationPlan.readiness_percent.HasValue?teEducationPlan.readiness_percent:"")%></Label>
+		</GridRow>
+<%
+		}
+%>
+		
+	</Grid>
+<%
+		curStatistics = {
+			"object_id": iEducationPlanID,
+			"te_object": teEducationPlan,
+			"statistics_periods": []
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_cur_statistics.xaml" ) );
+	}
+	
+	function write_folder( catElem )
+	{
+		xarrBossTypes = tools.get_object_relative_boss_types( curUserID, iEducationPlanID );
+
+		xarrOperations = tools.get_relative_operations_by_boss_types( xarrBossTypes );
+		xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && StrContains(','+This.operation_catalog_list.Value+',', ',education_plan,')");
+		xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0 && StrContains(','+This.operation_catalog_list.Value+',', ',education_plan,')");
+		xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+		if( catElem.type != "folder" && catElem.object_id.HasValue )
+		{
+			teObject = OpenDoc( UrlFromDocID( catElem.object_id ) ).TopElem;
+			feExt = curLngCommon.exchange_object_types.GetOptChildByKey( teObject.Name );
+			if( feExt != undefined && feExt.web_template.HasValue )
+			{
+%>
+	<Toolbar>
+		<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catElem.object_id )%>"><%=XmlAttrEncode( tools_web.get_web_const( "p9ynzvyzkx", curLngWeb ) )%></Button>
+	</Toolbar>
+<%
+			}
+		}
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode( tools_web.get_cur_lng_name( catElem.name, curLng.short_id ) )%></Label>
+		</GridRow>
+<%
+		if ( catElem.tutor_id.HasValue && ( CheckRights( "education_plan_show_tutor" ) || CheckRights( "education_plan_edit_tutor" ) ) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_tutor_main", curLngWeb )%>:</Label>
+<%
+			catTutor = catElem.tutor_id.OptForeignElem;
+			if ( catTutor == undefined )
+			{
+%>
+			<Label Class="XAML-deleted"><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+			}
+			else
+			{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catElem.tutor_id, { doc_id: curDocID } )%>"><%=catTutor.fullname%></Link>
+<%
+			}
+%>
+		</GridRow>
+<%
+		}
+		if ( ( CheckRights( "education_plan_show_date" ) || CheckRights( "education_plan_edit_date" ) ) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "u6lvp7f029", curLngWeb )%>:</Label>
+			<Label><%=StrDate( catElem.plan_date, true, false )%></Label>
+		</GridRow>
+<%
+		}
+
+		if ( (CheckRights( "education_plan_show_date" ) || CheckRights( "education_plan_edit_date" ) ) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>:</Label>
+			<Label><%=StrDate( catElem.finish_date, true, false )%></Label>
+		</GridRow>
+<%
+		}
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vppb_state", curLngWeb )%>:</Label>
+			<Label><%=curLngCommon.learning_states.GetChildByKey( catElem.state_id ).name%></Label>
+		</GridRow>
+<%
+		if ( (CheckRights("education_plan_show_result") || CheckRights("education_plan_edit_result")) )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_readiness_percent", curLngWeb )%>:</Label>
+			<Label><%=catElem.readiness_percent%><%=( catElem.readiness_percent.HasValue ? catElem.readiness_percent : "" )%></Label>
+		</GridRow>
+<%
+		}
+%>
+		
+	</Grid>
+<%
+	}
+	
+	function write_error( sText )
+	{
+		curMessageBox = {
+            "type": "error",
+            "text": ( sText + "." )
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	
+	function write_learning_object( catElem )
+	{
+		if( !catElem.result_object_id.HasValue )
+		{
+			bNeedActivate = false;
+			if( catElem.start_type == "auto" )
+			{
+				if( catElem.delay_days.HasValue )
+				{
+					if( catElem.create_date.HasValue )
+					{
+						bNeedActivate = catElem.create_date <= DateOffset( Date(), ( 0 - OptInt( catElem.delay_days, 0 ) )*86400 )
+					}
+				}
+				else if( catElem.plan_date.HasValue )
+					bNeedActivate = catElem.plan_date <= Date();
+					
+			}
+			if( !bNeedActivate )
+			{
+				write_folder( catElem )
+				return
+			}
+			if( !catElem.object_id.HasValue )
+			{
+				write_error( "На данном этапе не указан объект" );
+				return;
+			}
+			switch( catElem.type )
+			{
+				case "course":
+					oDocRes = tools.activate_course_to_person( {
+						iPersonID: curUserID,
+						iCourseID: catElem.object_id.Value,
+						teCollaborator: curUser,
+						iEducationPlanID: iEducationPlanID
+					} );
+					
+					break;
+				case "assessment":
+					oDocRes = tools.activate_test_to_person( {
+						iPersonID: curUserID,
+						iAssessmentID: catElem.object_id.Value,
+						teCollaborator: curUser,
+						iEducationPlanID: iEducationPlanID
+					} );
+					break;
+					
+				case "event":
+					docEvent = OpenDoc( UrlFromDocID( catElem.object_id ) )
+					oDocRes = docEvent.TopElem.addPerson( {
+						iPersonID: curUserID,
+						tePerson: curUser,
+						iEducationPlanID: iEducationPlanID,
+						bDoObtain: true,
+						bDoFilling: true,
+						bDoSave: true,
+						bCreateEventResult: true,
+						bSendNotification: true,
+						bSaveInEvent: true
+					} ).docEventResult;
+					break;
+					
+				case "learning_task":
+					catLearningTasResult = ArrayOptFirstElem( XQuery( 'for $i in learning_task_results where $i/person_id = ' + curUserID + ' and $i/learning_task_id = ' + catElem.object_id + ' return $i' ) );
+					if( catLearningTasResult != undefined )
+						oDocRes = catLearningTasResult.id;
+					else
+					{
+						docLearningTaskResult = tools_knlg.activate_learning_task( { 	person_id: curUserID,
+												tePerson: curUser,
+												learning_task_id: catElem.object_id,
+												plan_start_date: catElem.plan_date,
+												expert_id: catElem.tutor_id,
+												start_date: catElem.create_date,
+												education_plan_id: iEducationPlanID,
+											} ).doc_learning_task_result;
+										
+						oDocRes = docLearningTaskResult;
+					}
+				case "material":
+					//alert( "mat" )
+					//alert( catElem.catalog_name)
+					switch( catElem.catalog_name )
+					{
+						case 'poll':
+							catPollResult = ArrayOptFirstElem( XQuery( 'for $i in poll_results where $i/person_id = ' + curUserID + ' and $i/poll_id = ' + catElem.object_id + ' and $i/is_done = false() return $i' ) );
+							if( catPollResult != undefined )
+								oDocRes = catPollResult.id;
+							else
+								oDocRes = tools.activate_poll_to_person( curUser, catElem.object_id, null, iEducationPlanID );
+							break
+						case 'library_material':
+							oDocRes = tools.recommend_library_material_to_person( curUserID, catElem.object_id, curUser, null, false , iEducationPlanID );
+							break
+					}
+					break;
+					
+			}
+			if( OptInt( oDocRes ) != undefined )
+			{
+				oDocRes = OpenDoc( UrlFromDocID( oDocRes ) );
+				if( !oDocRes.TopElem.education_plan_id.HasValue )
+				{
+					oDocRes.TopElem.education_plan_id = iEducationPlanID;
+					oDocRes.Save();
+				}
+			}
+			catElem.result_object_id = oDocRes.DocID;
+			catElem.result_type = oDocRes.TopElem.Name;
+			docEducationPlan.Save();
+		}
+		iObjectID = OptInt( ( catElem.type == "event" || ( catElem.type == "material" && catElem.catalog_name == "poll" ) ? catElem.object_id : catElem.result_object_id ) );
+		if( iObjectID == undefined )
+		{
+			write_error( "Некорректно указаны настройки этапа" );
+			return;
+		}
+		docObject = OpenDoc( UrlFromDocID( iObjectID ) );
+		write_object( catElem, docObject.TopElem.Name, get_object_id( catElem ), get_object( catElem, docObject ) );
+	}
+	
+	function get_mode( type )
+	{
+		switch( type )
+		{
+			case "learning":
+			case "test_learning":
+				return type + "_stat";
+			case "active_learning":
+				return "learning_proc";
+			case "active_test_learning":
+				return "test_learning_proc";
+			case "document":
+				return "doc";
+			case "chat":
+				return "communication";
+			default:
+				return type;
+		}
+	}
+	
+	function get_object( catElem, dDoc )
+	{
+		switch( catElem.type )
+		{
+			case "material":
+				switch( catElem.catalog_name )
+				{
+					case "poll":
+						return undefined;
+				}
+				break;
+			case "event":
+				return undefined;
+		}
+		return dDoc;
+	}
+	
+	function get_object_id( catElem )
+	{
+		switch( catElem.type )
+		{
+			case "material":
+				switch( catElem.catalog_name )
+				{
+					case "poll":
+						return catElem.object_id;
+				}
+				break;
+			case "event":
+				return catElem.object_id;
+		}
+		return catElem.result_object_id;
+	}
+	
+	function write_object( catElem, sType, curObjectID, curObjectDoc )
+	{
+		sMode = tools_web.get_web_param( curParams, "education_plan_new.program." + sType, get_mode( sType ), true );
+		
+		if( curObjectID == undefined )
+			curObjectID = catElem.object_id;
+			
+		if( curObjectID == undefined || curObjectID == null )
+		{
+			write_error( "На данном этапе не указан объект" );
+			return;
+		}
+			
+		if( curObjectDoc == undefined )
+			curObjectDoc = OpenDoc( UrlFromDocID( curObjectID ) );
+			
+		curObject = curObjectDoc.TopElem
+		if( sType == "document" )
+		{
+			curDocID = curObjectID;
+			curDoc = curObject;
+		}
+		iCount = 0;
+		for ( catOverrideWebTemplateElem in XQuery( "for $i in override_web_templates where $i/mode = " + XQueryLiteral( sMode ) + " and $i/is_enabled = true() order by $i/weight return $i" ) )
+		{
+			teOverrideTemplate = OpenDoc( UrlFromDocID( catOverrideWebTemplateElem.id ) ).TopElem;
+			feCustomWebTemplate = catOverrideWebTemplateElem.custom_web_template_id.OptForeignElem;
+			if( feCustomWebTemplate == undefined || feCustomWebTemplate.out_type != "xaml" )
+				continue;
+			tools_web.set_web_params( curParams, teOverrideTemplate.wvars, true );
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+			iCount++;
+		}
+		if( iCount == 0 )
+		{
+			write_folder( catElem )
+		}
+	}
+	
+	try
+	{
+		iEducationPlanID = OptInt( tools_web.get_web_param( PARAMETERS, "education_plan_id", "", true ) );
+		docEducationPlan = OpenDoc( UrlFromDocID( iEducationPlanID ) );
+		teEducationPlan = docEducationPlan.TopElem;
+		
+		sProgramID = tools_web.get_web_param( PARAMETERS, "program_id", "", true );
+		PAGEURL = tools_web.get_clean_url_exc_query( PAGEURL, "program_id,education_plan_id;object_id", { program_id: sProgramID, education_plan_id: iEducationPlanID } );
+		iProgramID = OptInt( sProgramID )
+		if( sProgramID == "main" )
+			write_main();
+		else
+		{
+			catProgram = teEducationPlan.programs.GetOptChildByKey( iProgramID );
+			if( catProgram == undefined )
+			{
+				curMessageBox = {
+					"type": "error_access"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+				Cancel();
+			}
+			
+			if( catProgram.completed_parent_programs.ChildNum > 0 )
+			{
+				arr_not_completed = new Array();
+				for( _comp_program in catProgram.completed_parent_programs )
+				{
+					catCompletedProgram = teEducationPlan.programs.GetOptChildByKey( _comp_program.PrimaryKey )
+					if( catCompletedProgram != undefined && catCompletedProgram.state_id != 2 && catCompletedProgram.state_id != 4 )
+						arr_not_completed.push( catCompletedProgram.name );
+				}
+				if( ArrayOptFirstElem( arr_not_completed ) != undefined )
+				{
+					write_error( StrReplace( 'Для доступа к данному разделу необходимо завершить разделы {PARAM1}', '{PARAM1}', ArrayMerge( arr_not_completed, "This", ", " ) ) )
+%>
+</SPXMLScreen>
+<%
+				Cancel();
+				}
+			}
+			
+			switch( catProgram.type.Value )
+			{
+				case "folder":
+					sFolderMode = tools_web.get_web_param( curParams, "education_plan_new.program.folder", "", true );
+					if( sFolderMode == "" )
+						write_folder( catProgram );
+					else
+					{
+						for ( catOverrideWebTemplateElem in XQuery( "for $i in override_web_templates where $i/mode = " + XQueryLiteral( sFolderMode ) + " and $i/is_enabled = true() order by $i/weight return $i" ) )
+						{
+							teOverrideTemplate = OpenDoc( UrlFromDocID( catOverrideWebTemplateElem.id ) ).TopElem;
+							feCustomWebTemplate = catOverrideWebTemplateElem.custom_web_template_id.OptForeignElem;
+							if( feCustomWebTemplate == undefined || feCustomWebTemplate.out_type != "xaml" )
+								continue;
+							tools_web.set_web_params( curParams, teOverrideTemplate.wvars, true );
+							Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+						}
+					}
+					break;
+				case "course":
+				case "assessment":
+				case "event":
+				case "learning_task":
+					write_learning_object( catProgram );
+					break;
+				case "education_method":
+					write_object( catProgram, catProgram.type.Value, catProgram.education_method_id )
+					break;
+				case "education_program":
+					write_object( catProgram, catProgram.type.Value, catProgram.education_program_id )
+					break;
+				case "material":
+					switch( catProgram.catalog_name.Value )
+					{
+						case "poll":
+							write_learning_object( catProgram );
+							break;
+						case "forum":
+						case "blog":
+						
+						case "chat":
+						case "resource":
+						case "library_material":
+						case "document":
+							write_object( catProgram, catProgram.catalog_name.Value )
+							break;
+					}
+					break;
+			}
+		}
+	}
+	catch( ex )
+	{
+		alert( ex )
+		write_error( 'ошибка при открытии этапа. Обратитесь к администратору.' )
+%>
+</SPXMLScreen>
+<%
+				Cancel();
+	}
+%>
+</SPXMLScreen>

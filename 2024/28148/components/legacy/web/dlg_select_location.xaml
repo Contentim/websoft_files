@@ -1,0 +1,54 @@
+﻿<SPXMLScreen>
+
+<Label><![CDATA[<%="Укажите расположение файлов учебных материалов."%>]]></Label>
+
+<Grid Width="100%" Class="XAML-grid-container">
+	<GridColumns>
+		<GridColumn Width="30"/>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Title="      "/>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+			<RadioButton Name="dlg_select_location_location_id" Value="" Checked="true"><![CDATA[- <%=tools_web.get_web_const( "c_default", curLngWeb )%> -]]></RadioButton>
+<%
+if ( true )
+{
+	fldLocation = lists.locations.GetOptChildByKey( curUser.location_id );
+	if ( fldLocation != undefined )
+	{
+%>
+			<RadioButton Name="dlg_select_location_location_id" Value="<%=XmlAttrEncode( curUser.location_id )%>"><![CDATA[<%=fldLocation.name%>]]></RadioButton>
+<%
+	}
+}
+else
+{
+	for ( fldLocationElem in lists.locations )
+	{
+%>
+			<RadioButton Name="dlg_select_location_location_id" Value="<%=XmlAttrEncode( fldLocationElem.PrimaryKey )%>"><![CDATA[<%=fldLocationElem.name%>]]></RadioButton>
+<%
+	}
+}
+%>
+		</StackPanel>
+	</GridRow>
+</Grid>
+
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100"/>
+		<GridColumn Width="100"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+		<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+		<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</GridRow>
+</Grid>
+
+</SPXMLScreen>

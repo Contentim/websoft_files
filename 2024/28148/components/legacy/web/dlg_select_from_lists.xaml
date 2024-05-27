@@ -1,0 +1,41 @@
+﻿<SPXMLScreen>
+<%
+	sTitle = PARAMETERS.GetOptProperty( "title", "" );
+	sCatalogName = PARAMETERS.GetOptProperty( "catalog_name", "" );
+%>
+	<Collection Name="ListsElemCollection">
+		<Data>
+<%
+	for( ListElem in lists.EvalPath( sCatalogName ) )
+	{
+%>
+			<Row>
+				<Cell Id="id" Value="<%=ListElem.PrimaryKey%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( ( ListElem.ChildExists( "name" ) ? ListElem.name : ListElem.title ), curLng.short_id ) )%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+
+    <DataGrid Name="DataGridListsElem" Source="{ListsElemCollection}" Width="100%" Selection="single" Title="<%=sTitle%>">
+		<DataGridColumn Value="id" Hidden="1" Editable="1" Type="string"/>
+        <DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>" Width="100%" Type="string"/>
+    </DataGrid>
+
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+
+</SPXMLScreen>

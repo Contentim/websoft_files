@@ -1,0 +1,206 @@
+﻿<SPXMLScreen>
+<%
+	iCompetenceProfileId = OptInt( PARAMETERS.GetOptProperty( "competence_profile_id" ) );
+	sType = PARAMETERS.GetOptProperty( "type" );
+	sCurrencyTypeId = PARAMETERS.GetOptProperty( "currency_type_id" );
+
+	bFillComment = tools_web.is_true( PARAMETERS.GetOptProperty( "fill_comment" ) );
+	bAnonymTransfer = tools_web.is_true( PARAMETERS.GetOptProperty( "anonym_transfer" ) );
+	sAnonymName = "";
+	if ( bAnonymTransfer ) sAnonymName = ( PARAMETERS.GetOptProperty( "anonym_name", "" ) != '' ) ? PARAMETERS.GetOptProperty( "anonym_name" ) : "Аноним";
+	iAmntPoints = OptInt( PARAMETERS.GetOptProperty( "amnt_points" ), "" );
+	iAffordablePoints = OptInt( PARAMETERS.GetOptProperty( "affordable_points" ), "" );
+	bShowFldPoints = tools_web.is_true( PARAMETERS.GetOptProperty( "show_fld_points", true ) );
+	sFldPointsName = PARAMETERS.GetOptProperty( "fld_point_name" );
+	sFldPointsName = ( sFldPointsName != undefined && sFldPointsName != "" ) ? sFldPointsName : "Количество баллов";
+	sBtnCancelName = PARAMETERS.GetOptProperty( "btn_cancel_name" );
+	sBtnCancelName = ( sBtnCancelName != undefined && sBtnCancelName != "" ) ? sBtnCancelName : "Отмена";
+	sBtnTransferName = PARAMETERS.GetOptProperty( "btn_transfer_name" );
+	sBtnTransferName = ( sBtnTransferName != undefined && sBtnTransferName != "" ) ? sBtnTransferName : "Передать";
+	iSender = OptInt( PARAMETERS.GetOptProperty( "sender" ) );
+	iCurUser = OptInt( PARAMETERS.GetOptProperty( "cur_user" ) ); 
+	sUserName = "";
+
+	if ( iSender != undefined && ( cCollab = ArrayOptFirstElem( XQuery( "for $elem in collaborators where $elem/id =" + iSender + " return $elem" ) ) ) != undefined ) sUserName = cCollab.fullname;
+	bThankOutlook = tools_web.is_true( PARAMETERS.GetOptProperty( "thank_outlook" ) );		
+	// teCompetencyProfile = ( !bThankOutlook ) ? OpenDoc( UrlFromDocID( iCompetenceProfileId ) ).TopElem : null;
+	
+	teCompetencyProfile = {};
+	dCompetencyProfile = tools.open_doc( iCompetenceProfileId );
+	if ( dCompetencyProfile == undefined )
+	{
+%>
+		<Label Align="center"> В параметрах шаблона необходимо задать профиль компетенций. </Label>
+<%	
+	}
+	else
+	{
+		teCompetencyProfile = dCompetencyProfile.TopElem;
+%>
+	<Action Name="TransferScoreAction" Source="game_transfer_action" Success="CLOSEDIALOG" Failure="ALERT={messageText}">
+		<Param Name="type" Value="<%=sType%>"/>
+		<Param Name="currency_type_id" Value="<%=sCurrencyTypeId%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+<%
+	if( sType == "thanks" && !bShowFldPoints )
+	{
+%>
+	<Edit Name="TransferScore" Hidden="1">1</Edit>
+<%
+	}
+	else if ( !bShowFldPoints && iAmntPoints != "" )
+	{
+%>
+	<Edit Name="TransferScore" Hidden="1"><%=iAmntPoints%></Edit>
+<%
+	}
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Edit Name="bFillComment" Hidden="1"><%=bFillComment%></Edit>
+			<Edit Name="bAnonymTransfer" Hidden="1"><%=bAnonymTransfer%></Edit>
+			<Edit Name="sAnonymName" Hidden="1"><%=sAnonymName%></Edit>
+			<Edit Name="iAffordablePoints" Hidden="1"><%=iAffordablePoints%></Edit>
+			<Edit Name="iCurUser" Hidden="1"><%=iCurUser%></Edit>
+			<Edit Name="iSender" Hidden="1"><%=iSender%></Edit>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+<%
+	//curSelector = {
+	//	"id": "transfer_collaborator_id",
+	//	"object_id_item_name": "transfer_collaborator_id",
+	//	"multi_select": "false",
+	//	"display_object_ids":  "",
+	//	"width": "100%",
+	//	"xquery_qual":  " $elem/is_dismiss != true() and $elem/id != " + iSender,
+	//	"catalog_name": "collaborator",
+	//	"b_editable": true
+	//};
+	//Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+			<Dialog Name="SelectDialogtransfer_collaborator_id" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="Set=ObjectNameEdittransfer_collaborator_id,{CatalogListDataGridFullList:^/disp};Set=transfer_collaborator_id,{CatalogListDataGridFullList:^/id};">
+				<Param Name="catalog_name" Value="collaborator"/>
+				<Param Name="multi_select" Value="false"/>
+				<Param Name="view_type" Value=""/>
+				<Param Name="xquery_qual" Value="$elem/is_dismiss != true() and $elem/id != <%=iSender%>"/>
+				<Param Name="check_access" Value="false"/>
+				<Param Name="selected_object_ids" Value=""/>
+				<Param Name="display_object_ids" Value=""/>
+				<Param Name="disp_filter" Value="true"/>
+				<Param Name="filter_id" Value="#empty#"/>
+				<Param Name="show_all" Value="true"/>
+				<Param Name="typein" Value="false"/>
+				<Param Name="can_be_empty" Value="false"/>
+				<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+				<Param Name="list_columns" Value=""/>
+			</Dialog>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+				<Edit Name="transfer_collaborator_id" Hidden="0"><%=(bThankOutlook)?iSender:''%></Edit>
+				<Edit Name="ObjectNameEdittransfer_collaborator_id" Width="100%" Height="" Editable="false" Class="XAML-input-selector"><%=(bThankOutlook)?sUserName:''%></Edit>
+				<Button Click="OPENDIALOG=SelectDialogtransfer_collaborator_id;" Class="XAML-button-content XAML-button-selector icon-folder-open-o"></Button>
+			</StackPanel>
+
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+			<EditBox Name="TransferComment" Width="100%" Height="100"/>
+		</GridRow>
+<%
+	if ( true )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "ass_competence", curLngWeb )%>:</Label>
+			<StackPanel Class="XAML-stack-container">
+<%	
+		for( comp in teCompetencyProfile.competences )
+		{
+			feComp = comp.competence_id.OptForeignElem;
+			if( feComp == undefined )
+				continue;
+%>
+				<CheckBox Name="CompetenceCheckBox<%=comp.competence_id%>"><%=HtmlEncode( feComp.name )%></CheckBox>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+	if( bShowFldPoints )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=(bShowFldPoints)?sFldPointsName:""%>:</Label>
+			<Edit Name="TransferScore" Editable="<%=(iAmntPoints!='')?0:1%>" Hidden="<%=!bShowFldPoints%>" Width="50" KeyPress="#!1-31:STOP;#!33-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-39:STOP;#!S42:STOP;#!S44-47:STOP;#!S58-10000:STOP;"><%=iAmntPoints%></Edit>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<HTMLBox Dynamic="1">
+		<![CDATA[ 
+			
+			<link rel="stylesheet" href="scripts/jquery-ui/jquery-ui.css">
+			<script>
+
+				$(document).ready(function() {	
+
+					$.getScript("scripts/jquery-ui/jquery-ui.js", function () {
+
+						jInputCollab = $('[name="ObjectNameEdittransfer_collaborator_id"]');
+						jInputCollabId = $('[name="transfer_collaborator_id"]');
+						jParentInputCollabId = jInputCollabId.closest('.x-table-layout-cell').hide();
+						
+						jInputCollab.addClass('ui-autocomplete-input');
+
+						jInputCollab.autocomplete({
+							source: "custom_web_template.html?object_code=<%=tools_web.get_web_param(curParams, 'sCodeAutocompleate', '', true)%>",
+							minLength: 2,
+							delay: 500,
+							select: function(event, ui) {
+								//console.log( ui.item.value, ui.item.id );
+								jInputCollabId.val(ui.item.id);
+							}
+						});
+
+						jBlockAutocomplete = $('#ui-id-1');
+
+						jBlockAutocomplete.css({
+							"top": jInputCollab.innerHeight(),
+							"left": 0,
+							"height": 4*jInputCollab.innerHeight(),
+							"overflow": "hidden auto"
+						}).show();
+
+						$('[role="status"]').hide();
+						
+						jBlockAutocomplete.appendTo( jInputCollab.parent() );
+
+					});		
+										
+					//(function log(str) { console.log('111') })();
+				});
+			
+			</script>
+		]]>
+	</HTMLBox>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="50%"/>
+			<GridColumn Width="50%"/>
+		</GridColumns>
+
+		<GridRow>
+			<Button Class="XAML-button" Width="265" Click="CANCELDIALOG"><%=sBtnCancelName%></Button>
+			<Button Class="XAML-button" Width="265" Click="Set=TransferScoreAction/CONTEXT,{CONTEXT};ACTION=TransferScoreAction"><%=sBtnTransferName%></Button>
+		</GridRow>
+	</Grid>
+<%
+	}
+%>
+</SPXMLScreen>

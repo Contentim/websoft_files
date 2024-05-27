@@ -1,0 +1,130 @@
+﻿<SPXMLScreen>
+<%
+sImageHeight = tools_web.get_web_param( curParams, "todo_tile.height", 160, true );
+sImageWidth = tools_web.get_web_param( curParams, "todo_tile.width", 250, true );
+
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iObjectID != undefined )
+{
+	sName = PARAMETERS.GetOptProperty( "name", "" );
+	sImage = PARAMETERS.GetOptProperty( "image", "" );
+	sType = PARAMETERS.GetOptProperty( "type", "" );
+	sStateID = PARAMETERS.GetOptProperty( "state_id", "" );
+	sState = PARAMETERS.GetOptProperty( "state", "" );
+	sDate = PARAMETERS.GetOptProperty( "date", "" );
+	sStrDate = PARAMETERS.GetOptProperty( "date", "" );
+	sAction = PARAMETERS.GetOptProperty( "action", "" );
+	sActionLabel = PARAMETERS.GetOptProperty( "actionLabel", "" );
+	tileHeight = PARAMETERS.GetOptProperty( "sTileHeight", "" );
+
+	if ( sStateID != '')
+	{
+	sStatusColor = 'color-plan';
+	switch ( Int(sStateID) )
+	{	
+		case 0:
+			sStatusColor = 'color-plan';
+			break;
+		case 1:
+			sStatusColor = 'color-process';
+			break;
+		case 2:
+			sStatusColor = 'color-viewed';
+			break;
+		case 3:
+			sStatusColor = 'color-failed';
+			break;
+		case 4:
+			sStatusColor = 'color-finish';
+			break;			
+	}
+	}
+
+%>
+<StackPanel Orientation="Vertical" Class="XAML-stack-tile XAML-todo-tile">
+	<StackPanel Class="XAML-todo-tile-image-container">
+<%
+		if (sAction!='#')
+		{
+%>		
+		<Image Click="<%=( ( ( sType == "learning" || sType == "assessment" ) ? "OPENWINDOW=" : "OPENURL=" ) + sAction )%>" Class="XAML-todo-tile-image" Width="<%=sImageWidth%>" Height="<%=sImageHeight%>" Source="pics/1blank.gif">
+<%
+		}
+		else
+		{
+%>
+	<Image Class="XAML-todo-tile-image" Width="<%=sImageWidth%>" Height="<%=sImageHeight%>" Source="pics/1blank.gif">
+<%
+		}
+%>		
+		<BackgroundImage Source="<%=XmlAttrEncode( sImage )%>"/>	
+		<!-- </Link> -->
+		</Image>
+	</StackPanel>
+<%
+	if (sState!='')
+	{
+%>
+	<StackPanel Class="XAML-todo-state <%=sStatusColor%>" Orientation="Horizontal">
+		<Label><%=sState%></Label>
+	</StackPanel>	
+<%
+	}
+	if (sDate!='')
+	{
+%>	
+	<StackPanel Class="XAML-todo-date" Orientation="Horizontal">
+		<Label><%=sDate%></Label>
+	</StackPanel>
+<%
+	}
+	else if (sStrDate!='')
+	{
+%>
+	<StackPanel Class="XAML-todo-date" Orientation="Horizontal">
+		<Label><%=sStrDate%></Label>
+	</StackPanel>
+<%
+	}
+%>	
+	<StackPanel>
+<%
+		if (sAction!='#')
+		{
+%>
+		<Link Click="<%=( ( ( sType == "learning" || sType == "assessment" ) ? "OPENWINDOW=" : "OPENURL=" ) + sAction )%>" Class="XAML-link-tile-title">
+			<![CDATA[<%=sName%>]]>
+		</Link>
+<%
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-tile-title"><![CDATA[<%=sName%>]]></Label>
+<%
+		}
+%>		
+	</StackPanel>
+	<StackPanel>
+<%
+		if (sAction!='#')
+		{
+%>
+		<Link Click="<%=( ( ( sType == "learning" || sType == "assessment" ) ? "OPENWINDOW=" : "OPENURL=" ) + sAction )%>" Class="XAML-label-tile-desc">
+			<![CDATA[<%=sActionLabel%>]]>
+		</Link>
+<%
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-tile-desc"><![CDATA[<%=sActionLabel%>]]></Label>
+<%
+		}
+%>			
+	</StackPanel>
+</StackPanel>
+<%
+	}
+%>
+</SPXMLScreen>

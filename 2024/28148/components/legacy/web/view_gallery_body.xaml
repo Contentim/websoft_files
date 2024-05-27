@@ -1,0 +1,73 @@
+﻿<SPXMLScreen>
+<%
+	var sSource = tools_web.get_web_param(curParams, "gallery_body.use", "all", true);
+	var sMode = tools_web.get_web_param(curParams, "gallery_body.mode", "list", true);
+	var iPageSize = OptInt(tools_web.get_web_param(curParams, "gallery_body.page_size", null, false), 0);
+	var bDownloadUrl = (tools_web.get_web_param(curParams, "gallery_body.url_mode", "resource", true) == "download");
+	var sPicMode = tools_web.get_web_param(curParams, "gallery_body.pic_mode", "ico", true);
+	var iRandomFew = OptInt(tools_web.get_web_param(curParams, "gallery_body.random_few", "0", true), 0);
+	
+	var sInfoShow = tools_web.get_web_param(curParams, "gallery_body.tile_info_show", "", false);
+	
+	var i_pic_width = 150;
+	if (sPicMode == "image")
+	{
+		i_pic_width = OptInt(tools_web.get_web_param(curParams, "gallery_body.pic_mode.pic_width", null, true), 150);
+		if (sMode == "list" && i_pic_width == 0)
+			i_pic_width = 150;
+	}
+	var sRepositoriumID = tools_web.get_web_param(curParams, "gallery_body.repositorium_id", null, false);
+%>
+	<Collection Name="GalleryCollection" Source="gallery_collection">
+		<Param Name="repositorium_id" Value="<%=sRepositoriumID%>"/>
+		<Param Name="pic_mode" Value="<%=sPicMode%>"/>
+		<Param Name="pic_width" Value="<%=i_pic_width%>"/>
+		<Param Name="source" Value="<%=sSource%>"/>
+		<Param Name="random_few" Value="<%=iRandomFew%>"/>
+		<Param Name="flush" Value="<%=tools_web.is_true(curUrlQuery.GetOptProperty("flush", ""))%>"/>
+	</Collection>
+<%
+	if (sMode == "tile")
+	{
+		var iTileRows = OptInt(tools_web.get_web_param(curParams, "gallery_body.pic_mode.tile_rows", "0", true), 0);
+		var iTileColumns = OptInt(tools_web.get_web_param(curParams, "gallery_body.pic_mode.tile_columns", "0", true), 0);
+		if (iTileColumns <= 0 || iTileColumns >= 50) iTileColumns = "";
+		var iTileEdge = "";
+		if (iTileRows <= 0) iTileRows = "";
+		if (iTileRows == "" || iTileColumns == "")
+		{
+			iTileEdge = OptInt(tools_web.get_web_param(curParams, "gallery_body.pic_mode.tile_edge_size", "0", true), 0);
+			if (iTileEdge == 0 && iTileColumns == "")
+			{
+				iTileEdge = 200;
+			}
+		}
+		
+		var iHeight = (iTileColumns != "" && iTileRows != "" ? "500": "");
+%>
+	<TileView Name="GalleryTile" Width="100%" Height="<%=iHeight%>" TileWidth="<%=(iTileColumns != "" ? "" : iTileEdge)%>" TileHeight="<%=(iTileRows != "" ? "" : (iTileEdge != 0 ? iTileEdge : "1x"))%>" Rows="<%=iTileRows%>" Columns="<%=iTileColumns%>" DataSource="{GalleryCollection}" TemplateSource="gallery_tile" PageSize="<%=iPageSize%>" Class="XAML-tileview-gallery">
+		<Param Name="is_download_url" Value="<%=(bDownloadUrl ? 1: 0)%>"/>
+		<Param Name="infoshow" Value="<%=sInfoShow%>"/>
+		
+		<Param Name="repositorium_id" Value="<%=sRepositoriumID%>"/>
+		<Param Name="pic_mode" Value="<%=sPicMode%>"/>
+		<Param Name="pic_width" Value="<%=i_pic_width%>"/>
+		<Param Name="source" Value="<%=sSource%>"/>
+		<Param Name="pic_idx" Value=""/>
+	</TileView>
+<%
+	}
+	else
+	{
+		
+%>
+	<DataGrid Name="GalleryGrid" Title="" Source="{GalleryCollection}" Height="400" PageSize="<%=(iPageSize > 0 ? iPageSize : "")%>">
+		<DataGridColumn Title="" Value="image_url" Width="<%=i_pic_width%>" Type="<%=(sPicMode == "ico" ? "fixedimage" : "image")%>"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" Width="200" Type="link" Click="OPENURL=<%=(bDownloadUrl ? "/download_file.html?file_id={id}&sid={sid}" : tools_web.get_mode_clean_url(null, "{id}", ({"doc_id": curDocID})))%>"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "6t6e9751fk", curLngWeb )%>" Value="size_str" Width="100"/>
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_desc", curLngWeb )%>" Value="desc" Width_="400"/>
+	</DataGrid>
+<%
+	}	
+%>
+</SPXMLScreen>

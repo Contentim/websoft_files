@@ -1,0 +1,234 @@
+﻿<%
+// const_start
+sConstAssessmentComplete = "Оценка завершена";
+// const_end
+%>
+<SPXMLScreen>
+<%
+if(curObject.expert_person_id.Value == curUserID)
+{
+	var bAllowChange = (!curObject.is_done);
+
+	teColl = OpenDoc( UrlFromDocID( curObject.person_id ) );
+	catEvent = curObject.event_id.OptForeignElem;
+	sStaff = "";
+	try
+	{
+		var catSub = ArrayOptFirstElem( XQuery( 'for $elem in subdivisions where $elem/id='+teColl.position_parent_id+' return $elem'));
+		while( catSub!=undefined )
+		{
+			sStaff = catSub.name+(sStaff!=''?' -> ':'')+sStaff;
+			if ( catSub.parent_object_id!=null)
+				catSub = ArrayOptFirstElem( XQuery( 'for $elem in subdivisions where $elem/id='+catSub+' return $elem'));
+			else
+				break;
+		}
+	}
+	catch(ee)
+	{
+	}
+%>
+
+<Action Name="SavePlan" Source="event_pa_change" Success="ALERT={messageText}; REFRESH;" Failure="ALERT={messageText}">
+	<Param Name="sAction" Value="save"/>
+	<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+if(!bAllowChange)
+{
+	curMessageBox = {
+		"type": "info",
+		"text": sConstAssessmentComplete
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn/>
+	</GridColumns>
+	
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_event")%>:</Label>
+		<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.event_id, { doc_id: curDocID } )%>"><![CDATA[<%=catEvent.name%>]]></Link>
+	</GridRow>
+<%
+	if(catEvent.code.HasValue)
+	{
+%>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_code")%>:</Label>
+		<Label><![CDATA[<%=catEvent.code%>]]></Label>
+	</GridRow>
+<%
+	}
+%>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools.get_web_str("ass_estimated_person")%>:</Label>
+		<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.person_id, { doc_id: curDocID } )%>"><![CDATA[<%=curObject.person_id.sd.fullname%>]]></Link>
+	</GridRow>
+<%
+	if(sStaff != "")
+	{
+%>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_position")%>:</Label>
+		<Label><![CDATA[<%=sStaff%>]]></Label>
+	</GridRow>
+<%
+	}
+%>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_org")%>:</Label>
+		<Label><![CDATA[<%=curObject.person_id.sd.org_name%>]]></Label>
+	</GridRow>
+	
+</Grid>
+<%
+
+	if ( StrContains(curObject.assessment_type_id, "comp"))
+	{
+%>
+<Grid Width="100%" Class="XAML-grid-table">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="200"/>
+	</GridColumns>			
+	
+	<GridRow Class="XAML-gridrow-header">
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "ass_competences", curLngWeb )%></Label>
+		<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "ass_mark", curLngWeb )%></Label>
+	</GridRow>
+<%
+
+		for ( _comp in curObject.competences )
+		{
+			try
+			{
+				teCompetence = OpenDoc(UrlFromDocID(_comp.competence_id)).TopElem;
+			}
+			catch(_SHIIIIT_)
+			{
+				continue;
+			}
+%>
+
+	<GridRow>
+		<Label><%=_comp.PrimaryKey.ForeignElem.name%></Label>
+<%
+			if (bAllowChange)
+			{
+%>
+		<ComboBox Name="comp<%=_comp.PrimaryKey%>">
+			<ComboBoxItem Value=""></ComboBoxItem>
+<%
+			for ( _scale in teCompetence.scales )
+			{
+%>				
+			<ComboBoxItem Value="<%=_scale.PrimaryKey%>" Selected="<%=_scale.PrimaryKey == _comp.mark %>"><%=_scale.name%></ComboBoxItem>
+<%
+			}
+%>
+		</ComboBox>
+<%
+			}
+			else
+			{
+				_scale = ArrayOptFind( teCompetence.scales, "PrimaryKey == '" + _comp.mark + "'");
+%>
+		<Label><![CDATA[<%=(_scale != undefined ? _scale.name : "")%>]]></Label>
+<%
+			}
+
+%>
+
+	</GridRow>
+<%
+
+			for ( _indicator in _comp.indicators )
+			{
+				try
+				{
+					indicatorDoc = OpenDoc(UrlFromDocID(_indicator.indicator_id)).TopElem;
+				}
+				catch(_SHIIIIT_)
+				{
+					continue;
+				}
+%>
+	<GridRow>
+		<Label><![CDATA[ —   <%=_indicator.PrimaryKey.ForeignElem.name%>]]></Label>
+<%
+				if (bAllowChange)
+				{
+%>
+		<ComboBox Name="ind<%=_indicator.PrimaryKey%>">
+			<ComboBoxItem Value=""></ComboBoxItem>
+<%
+					for ( _scale in indicatorDoc.scales )
+					{
+%>
+			<ComboBoxItem Selected="<%=(_scale.PrimaryKey == _indicator.mark)%>" Value="<%=_scale.PrimaryKey%>"><%=_scale.name%></ComboBoxItem>
+<%
+					}
+%>
+
+		</ComboBox>
+<%
+				}
+				else
+				{
+					_scale = ArrayOptFind( indicatorDoc.scales, "PrimaryKey == '" + _indicator.mark + "'");
+%>
+		<Label><![CDATA[<%=(_scale != undefined ? _scale.name : "")%>]]></Label>
+<%
+				}
+%>
+
+	</GridRow>
+<%
+			}
+		}
+%>
+
+</Grid>
+<%
+	}
+%>
+
+
+
+<%
+	arrCustomFieldNames = Array();
+	fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+	if ( fldCustomElems != null )
+	{
+		curCustomFields = {
+			"id": "customFieldsViewGrid",
+			"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+			"source": curObject.custom_elems,
+			"modify_eval": bAllowChange
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+	}
+	if (bAllowChange)
+	{
+%>
+<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+	<Button Class="XAML-button XAML-button-content" Click="ACTION=SavePlan"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+	<Button Class="XAML-button XAML-button-content" Click="SET=SavePlan/sAction,finish;ACTION=SavePlan"><%=tools_web.get_web_const( "ass_finish_estimation", curLngWeb )%></Button>	
+</StackPanel>
+<%
+	}
+}
+else{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( "vap_message", curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

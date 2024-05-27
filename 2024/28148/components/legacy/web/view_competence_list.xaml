@@ -1,0 +1,54 @@
+﻿<%
+// const_start
+var sConstNoCompenences = tools_web.get_web_const( 'kompetenciiots', curLngWeb );
+// const_end
+%>
+<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+if(ArrayOptFirstElem(curObject.competences) != undefined)
+{
+%>
+<Grid Class="XAML-grid-container XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+	for ( fldCompetenceElem in curObject.competences )
+	{
+		try
+		{
+			teCompetence = OpenDoc( UrlFromDocID( fldCompetenceElem.PrimaryKey ) ).TopElem;
+		}
+		catch ( err )
+		{
+			continue;
+		}
+%>
+	<GridRow>	
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="32"/>
+				<GridColumn Width="50%"/>
+				<GridColumn Width="50%"/>
+			</GridColumns>
+			<GridRow>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url("competence_info", fldCompetenceElem.PrimaryKey, {"doc_id": ""+curDocID})%>" Class="icon-link"></Link>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url("competence_info", fldCompetenceElem.PrimaryKey, {"doc_id": ""+curDocID})%>"><%=teCompetence.name%></Link>
+				<Label><%=teCompetence.comment%></Label>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+	}
+%>
+</Grid>
+<%
+}
+else
+{
+%>
+	<Label Class="XAML-label-empty-data"><%=sConstNoCompenences%></Label>
+<%
+}
+%>
+</StackPanel>

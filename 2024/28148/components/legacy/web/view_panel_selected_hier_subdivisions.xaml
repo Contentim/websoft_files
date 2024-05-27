@@ -1,0 +1,48 @@
+﻿<%
+
+	CONTEXT = tools.read_object( tools_web.get_web_param( PARAMETERS, "CONTEXTSTR", "{}", true ) )
+	str_subdivisions = tools_web.get_web_param( PARAMETERS, "str_subdivisions", "", true );
+	field_name = tools_web.get_web_param( PARAMETERS, "field_name", "", true );
+	panel_ident = tools_web.get_web_param( PARAMETERS, "panel_ident", "", true );
+	group_subdivision_id = OptInt( tools_web.get_web_param( PARAMETERS, "group_subdivision_id", "", true ) );
+	xquery_qual_parent = tools_web.get_web_param( PARAMETERS, "xquery_qual_parent", "", true );
+	
+	level = 1;
+%>
+<SPXMLScreen>
+<%
+	
+	iSubdId = OptInt( CONTEXT.GetOptProperty( panel_ident + "subdivision_id", "" ), "" );
+	curSelector = {
+		"id": panel_ident + "subdivision_id",
+		"width": "300",
+		"catalog_name": "subdivision",
+		"object_id_item_name": panel_ident + "subdivision_id",
+		"object_id": iSubdId,
+		"display_object_ids": UrlEncode( str_subdivisions ) ,
+		"close_action": "SET=" + field_name + ",{" + panel_ident + "subdivision_id};SET=" + panel_ident + level + "subdivision_id,;SET=ObjectNameEdit" + panel_ident + level + "subdivision_id,;SET=PanelContext,{CONTEXT};UPDATE=" + panel_ident,
+		"xquery_qual": ( group_subdivision_id != undefined ? "MatchSome( $elem/id, ( " + ArrayMerge( XQuery( "for $i in subdivision_group_subdivisions where $i/subdivision_group_id = " + group_subdivision_id + " return $i" ), "This.subdivision_id", "," ) + " ) )" : xquery_qual_parent )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+	
+	arrSubdivisions = new Array();
+
+	iLSubdId = iSubdId;
+	while( iLSubdId != "" )
+	{
+		iSubdId = OptInt( CONTEXT.GetOptProperty( panel_ident + level + "subdivision_id", "" ), "" );
+		curSelector = {
+			"id": panel_ident + level + "subdivision_id",
+			"width": "300",
+			"catalog_name": "subdivision",
+			"object_id_item_name": panel_ident + level + "subdivision_id",
+			"object_id": iSubdId,
+			"close_action": "SET=" + field_name + ",{" + panel_ident + level + "subdivision_id};SET=" + panel_ident + ( level + 1 ) + "subdivision_id,;SET=ObjectNameEdit" + panel_ident + ( level + 1 ) + "subdivision_id,;SET=PanelContext,{CONTEXT};UPDATE=" + panel_ident,
+			"xquery_qual": "$elem/parent_object_id = " + iLSubdId
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+		level++;
+		iLSubdId = iSubdId;
+	}
+%>
+</SPXMLScreen>

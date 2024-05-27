@@ -1,0 +1,2965 @@
+﻿<%
+// const_start
+var sConstWebinarSystem = tools_web.get_web_const( 'sistemavebinar_1', curLngWeb );
+var sConstChangeStatusConfirm = tools_web.get_web_const( 'privozobnovlen', curLngWeb );
+var sConstEventDate = tools_web.get_web_const( 'dataprovedeniya', curLngWeb );
+var sConstConfirmButtonText = tools_web.get_web_const( 'podtverdituchas_1', curLngWeb );
+var sConstMaterialsTitle = tools_web.get_web_const( 'c_materials', curLngWeb );
+var sConstAttributessTitle = tools_web.get_web_const( 'vj2v1bhf5z', curLngWeb );
+var sConstLearningRecordsTitle = "Записи тестирования";
+
+xarrEventResults = XQuery( "for $elem in event_results where $elem/event_id = " + curObjectID + " return $elem" );
+catEventResult = ArrayOptFind( xarrEventResults, "This.person_id == curUserID" );
+
+docEventResult = null;
+teEventResult = null;
+if( catEventResult != undefined )
+{
+	docEventResult = OpenDoc( UrlFromDocID( catEventResult.PrimaryKey ) );
+	teEventResult = docEventResult.TopElem;
+}
+
+sAction = curUrlQuery.GetOptProperty( "action", "" );
+sActionReady = "";
+switch( sAction )
+{
+	case "confirm_participation":
+	case "refused_participation":
+		if( !teEventResult.is_confirm && !teEventResult.not_participate )
+			sActionReady = "SET=RunAction/sAction," + sAction + ";SET=RunAction/iUserId," + curUserID + ";ACTION=RunAction"
+		break;
+}
+
+// const_end
+%>
+<SPXMLScreen Ready="<%=sActionReady%>">
+<%
+function tab_block()
+{
+%>
+<Grid Width="100%" Class="XAML-grid-content-hor-container">
+	<GridColumns>
+		<GridColumn/>
+<%
+	if(curDevice.disp_type != "mobile")
+	{
+%>
+		<GridColumn Width="220"/>
+<%
+	}
+%>
+	</GridColumns>
+<GridRow>
+<%
+	bShowTabs = ArrayCount(arrTabListParam) > 1;
+	if(bShowTabs)
+	{
+%>
+<TabControl Name="event_tab_controls<%=curObjectID%>" Preservable="1" TabsLocation="<%=tools_web.get_web_param( curParams, "event_body.tabs_disp_type", "w", true )%>" Adapt="1" TabsWidth="216">
+<%
+	}
+	for ( sTabListParam in arrTabListParam )
+	{
+		switch(sTabListParam)
+		{
+			case "info":
+			{
+				info_tab();
+				break;
+			}
+			
+			case "participaints":
+			{
+				participaints_tab()
+				break;
+			}
+
+			case "lectors":
+			{
+				lector_tab();
+				break;
+			}
+			case "responsibles":
+			{
+				responsibles_tab()
+				break;
+			}
+
+			case "materials":
+			{
+				materials_tab();
+				break;
+			}
+			
+			case "requests":
+			{
+				requests_tab();
+				break;
+			}
+
+			case "responses":
+			{
+				responses_tab();
+				break;
+			}
+
+			case "custom":
+			{
+				custom_tab();
+				break;
+			}
+			
+			case "custom_tab":
+			{
+				custom_tab_tab();
+				break;
+			}
+			
+			case "learning_records":
+			{
+				learning_records_tab();
+				break;
+			}
+			
+			case "attributes":
+			{
+				attributes_tab();
+				break;
+			}
+			
+			case "desc":
+			{
+				desc_tab();
+				break;
+			}
+			
+/*			case "catalogs":
+			{
+				catalogs_tab();
+				break;
+			}*/
+		}
+	}
+	if(bShowTabs)
+	{
+%>
+</TabControl>
+<%
+	}
+	if(curDevice.disp_type == "mobile")
+	{
+%>
+	</GridRow>
+	<GridRow>
+<%
+	}
+%>
+</GridRow>
+</Grid>
+<%
+}
+
+function custom_tab_tab()
+{
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		sTabTitle = tools_web.get_web_param( curParams, "event_body.tab_list.custom_tab_tab", "", true );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "nastraivaemaya", curLngWeb )
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+function attributes_main_tab()
+{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "osnovnyeatribu", curLngWeb )%>" Expanded="<%=sExpanded%>" Width="100%">
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "mm2knl847d", curLngWeb )%>:</Label>
+					<StackPanel>
+						<Panel Name="ResourceField" Source="panel_show_image" ShowHeader="false">
+							<Param Name="resource_id" Value="{resource_id}"/>
+							<Param Name="field_name" Value="resource_id"/>
+							<Param Name="object_type" Value="event"/>
+						</Panel>
+						<Edit Hidden="1" Name="resource_id"><%=XmlAttrEncode( curObject.resource_id )%></Edit>
+					</StackPanel>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Edit Name="code" Width="300"><%=HtmlEncode(curObject.code)%></Edit>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Edit Name="name" Width="100%"><%=HtmlEncode(curObject.name)%></Edit>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_type", curLngWeb )%>:</Label>
+					<ComboBox Name="event_type_id" Width="300" SelectedItem="<%=curObject.event_type_id%>" Change="CONFIRM=<%=tools_web.get_web_const( "poslesmenytipa", curLngWeb )%>;Action=SaveEvent">
+
+<%
+	for(catEventType in event_types)
+	{
+		if(ArrayOptFind(arrAvailableEventTypes, "This=='" + catEventType.code + "'") == undefined)
+			continue;
+%>
+					  <ComboBoxItem Value="<%=catEventType.id%>"><%=tools_web.get_cur_lng_name( catEventType.name, curLng.short_id )%></ComboBoxItem>
+<%
+	}
+%>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=sConstEventDate%>:</Label>
+					<StackPanel Class="XAML-stack-container">
+						<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+							<Label><%=tools_web.get_web_const( "t1y74xh7qn", curLngWeb )%></Label>						
+							<DatePicker Name="start_date" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.start_date, true, false)%></DatePicker>
+							<Label><%=StrNonTitleCase( tools_web.get_web_const( "po", curLngWeb ) )%></Label>
+							<DatePicker Name="finish_date" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.finish_date, true, false)%></DatePicker>
+						</StackPanel>
+<%
+	if( bUseTimezone )
+	{
+%>
+						<Label><%='Обратите внимание что даты проведения нужно вводить с учетом того часового пояса, где проводится мероприятие'%></Label>	
+<%
+	}
+%>
+					</StackPanel>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "publichnoe", curLngWeb )%>:</Label>
+					<CheckBox Name="is_public" Class="XAML-grid-checkbox-name" <%=(curObject.is_public ? "Checked=\"true\"" : "")%>>						
+						<HTMLTip>
+							<![CDATA[
+								<%=tools_web.get_web_const( "meropriyatiepri", curLngWeb )%>
+							]]>
+						</HTMLTip>
+					</CheckBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "veb_disp_persons_for_all", curLngWeb )%>:</Label>
+					<CheckBox Name="disp_persons_for_all" <%=(curObject.disp_persons_for_all ? "Checked=\"true\"" : "")%>>						
+						<HTMLTip>
+							<![CDATA[
+								<%=tools_web.get_web_const( "veb_disp_persons_for_all", curLngWeb )%>
+							]]>
+						</HTMLTip>
+					</CheckBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "publikovatrezu", curLngWeb )%>:</Label>
+					<CheckBox Name="public_answers" <%=(curObject.public_answers ? "Checked=\"true\"" : "")%>>						
+						<HTMLTip>
+							<![CDATA[
+								<%=tools_web.get_web_const( "publikovatrezu", curLngWeb )%>
+							]]>
+						</HTMLTip>
+					</CheckBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%="Использовать виртуальный класс"%>:</Label>
+					<CheckBox Name="use_vclass" <%=(curObject.use_vclass ? "Checked=\"true\"" : "")%>>						
+						<HTMLTip>
+							<![CDATA[
+								<%="Использовать виртуальный класс"%>
+							]]>
+						</HTMLTip>
+					</CheckBox>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "veb_max_person_num", curLngWeb )%>:</Label>
+						<Edit Name="max_person_num" Width="40"><![CDATA[<%=curObject.max_person_num%>]]></Edit>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "o37af2zthb", curLngWeb )%>:</Label>
+						<Edit Name="min_person_num" Width="40"><![CDATA[<%=curObject.min_person_num%>]]></Edit>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name"><%='Планируемое количество'%>:</Label>
+						<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+							<Edit Name="duration_plan" Width="60"><![CDATA[<%=curObject.duration_plan%>]]></Edit>
+							<Label Class="XAML-label-with-padding"><%=StrNonTitleCase( tools_web.get_web_const( "c_hour_duration", curLngWeb ) )%></Label>
+							<Edit Name="duration_days_plan" Width="60"><![CDATA[<%=curObject.duration_days_plan%>]]></Edit>
+							<Label Class="XAML-label-with-padding"><%=StrNonTitleCase( tools_web.get_web_const( "2kaidfx9na", curLngWeb ) )%></Label>
+						</StackPanel>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "z4yylkaswv", curLngWeb )%>:</Label>
+						<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+							<Edit Name="duration_fact" Width="60"><![CDATA[<%=curObject.duration_fact%>]]></Edit>
+							<Label Class="XAML-label-with-padding"><%=StrNonTitleCase( tools_web.get_web_const( "c_hour_duration", curLngWeb ) )%></Label>
+							<Edit Name="duration_days_fact" Width="60"><![CDATA[<%=curObject.duration_days_fact%>]]></Edit>
+							<Label Class="XAML-label-with-padding"><%=StrNonTitleCase( tools_web.get_web_const( "2kaidfx9na", curLngWeb ) )%></Label>
+						</StackPanel>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "veb_default_result_type", curLngWeb )%>:</Label>
+					<ComboBox Width="300" Name="default_event_result_type_id" SelectedItem="<%=curObject.default_event_result_type_id%>">
+<%
+	for(catResultType in event_result_types)
+	{
+%>
+						  <ComboBoxItem Value="<%=catResultType.id%>"><![CDATA[<%=catResultType.name%>]]></ComboBoxItem>
+<%
+	}
+%>
+					</ComboBox>
+				</GridRow>
+			</Grid>
+		</TabItem>
+
+<%
+}
+
+function attributes_description_tab()
+{
+%>
+		<TabItem  Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="<%=sExpanded%>" Width="100%">
+			<RichEdit Name="desc" Width="100%" Height="500">
+				<![CDATA[<%=tools_web.get_web_desc( curObject.desc, UrlFromDocID( curObjectID ), curObject.Name + ".desc" )%>]]>
+			</RichEdit>
+		</TabItem>
+<%
+}
+
+function attributes_requests_tab()
+{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_requests", curLngWeb )%>" Expanded="<%=sExpanded%>" Width="100%">
+
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "otkrytoe", curLngWeb )%></Label>
+					<CheckBox Name="is_open" <%=(curObject.is_open ? "Checked=\"true\"" : "")%>>						
+						<HTMLTip>
+							<![CDATA[
+								<%=tools_web.get_web_const( "vozmozhnapodacha", curLngWeb )%>
+							]]>
+						</HTMLTip>
+					</CheckBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "periodpodachiza", curLngWeb )%>: </Label>
+					<StackPanel Class="XAML-stack-container">
+						<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+							<StackPanel Class="XAML-stack-container">
+								<Label   Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_start_date", curLngWeb )%>:</Label>
+								<DatePicker Name="date_request_begin" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.date_request_begin, true, false)%></DatePicker>
+							</StackPanel>
+							<StackPanel Class="XAML-stack-container">
+								<Label Class="XAML-grid-label-name "><%=tools_web.get_web_const( "3bywib72ya", curLngWeb )%>:</Label>
+								<DatePicker Name="date_request_over" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.date_request_over, true, false)%></DatePicker>
+							</StackPanel>
+						</StackPanel>
+<%
+	if( bUseTimezone )
+	{
+%>
+						<Label><%='Обратите внимание что даты проведения нужно вводить с учетом того часового пояса, где проводится мероприятие'%></Label>	
+<%
+	}
+%>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "periodokonchani", curLngWeb )%>: </Label>
+					<StackPanel Class="XAML-stack-container">
+						<DatePicker Name="date_request_rejection_over" Format="d.m.Y H:i" Width="147"><%=StrDate(curObject.date_request_rejection_over, true, false)%></DatePicker>
+<%
+	if( bUseTimezone )
+	{
+%>
+						<Label><%='Обратите внимание что даты проведения нужно вводить с учетом того часового пояса, где проводится мероприятие'%></Label>	
+<%
+	}
+%>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "veb_default_request_type", curLngWeb )%>:</Label>
+					<ComboBox Name="default_request_type_id" SelectedItem="<%=curObject.default_request_type_id%>" Width="350">
+<%
+	arrRequestTypes = XQuery( "for $elem in request_types where $elem/object_type = 'event' return $elem" );
+	for(catRequestType in arrRequestTypes)
+	{
+		if( !tools_web.check_access( catRequestType.id, curUserID, curUser, Session ) )
+		{
+			continue;
+		}
+%>
+						  <ComboBoxItem Value="<%=catRequestType.id%>"><%=tools_web.get_cur_lng_name( catRequestType.name, curLng.short_id )%></ComboBoxItem>
+<%
+	}
+%>
+					</ComboBox>
+				</GridRow>
+			</Grid>
+		</TabItem>
+
+<%
+}
+
+function attributes_responses_tab()
+{
+%>
+
+		<TabItem Title="<%=tools_web.get_web_const( "obshenieiotzyvy", curLngWeb )%>" Expanded="<%=sExpanded%>" Width="100%">
+
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+<%
+	if(sEventTypeCode != "dist_test" && sEventTypeCode != "assessment")
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "vfb_forum", curLngWeb )%>:</Label>
+<%
+		curSelector = {
+			"id": "forum_id",
+			"object_id": curObject.forum_id,
+			"object_id_item_name": curObject.forum_id.Name,
+			"object_name":  (curObject.forum_id.HasValue && curObject.forum_id.OptForeignElem != undefined ? curObject.forum_id.ForeignElem.name : ""),
+			"multi_select": "false",
+			"catalog_name": "forum",
+			"selected_object_ids": curObject.forum_id
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+	}
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "veb_response_default_type", curLngWeb )%>:</Label>
+					<ComboBox Width="300" Name="default_response_type_id" SelectedItem="<%=curObject.default_response_type_id%>">
+<%
+	arrResponseTypes = XQuery( "for $elem in response_types where $elem/object_type = 'event' return $elem" );
+	for(catResponseType in arrResponseTypes)
+	{
+%>
+						  <ComboBoxItem Value="<%=catResponseType.id%>"><%=catResponseType.name%></ComboBoxItem>
+<%
+	}
+%>
+					</ComboBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "veb_mandatory_fill_response", curLngWeb )%>:</Label>
+					<CheckBox Name="mandatory_fill_response" <%=(curObject.mandatory_fill_response ? "Checked=\"true\"" : "")%>></CheckBox>
+				</GridRow>
+			</Grid>
+		</TabItem>
+<%
+}
+
+function attributes_additional_tab()
+{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_additional", curLngWeb )%>" Name="Panel_<%=sEventTypeCode%>" Expanded="<%=sExpanded%>" Width="100%">
+<%
+	switch(sEventTypeCode)
+	{
+/*----------------------------- Модульная программа --------------------------*/
+		case "compound_program":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+						<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>						
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+						<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+
+<%
+			for(fldEventForm in lists.event_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><%=fldEventForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+						<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_compound_prog", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "compound_program_id",
+				"object_id": curObject.compound_program_id,
+				"object_id_item_name": curObject.compound_program_id.Name,
+				"object_name":  (curObject.compound_program_id.HasValue && curObject.compound_program_id.OptForeignElem != undefined ? curObject.compound_program_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "compound_program",
+				"width": "300",
+				"selected_object_ids": curObject.compound_program_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+					<ComboBox Name="education_org_type"  SelectedItem="<%=curObject.education_org_type%>" Width="300">
+						<ComboBoxItem Value="name" Change="SHOW=education_org_name_container;HIDE=education_org_id_container"><%=tools_web.get_web_const( "c_name", curLngWeb )%></ComboBoxItem>
+						<ComboBoxItem Value="id" Change="SHOW=education_org_id_container;HIDE=education_org_name_container"><%=tools_web.get_web_const( "tqwun6evkc", curLngWeb )%></ComboBoxItem>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>
+					<StackPanel Class="XAML-stack-container">
+						<StackPanel Class="XAML-stack-container" Name="education_org_name_container" Orientation="Horizontal" Hidden="<%=(curObject.education_org_type == "name" ? "0" : "1")%>">
+							<Edit Name="education_org_name" Width="300"><![CDATA[<%=(curObject.education_org_name.HasValue ? curObject.education_org_name : "")%>]]></Edit>
+						</StackPanel>
+						<StackPanel Class="XAML-stack-container" Name="education_org_id_container" Orientation="Horizontal" Hidden="<%=(curObject.education_org_type == "id" ? "0" : "1")%>">
+<%
+			curSelector = {
+				"id": "education_org_id",
+				"object_id": curObject.education_org_id,
+				"object_id_item_name": curObject.education_org_id.Name,
+				"object_name":  (curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined ? curObject.education_org_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_org",
+				"width": "300",
+				"selected_object_ids": curObject.education_org_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+						</StackPanel>
+					</StackPanel>
+				</GridRow>
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Модульная программа - конец--------------------------*/
+
+/*----------------------------- Элемент модульной программы --------------------------*/
+
+		case "compound_program_elem":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+					<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+						  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+					<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+<%
+			arrEventForms = ArrayOptFirstElem(curObject.event_forms) != undefined ? ArraySelect(lists.event_forms, "ArrayOptFind(curObject.event_forms, 'This.PrimaryKey==\"' + This.PrimaryKey + '\"') != undefined") : lists.event_forms;
+			for(fldEventForm in arrEventForms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><![CDATA[<%=fldEventForm.name%>]]></ComboBoxItem>
+<%
+			}
+%>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+					<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "program_id",
+				"object_id": curObject.program_id,
+				"object_id_item_name": curObject.program_id.Name,
+				"object_name":  (curObject.program_id.HasValue && curObject.program_id.OptForeignElem != undefined ? OpenDoc( UrlFromDocID( curObject.program_id ) ).TopElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_method",
+				"width": "300",
+				"selected_object_ids": curObject.program_id,
+				"close_action": "ACTION=SaveEvent"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+			if(curObject.compound_program_id.HasValue && curObject.compound_program_id.OptForeignElem != undefined)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_compound_prog", curLngWeb )%>:</Label>
+					<Label Class="XAML-grid-label-event-attribute"><%=curObject.compound_program_id.ForeignElem.name%></Label>
+				</GridRow>
+<%
+			}
+			if(curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+					<Label Class="XAML-grid-label-event-attribute"><![CDATA[<%=curObject.education_org_id.ForeignElem.name%>]]></Label>
+				</GridRow>
+<%
+			}
+%>
+			</Grid>
+<%
+			break;
+		}
+/*----------------------------- Элемент модульной программы - конец--------------------------*/
+
+
+/*----------------------------- Учебная программа --------------------------*/
+		case "education_method":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+						<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+						<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+<%
+			arrEventForms = ArrayOptFirstElem(curObject.event_forms) != undefined ? ArraySelect(lists.event_forms, "ArrayOptFind(curObject.event_forms, 'This.PrimaryKey==\"' + This.PrimaryKey + '\"') != undefined") : lists.event_forms;
+			for(fldEventForm in arrEventForms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><![CDATA[<%=fldEventForm.name%>]]></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+						<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "education_method_id",
+				"object_id": curObject.education_method_id,
+				"object_id_item_name": curObject.education_method_id.Name,
+				"object_name":  (curObject.education_method_id.HasValue && curObject.education_method_id.OptForeignElem != undefined ? OpenDoc( UrlFromDocID( curObject.education_method_id ) ).TopElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_method",
+				"width": "300",
+				"selected_object_ids": curObject.education_method_id,
+				"close_action": "ACTION=SaveEvent"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+
+				<GridRow>
+<%
+			if(curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined)
+			{
+%>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=curObject.education_org_id.ForeignElem.disp_name%>]]></Label>
+<%
+			}
+%>
+				</GridRow>
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Учебная программа - конец--------------------------*/
+
+
+/*----------------------------- Элемент из набора программ --------------------------*/
+		case "education_method_from_program":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+					<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+						  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+					<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+<%
+			arrEventForms = ArrayOptFirstElem(curObject.event_forms) != undefined ? ArraySelect(lists.event_forms, "ArrayOptFind(curObject.event_forms, 'This.PrimaryKey==\"' + This.PrimaryKey + '\"') != undefined") : lists.event_forms;
+			for(fldEventForm in arrEventForms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><![CDATA[<%=fldEventForm.name%>]]></ComboBoxItem>
+<%
+			}
+%>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+					<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "education_method_id",
+				"object_id": curObject.education_method_id,
+				"object_id_item_name": curObject.education_method_id.Name,
+				"object_name":  (curObject.education_method_id.HasValue && curObject.education_method_id.OptForeignElem != undefined ? OpenDoc( UrlFromDocID( curObject.education_method_id ) ).TopElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_method",
+				"width": "300",
+				"selected_object_ids": curObject.education_method_id,
+				"close_action": "ACTION=SaveEvent"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+			if(curObject.education_program_id.OptForeignElem != undefined)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_edu_prog", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.education_program_id.ForeignElem.name%>]]></Label>
+				</GridRow>
+				
+<%
+			}
+			if(curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined)
+			{
+%>			
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+					<Label Class="XAML-grid-label-event-attribute"><%=curObject.education_org_id.ForeignElem.disp_name%></Label>
+				</GridRow>
+<%
+			}
+%>
+
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Элемент из набора программ - конец--------------------------*/
+
+
+/*----------------------------- Разовое --------------------------*/
+		case "one_time":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+						<ComboBox Name="education_org_type"  SelectedItem="<%=curObject.education_org_type%>" Width="300">
+							<ComboBoxItem Value="name" Change="SHOW=education_org_name_title_container;SHOW=education_org_name_value_container;HIDE=education_org_id_title_container;HIDE=education_org_id_value_container;"><%=tools_web.get_web_const( "c_name", curLngWeb )%></ComboBoxItem>
+							<ComboBoxItem Value="id" Change="SHOW=education_org_id_title_container;SHOW=education_org_id_value_container;HIDE=education_org_name_title_container;HIDE=education_org_name_value_container"><%=tools_web.get_web_const( "tqwun6evkc", curLngWeb )%></ComboBoxItem>
+						</ComboBox>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>						
+						<StackPanel Class="XAML-stack-container">
+							<StackPanel Class="XAML-stack-container" Name="education_org_name_value_container" Orientation="Horizontal" Hidden="<%=(curObject.education_org_type == "name" ? "0" : "1")%>">
+								<Edit Name="education_org_name" Width="300"><![CDATA[<%=(curObject.education_org_name.HasValue ? curObject.education_org_name : "")%>]]></Edit>
+							</StackPanel>							
+							<StackPanel Class="XAML-stack-container" Name="education_org_id_value_container" Hidden="<%=(curObject.education_org_type == "id" ? "0" : "1")%>">
+<%
+			curSelector = {
+				"id": "education_org_id",
+				"object_id": curObject.education_org_id,
+				"object_id_item_name": curObject.education_org_id.Name,
+				"object_name":  (curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined ? curObject.education_org_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_org",
+				"width": "300",
+				"selected_object_ids": curObject.education_org_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+							</StackPanel>
+						</StackPanel>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+						<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+						<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+
+<%
+			for(fldEventForm in lists.event_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><%=fldEventForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+						<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Разовое - конец--------------------------*/
+
+
+/*----------------------------- Дистанционное обучение --------------------------*/
+		case "dist_test":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+					<ComboBox Name="education_org_type"  SelectedItem="<%=curObject.education_org_type%>" Width="300">
+						<ComboBoxItem Value="name" Change="SHOW=education_org_name_container;HIDE=education_org_id_container"><%=tools_web.get_web_const( "c_name", curLngWeb )%></ComboBoxItem>
+						<ComboBoxItem Value="id" Change="SHOW=education_org_id_container;HIDE=education_org_name_container"><%=tools_web.get_web_const( "tqwun6evkc", curLngWeb )%></ComboBoxItem>
+					</ComboBox>
+				</GridRow>
+				
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>			
+						<StackPanel Class="XAML-stack-container">				
+							<StackPanel Class="XAML-stack-container" Name="education_org_name_container" Orientation="Horizontal" Hidden="<%=(curObject.education_org_type == "name" ? "0" : "1")%>">
+								<Edit Name="education_org_name" Width="300"><![CDATA[<%=(curObject.education_org_name.HasValue ? curObject.education_org_name : "")%>]]></Edit>
+							</StackPanel>							
+							<StackPanel Class="XAML-stack-container" Name="education_org_id_container" Hidden="<%=(curObject.education_org_type == "id" ? "0" : "1")%>">
+<%
+			curSelector = {
+				"id": "education_org_id",
+				"object_id": curObject.education_org_id,
+				"object_id_item_name": curObject.education_org_id.Name,
+				"object_name":  (curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined ? curObject.education_org_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_org",
+				"width": "300",
+				"selected_object_ids": curObject.education_org_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+							</StackPanel>
+						</StackPanel>
+				</GridRow>
+			</Grid>
+<%
+			break;
+		}
+/*----------------------------- Дистанционное обучение - конец--------------------------*/
+
+/*----------------------------- Тестирование --------------------------*/
+		case "assessment":
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+					<ComboBox Name="education_org_type"  SelectedItem="<%=curObject.education_org_type%>" Width="300">
+						<ComboBoxItem Value="name" Change="SHOW=education_org_name_container;HIDE=education_org_id_container"><%=tools_web.get_web_const( "c_name", curLngWeb )%></ComboBoxItem>
+						<ComboBoxItem Value="id" Change="SHOW=education_org_id_container;HIDE=education_org_name_container"><%=tools_web.get_web_const( "tqwun6evkc", curLngWeb )%></ComboBoxItem>
+					</ComboBox>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>						
+					<StackPanel Class="XAML-stack-container">
+						<StackPanel Class="XAML-stack-container" Name="education_org_name_container" Orientation="Horizontal" Hidden="<%=(curObject.education_org_type == "name" ? "0" : "1")%>">
+							<Edit Name="education_org_name" Width="300"><![CDATA[<%=(curObject.education_org_name.HasValue ? curObject.education_org_name : "")%>]]></Edit>
+						</StackPanel>							
+						<StackPanel Class="XAML-stack-container" Name="education_org_id_container" Hidden="<%=(curObject.education_org_type == "id" ? "0" : "1")%>">
+<%
+			curSelector = {
+				"id": "education_org_id",
+				"object_id": curObject.education_org_id,
+				"object_id_item_name": curObject.education_org_id.Name,
+				"object_name":  (curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined ? curObject.education_org_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "education_org",
+				"width": "300",
+				"selected_object_ids": curObject.education_org_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+						</StackPanel>
+					</StackPanel>
+				</GridRow>
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Тестирование - конец--------------------------*/
+
+/*----------------------------- Кейс --------------------------*/
+		case "case":
+		{
+			break;
+		}
+/*----------------------------- Кейс - конец--------------------------*/
+
+/*----------------------------- Вебинар --------------------------*/
+		case "webinar":
+		{
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "education_method_id",
+				"object_id": curObject.education_method_id,
+				"object_id_item_name": curObject.education_method_id.Name,
+				"object_name":  (curObject.education_method_id.HasValue && curObject.education_method_id.OptForeignElem != undefined ? OpenDoc( UrlFromDocID( curObject.education_method_id ) ).TopElem.name : ""),
+				"multi_select": "false",
+				"width": "300",
+				"catalog_name": "education_method",
+				"selected_object_ids": curObject.education_method_id,
+				"close_action": "ACTION=SaveEvent"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=sConstWebinarSystem%>:</Label>
+<%
+			curSelector = {
+				"id": "webinar_system_id",
+				"object_id": curObject.webinar_system_id,
+				"object_id_item_name": curObject.webinar_system_id.Name,
+				"multi_select": "false",
+				"width": "300",
+				"catalog_name": "webinar_system",
+				"selected_object_ids": curObject.webinar_system_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+			if(teWebinarSystem != undefined)
+			{
+				if(teWebinarSystem.web_edit_code_url.HasValue)
+				{
+					Response.Write(EvalCodePageUrl( UrlAppendPath( global_settings.web_path, teWebinarSystem.web_edit_code_url ) ));
+				}
+				else if(teWebinarSystem.web_edit_code.HasValue)
+				{
+					Response.Write(EvalCodePage(teWebinarSystem.web_edit_code));
+				}
+			}
+%>
+			</Grid>
+
+<%
+			break;
+		}
+		default:
+		{
+
+%>
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn />
+				</GridColumns>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_org_form", curLngWeb )%>:</Label>
+						<ComboBox Name="organizational_form" SelectedItem="<%=curObject.organizational_form%>" Width="300">
+
+<%
+			for(fldOrganizationalForm in lists.organizational_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldOrganizationalForm.id%>"><%=fldOrganizationalForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>						
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+						<ComboBox Name="event_form"  SelectedItem="<%=curObject.event_form%>" Width="300">
+
+<%
+			for(fldEventForm in lists.event_forms)
+			{
+%>
+							  <ComboBoxItem Value="<%=fldEventForm.id%>"><%=fldEventForm.name%></ComboBoxItem>
+<%
+			}
+%>
+						</ComboBox>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+						<Edit Name="place" Width="300"><![CDATA[<%=curObject.place%>]]></Edit>
+				</GridRow>
+				<GridRow>
+						<Label Class="XAML-grid-label-name XAML-grid-label-event-attribute"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+			curSelector = {
+				"id": "place_id",
+				"object_id": curObject.place_id,
+				"object_id_item_name": curObject.place_id.Name,
+				"object_name":  (curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ? curObject.place_id.ForeignElem.name : ""),
+				"multi_select": "false",
+				"catalog_name": "place",
+				"width": "300",
+				"selected_object_ids": curObject.place_id
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+			</Grid>
+
+<%
+			break;
+		}
+/*----------------------------- Вебинар - конец --------------------------*/
+
+	}
+							
+	arrCustomFieldNames = Array();
+	fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+	if ( fldCustomElems != null && ArrayCount( ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ) ) > 0 )
+	{
+		curCustomFields = {
+			"id": "customFieldsEditGrid",
+			"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+			"source": curObject.custom_elems,
+			"width": "50%",
+			"modify_eval": true
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+	}
+%>
+		</TabItem>
+<%
+}
+
+function attributes_tab()
+{
+	if(CheckRights("event_change_right") && curDevice.disp_type != "mobile")
+	{
+		sExpanded = bAttributesPanelsExpanded ? "1" : "0";
+		arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list.attributes_tab.block_list", "main;additional;requests;responses;description", true ) ).split( ";" );
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.attributes_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = sConstAttributessTitle
+		if(bShowTabs)
+		{
+%>
+
+	<TabItem Class="icon-pencil" Title="<%=XmlAttrEncode( sTabTitle )%>">	
+<%
+		}
+		if(CheckRights("event_change_right"))
+		{
+%>
+		<TabControl Preservable="1" Name="EditEventTabControl">
+<%
+		}
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == "main" )
+				attributes_main_tab();
+			
+			if ( sTabElem == "description" )
+				attributes_description_tab();
+			
+			if ( sTabElem == "requests" )
+				attributes_requests_tab();
+			
+			if ( sTabElem == "responses" )
+				attributes_responses_tab();
+			
+			if ( sTabElem == "additional" )
+				attributes_additional_tab()
+		}
+%>
+		</TabControl>
+		<Toolbar Class="XAML-toolbar">
+				<Button Class="XAML-button XAML-button-content XAML-button-save" Click="Action=<%=sSaveAction%>"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+		</Toolbar>
+<%
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function learning_records_tab()
+{
+	if(bUserIsTutor)
+	{
+		xarrLearnings = tools.xquery("for $elem in test_learnings where $elem/event_id = " + curObjectID + " return $elem/id");
+		xarrRecords = QueryCatalogByKeys( "learning_records", "object_id", ArrayExtract(ArraySelectDistinct(xarrLearnings, "This.id"), "This.id" ) );
+		if(ArrayCount(xarrRecords) > 0)
+		{
+			sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.learning_records_tab", "", true ), curLng.short_id );
+			if( sTabTitle == "" )
+				sTabTitle = sConstLearningRecordsTitle
+			if(bShowTabs)
+			{
+%>
+	<TabItem Class="icon-video-camera2" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+			}
+%>
+		<Grid Width="100%" Class="XAML-grid-container XAML-grid-list-container">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+<%
+			arrProctoringSystems = new Array();
+			function get_proctoring_system( ps_id )
+			{
+				if( !ps_id.HasValue )
+					return null;
+				ps = ArrayOptFind( arrProctoringSystems, "This.id == ps_id" )
+				if( ps == undefined )
+				{
+					ps = new Object();
+					ps.id = ps_id;
+					ps.top_elem = OpenDoc( UrlFromDocID( ps_id ) ).TopElem;
+					arrProctoringSystems.push( ps )
+				}
+				return ps.top_elem;
+			}
+			for(catRecord in xarrRecords)
+			{
+				teRecord = OpenDoc( UrlFromDocID( catRecord.id ) ).TopElem;
+				teProctoringSystem = get_proctoring_system( teRecord.proctoring_system_id )
+				xarrFiles = QueryCatalogByKeys("resources", "id", ArrayExtract(teRecord.files, "This.file_id"));
+%>
+			<GridRow>
+				<Grid Width="100%" Class="XAML-grid-container XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn />
+					</GridColumns>
+					<GridRow>
+						<StackPanel Width="100%" Class="XAML-stack-container" Orientation="Vertical">
+							<Grid Width="100%" Class="XAML-grid-container">
+								<GridColumns>
+									<GridColumn Width="32" />
+									<GridColumn />
+									<GridColumn Width="100"/>
+									<GridColumn Width="200"/>
+								</GridColumns>
+								<GridRow>
+									<Image Source="icons/16png/learning_record.png" Width="16" Height="16"/>
+									<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teRecord.object_id, { doc_id: curDocID } )%>"><%=teRecord.person_fullname%></Link>
+									<Label><%=curLngCommon.learning_states.GetChildByKey(teRecord.object_id.ForeignElem.state_id).name%></Label>
+									<StackPanel Width="200" Class="XAML-stack-container" Orientation="Vertical">
+<%
+				for(catFile in xarrFiles)
+				{
+%>
+										<Button Class="XAML-button" Click="OPENURL=<%="download_file.html?file_id=" + catFile.PrimaryKey + "&sid=" + tools_web.get_sum_sid( catFile.PrimaryKey, Session.sid )%>"><%=catFile.name%></Button>
+<%
+				}
+									
+
+				record_url = teRecord.get_url_record( curUser, Md5Hex( curObjectID ) )
+				if( record_url != "" )
+				{
+%>
+										<Button Class="XAML-button" Click="OPENWINDOW=<%=record_url%>"><%=tools_web.get_web_const( "vthkyrri4o", curLngWeb )%></Button>
+<%
+				}								
+%>
+									</StackPanel>
+								</GridRow>
+							</Grid>
+<%
+				if( teProctoringSystem != null && ArrayCount( teProctoringSystem.parameters ) > 0 )
+				{
+%>
+							<Label Class="XAML-label-header-2"><%=tools_web.get_web_const( "vcrb_parameters", curLngWeb )%>:</Label>
+
+
+							<Grid Width="100%" Class="XAML-grid-datatable">
+								<GridColumns>
+									<GridColumn Width="32" />
+									<GridColumn Width="50%" Align="right"/>
+									<GridColumn Align="left"/>
+								</GridColumns>
+<%
+					for( param in teProctoringSystem.parameters )
+					{
+%>
+								<GridRow>
+									<Label/>
+									<Label><%=param.title%>:</Label>
+									<Label><%=teRecord.parameters.ObtainChildByKey( param.name ).value%></Label>
+								</GridRow>
+<%
+					}
+%>
+							</Grid>
+<%
+				}								
+%>
+						</StackPanel>
+					</GridRow>
+				</Grid>
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+<%
+			if(bShowTabs)
+			{
+%>
+	</TabItem>
+<%
+			}						
+		}
+	}
+}
+
+function custom_tab()
+{
+	if(CheckRights("event_view_custom_tab_right"))
+	{
+		if(bShowTabs)
+		{
+			sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.custom_tab", "", true ), curLng.short_id );
+			if( sTabTitle == "" )
+				sTabTitle = tools_web.get_web_const( "c_additional", curLngWeb )
+%>
+	<TabItem Class="icon-ellipsis-h" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+		arrCustomFieldNames = Array();
+		fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+		if ( fldCustomElems != null && ArrayCount( ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ) ) > 0 )
+		{
+			curCustomFields = {
+				"id": "customFieldsViewGrid",
+				"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+				"source": curObject.custom_elems,
+				"modify_eval": false
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( "netdannyh", curLngWeb )%>]]></Label>
+<%
+		}
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function responses_tab()
+{
+	if(CheckRights("event_view_responses_tab_right"))
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.responses_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "9pllz8peh0", curLngWeb )
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-edit" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+		xarrResponse = XQuery( 'for $elem in responses where $elem/object_id = ' + curObjectID + ' order by $elem/create_date descending return $elem' );
+		sResponsesParamPrefix = "event_body.tab_list.responses_tab"
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_response_list.xaml" ) );
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function requests_tab()
+{
+	if(CheckRights("event_view_requests_tab_right"))
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.requests_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "c_requests", curLngWeb )
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+		curView = {
+			"id": "eventRequests",
+			"height": "400",
+			"catalog_name": "request",
+			"xquery_qual": ("$elem/object_id = " + curObjectID),
+			"disp_search": "true",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"list_columns": "person_fullname;status_id",
+			"param_preffix": "event_body.tab_list.requests_tab",
+			"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+					
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function materials_tab()
+{
+	if(CheckRights("event_view_materials_tab_right") || CheckRights("event_change_files"))
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.materials_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = sConstMaterialsTitle
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-file-text-o" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+		bForum = curObject.forum_id.HasValue && curObject.forum_id.OptForeignElem != undefined;
+		if( bForum )
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vfb_forum", curLngWeb )%>:</Label>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.forum_id, { doc_id: curDocID } )%>"><![CDATA[<%=curObject.forum_id.ForeignElem.name%>]]></Link>
+			</GridRow>
+		</Grid>
+<%
+		}
+		arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list.materials_tab.block_list", "files;result_files;catalogs", true ) ).split( ";" );
+		if( ArrayOptFirstElem( arrBlockListParam ) == undefined && !bForum )
+		{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( "netmaterialov", curLngWeb )%>]]></Label>
+<%
+		}
+		for ( sBlockElem in arrBlockListParam )
+		{
+			if( sBlockElem == "files" )
+			{
+				if(CheckRights("event_change_files"))
+				{
+					allowChangeFiles = true;
+					bShowChangeVisibilityAction = false;
+				}
+				curFiles = {
+					"param_preffix": "event_body.tab_list.materials_tab.block_list.files",
+					"view_type": tools_web.get_web_param( curParams, "event_body.tab_list.materials_tab.block_list.files.view_type", "", true ),
+				}
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+			}
+			if( sBlockElem == "result_files" )
+			{
+
+				if(curObject.public_answers)
+				{
+					curView = {
+						"id": "ObjectResultFiles",
+						"height": "",
+						"title": tools_web.get_web_const( "materialyopubl", curLngWeb ),
+						"disp_filter": "false",
+						"disp_search": "false",
+						"hide_empty": true,
+						"param_preffix": "event_body.tab_list.materials_tab.block_list.result_files",
+						"collection": { "name": "event_body_public_results_files_collection", "params": [ { "name": "iEventId", "value": curObjectID } ] }
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				}
+			}
+			if( sBlockElem == "catalogs" )
+			{
+				block_catalogs( "event_body.tab_list.materials_tab.block_list.catalogs" );
+			}
+		}
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function responsibles_tab()
+{
+	if((CheckRights("event_view_tutors_tab_right") || CheckRights("event_view_preparators_tab_right") || CheckRights("event_change_tutors_right") || CheckRights("event_change_preparators_right")) && curDevice.disp_type != "mobile")
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.responsibles_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "nswws195um", curLngWeb )
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-user-tie" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+		arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list.responsibles_tab.block_list", "", true ) ).split( ";" );
+
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == "tutors" )
+			{
+				if(CheckRights("event_view_tutors_tab_right") || CheckRights("event_change_tutors_right"))
+				{
+					/*--------------------------- Выбор ответственных за проведение ------------------*/
+					sID = "eventTutors";
+					sDispNameEditName = "TempDestinationEdit" + sID;
+
+					curSelectorList = {
+						"id": sID,
+						"title": tools_web.get_web_const( "otvetstvennyez", curLngWeb ),
+						"selected_object_ids": ArrayMerge( ArrayExtract( curObject.tutors, "PrimaryKey" ), "This", ";" ),
+						"height": "",
+						"catalog_name": "collaborator",
+						"select_xquery_qual": ("$elem/is_dismiss = false()"),
+						"list_columns": "fullname;position_name",
+						"disp_search": "true",
+						"disp_filter": "false",
+						"disp_paging": "true",
+						"paging_size": 15,
+						"sort_direct": "-",
+						"disp_array": "true",
+						"show_all": bShowAllSub,
+						"cur_object_type": "event",
+						"array": ( "{" + sDispNameEditName + "}" ),
+						"list_columns": "fullname;org_name;position_parent_name;position_name",
+						"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+						"is_data_grid": "true",
+						"typein": "true",
+						"param_preffix": "event_body.tab_list.responsibles_tab.block_list.tutors",
+						"close_action": "SET=RunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=RunAction/sAction,change_tutors;ACTION=RunAction;"
+					};
+					if(CheckRights("event_change_tutors_right"))
+					{
+						curSelectorList.SetProperty( 'buttons', [
+							{ 'title': tools_web.get_web_const( "veb_b7", curLngWeb ), "click": "OPENDIALOG=SelectDialogeventTutors" }
+						])
+					}
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+				}
+			}
+			else if ( sTabElem == "preparators" )
+			{
+				if( CheckRights("event_view_preparators_tab_right") || CheckRights("event_change_preparators_right") )
+				{
+					/*--------------------------- Выбор ответственных за подготовку ------------------*/
+					sID = "eventPreparators";
+					sDispNameEditName = "TempDestinationEdit" + sID;
+
+					curSelectorList = {
+						"id": sID,
+						"title": tools_web.get_web_const( "otvetstvennyez_1", curLngWeb ),
+						"selected_object_ids": ArrayMerge( ArrayExtract( curObject.even_preparations, "person_id" ), "This", ";" ),
+						"height": "",
+						"catalog_name": "collaborator",
+						"select_xquery_qual": ("$elem/is_dismiss = false()"),
+						"list_columns": "fullname;position_name",
+						"disp_search": "true",
+						"disp_filter": "false",
+						"disp_paging": "true",
+						"paging_size": 15,
+						"sort_direct": "-",
+						"disp_array": "true",
+						"show_all": bShowAllSub,
+						"array": ( "{" + sDispNameEditName + "}" ),
+						"list_columns": "fullname;org_name;position_parent_name;position_name",
+						"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+						"is_data_grid": "true",
+						"typein": "true",
+						"param_preffix": "event_body.tab_list.responsibles_tab.block_list.preparators",
+						"close_action": "SET=RunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=RunAction/sAction,change_preparations;ACTION=RunAction;"
+					};
+					if(CheckRights("event_change_preparators_right"))
+					{
+						curSelectorList.SetProperty( 'buttons', [
+							{ 'title': tools_web.get_web_const( "veb_b7", curLngWeb ), "click": "OPENDIALOG=SelectDialogeventPreparators" }
+						])
+					}
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+				}
+			}
+		}
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function lector_tab()
+{
+	if((CheckRights("event_view_lectors_tab_right") || CheckRights("event_change_lectors_right")) && curDevice.disp_type != "mobile")
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.lectors_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "vllec_title", curLngWeb )
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-graduation-cap" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+					/*--------------------------- Выбор преподавателей ------------------*/
+		sID = "eventLectors";
+		sDispNameEditName = "TempDestinationEdit" + sID;
+
+		arrForNewHeaders = new Array();
+		arrForNewCells = new Array();
+
+		tools_web.set_var_eval( "arrEventLectors", Env.curVars, XQuery( "for $elem in event_lectors where $elem/event_id = " + curObjectID + " return $elem" ), "value" );
+		tools_web.set_var_eval( "curEventId", Env.curVars, curObjectID, "value" );
+					
+		arrForNewHeaders[ArrayCount(arrForNewHeaders)] = tools_web.get_web_const( "bos75mgjh5", curLngWeb );
+		arrForNewCells[ArrayCount(arrForNewCells)]="(temp = ArrayOptFind( Env.curVars.GetOptProperty('arrEventLectors', []), 'lector_id==' + ListElem.PrimaryKey ),((temp == undefined) ? '' : (temp.hours)))";
+
+		curSelectorList = {
+			"id": sID,
+			"title": tools_web.get_web_const( "vllec_title", curLngWeb ),
+			"selected_object_ids": ArrayMerge( ArrayExtract( curObject.lectors, "PrimaryKey" ), "This", ";" ),
+			"height": "",
+			"catalog_name": "lector",
+			"select_xquery_qual": "$elem/is_dismiss != true()",
+			"disp_search": "true",
+			"disp_filter": "false",
+			"disp_paging": "true",
+			"paging_size": 100,
+			"sort_direct": "-",
+			"disp_array": "true",
+			"array": ( "{" + sDispNameEditName + "}" ),									
+			"list_columns": "lector_fullname",
+			"col_headers": ArrayMerge( arrForNewHeaders, "This", ";" ),
+			"col_cells": ArrayMerge( arrForNewCells, "This", ";" ),										
+			"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+			"is_data_grid": "true",
+			"data_fields": "person_id",
+			"param_preffix": "event_body.tab_list.lectors_tab",
+			"close_action": "SET=RunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=RunAction/sAction,change_lectors;ACTION=RunAction;"
+		};
+					
+		if(CheckRights("event_change_lectors_right"))
+		{
+			curSelectorList.SetProperty( "buttons", [
+				{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": "OPENDIALOG=SelectDialogeventLectors" }
+			])
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function participaints_tab()
+{
+	if(CheckRights("event_view_collaborators_tab_right") || CheckRights("event_change_collaborators_right") || curObject.disp_persons_for_all )
+	{
+		sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.participaints_tab", "", true ), curLng.short_id );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "c_members", curLngWeb )
+		if(bShowTabs)
+		{
+%>
+	<TabItem Class="icon-users2" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+		}
+					
+					/*--------------------------- Выбор участников  ------------------*/
+
+		sID = "eventCollaborators";
+		sDispNameEditName = "TempDestinationEdit" + sID;
+		arrForNewHeaders = new Array();
+		arrForNewCells = new Array();
+
+		tools_web.set_var_eval( "arrEventResults", Env.curVars, xarrEventResults, "value" );
+		tools_web.set_var_eval( "curEventId", Env.curVars, curObjectID, "value" );
+
+		arrForNewHeaders[ArrayCount(arrForNewHeaders)] = tools_web.get_web_const( "veresb_exist", curLngWeb );
+		arrForNewHeaders[ArrayCount(arrForNewHeaders)] = tools_web.get_web_const( "veb_tip_exist_confirm", curLngWeb );
+		arrForNewCells[ArrayCount(arrForNewCells)]="(temp = ArrayOptFind( Env.curVars.GetOptProperty('arrEventResults', []), 'person_id==' + ListElem.PrimaryKey ),((temp == undefined) ? '' : (temp.is_assist ? '+' : '-')))";
+		arrForNewCells[ArrayCount(arrForNewCells)]="(temp = ArrayOptFind( Env.curVars.GetOptProperty('arrEventResults', []), 'person_id==' + ListElem.PrimaryKey ),((temp == undefined) ? '' : (temp.is_confirm ? '+' : '-')))";
+
+		if((CheckRights("event_result_view_right") || CheckRights("event_result_edit_right") || CheckRights("event_change_collaborators_right")) && curDevice.disp_type != "mobile")
+		{
+			sOpenResultString = bShowResultsInDialog ? ("SET=EventResultDialog/iEventId," + curObjectID + ";SET=EventResultDialog/iPersonId,%7Bid%7D;OPENDIALOG=EventResultDialog;") : ("OPENURL=" + tools_web.get_mode_clean_url( "event_result", null, { doc_id: curDocID, person_id: "%7Bid%7D" } ) );
+						
+			curSelectorList = {
+				"id": sID,
+				"title": tools_web.get_web_const( "c_members", curLngWeb ),
+				"selected_object_ids": ArrayMerge( ArrayExtract( curObject.collaborators, "PrimaryKey" ), "This", ";" ),
+				"height": "",
+				"catalog_name": "collaborator",
+				"disp_search": "true",
+				"disp_filter": "false",
+				"disp_paging": "true",
+				"paging_size": 100,
+				"check_access": "false",
+				"sort_direct": "-",
+				"disp_array": "true",
+				"show_all": bShowAllSub,
+				"array": ( "{" + sDispNameEditName + "}" ),
+				"list_columns": "fullname;position_name",
+				"col_headers": ArrayMerge( arrForNewHeaders, "This", ";" ),
+				"col_cells": ArrayMerge( arrForNewCells, "This", ";" ),
+				"link_action": ( sOpenResultString),
+				"link_prop": ( "=('/event_id/' + Env.curVars.GetOptProperty('curEventId', null))"),
+				"is_data_grid": "true",
+				"source_type": "collaborator,event_result",
+				"typein": "true",
+				"param_preffix": "event_body.tab_list.participaints_tab",
+				"select_xquery_qual": (bShowDismissed ? "" : "$elem/is_dismiss = false()"),
+				"close_action": "SET=RunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=RunAction/sAction,change_collaborators;ACTION=RunAction;"
+			};
+			if(CheckRights("event_change_collaborators_right"))
+			{
+				curSelectorList.SetProperty( "buttons", [
+					{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": "OPENDIALOG=SelectDialogeventCollaborators" }
+				])
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+		}
+		else
+		{
+			curSelectorList = {
+				"id": sID,
+				"title": tools_web.get_web_const( "c_members", curLngWeb ),
+				"selected_object_ids": ArrayMerge( ArrayExtract( curObject.collaborators, "PrimaryKey" ), "This", ";" ),
+				"height": "",
+				"catalog_name": "collaborator",
+				"select_xquery_qual": (bShowDismissed ? "" : "$elem/is_dismiss = false()"),
+				"disp_search": "true",
+				"disp_filter": "false",
+				"disp_paging": "true",
+				"paging_size": 100,
+				"check_access": "false",
+				"show_all": bShowAllSub,
+				"sort_direct": "-",
+				"disp_array": "true",
+				"array": ( "{" + sDispNameEditName + "}" ),
+				"list_columns": ((curDevice.disp_type != "mobile") ? "fullname;position_name" : "fullname"),
+				"col_headers": ArrayMerge( arrForNewHeaders, "This", ";" ),
+				"col_cells": ArrayMerge( arrForNewCells, "This", ";" ),
+				"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+				"link_prop": ( "=('/event_id/' + Env.curVars.GetOptProperty('curEventId', null))"),
+				"source_type": "collaborator,event_result",
+				"typein": "true",
+				"param_preffix": "event_body.tab_list.participaints_tab",
+				"is_data_grid": "true"
+			};
+			if(bShowResultsInDialog)
+				curSelectorList.SetProperty( "link_action", "SET=EventResultDialog/iEventId," + curObjectID + ";SET=EventResultDialog/iPersonId,%7Bid%7D;OPENDIALOG=EventResultDialog;" )
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+		}
+		if(bShowTabs)
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+}
+
+function info_tab()
+{
+	sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.desc_tab", "", true ), curLng.short_id );
+	if( sTabTitle == "" )
+		sTabTitle = tools_web.get_web_const( "c_info", curLngWeb )
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list.info_tab.block_list", "", true ) ).split( ";" );
+	if(bShowTabs)
+	{
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle )%>">
+
+<%
+	}
+	else
+	{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+	}
+	bOpenNewGrid = true;
+	for ( sTabElem in arrBlockListParam )
+	{
+		if( sTabElem == "statistics" && !bUserIsTutor )
+			continue
+		if( sTabElem != "statistics" && bOpenNewGrid )
+		{
+			bOpenNewGrid = false
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table adaptive" Adapt="1">
+			<GridColumns>
+				<GridColumn />
+				<GridColumn/>
+			</GridColumns>
+<%
+		}
+				
+		if ( sTabElem == "info" )
+		{
+			info_block();
+		}
+		if(sTabElem == "place" && ( curObject.place.HasValue || curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined ) )
+		{
+			place_block();
+		}
+		if( sTabElem == "lectors" )
+		{
+			lector_block();
+		}
+		if( sTabElem == "statistics" && bUserIsTutor )
+		{
+						
+			if( !bOpenNewGrid )
+			{
+%>
+	</Grid>
+<%
+			}
+			bOpenNewGrid = true;
+			statistics_block()
+		}
+		if( sTabElem == "desc" )
+		{
+						
+			if( !bOpenNewGrid )
+			{
+%>
+	</Grid>
+<%
+			}
+			bOpenNewGrid = true;
+			desc_block();
+		}
+	}
+	if( !bOpenNewGrid )
+	{
+%>
+	</Grid>
+<%
+	}
+	
+				
+	if(bShowTabs)
+	{
+%>
+	</TabItem>
+<%
+	}
+	else
+	{
+%>
+	</StackPanel>
+<%
+	}
+}
+
+function lector_block()
+{
+	if( !bUserIsAnonym && ArrayOptFirstElem(curObject.lectors) != undefined )
+	{
+%>
+			
+		<GridRow Class="XAML-gridrow-multiline">
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vllec_title", curLngWeb )%>:</Label>
+			<!--<StackPanel Class="XAML-stack-container Xaml-Stack-photos-container" Orientation="Vertical">
+				<StackPanel Class="XAML-stack-container" Orientation="Horizontal">-->
+<%
+	curSourceObject = curObject;
+	curSourceObjectID = curObjectID;
+	curMaxLectorsInRow = curDevice.disp_type != "mobile" ? 4 : 1;
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_lectors.xaml" ) );
+%>
+		</GridRow>
+<%
+	}
+}
+
+function desc_block()
+{
+	if( curObject.desc.HasValue )
+	{
+		curDescObject = curObject;
+		curDescObjectID = curObjectID;
+		curDesc = ({ lang_desc: tools_web.is_true( tools_web.get_web_param( curParams,"event_body.lang_desc", false, true ) )});
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+	}
+	else
+	{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%="Описание отсутствует"%>]]></Label>
+<%
+	}
+}
+
+function statistics_block()
+{
+	curStatistics = {};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_cur_statistics.xaml" ) );
+}
+
+function place_block()
+{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_action_place", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+	if(curObject.place_id.HasValue && curObject.place_id.OptForeignElem != undefined)
+	{
+		tePlace = OpenDoc( UrlFromDocID( curObject.place_id ) ).TopElem;
+		bShowPlaceInfo = tePlace.region_id.HasValue || tePlace.address.HasValue || tePlace.desc.HasValue;
+%>
+				<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( curObject.place_id.ForeignElem.name, curLng.short_id )%><%					
+		if(curObject.place.HasValue)
+		{
+%><%=", "%><%
+		}
+%>
+					<HTMLTip>
+<%
+		if(bShowPlaceInfo)
+		{
+			if(tePlace.region_id.HasValue && tePlace.region_id.OptForeignElem != undefined)
+			{
+%>
+					<%=tools_web.get_web_const( "vrb_region", curLngWeb )%>: <%=tools_web.get_cur_lng_name( tePlace.region_id.ForeignElem.name, curLng.short_id )%>
+<%
+			}
+			if(tePlace.address.HasValue)
+			{
+%>
+					<%=tools_web.get_web_const( "uf_address", curLngWeb )%>: <%=tools_web.get_cur_lng_name( tePlace.address, curLng.short_id )%>
+<%
+			}
+		}
+%>	
+					</HTMLTip>
+				</Label>
+<%
+	}
+	if(curObject.place.HasValue)
+	{
+%>
+				<Label Class="XAML-grid-label-value"><![CDATA[<%=tools_web.get_cur_lng_name( curObject.place, curLng.short_id )%>]]></Label>
+<%
+	}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+}
+
+function info_block()
+{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<Label Class="XAML-label-status <%=sDataClass%>"><%=(curObject.status_id.HasValue ? curLngCommon.event_status_types.GetChildByKey( curObject.status_id ).name : "")%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_type", curLngWeb )%>:</Label>			
+			<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( curObject.event_type_id.ForeignElem.name, curLng.short_id )%></Label>
+		</GridRow>
+<%
+	if(curObject.education_org_id.HasValue && curObject.education_org_id.OptForeignElem != undefined)
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.education_org_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( curObject.education_org_id.ForeignElem.disp_name, curLng.short_id )%>]]></Link>
+		</GridRow>
+<%
+	}
+	else if(curObject.education_org_name.HasValue)
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+			<Label ><![CDATA[<%=tools_web.get_cur_lng_name( curObject.education_org_name, curLng.short_id )%>]]></Label>
+		</GridRow>
+<%
+	}
+
+	if ( curObject.education_method_id.HasValue && curObject.education_method_id.OptForeignElem != undefined)
+	{
+		catProgramm = curObject.education_method_id.ForeignElem;
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.education_method_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catProgramm.name, curLng.short_id )%>]]></Link>
+		</GridRow>
+<%
+	}
+	if ( sEventTypeCode == "compound_program_elem" && curObject.compound_program_id.HasValue)
+	{
+		if ( curObject.compound_program_id.HasValue && curObject.compound_program_id.OptForeignElem != undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_compound_prog", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.compound_program_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( curObject.compound_program_id.ForeignElem.name, curLng.short_id )%>]]></Link>
+		</GridRow>
+<%
+		}
+
+		if ( curObject.program_id.HasValue && curObject.program_id.OptForeignElem != undefined)
+		{
+			fldCompoundProgram = curObject.compound_program_id.ForeignElem.programs.GetChildByKey( curObject.program_id );
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_edu_method", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.program_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( fldCompoundProgram.name, curLng.short_id )%>]]></Link>
+		</GridRow>
+<%
+		}
+	}
+	if( curObject.start_date.HasValue )
+	{
+		dStartDate = get_date( curObject.start_date, false );
+		dFinishDate = get_date( curObject.finish_date, false );
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vcb_started", curLngWeb )%>:</Label>
+<%
+		if(curObject.finish_date.HasValue && Day( dStartDate ) == Day( dFinishDate ))
+		{
+%>
+			<Label Class="XAML-grid-label-value"><%=StrDate( dStartDate, true, false) + "-" + StrTime( dFinishDate ) %></Label>
+<%
+		}
+		else if(curObject.finish_date.HasValue)
+		{
+%>
+			<Label Class="XAML-grid-label-value"><%=StrDate( dStartDate, false, false)%> - <%=(StrDate( dFinishDate, false, false))%> <%=StrNonTitleCase( tools_web.get_web_const( "vppb_from", curLngWeb ) )%> <%=StrTime( dStartDate )%> <%=StrNonTitleCase( tools_web.get_web_const( "mkly6lmeds", curLngWeb ) )%> <%=StrTime( dFinishDate )%></Label>
+<%
+		}
+%>
+		</GridRow>
+<%
+	}
+
+	if (curObject.max_person_num.HasValue)
+	{
+		if (bFreePlacesExist)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ostalossvobodn", curLngWeb )%>:</Label>
+			<Label Class="XAML-grid-label-value"><![CDATA[<%=(curObject.max_person_num - iRegisteredPersonsNum)%><%=tools_web.get_web_const( "iz_3", curLngWeb )%> <%=curObject.max_person_num%>]]></Label>
+		</GridRow>
+<%
+		}
+		else
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"></Label>
+			<Label Class="XAML-grid-label-value"><%=tools_web.get_web_const( "svobodnyhmestn", curLngWeb )%></Label>
+		</GridRow>
+<%
+		}
+	}
+%>
+		<GridRow Class="<%=(ArrayCount(xarrBossTypes) > 1 ? "XAML-gridrow-multiline" : "")%>">
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vasharol", curLngWeb )%>:</Label>
+			<StackPanel Class="XAML-stack-container">
+<%
+
+	for(curBossType in xarrBossTypes)
+	{
+		if( curBossType.code == "current_user" )
+			continue
+%>
+				<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( curBossType.name, curLng.short_id )%></Label>
+<%
+	}
+
+	if(!bUserIsTutor && !bUserIsCollaborator && !bUserIsLector && !bUserIsPreparator)
+	{
+		if(bUserRequestExists)
+		{
+%>
+				<Label Class="XAML-grid-label-value"><%=tools_web.get_web_const( "vypodalizayavku", curLngWeb )%></Label>
+<%
+		}
+		else
+		{
+%>
+				<Label Class="XAML-grid-label-value"><%=tools_web.get_web_const( "vynevhoditevchi", curLngWeb )%></Label>
+<%
+		}
+	}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	if(curObject.event_form.HasValue)
+	{
+%>		
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_event_form", curLngWeb )%>:</Label>
+			<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( lists.event_forms.GetChildByKey(curObject.event_form).name, curLng.short_id )%></Label>
+		</GridRow>
+<%
+	}
+	if(teWebinarSystem != undefined)
+	{
+		if(teWebinarSystem.web_code_url.HasValue)
+		{
+			Response.Write(EvalCodePageUrl( UrlAppendPath( global_settings.web_path, teWebinarSystem.web_code_url ) ));
+		}
+		else if(teWebinarSystem.web_code.HasValue)
+		{
+			Response.Write(EvalCodePage(teWebinarSystem.web_code));
+		}
+	}
+
+	if(docEventResult != null)
+	{
+		if(teEventResult.score.HasValue )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vashaocenka", curLngWeb )%>:</Label>
+			<Label Class="XAML-grid-label-value"><![CDATA[<%=teEventResult.score%>]]></Label>
+		</GridRow>
+<%
+		}
+		if(teEventResult.tutor_comment.HasValue )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "kommentariypre", curLngWeb )%>:</Label>
+			<Label Class="XAML-grid-label-value"><![CDATA[<%=teEventResult.tutor_comment%>]]></Label>
+		</GridRow>
+<%
+		}
+
+		if(CheckRights("event_result_write_comment_right") && teEventResult.collaborator_comment.HasValue)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vashkommentariy", curLngWeb )%>:</Label>
+			<Label Class="XAML-grid-label-value"><![CDATA[<%=teEventResult.collaborator_comment%>]]></Label>
+		</GridRow>
+<%
+		}
+		if(CheckRights("event_result_upload_files_right") && ArrayOptFirstElem(teEventResult.files) != undefined)
+		{
+%>
+
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vashifayly", curLngWeb )%>:</Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+			for(fldFileElem in teEventResult.files)
+			{
+				if(fldFileElem.PrimaryKey.OptForeignElem != undefined)
+				{
+%>
+				<StackPanel Orientation="Horizontal">
+						<Image Source="icons/16png/del_item.png" Click="SET=DeleteFileAction/sSelectedObjects,<%=fldFileElem.PrimaryKey%>; ACTION=DeleteFileAction"/>
+						<Link Click="OPENURL=download_file.html?file_id=<%=fldFileElem.PrimaryKey%>&sid=<%=tools_web.get_sum_sid( fldFileElem.PrimaryKey, Session.sid )%>" Width="100%"><%=fldFileElem.PrimaryKey.ForeignElem.name%></Link>
+				</StackPanel>
+<%
+				}
+			}
+%>
+				</StackPanel>
+		</GridRow>
+<%
+		}
+	}
+}
+
+function buttons_block()
+{
+%>
+<Toolbar>	
+	<%
+	if(sEventTypeCode == "webinar" && (((bUserIsParticipant || curObject.allow_guest_login) && curObject.status_id == "active") || (curObject.record_exists && (curObject.show_record || curObject.allow_record_download))))
+	{
+		if(curObject.status_id == "active")
+		{
+			if(bUserIsParticipant)
+			{
+				var iWebibarUserId = curUserID;
+				if(bUserIsLector)
+				{
+					var catLector = ArrayOptFirstElem(XQuery( "for $elem in lectors where $elem/person_id = " + curUserID + " and $elem/is_dismiss != true() return $elem" ));
+					if(catLector != undefined)
+						iWebibarUserId = catLector.PrimaryKey;
+				}
+				sWebinarUrl = "";
+				if( ( curObject.event_type_id.OptForeignElem != undefined && curObject.event_type_id.OptForeignElem.online ) && curObject.webinar_system_id.HasValue && curObject.webinar_system_id.OptForeignElem != undefined)
+				{
+					var oParam = new Object();
+					oParam.docEvent = curObjectDoc;
+					oParam.iEventID = curObjectID;
+					oParam.iUserId = curUserID;
+					oParam.sUrl = Request.Url ;
+					var oResult = tools.call_webinar_system_method( curObject.webinar_system_id, "getUserLink", oParam );
+					sWebinarUrl = oResult.link;
+				}
+				if( sWebinarUrl != "" )
+				{
+%>
+	<!--<Button Class="XAML-button XAML-button-webinar-login" Icon="" Click="OPENWINDOW=vclass/webinar.html?room=<%=curObjectID%>&code=<%=iWebibarUserId%>"><%=tools_web.get_web_const( "veb_login_webinar", curLngWeb )%></Button>-->
+	<Button Class="XAML-button XAML-button-webinar-login XAML-button-important" Icon="" Click="OPENWINDOW=<%=UrlEncode( sWebinarUrl )%>"><%=tools_web.get_web_const( "veb_login_webinar", curLngWeb )%></Button>
+<%
+				}
+			}
+			else if(curObject.allow_guest_login)
+			{
+%>
+	<Button Name="RegisterButton" Class="XAML-button XAML-button-webinar-login" Icon="" Click="ACTION=RegisterToEvent"><%=tools_web.get_web_const( "zaregistrirova", curLngWeb )%></Button>
+<%
+			}
+		}
+		if(curObject.record_exists)
+		{
+			var sRecordHostUrl = UrlSchema(Request.Url) + "://" + Request.UrlHost;
+			if(curObject.show_record)
+			{
+				sRecordUrl = curObject.get_webinar_record_url(sRecordHostUrl);
+				if(sRecordUrl != "")
+				{
+%>
+	<Button Class="XAML-button XAML-button-webinar-view" Icon="" Click="OPENWINDOW=<%=sRecordUrl%>"><%=tools_web.get_web_const( "yofxnyehpq", curLngWeb )%></Button>
+<%
+				}
+			}
+
+			if(curObject.allow_record_download)
+			{
+				sRecordDownloadUrl = curObject.get_webinar_record_download_url(sRecordHostUrl);
+				if(sRecordDownloadUrl != "")
+				{
+%>
+
+	<Button Class="XAML-button XAML-button-webinar-download" Icon="" Click="OPENWINDOW=<%=sRecordDownloadUrl%>"><%=tools_web.get_web_const( "zagruzitzapis", curLngWeb )%></Button>
+<%
+				}
+			}
+		}
+	}
+	if( sEventTypeCode != "webinar" && bUserIsParticipant && curObject.use_vclass && curObject.status_id == "active" )
+	{
+%>	
+	<Button Class="XAML-button XAML-button-plan" Click="OPENWINDOW=/vclass/v3/index.html#/enter?event_id=<%=curObjectID%>&use_media=false"><%="Онлайн обучение"%></Button>	
+<%
+	}
+	if( CheckRights("event_change_status_right") || CheckRights("event_change_right") )
+	{
+		sChangeStatusConfirm = "";
+		if(curObject.status_id == "close" && sEventTypeCode == "webinar" && curObject.webinar_system_id.HasValue && curObject.webinar_system_id.OptForeignElem != undefined && curObject.webinar_system_id.ForeignElem.code != "vclass")
+		{
+			sChangeStatusConfirm = "CONFIRM=" + sConstChangeStatusConfirm + ";";
+		}
+		if(curObject.status_id != "plan" && curObject.status_id != "active")
+		{
+%>	
+	<Button Class="XAML-button XAML-button-plan" Click="<%=sChangeStatusConfirm%>SET=RunAction/sAction,set_status;SET=NewStatus,plan;SET=RunAction/sSelectedObjects,{NewStatus};Action=RunAction"><%=tools_web.get_web_const( "kplanirovaniyu", curLngWeb )%></Button>	
+<%
+		}
+		if(curObject.status_id == "plan")
+		{
+%>
+	<Button Class="XAML-button XAML-button-important" Click="SET=RunAction/sAction,set_status;SET=NewStatus,active;SET=RunAction/sSelectedObjects,{NewStatus};Action=RunAction"><%=tools_web.get_web_const( "vlpb_start", curLngWeb )%></Button>	
+<%
+		}
+		if(curObject.status_id == "active")
+		{
+%>
+	<Button Class="XAML-button XAML-button-finish" Click="SET=RunAction/sAction,set_status;SET=NewStatus,close;SET=RunAction/sSelectedObjects,{NewStatus};Action=RunAction"><%=tools_web.get_web_const( "vllb_close", curLngWeb )%></Button>	
+<%
+		}
+		if(curObject.status_id == "plan" || curObject.status_id == "active")
+		{
+	
+%>
+	<Button Class="XAML-button XAML-button-cancel" Click="SET=RunAction/sAction,set_status;SET=NewStatus,cancel;SET=RunAction/sSelectedObjects,{NewStatus};Action=RunAction"><%=tools_web.get_web_const( "veb_to_cancel", curLngWeb )%></Button>	
+<%
+		}
+	}
+	
+	if ( ((!bUserRequestExists && !bUserIsCollaborator) || bAlwaysAllowRequestsCreate) && curObject.is_open && curObject.status_id != "project" && curObject.status_id != "close" && curObject.status_id != "cancel" &&  !curUser.in_request_black_list && (bFreePlacesExist || bAllowRequestsIfFull))
+	{
+		if ( !(curObject.date_request_over.HasValue && DateDiff( curObject.date_request_over, Date() ) < 0 ) && !( curObject.date_request_begin.HasValue && DateDiff( curObject.date_request_begin, Date() ) > 0 ))
+		{
+			if ( curObject.default_request_type_id.HasValue && curObject.default_request_type_id.OptForeignElem != undefined)
+			{
+				teRequest = OpenDoc(UrlFromDocID(curObject.default_request_type_id)).TopElem;
+				if(!teRequest.boss_only || ArrayOptFirstElem(XQuery( "for $elem in func_managers where $elem/person_id=" + curUserID + " return $elem" )) != undefined)
+				{
+%>
+	<Button Class="XAML-button XAML-button-request" Click="OPENURL=<%=tools_web.get_mode_clean_url( "request_create", null, { request_object_id: curObjectID, request_type_id: curObject.default_request_type_id, doc_id: curDocID } )%>" class="inputButton" onmouseover="this.className='inputButtonOver'" onmouseout="this.className='inputButton'"><%=tools.get_web_str("c_text_create_request")%></Button>
+<%
+				}
+			}
+		}
+	}
+
+	if(bUserIsParticipant)
+	{
+		if(sEventTypeCode == "real_time")
+		{
+			if(curObject.course_id.HasValue)
+			{
+%>
+	<Button Class="XAML-button XAML-button-course-card" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.course_id, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( "otkrytkartochku_2", curLngWeb )%></Button>
+
+<%
+			}
+			if(curObject.chat_id.HasValue)
+			{
+%>
+	<Button Class="XAML-button XAML-button-chat" Icon="" Click="OPENURL=<%=tools_web.get_mode_clean_url( "chat", curObject.chat_id, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( "otkrytchat", curLngWeb )%></Button>
+
+<%
+			}
+		}
+	}
+
+	if(teEventResult != null && CheckRights("event_result_write_comment_right"))
+	{
+		if(teEventResult.collaborator_comment.HasValue )
+		{
+	%>
+	<Button Class="XAML-button XAML-button-course-card XAML-button-no-margin" Click="OPENDIALOG=EditCommentDialog"><%=tools_web.get_web_const( "izmenitkomment", curLngWeb )%></Button>
+	<%
+		}
+		else
+		{
+	%>
+	<Button Class="XAML-button XAML-button-course-card XAML-button-no-margin" Click="OPENDIALOG=EditCommentDialog"><%=tools_web.get_web_const( "dc_write_comment", curLngWeb )%></Button>
+	<%
+		}
+	}
+	if(CheckRights("event_result_upload_files_right"))
+	{
+	%>
+		<Button Class="XAML-button XAML-button-plus XAML-button-no-margin" Click="OPENDIALOG=AddEventResultFileDialog"><%=tools_web.get_web_const( "vdb_add_file", curLngWeb )%></Button>
+	<%
+	}
+	if(ArrayCount(xarrOperationsActions) > 0)
+	{
+%>
+
+	<ComboBox Name="OperationId" Width="210" Class="XAML-combo-menu-button">
+		<ComboBoxItem Value="xxx" Selected="True"><%=tools_web.get_web_const( "vypolnitoperac", curLngWeb )%></ComboBoxItem>
+<%
+	oParam = {
+		"name_id": "EventOpertion",
+		"action": "RunAction",
+		"curUserID": curUserID,
+		"curUser": curUser,
+		"first_object_id": curObjectID
+	};
+	for(catActionElem in xarrOperationsActions)
+	{
+		sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+		<ComboBoxItem Value="<%=catActionElem.PrimaryKey%>" Change="<%=sClick%>;"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></ComboBoxItem>
+<%
+	}
+%>
+	</ComboBox>
+<%
+	}
+%>
+</Toolbar>
+<%
+}
+
+function title_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+function message_block()
+{
+	if(bUserIsCollaborator)
+	{
+		if(catEventResult.not_participate)
+		{
+			curMessageBox = {
+				"id": tools.random_string( 10 ),
+				"type": "warning",
+				"text": tools_web.get_web_const( "vyotkazalisotu_1", curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+		else if(bShowNotConfirmedMessage)
+		{
+			curMessageBox = {
+				"id": tools.random_string( 10 ),
+				"type": "warning",
+				"text": tools_web.get_web_const( "vynepodtverdil_1", curLngWeb )
+			};
+			arrMessageButtons = [];
+			
+			if(bShowConfirmButton || bShowRefuseButton)
+			{
+				if(bShowConfirmButton)
+				{
+					arrMessageButtons.push({ "title": sConstConfirmButtonText, "click": "SET=RunAction/sAction,confirm_participation;SET=RunAction/iUserId," + curUserID + ";ACTION=RunAction" });
+				}
+			
+				if(bShowRefuseButton)
+				{	
+					arrMessageButtons.push({ "title": tools_web.get_web_const( "otkazatsyaotucha", curLngWeb ), "click": "SET=RunAction/sAction,refused_participation;SET=RunAction/iUserId," + curUserID + ";ACTION=RunAction" });
+				}
+			}
+			if(ArrayOptFirstElem(arrMessageButtons) != undefined)
+			{
+				curMessageBox.SetProperty( "buttons", arrMessageButtons);
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+	if ( bUserIsCollaborator && curObject.default_response_type_id.HasValue && (curObject.status_id == "active" || curObject.status_id == "close"))
+	{
+		catResponse = ArrayOptFirstElem(XQuery( "for $elem in responses where $elem/object_id = " + curObjectID + " and $elem/person_id=" + curUserID + " return $elem" ))
+		if(catResponse == undefined)
+		{
+		
+			curMessageBox = {
+				"id": tools.random_string( 10 ),
+				"type": "warning",
+				"text": tools_web.get_web_const( "ostavitotzyvob", curLngWeb )
+			};
+			
+			arrMessageButtons = [];
+			arrMessageButtons.push({ "title": tools_web.get_web_const( "c_text_create_response", curLngWeb ), "click": "OPENURL=" + tools_web.get_mode_clean_url( "response", null, { response_object_id: curObjectID, response_type_id: curObject.default_response_type_id, doc_id: curDocID } ) });
+			curMessageBox.SetProperty( "buttons", arrMessageButtons);
+			
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+}
+
+function desc_tab()
+{
+	sTabTitle = tools_web.get_cur_lng_name( tools_web.get_web_param( curParams, "event_body.tab_list.desc_tab", "", true ), curLng.short_id );
+	if( sTabTitle == "" )
+		sTabTitle = tools_web.get_web_const( "c_desc", curLngWeb )
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+	desc_block();
+%>
+	</TabItem>
+<%
+}
+
+function catalogs_tab()
+{
+	sTabTitle = tools_web.get_web_param( curParams, "event_body.tab_list.catalogs_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'prikreplennyeo', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	block_catalogs( "event_body.tab_list.catalogs_tab" )
+%>
+	</TabItem>
+<%
+}
+function block_catalogs( prefix )
+{
+	if( curObject.catalogs.ChildNum > 0 )
+	{
+		curCatalogs = {
+			"view_type": tools_web.get_web_param( curParams, prefix + ".view_type", "list", true ),
+			"disp_view_selector": tools_web.get_web_param( curParams, prefix + ".disp_view_selector", false, true ),
+			"list_adv_components": tools_web.get_web_param( curParams, prefix + ".list_adv_components", "date;like;dislike;image", true ),
+			"objects_view_type": tools_web.get_web_param( curParams, prefix + ".object_view_type", "default", true ),
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalogs.xaml" ) );
+	}
+	else
+	{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%="Нет прикрепленных объектов"%>]]></Label>
+<%
+	}
+}
+
+curUrlQuery = UrlQuery( tools_web.transform_fancy_url(PAGEURL) );
+
+/*---------------------------------- Функции ------------------------------------------------------------*/
+
+function CheckRights(sAction)
+{
+	return (ArrayOptFind(xarrOperationsRights, "This.action == '" + sAction + "'") !=undefined);
+}
+
+function get_date( dDate, bIn )
+{
+	if( bUseTimezone )
+	{
+		if( bIn )
+		{
+			return tools_web.get_timezone_date( dDate, catUserTimezone, catDefaultTimezone )
+		}
+		else
+		{
+			return tools_web.get_timezone_date( dDate, catEventTimezone, catUserTimezone )
+		}
+	}
+	else
+		return dDate
+}
+
+/*--------------------------------------------------------------------------------------------------------*/
+
+arrAvailableEventTypes = String( tools_web.get_web_param( curParams, "event_body.event_available_types", ArrayExtract(event_types, "code").join(";"), true ) ).split( ";" );
+sEventTypeCode = "";
+sEventTypeName = "";
+if(curObject.event_type_id.HasValue)
+{
+	if(curObject.event_type_id.OptForeignElem != undefined)
+	{
+		catEventType = curObject.event_type_id.ForeignElem;
+		sEventTypeCode = catEventType.code;
+		sEventTypeName = tools_web.get_cur_lng_name( catEventType.name, curLng.short_id );
+	}
+}
+else
+{
+	catEventType = ArrayOptFirstElem( XQuery( 'for $elem in event_types where $elem/code = ' + XQueryLiteral(curObject.type_id) + ' return $elem' ) );
+	if ( catEventType != undefined )
+	{
+		sEventTypeCode = catEventType.code;
+		sEventTypeName = tools_web.get_cur_lng_name( catEventType.name, curLng.short_id );
+		TopElem.event_type_id = catEventType.id;	
+	}
+}
+if( catEventType != undefined && catEventType.custom_web_template_id.HasValue )
+{
+	Response.Write( tools_web.place_xaml( catEventType.custom_web_template_id.Value ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+xarrBossTypes = tools.get_object_relative_boss_types(curUserID, curObjectID);
+xarrBossTypes = ArrayUnion( xarrBossTypes, XQuery( "for $elem in boss_types where $elem/code = 'current_user' return $elem" ) )
+xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',event,') || StrContains(','+This.operation_catalog_list.Value+',', ',event_result,'))");
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0 && StrContains(','+This.operation_catalog_list.Value+',', ',event,')");
+xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+// Проверяем роли пользователя
+bUserIsAdmin = (curUser.access.access_role == "admin");
+bUserIsAnonym = (!bUserIsAdmin && ArrayCount(xarrBossTypes)==0);
+//bUserIsTutor = curObject.tutors.ChildByKeyExists( curUserID );
+bUserIsTutor = ArrayOptFind(xarrBossTypes,"This.code == 'event_tutor'") != undefined;
+bUserIsLector = ArrayOptFind(xarrBossTypes,"This.code == 'event_lector'") != undefined;
+bUserIsCollaborator = ArrayOptFind(xarrBossTypes,"This.code == 'event_participaint'") != undefined;
+bUserIsPreparator = ArrayOptFind(xarrBossTypes,"This.code == 'event_preparation'") != undefined;
+bUserIsRequester = ArrayOptFindByKey( curObject.collaborators, curUserID, "request_person_id" ) != undefined;
+
+bShowDismissed = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.show_dismissed", "0", true ) );
+
+bShowAllSub = !tools_web.is_true( tools_web.get_web_param( curParams, "event_body.show_only_sub_collaborators", "0", true ) );
+
+bShowResultsInDialog = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.tab_list.participaints_tab.show_results_in_dialog", "0", true ) );
+bAttributesPanelsExpanded = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.tab_list.attributes_tab.show_panels_expanded", "0", true ) );
+bShowConfirmButton = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.show_confirm_button", "1", true ) );
+bShowRefuseButton = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.show_refuse_button", "1", true ) );
+bAlwaysAllowRequestsCreate = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.always_allow_requests", "0", true ) );
+bAllowRequestsIfFull = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.allow_requests_if_full", "0", true ) );
+
+sBeforeSaveActionCode = tools_web.get_web_param( curParams, "event_body.before_save_action_code", "", true );
+sSaveAction = (sBeforeSaveActionCode == "") ? "SaveEvent" : "BeforeSaveEvent";
+
+bUserIsParticipant = ( bUserIsTutor || bUserIsLector || bUserIsCollaborator || bUserIsPreparator);
+
+bUserRequestExists  = ( ArrayOptFirstElem( XQuery( "for $elem in requests where $elem/person_id = " + curUserID + " and $elem/object_id = " + curObjectID + "  and $elem/is_group = false() and $elem/status_id = 'close' return $elem" )) != undefined );
+
+// Проверяем, подтвердил ли пользователь участие в мероприятии
+bRequestDateFinished = (curObject.date_request_rejection_over.HasValue && DateDiff( curObject.date_request_rejection_over, CurDate ) < 0 );
+
+bUserConfirmedParticipation = (catEventResult != undefined && catEventResult.is_confirm );
+bShowNotConfirmedMessage = bUserIsCollaborator && !bUserConfirmedParticipation && (curObject.status_id == "plan" || curObject.status_id == "project") && !catEventResult.not_participate && !bRequestDateFinished;
+bShowConfirmButton = bShowConfirmButton && bShowNotConfirmedMessage;
+bShowRefuseButton = bShowRefuseButton && bShowNotConfirmedMessage;
+
+teWebinarSystem = undefined;
+if(curObject.webinar_system_id.HasValue && curObject.webinar_system_id.OptForeignElem != undefined)
+{
+	teWebinarSystem = OpenDoc(UrlFromDocID(curObject.webinar_system_id)).TopElem;
+}
+
+bFreePlacesExist = true;
+if(curObject.max_person_num.HasValue)
+{
+	bCheckNotParticipate = tools_web.is_true( tools_web.get_web_param( curParams, "event_body.check_not_participate", "0", true ) );
+	iRegisteredPersonsNum = ArrayCount( xarrEventResults ) - ( !bCheckNotParticipate ? ArrayCount( ArraySelect( xarrEventResults, "This.not_participate" ) ) : 0 ) + OptInt(curObject.unnamed_person_num,0);
+	bFreePlacesExist = curObject.max_person_num > iRegisteredPersonsNum
+}
+
+if ( ArrayOptFirstElem( xarrOperationsActions ) != undefined )
+{
+	curCollectionMenu = {
+		"id": "EventOpertion",
+		"catalog_name": "collaborator",
+		"selected_data": UrlEncode( "[{\"id\":" + curObjectID + "}]" )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+}
+
+sHostUrl = tools_web.get_url_protocol( Request.Url ) + Request.UrlHost;
+arrTabListParam = String( tools_web.get_web_param( curParams, "event_body.tab_list", "info;desc;lectors;participaints;responsibles;materials;requests;responses;learning_records;attributes", true ) ).split( ";" );
+
+arrAvailableEventTypes = String( tools_web.get_web_param( curParams, "event_body.event_available_types", ArrayExtract(event_types, "code").join(";"), true ) ).split( ";" );
+sEventTypeCode = "";
+sEventTypeName = "";
+if(curObject.event_type_id.HasValue)
+{
+	if(curObject.event_type_id.OptForeignElem != undefined)
+	{
+		catEventType = curObject.event_type_id.ForeignElem;
+		sEventTypeCode = catEventType.code;
+		sEventTypeName = tools_web.get_cur_lng_name( catEventType.name, curLng.short_id );
+	}
+}
+else
+{
+	catEventType = ArrayOptFirstElem( XQuery( 'for $elem in event_types where $elem/code = ' + XQueryLiteral(curObject.type_id) + ' return $elem' ) );
+	if ( catEventType != undefined )
+	{
+		sEventTypeCode = catEventType.code;
+		sEventTypeName = tools_web.get_cur_lng_name( catEventType.name, curLng.short_id );
+		TopElem.event_type_id = catEventType.id;	
+	}
+}
+if( catEventType != undefined && catEventType.custom_web_template_id.HasValue )
+{
+	Response.Write( tools_web.place_xaml( catEventType.custom_web_template_id.Value ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+%>
+<!-------------------------------------- Actions -------------------------------------------->
+<Action Name="SaveEvent" Source="event_save" Success="{!messageText};REFRESH;" Failure="ALERT={messageText}">
+	<Param Name="sEventId" Value="<%=curObjectID%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+	if(sBeforeSaveActionCode != "")
+	{
+%>
+<Action Name="BeforeSaveEvent" Source="<%=sBeforeSaveActionCode%>" Success="ACTION=SaveEvent" Failure="ALERT={messageText}">
+	<Param Name="sEventId" Value="<%=curObjectID%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+	}
+%>
+<Action Name="RunAction" Source="event_actions" Success="ALERT={messageText};REFRESH">
+  <Param Name="iUserId" Value=""/>
+  <Param Name="iEventId" Value="<%=curObjectID%>"/>
+  <Param Name="sAction" Value=""/>
+  <Param Name="sSelectedObjects" Value=""/>
+</Action>
+
+<Action Name="RegisterToEvent" Source="event_actions" Success="HIDE=RegisterButton;OPENWINDOW={webinar_url};" Failure="ALERT={messageText}">
+  <Param Name="iUserId" Value=""/>
+  <Param Name="iEventId" Value="<%=curObjectID%>"/>
+  <Param Name="sAction" Value="register"/>
+  <Param Name="sSelectedObjects" Value="<%=curUserID%>"/>
+</Action>
+<!-------------------------------------- Dialogs -------------------------------------------->
+
+<Dialog Name="EditCommentDialog" Source="dlg_event_comment" Close="REFRESH" Width="<%=curDevice.disp_type == "mobile" ? "90%" : "600"%>" Title="<%=tools_web.get_web_const( "vkpb_comment", curLngWeb )%>">
+
+</Dialog>
+<%
+	if(bShowResultsInDialog)
+	{
+%>
+	<Dialog Name="EventResultDialog" Source="event_result_body" Width="80%" Close="REFRESH">
+		<Param Name="iPersonId" Value=""/>
+		<Param Name="iEventId" Value="<%=curObjectID%>"/>
+	</Dialog>	
+<%
+	}
+%>
+<Collection Name="ResultsFiles" Source="event_body_public_results_files_collection">
+	<Param Name="iEventId" Value="<%=curObjectID%>"/>
+</Collection>
+
+<%
+	if(catEventResult != undefined)
+	{
+%>
+
+<Dialog Name="AddEventResultFileDialog" Source="dlg_add_file" Title="<%=tools_web.get_web_const( "vdb_add_file", curLngWeb )%>" Width="400" Close="REFRESH">
+  <Param Name="iObjectId" Value="<%=catEventResult.PrimaryKey%>"/>
+</Dialog>
+
+<Action Name="DeleteFileAction" Source="file_delete" Success="REFRESH">
+  <Param Name="iObjectId" Value="<%=catEventResult.PrimaryKey%>"/>
+  <Param Name="sSelectedObjects" Value=""/>
+</Action>
+<%
+	}
+%>
+<!--
+<Action Name="DeleteEvent" Source="event_save" Success="REFRESH;" Failure="ALERT={messageText}">
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+-->
+<Edit Name="NewStatus" Hidden="1"/>
+<%
+paramListViewTab = CONTEXT.GetOptProperty("event_tab_controls",0);
+	
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+arrBlockListParam = String( tools_web.get_web_param( curParams, "event_body.block_list", "title;message;buttons;tab", true ) ).split( ";" );
+bUseTimezone = tools_web.is_true( tools_web.get_web_param( curParams,"event_body.use_timezone", false, true ) );
+
+if( bUseTimezone )
+{
+	catDefaultTimezone = global_settings.settings.timezone_id.HasValue ? global_settings.settings.timezone_id.ForeignElem : null;
+	catUserTimezone = tools_web.get_timezone( curUserID, curUser );
+	catUserTimezone = catUserTimezone.HasValue ? catUserTimezone.ForeignElem : null;
+	catEventTimezone = tools_web.get_timezone( curObjectID, curObject );
+	catEventTimezone = catEventTimezone.HasValue ? catEventTimezone.ForeignElem : null;
+}
+
+sDataClass = tools_web.get_class_for_status( curObject.status_id );
+
+bNeedOpenGrid = true;
+for( sBlockListParam in arrBlockListParam )
+{
+	if( sBlockListParam == "block_statistics" && !bUserIsTutor )
+		continue
+	if( sBlockListParam == "block_info" || sBlockListParam == "block_place" || sBlockListParam == "block_lectors" )
+	{
+		if( bNeedOpenGrid )
+		{
+			bNeedOpenGrid = false;
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table adaptive" Adapt="1">
+			<GridColumns>
+				<GridColumn />
+				<GridColumn/>
+			</GridColumns>
+<%
+		}
+	}
+	else
+	{
+		if( !bNeedOpenGrid )
+		{
+			bNeedOpenGrid = true;
+%>
+		</Grid>
+<%
+		}
+	}
+	if ( sBlockListParam == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if( sBlockListParam == "title" )
+		title_block();
+	
+	if( sBlockListParam == "message" )
+		message_block();
+	
+	if( sBlockListParam == "buttons" )
+		buttons_block();
+		
+	if( sBlockListParam == "tab" )
+		tab_block();
+		
+	if( sBlockListParam == "block_info" )
+		info_block();
+	if( sBlockListParam == "block_place" )
+		place_block();
+	if( sBlockListParam == "block_lectors" )
+		lector_block();
+	if( sBlockListParam == "block_statistics" && bUserIsTutor )
+		statistics_block()
+	
+	if( sBlockListParam == "block_desc" )
+		desc_block();
+}
+if( !bNeedOpenGrid )
+{
+%>
+	</Grid>
+<%
+}
+%>
+
+</SPXMLScreen>

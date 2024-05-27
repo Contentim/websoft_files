@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+<view_course_by_depart_report>
+
+	<report_name TYPE="string" DEFAULT="course_by_depart_report"/>
+	<catalog_name TYPE="string" DEFAULT="course_by_depart_report"/> <!-- для wtv_view_types.xml -->
+
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+	
+	<course_id TYPE="integer" FOREIGN-ARRAY="courses"/>
+	
+	<persons>
+		<person MULTIPLE="1" PRIMARY-KEY="person_id">
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+		</person>
+	</persons>
+	
+	<orgs>
+		<org MULTIPLE="1" PRIMARY-KEY="org_id">
+			<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+		</org>
+	</orgs>
+	
+	<subdivisions>
+		<subdivision MULTIPLE="1" PRIMARY-KEY="subdivision_id">
+			<subdivision_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+		</subdivision>
+	</subdivisions>
+	
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<show_people TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<disp_aggregated_list_string TYPE="string" NOT-NULL="1" DEFAULT="true"/>
+	<disp_aggregated_list TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_all_org_list TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<view_sub_selector TYPE="integer"/>
+	
+	<flag_open_org_sub_section TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<disp_only_exceeded TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<exceed_date TYPE="date" EXPR-INIT="Date()"/>
+	
+	<disp_learning_prog TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<education_program_id TYPE="integer" FOREIGN-ARRAY="education_program"/>
+	<disp_learning_type TYPE="string" NOT-NULL="1" DEFAULT="learnings"/>
+	<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+	
+	
+	<!-- <catalog_name TYPE="string"/> -->
+	<view_type TYPE="string"/>
+	<view_type_env TYPE="variant"/>
+
+	<INHERIT TYPE="view_columns_base"/>
+	
+	<data>
+		<INHERIT TYPE="table_data_base"/>
+	</data>
+	
+	<list_array TYPE="variant"/>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="name"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			arrRows = Array();
+			for ( _row in rows.Object )
+			{
+				iID=OptInt(_row.Env.ListElem.cs.GetChildByKey('id').t,null)
+				if (iID!=null)
+				{
+					arrRows.push(iID)
+				}
+
+			}
+			//rows = QueryCatalogByKeys( 'collaborators', 'id', ArraySelectDistinct( ArrayExtract( Screen.FindItem( 'ViewGrid' ).SelRows,'Int(Env.ListElem.cs.GetChildByKey(\'id\').t)' ) ) );
+			
+			rows = QueryCatalogByKeys( 'collaborators', 'id', ArraySelectDistinct(arrRows) );
+			_num = ArrayCount( rows.Object );
+
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+			
+			row_list_field.Clear();
+			return _num;
+
+	"/>
+</view_course_by_depart_report>
+
+
+<OnInit PROPERTY="1" EXPR="
+
+	curUser = tools.get_cur_user();
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name ); 
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+	strRowImageUrl=''
+	if (TopElem.disp_aggregated_list==false)
+	{
+		
+		strViewTypeName='course_report'
+		if (global_settings.settings.show_creator_in_reports)
+		{
+			strViewTypeName='course_report_add_columns'
+		}
+	}
+	else
+	{
+		// course_by_depart_report
+		// course_report_aggregated
+		strViewTypeName = 'course_by_depart_report' 
+	}	
+	
+	strRowImageUrl = view_types.GetChildByKey( strViewTypeName ).row_image_url
+	TopElem.catalog_name = strViewTypeName
+	TopElem.view_type = strViewTypeName
+	TopElem.AssignElem( view_types.GetChildByKey( TopElem.view_type ) );	
+	
+	ms_tools.init_view( TopElem );
+	TopElem.row_image_url = strRowImageUrl
+"/>
+
+</SPXML-INLINE-FORM>

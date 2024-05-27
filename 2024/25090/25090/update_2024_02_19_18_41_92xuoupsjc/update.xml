@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>92xuoupsjc</id>
+		<create_date>2024-02-19T18:41:35+00:00</create_date>
+		<server_version>2023.2.841 (2024-02-14)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x632874C436B4772B</id>
+			<code>collaborator_career_plan_assign</code>
+			<name VALUE="##'Уведомление сотрудника о назначении карьерного плана'##"/>
+			<subject>Вам назначен карьерный маршрут «&lt;%=objDocSec.name%&gt;».</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам был назначен карьерный маршрут «&lt;%=objDocSec.name%&gt;». &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B47720</id>
+			<code>career_plan_change_state</code>
+			<name VALUE="##'Уведомление сотрудника об изменении статуса карьерного плана'##"/>
+			<subject>Изменение статуса карьерного плана  «&lt;%=objDocSec.name%&gt;»</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Статус вашего карьерного маршрута «&lt;%=objDocSec.name%&gt;»  был изменен на «&lt;%=ArrayOptFind(common.career_reserve_status_types, "This.id == objDocSec.status").name%&gt;». &#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

@@ -1,0 +1,324 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iObjectID != undefined )
+{
+	is_open_window = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'is_open_window', true, true ) );
+	if( is_open_window )
+		lnk = "OPENWINDOW";
+	else
+		lnk = "OPENURL";
+	teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	switch ( teObject.Name )
+	{
+		default:
+			if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+				sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id, "64x64" );
+			else
+				sObjectImageUrl = '/images/' + teObject.Name + '.png';
+			break;
+	}
+	sName = '';
+	sClickAction = "";
+	if( teObject.Name == 'expert' )
+	{
+		sDesc = '';
+		pers = undefined;
+		if( teObject.type == 'collaborator' )
+		{
+			pers = teObject.person_id.OptForeignElem;
+			if( pers == undefined )
+			{
+				sName = teObject.name;
+			}
+			else
+			{
+				sName = pers.fullname;
+				if( pers.pict_url.HasValue )
+					sObjectImageUrl = pers.pict_url;
+			}
+			
+		}
+		else
+			sName = teObject.name;
+		
+		sClickAction = lnk + "=" + tools_web.get_mode_clean_url( null, iObjectID );
+	}
+	else if( teObject.Name == 'expert_question' )
+	{
+		pers = undefined;
+		sObjectImageUrl = '/images/collaborator.png';
+		if( teObject.person_id.HasValue )
+		{
+			pers = teObject.person_id.OptForeignElem;
+			if( pers != undefined )
+			{
+				if( pers.pict_url.HasValue )
+					sObjectImageUrl = pers.pict_url;
+			}
+		}
+		sName = teObject.question;
+		edit_answer = tools_web.is_true( PARAMETERS.GetOptProperty( "edit_answer" ) )
+		edit_question = tools_web.is_true( PARAMETERS.GetOptProperty( "edit_question" ) )
+	
+		if( curDevice.disp_type != "mobile" )
+			sClickAction = "SET=iQuestionId," + iObjectID + ";OPENDIALOG=AnswerExpertDialog;";
+		else
+		{
+			if( edit_answer )
+				sClickAction = "OPENWINDOW=" + tools_web.get_mode_clean_url( "edit_expert_answer", null, { "iQuestionId": iObjectID, "bEditQuestion": edit_question } ) + ";";
+			else
+				sClickAction = "OPENWINDOW=" + tools_web.get_mode_clean_url( "expert_answer", iObjectID ) + ";";
+		}
+			
+	}
+	else
+	{
+		sName = teObject.name;
+		
+		catalog = common.exchange_object_types.GetOptChildByKey( teObject.Name );
+		sClickAction = "";
+		if( catalog != undefined )
+		{
+			if( teObject.Name == "document" )
+			{
+				if( teObject.attributes.is_link )
+					sClickAction = teObject.attributes.link_href;
+				else
+					sClickAction = tools_web.doc_link( teObject )
+			}
+			else
+				sClickAction = catalog != undefined && catalog.web_template != "" ? tools_web.get_mode_clean_url( null, iObjectID ) : ( catalog.name == "expert_question" ? "SET=AnswerExspertDialog/iQuestionId," + iObjectID + ";OPENDIALOG=AnswerExspertDialog;" : "" );
+		}
+		if( sClickAction != "" )
+			sClickAction = lnk + "=" + sClickAction
+
+	}
+	sName = XmlAttrEncode( sName );
+	if( teObject.Name == "item" )
+		sClickAction = "OPENDIALOG=ShowItem" + iObjectID;
+	if( teObject.Name == "item" )
+	{
+%>
+	<Dialog Name="ShowItem<%=iObjectID%>" Width="800" Source="dlg_item_check" Title="<%=XmlAttrEncode( "Вопрос" )%>">
+		<Param Name="item_id" Value="<%=iObjectID%>"/>
+	</Dialog>
+<%
+	}
+%>
+	<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%="Просмотр материала"%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+		<Param Name="object_id" Value=""/>
+	</Dialog>	
+<%
+if( teObject.Name == 'expert' )
+{
+%>
+
+<Grid>
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+	<GridRow>
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Image Orientation="Vertical" Width="64" Height="64" Class="XAML-image-contain" Source="pics/1blank.gif">
+					<BackgroundImage Class="XAML-image-contain" Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+				<StackPanel Orientation="Vertical">
+					<Grid Class="XAML-grid-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+							<GridColumn/>
+							<GridColumn/>
+<%
+	}
+%>
+						</GridColumns>
+
+						<GridRow>
+							<StackPanel Orientation="Vertical" Class="">
+								<Link  Class="XAML-link-list-item-title" Click="<%=XmlAttrEncode( sClickAction )%>"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+								<Label Class="XAML-label-list-item-label"><![CDATA[<%=teObject.type.ForeignElem.name%>]]></Label>
+							</StackPanel>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+							<StackPanel Orientation="Vertical">
+								<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "sa1ibhf93r", curLngWeb )%>:</Label>
+								<Label Class="XAML-grid-header-label"><![CDATA[<%=teObject.rating%>]]></Label>
+							</StackPanel>
+							<StackPanel Orientation="Vertical">
+								<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "vkmb_answered_questions", curLngWeb )%>:</Label>
+								<Label Class="XAML-grid-header-label"><![CDATA[<%=ArrayCount( XQuery("for $elem in expert_questions where $elem/expert_id=" + iObjectID + " and $elem/status=true() return $elem" ) )%>]]></Label>
+							</StackPanel>
+<%
+	}
+%>
+						</GridRow>
+					</Grid>
+<%
+				if( teObject.ChildExists( "comment" ) && teObject.comment.HasValue )
+				{
+%>
+					<Label Class="XAML-grid-list-desc XAML-label-list-item-desc"><![CDATA[<%=XmlAttrEncode( teObject.comment )%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+</Grid>
+	
+<%
+}
+else if( teObject.Name == 'expert_question' )
+{
+	pers_fullname = pers != undefined ? pers.fullname : "";
+	str_date = teObject.date.HasValue ? StrDate( teObject.date, false, false ) : "";
+%>
+<Dialog Name="AnswerExpertDialog" Source="<%=edit_answer ? "dlg_edit_expert_answer" : "expert_answer"%>" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="<%=edit_answer ? "UPDATE=ActiveQuestionsExpertQuestions;UPDATE=ArhiveQuestionsExpertQuestions;" : ""%>">
+	<Param Name="iQuestionId" Value="{iQuestionId}"/>
+	<Param Name="bEditQuestion" Value="<%=edit_question%>"/>
+</Dialog>
+<Edit Name="iQuestionId" Hidden="1"></Edit>
+<Grid>
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+	<GridRow>
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Image Orientation="Vertical" Width="64" Height="64" Class="XAML-image-contain" Source="pics/1blank.gif">
+					<BackgroundImage Class="XAML-image-contain" Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+				<StackPanel Orientation="Vertical">
+					<Grid Class="XAML-grid-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+
+							<GridColumn/>
+
+							<GridColumn/>
+
+						</GridColumns>
+
+						<GridRow>
+							<StackPanel Orientation="Vertical" Class="">
+								<Link  Class="XAML-link-list-item-title" Click="<%=XmlAttrEncode( sClickAction )%>"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+								<StackPanel Orientation="Horizontal" Class="" Adapt="1">
+									<Label Class="XAML-label-list-item-label"><![CDATA[<%=pers_fullname + ( str_date != "" && pers_fullname != "" ? ", " : "" )%>]]></Label>
+									<Label Class="XAML-label-list-item-label"><![CDATA[<%=str_date%>]]></Label>
+								</StackPanel>
+							</StackPanel>
+
+						</GridRow>
+					</Grid>
+<%
+				if( teObject.ChildExists( "comment" ) && teObject.comment.HasValue )
+				{
+%>
+					<Label Class="XAML-grid-list-desc XAML-label-list-item-desc"><![CDATA[<%=XmlAttrEncode( teObject.comment )%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+</Grid>	
+<%
+}
+else
+{
+	xarrLikes = XQuery( "for $i in likes where $i/object_id = " + iObjectID + " return $i" )
+%>
+<Grid>
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+	<GridRow>
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Image Orientation="Vertical" Class="wt-informer wt-info-image XAML-image-list-image" Source="pics/1blank.gif">
+					<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+				<StackPanel Orientation="Vertical">
+					<Grid Class="XAML-grid-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+							<GridColumn/>
+							<GridColumn/>
+<%
+	}
+%>
+						</GridColumns>
+
+						<GridRow>
+							<StackPanel Orientation="Vertical" Class="">
+								<Link  Class="XAML-link-list-item-title" Click="<%=XmlAttrEncode( sClickAction )%>"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+								<StackPanel Orientation="Horizontal" Class="">
+									<Label Class="XAML-label-list-item-label"><![CDATA[<%=common.exchange_object_types.GetOptChildByKey( teObject.Name ).title%>]]></Label>
+									<Label Class="XAML-label-list-item-label"><![CDATA[,]]></Label>
+									<Label Class="XAML-label-list-item-label"><![CDATA[<%=StrDate( teObject.doc_info.creation.date, false, false )%>]]></Label>
+								</StackPanel>
+							</StackPanel>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+							<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+								<Image Source="/pics/1blank.gif" Class="XAML-image-like"/>
+								<Label><![CDATA[<%=ArrayCount( ArraySelect( xarrLikes, "weight>0" ) )%>]]></Label>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+								<Image Source="/pics/1blank.gif" Class="XAML-image-dislike"/>
+								<Label><![CDATA[<%=ArrayCount( ArraySelect( xarrLikes, "weight<0" ) )%>]]></Label>
+							</StackPanel>
+<%
+	}
+%>
+						</GridRow>
+					</Grid>
+<%
+				if( teObject.ChildExists( "comment" ) && teObject.comment.HasValue )
+				{
+%>
+					<Label Class="XAML-grid-list-desc XAML-label-list-item-desc"><![CDATA[<%=XmlAttrEncode( teObject.comment )%>]]></Label>
+<%
+				}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+</Grid>
+<%
+			}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,281 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_poll_procedure_report_extended">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+
+
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+			<COLUMNS>
+				<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('c_fio')"/>
+				<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('c_code')"/>
+				<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('c_poll')"/>
+				<LOOP VAR="_question" EXPR="TopElem.questions">
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('c_question') + ' ' + (_question.ChildIndex + 1)"/>
+					<IF EXPR="ArrayOptFirstElem(_question.entries) != undefined">
+						<LOOP VAR="_entry" EXPR="_question.entries">
+							<COL WIDTH="20zr" TITLE-EXPR="_entry.value"/>
+						</LOOP>
+					</IF>
+					<ELSE>
+						<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('c_answer')"/>
+					</ELSE>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('vkpb_comment')"/>
+				</LOOP>
+			</COLUMNS>
+			<LOOP VAR="_person" EXPR="TopElem.persons">
+				<LOOP VAR="_poll" EXPR="_person.polls">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _poll.PrimaryKey ) );" SINGLE-SELECT="1" BK-COLOR-EXPR="AppUi.themeColors.list_standart_bg" IMAGE-URL="ico/poll.ico">
+						<COL TITLE-EXPR="_person.person_fullname"/>
+						<COL TITLE-EXPR="_person.person_code"/>
+						<COL TITLE-EXPR="_poll.name"/>
+						
+						<LOOP VAR="_question" EXPR="TopElem.questions">
+							<COL TITLE-EXPR="_question.title"/>
+							
+							<WITH VAR="_cur_question" EXPR="return ArrayOptFind(_poll.questions, 'PrimaryKey == ' + _question.PrimaryKey);">
+								<IF EXPR="ArrayOptFirstElem(_question.entries) != undefined">
+									<LOOP VAR="_entry" EXPR="_question.entries">
+										<COL TITLE-EXPR="
+											if (_cur_question != undefined)
+											{
+												if ((_question.type == 'combo' || _question.type == 'choice') && _cur_question.value == _entry.id + '') return '+';
+												if (_question.type == 'select' && _cur_question.value.HasValue)
+												{
+													_fvals =  String(_cur_question.value).split(';');
+													if (ArrayOptFind(_fvals, 'This == \'' + _entry.id + '\'') != undefined) return '+';	
+												}
+												return '';
+											}
+											
+											return '';
+										"/>
+									</LOOP>
+								</IF>
+								<ELSE>
+									<COL TITLE-EXPR="(_cur_question != undefined ? _cur_question.value :'')"/>
+								</ELSE>
+								<COL TITLE-EXPR="(_cur_question != undefined ? _cur_question.comment :'')"/>
+							</WITH>
+						</LOOP>
+					</ROW>
+				</LOOP>
+			</LOOP>
+			<IF EXPR="ArrayOptFirstElem(_question.persons) != undefined">
+				<ROW BK-COLOR="210,210,210" SINGLE-SELECT="1">
+					<COL/>
+					<COL/>
+					<COL/>
+					<LOOP VAR="_question" EXPR="TopElem.questions">
+						<COL/>
+						<IF EXPR="ArrayOptFirstElem(_question.entries) != undefined">
+							<LOOP VAR="_entry" EXPR="_question.entries">
+								<COL TITLE-EXPR="_entry.hits"/>
+							</LOOP>
+						</IF>
+						<ELSE>
+							<COL/>
+						</ELSE>
+						<COL/>
+					</LOOP>
+				</ROW>
+				<ROW BK-COLOR="200,200,200" SINGLE-SELECT="1">
+					<COL/>
+					<COL/>
+					<COL/>
+					<LOOP VAR="_question" EXPR="TopElem.questions">
+						<COL/>
+						<IF EXPR="ArrayOptFirstElem(_question.entries) != undefined">
+							<LOOP VAR="_entry" EXPR="_question.entries">
+								<COL TITLE-EXPR="(_entry.encounters &gt; 0 ? StrReal(Real(_entry.hits * 100)/Real(_entry.encounters), 2) + '%' : '')"/>
+							</LOOP>
+						</IF>
+						<ELSE>
+							<COL/>
+						</ELSE>
+						<COL/>
+					</LOOP>
+				</ROW>
+			</IF>
+		</LIST>
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="TopElem.person_id"/>
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="TopElem.poll_procedure_id" catalogExpr="'poll_procedure'"/>
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="TopElem.poll_id" catalogExpr="'poll'"/>
+
+				<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'pu7nmyly91' )" >
+					<COMBO WIDTH="100%" SOURCE="Ps.disp_select">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( '25bqsswkv1' )" VALUE-EXPR="0"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( '0y69dkwfiq' )" VALUE-EXPR="1"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( '81k74c1unj' )" VALUE-EXPR="2"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'qu70mws5yt' )" VALUE-EXPR="3"/>
+					</COMBO>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<BR/>
+				<BR/>
+
+			</PANEL>
+		</IF>
+	
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	arrSettings = [
+		{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+		{ 'name' : 'poll_procedure_id', 'value' : TopElem.poll_procedure_id.Value },
+		{ 'name' : 'poll_id', 'value' : TopElem.poll_id.Value },
+		{ 'name' : 'disp_select', 'value' : TopElem.disp_select.Value },
+		{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+		{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value }
+	];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	TopElem.persons.Clear();
+	TopElem.questions.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	curUser = tools.get_cur_user();
+	oResult = task.CallMethod( 'tools_report', 'poll_procedure_report', [ oParams ] );
+	
+	//oResult = CallServerMethod( 'tools_report', 'poll_procedure_report', [ oParams ] );
+	//oResult = tools_report.poll_procedure_report( oParams );
+	
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount( oResult.poll_results );
+
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+		for ( oPollResult in oResult.poll_results )
+		{
+			_child 					= Ps.persons.AddChild();
+			_child.person_id		= oPollResult.person_id;
+			_child.person_fullname	= oPollResult.person_fullname;
+			_child.person_code		= oPollResult.person_code;
+
+			for ( oPoll in oPollResult.polls )
+			{
+				_childPoll			= _child.polls.AddChild();
+				_childPoll.poll_id 	= oPoll.poll_id;
+				_childPoll.name		= oPoll.name;
+
+				for ( oPollQuestion in oPoll.questions )
+				{
+					_childPollQuestion		 		= _childPoll.questions.AddChild();
+					_childPollQuestion.question_id	= oPollQuestion.question_id;
+					_childPollQuestion.value 		= oPollQuestion.value;
+					_childPollQuestion.title 		= oPollQuestion.title;
+					_childPollQuestion.comment 		= oPollQuestion.comment;
+				}
+			}
+		}
+
+		for ( oQuestion in oResult.questions )
+		{
+			_child 				= Ps.questions.AddChild();
+			_child.question_id	= oQuestion.question_id;
+			_child.title		= oQuestion.title;
+			_child.type			= oQuestion.type;
+
+			for ( oQuestionEntry in oQuestion.entries )
+			{
+				_childQuestionEntry 		= _child.entries.AddChild();
+				_childQuestionEntry.id 		= oQuestionEntry.id;
+				_childQuestionEntry.value 	= oQuestionEntry.value;
+				
+				try
+				{
+					_childQuestionEntry.encounters = oQuestionEntry.encounters;
+				}
+				catch( ex )
+				{}
+				
+				try
+				{
+					_childQuestionEntry.hits = oQuestionEntry.hits;
+				}
+				catch( ex )
+				{}
+			}
+		}
+
+		if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+		{
+			if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+			{
+				Screen.RunCommand( 'ExportToExcel' );
+				Ps.persons.Clear();
+				Ps.questions.Clear();
+				TopElem.count_arr = null;
+			}
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+	_str = EvalCodePageUrl( 'x-local://templates/poll_procedure_report_extended.html' );
+	
+	sReportFilePath = CallServerMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, '', Ps ] );
+	
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+	ShellExecute( 'open', sReportFilePath );
+"/>
+
+<COMMAND-HANDLER CMD="EditColumns" ACTION="
+	dlgDoc = OpenDoc( 'x-local://wtv/wtv_dlg_edit_columns.xml' );
+	dlgDoc.TopElem.AssignElem( TopElem );
+	Screen.ModalDlg( dlgDoc );
+"/>
+
+</SPXML-SCREEN>

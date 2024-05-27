@@ -1,0 +1,404 @@
+﻿<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;	
+bReadOnly = true;
+curVacancyID = null;
+curVacancyDoc = null;
+
+try
+{
+	curVacancyID = curObject.vacancy_id;
+	curVacancyDoc = OpenDoc( UrlFromDocID( curVacancyID ) ).TopElem;
+}
+catch(err)
+{}
+
+if ( oParamSource.HasProperty("vacancy_id") && oParamSource.GetProperty("vacancy_id") != "" )
+{
+	bReadOnly = false;
+	try
+	{
+		curVacancyID = Int(  oParamSource.GetProperty("vacancy_id") );
+		curVacancyDoc = OpenDoc( UrlFromDocID( curVacancyID ) ).TopElem;
+	}
+	catch(err)
+	{
+		bReadOnly = true;
+	}
+}	
+
+bReadOnly = ( bReadOnly && curObjectID != null )
+bRecruiter=((curVacancyDoc!=null&&curVacancyDoc.collaborator_id.HasValue&&curVacancyDoc.collaborator_id==curUserID))
+
+
+strRecommendationFields = String( tools_web.get_web_param( curParams, 'recommendation.disp_field_list', 'lastname;firstname;middlename;phone;mobile_phone;work_phone;email;letter_text;desc;file', true ) );
+arrRecommendationFields=strRecommendationFields.split(";")
+
+strRecommendationRequiredFields = String( tools_web.get_web_param( curParams, 'recommendation.required_field_list', 'lastname;firstname;email;letter_text;desc', true ) );
+arrRecommendationRequiredFields=strRecommendationRequiredFields.split(";")
+
+for (strElem in arrRecommendationRequiredFields)
+{
+	if (ArrayOptFind(arrRecommendationFields,"This=='"+strElem+"'")==undefined)
+	{
+		arrRecommendationFields.push(strElem)
+	}
+}
+
+xarrBossTypes = tools.get_object_relative_boss_types(curUserID, curObjectID);
+xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',vacancy_response,') )");
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+
+bHasOperationActions=false
+if(ArrayOptFirstElem(xarrOperationsActions) !=undefined)
+{
+	bHasOperationActions=true
+}
+alert(bHasOperationActions);
+%>
+<SPXMLScreen>
+
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "c_recommendation", curLngWeb )%></Label>
+	<Action Name="SendRecommendation" Source="SendRecommendation" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curVacancyID, { doc_id : curDocID } )%>" Failure="ALERT={messageText}">
+		<Param Name="vacancy_id" Value="<%=curVacancyID%>"/>
+		<Param Name="strRecommendationFields" Value="<%=ArrayMerge(arrRecommendationFields,"This",";")%>"/>
+		<Param Name="strRecommendationRequiredFields" Value="<%=ArrayMerge(arrRecommendationRequiredFields,"This",";")%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+<%
+	if(bHasOperationActions)
+	{
+		curCollectionMenu = {
+		"id": "RecommendationBody",
+		"catalog_name": "recommendation",
+		"selected_data": UrlEncode( '[{"id":' + curObjectID + '}]' )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+	}
+%>	
+	<Action Name="SaveRecommendation" Source="SaveRecommendation" Success="ALERT={!messageText};{PostAction}" Failure="ALERT={!messageText}">
+		<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+		<Param Name="action_id" Value=""/>
+		<Param Name="strStatus" Value=""/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+	<Dialog Name="SetObjectStatusDialog" Source="dlg_set_object_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "uhxrmfu4y8", curLngWeb ) )%>" Width="25%" Close="Set=SaveRecommendation/action_id,change_status;SET=SaveRecommendation/strStatus,{status};ACTION=SaveRecommendation">
+		<Param Name="common_status_collection_name" Value="vacancy_response_status_types"/>
+	</Dialog>	
+	<Toolbar Class="XAML-toolbar">
+<%
+	if (!bReadOnly)
+	{
+%>
+	<Button Click="ACTION=SendRecommendation" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "vcb_submit", curLngWeb )%></Button>
+<%
+	}
+	if ( bRecruiter && curObjectID != null )
+	{
+		Request.Session.Env.SetProperty( 'sStartMode', curMode );
+		Request.Session.Env.SetProperty( 'sStartModeObjectID', curObjectID );
+		
+		strUrl = tools_web.get_mode_clean_url( 'resume', null, { recommendation_id : curObjectID, doc_id : curDocID } );
+%>
+		<Button Class="XAML-button XAML-button-save" Click="Set=SaveRecommendation/action_id,save;Action=SaveRecommendation"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+		<Button Click="OPENDIALOG=SetObjectStatusDialog" Class="XAML-button XAML-button-refresh"><%=tools_web.get_web_const( "izmenitstatus", curLngWeb )%></Button>
+		<Button Click="OPENURL=<%=strUrl%>" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "sozdatrezyume", curLngWeb )%></Button>
+
+<%
+	}
+	oParam = {
+	"name_id": "RecommendationBody",
+	"curUserID": curUserID,
+	"curUser": curUser
+};
+for ( catActionElem in xarrOperationsActions )
+{
+
+	sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+	<Button Class="XAML-button XAML-button--<%=catActionElem.action%>" Click="<%=sClick%>"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></Button>
+<%
+}
+%>
+</Toolbar>
+	<Panel Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">	
+		<Grid Width="100%" Class="XAML-grid-info-table">	
+<%
+//Просмотр существующего отлика
+if ( bReadOnly && curObjectID != null )
+{
+%>
+		<GridColumns>
+			<GridColumn Width="250" Align="right"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curObject.vacancy_id, {} )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( (curVacancyDoc!=null?curVacancyDoc.name:curObject.vacancy_name), curLng.short_id ))%></Link>
+		</GridRow>
+<%
+		if (ArrayOptFind(arrRecommendationFields,"This=='lastname'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_last_name", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.lastname)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='firstname'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_name", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.firstname)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='middlename'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_s_name", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.middlename)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_phone", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.phone)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='mobile_phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "org_telm", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.mobile_phone)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='work_phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "org_telw", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(curObject.work_phone)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='email'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">E-mail:</Label>
+			<Label><%=XmlAttrEncode(curObject.email)%></Label>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='letter_text'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "soprovoditelno", curLngWeb )%>:</Label>
+			<HTMLBox>											
+				<![CDATA[
+					<%=HtmlEncode(curObject.letter_text)%>
+				]]>
+			</HTMLBox>	
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='desc'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_resume", curLngWeb )%>:</Label>
+			<HTMLBox>											
+				<![CDATA[
+					<%=HtmlEncode(tools_web.get_web_desc(curObject.desc, UrlFromDocID( curObjectID ), "recommendation.desc" ))%>
+				]]>
+			</HTMLBox>
+		</GridRow>
+<%
+		}
+
+		if ( ArrayOptFind( arrRecommendationFields, "This == 'file'" ) != undefined )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_file", curLngWeb )%>:</Label> 
+			<StackPanel>
+<%
+			for ( _file in curObject.files )
+			{
+				try
+				{
+					fileDoc = OpenDoc( UrlFromDocID( _file.file_id ) ).TopElem;
+				}
+				catch( err )
+				{ 
+					alert( err ); 
+					continue;
+				}
+				
+				_sUrl = tools_web.get_mode_clean_url( null, _file.file_id );
+
+				Response.Write( '<Link Click="OPENURL=' + _sUrl + '">' + fileDoc.file_name + '</Link>' );
+			}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+		}
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_create_date", curLngWeb )%>:</Label>
+			<Label><%=curObject.doc_info.creation.date%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(tools_web.get_cur_lng_name( (curObject.status.OptForeignElem != undefined ? curObject.status.OptForeignElem.name : ""), curLng.short_id ))%></Label>
+		</GridRow>
+<%
+		fldSrcPerson=curObject.src_person_id.OptForeignElem
+		if (fldSrcPerson!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_person_send_recommendation", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldSrcPerson.id, {} )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( fldSrcPerson.fullname, curLng.short_id ))%></Link>
+		</GridRow>
+<%
+		}
+		else if (curObject.src_person_fullname.HasValue)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_person_send_recommendation", curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode(tools_web.get_cur_lng_name( curObject.src_person_fullname, curLng.short_id ))%></Label>
+		</GridRow>
+<%
+		}
+		
+		if (bRecruiter)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "kommentariyrek", curLngWeb )%>:</Label>
+			<EditBox Name="comment_recruiter" Width="500" Height="80"><%=XmlAttrEncode(curObjectID != null?curObject.comment_recruiter:"")%></EditBox>
+		</GridRow>
+<%
+		}
+}
+else
+{
+%>	
+		<GridColumns>
+			<GridColumn Width="250" Align="right"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curVacancyID, {} )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( (curVacancyDoc!=null?curVacancyDoc.name:curObject.vacancy_name), curLng.short_id ))%></Link>
+		</GridRow>
+<%
+		if (ArrayOptFind(arrRecommendationFields,"This=='lastname'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_last_name", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='lastname'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="lastname"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='firstname'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_name", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='firstname'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="firstname"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='middlename'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_s_name", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='middlename'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="middlename"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_phone", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='phone'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="phone"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='mobile_phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "org_telm", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='mobile_phone'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="mobile_phone"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='work_phone'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "org_telw", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='work_phone'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="work_phone"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='email'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">E-mail<%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='email'")!=undefined?"*":"")%>:</Label>
+			<Edit Width="200" Name="email"></Edit>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='letter_text'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "soprovoditelno", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='letter_text'")!=undefined?"*":"")%>:</Label>
+			<EditBox Name="letter_text" Width="500" Height="80"> </EditBox>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='desc'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_resume", curLngWeb )%><%=(ArrayOptFind(arrRecommendationRequiredFields,"This=='desc'")!=undefined?"*":"")%>:</Label>
+			<EditBox Name="desc" Width="100%" Height="150"> </EditBox>
+		</GridRow>
+<%
+		}
+		if (ArrayOptFind(arrRecommendationFields,"This=='file'")!=undefined)
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_file", curLngWeb )%>:</Label>
+			<ResourceField Name="file" TitleName="file_name" Width="200" CanSelect="false"/>
+		</GridRow>
+<%
+		}
+}
+%>
+	</Grid>
+</Panel>
+</SPXMLScreen>

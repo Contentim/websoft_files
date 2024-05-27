@@ -1,0 +1,290 @@
+﻿<%
+function check_access( catElem )
+{
+	if( catElem.completed_parent_programs.ChildNum > 0 )
+	{
+		arr_not_completed = new Array();
+		for( _comp_program in catElem.completed_parent_programs )
+		{
+			catCompletedProgram = teEducationPlan.programs.GetOptChildByKey( _comp_program.PrimaryKey )
+			if( catCompletedProgram != undefined && catCompletedProgram.state_id != 2 && catCompletedProgram.state_id != 4 )
+				return "blocked";
+		}
+	}
+		
+	return catElem.state_id;
+}
+
+function write_program( catProgram, sStyle, is_selected, parent_id, b_has_child )
+{
+	var sClickAction = "";
+	//sClickAction += "HIDE=StackPanelProgram{ProgramID}typedark;SHOW=StackPanelProgram{ProgramID}type;"
+	//sClickAction += "HIDE=StackPanelProgram{ProgramID}dark;SHOW=StackPanelProgram{ProgramID};SHOW=StackPanelProgram" + catProgram.id + "dark;";
+	//sClickAction += "HIDE=StackPanelProgram" + catProgram.id + ";HIDE=StackPanelProgram" + catProgram.id + "type;"
+	//sClickAction += "SHOW=StackPanelProgram" + catProgram.id + "typedark;" + ( b_has_child ? ( "TOGGLE=StackPanel" + catProgram.id + "a;" ) : "" );
+	//sClickAction += "SET=ProgramID," + catProgram.id + ";UPDATE=PanelEduPlanStages;"
+	sClickAction += "SET=ProgramID," + catProgram.id + ";ACTION=EducationPlanGetAction;"
+%>
+			<StackPanel Name="StackPanelProgram<%=catProgram.id + sStyle%>" Hidden="<%=is_selected%>">
+				<Grid>
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Width="20"/>
+					</GridColumns>
+					<GridRow>
+						<Link Class="XAML-programname<%=sStyle != "" ? ( "-" + sStyle ) : ""%>" Click="<%=sClickAction%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( catProgram.name, curLng.short_id ) )%></Link>
+						<Label Width="15" Class="XAML-icon-state-<%=check_access( catProgram )%><%=sStyle != "" ? ( "-" + sStyle ) : ""%>"/>
+					</GridRow>
+				</Grid>
+			</StackPanel>
+<%
+}
+function write_programs( arrPrograms, parent_id, is_expended )
+{
+	if( parent_id != null )
+	{
+%>
+	<StackPanel Name="StackPanel<%=parent_id%>a" Hidden="<%=!is_expended%>" Class="StackPanelChild">
+<%
+	}
+%>
+	<Grid>
+		<GridColumns>
+			<GridColumn Width="20"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+	var arrChilds = new Array();
+	var bHasChild = false;
+	for( program in arrPrograms )
+	{
+		arrChilds = ArraySelect( teEducationPlan.programs, "This.parent_progpam_id == " + Int( program.id.Value ) )
+		bHasChild = ArrayOptFirstElem( arrChilds ) != undefined;
+		bExpended = ArrayOptFind( arrExpendeds, "This == program.id.Value" ) != undefined;
+		bSelected = iProgramID == program.id.Value;
+		sProgramTypeStyle = "XAML-icon-type-" + ( bHasChild ? "arrow" : program.type == "material" ? ( program.type + "-" + program.catalog_name ) : program.type )
+%>
+		<GridRow>
+			<StackPanel>
+				<StackPanel Name="StackPanelProgram<%=program.id%>type" Hidden="<%=bSelected || ( bHasChild && bExpended )%>">
+<%
+		if( bHasChild )
+		{
+%>
+					<Link Click="SET=ProgramID,<%=program.id%>;ACTION=EducationPlanGetActionExpend;" Width="15" Class="<%=sProgramTypeStyle%>"></Link>
+<%		
+
+		}
+		else
+		{
+%>
+					<Label Width="15" Class="<%=sProgramTypeStyle%>"/>
+<%		
+
+		}
+%>
+				</StackPanel>
+<%
+		if( bHasChild )
+		{
+%>
+				<StackPanel Name="StackPanelProgram<%=program.id%>typedarkselected" Hidden="<%=!bSelected || !bExpended%>">
+					<Label Width="15" Class="<%=sProgramTypeStyle%>-dark-parent"></Label>
+				</StackPanel>
+				<StackPanel Name="StackPanelProgram<%=program.id%>typedarkparent" Hidden="<%=bSelected || !bExpended%>">
+					<Link Click="SET=ProgramID,<%=program.id%>;ACTION=EducationPlanGetActionExpend;" Width="15" Class="<%=sProgramTypeStyle%>-parent"></Link>
+				</StackPanel>
+<%		
+
+		}
+		else
+		{
+%>
+				<StackPanel Name="StackPanelProgram<%=program.id%>typedark" Hidden="<%=!bSelected%>">
+					<Label Width="15" Class="<%=sProgramTypeStyle%>-dark"/>
+				</StackPanel>
+<%		
+
+		}
+%>
+			</StackPanel>
+			<StackPanel>
+<%
+		write_program( program, "", bSelected, parent_id, bHasChild )
+		write_program( program, "dark", !bSelected, parent_id, bHasChild )
+		if( bHasChild )
+		{
+			write_programs( arrChilds, program.id, bExpended )
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+<%
+	if( parent_id != null )
+	{
+%>
+	</StackPanel>
+<%
+	}
+}
+
+iTreeWidth = tools_web.get_web_param( curParams, "education_plan_new.tree_width", "300", true );
+if( curObject != null && curObject.Name == "education_plan" )
+{
+	iEducationPlanID = curObjectID;
+	teEducationPlan = curObject;
+}
+else
+{
+	iEducationPlanID = Int( CONTEXT.GetOptProperty( "EducationPlanID", curUrlQuery.GetOptProperty( "education_plan_id" ) ) );
+	teEducationPlan = OpenDoc( UrlFromDocID( iEducationPlanID ) ).TopElem;
+}
+
+function get_next_program()
+{
+	bOpenNext = tools_web.is_true( tools_web.get_web_param( curParams, "education_plan_body.use_body_with_tree.open_next_program", "0", true ) );
+	if( bOpenNext )
+	{
+		function get_next( program_id )
+		{
+			for( _program in ArraySelect( teEducationPlan.programs, "This.parent_progpam_id == program_id" ) )
+			{
+				if( _program.state_id != 3 && _program.state_id != 4 )
+					return _program.id;
+				iNext = get_next( _program.id );
+				if( iNext != null )
+					return iNext;
+			}
+			return null
+		}
+		iLastNext = get_next( null )
+		if( iLastNext != null )
+			return iLastNext;
+	}
+		
+	return "main";
+}
+iNextProgram = get_next_program();
+iProgramID = OptInt( CONTEXT.GetOptProperty( "ProgramID", curUrlQuery.GetOptProperty( "program_id", iNextProgram ) ), iNextProgram );
+arrExpendeds = new Array();
+arrExpendeds.push( iProgramID )
+if( iProgramID != "main" )
+{
+	catProgram = teEducationPlan.programs.GetOptChildByKey( iProgramID );
+	while( catProgram != undefined )
+	{
+		if( catProgram.parent_progpam_id.HasValue )
+			arrExpendeds.push( catProgram.parent_progpam_id.Value )
+		else
+			break;
+		catProgram = teEducationPlan.programs.GetOptChildByKey( catProgram.parent_progpam_id.Value );
+	}
+}
+
+
+if( !tools_web.check_access( teEducationPlan , curUserID, curUser, Session ) )
+{
+%>
+<SPXMLScreen>
+<%
+	curMessageBox = {
+		"type": "error",
+		"text": "У вас нет прав на просмотр данного документа."
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+%><SPXMLScreen>
+<!--	<Collection Name="EduPlanStagesCollection">
+		<Data>
+			<Row>
+				<Cell Id="id" Value="main"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( teEducationPlan.name, curLng.short_id ) )%>"/>
+				<Cell Id="parent_id" Value=""/>
+				<Cell Id="Expanded" Value="true"/>
+				<Cell Id="selected" Value="true"/>
+			</Row>
+<%
+
+for( catStage in teEducationPlan.programs )
+{
+	sTitle = catStage.name.Value;
+	
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catStage.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( sTitle )%>"/>
+				<Cell Id="parent_id" Value="<%=catStage.parent_progpam_id.HasValue ? catStage.parent_progpam_id : "main"%>"/>
+				<Cell Id="Expanded" Value="false"/>
+				<Cell Id="selected" Value=""/>
+			</Row>
+<%
+}
+%>
+		</Data>
+	</Collection>-->
+<%
+/*var curTitle = {
+	"object": teEducationPlan
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );*/
+aProgramStates = new Array();
+for( catElem in teEducationPlan.programs )
+	aProgramStates.push( { id: catElem.id.Value, state: ( iProgramID == catElem.id ? 1 : ArrayOptFind( arrExpendeds, "This == catElem.id.Value" ) != undefined ? 2 : 0 ) } )
+
+%>
+	<Edit Name="EducationPlanID" Hidden="1"><%=iEducationPlanID%></Edit>
+	<Edit Name="ProgramID" Hidden="1"><%=iProgramID%></Edit>
+	<Edit Name="LastProgramID" Hidden="1"></Edit>
+	<Edit Name="ProgramStates" Hidden="1"><%=UrlEncode( tools.object_to_text( aProgramStates, "json" ) )%></Edit>
+	<Action Name="EducationPlanGetAction" Source="education_plan_actions" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="action" Value="get_action"/>
+		<Param Name="education_plan_id" Value="{EducationPlanID}"/>
+		<Param Name="program_id" Value="{ProgramID}"/>
+		<Param Name="last_program_id" Value="{LastProgramID}"/>
+		<Param Name="states" Value="{ProgramStates}"/>
+	</Action>
+	<Action Name="EducationPlanGetActionExpend" Source="education_plan_actions" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="action" Value="get_action_expend"/>
+		<Param Name="education_plan_id" Value="{EducationPlanID}"/>
+		<Param Name="program_id" Value="{ProgramID}"/>
+		<Param Name="last_program_id" Value="{LastProgramID}"/>
+		<Param Name="states" Value="{ProgramStates}"/>
+	</Action>
+	<Grid Width="100%" Class="XAML-grid-content-hor-container">
+		<GridColumns>
+			<GridColumn Width="<%=iTreeWidth%>"/>
+			<GridColumn/>
+		</GridColumns>	
+		<GridRow>
+			<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+				<!--<Tree Name="EduPlanStages" Source="{EduPlanStagesCollection}" Multiline="1" DataID="id" Tooltip_="true" DataSelected="selected" DataParent="parent_id" DataTitle="name" DataExpanded="is_expanded" DataFatherhood="hasChildren" DataIcon="icon" Click="SET=ProgramID,{id};UPDATE=PanelEduPlanStages;">
+					<Menu Source="{CatalogListMenuTree}"/>
+				</Tree>-->
+				<Grid Width="<%=iTreeWidth%>" Class="XAML-grid-content-hor-container XAML-education-plan-tree">
+					<GridColumns>
+						<GridColumn/>
+					</GridColumns>	
+					<GridRow>
+						<%write_programs( ArraySelect( teEducationPlan.programs, "!This.parent_progpam_id.HasValue" ), null )%>
+					</GridRow>
+				</Grid>
+			</StackPanel>
+			<StackPanel>
+				<Panel Name="PanelEduPlanStages" Source="education_plan_program_panel" ShowHeader="false">
+					<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+					<Param Name="program_id" Value="{ProgramID}"/>
+				</Panel>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+	
+</SPXMLScreen>

@@ -1,0 +1,175 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	curDesc;
+}
+catch ( err )
+{
+	curDesc = ({});
+}
+curDesc_sText = curDesc.GetOptProperty( 'text', '' );
+bLangDesc = tools_web.is_true( curDesc.GetOptProperty( 'lang_desc', false ) );
+try
+{
+	curDescObject;
+	curDescObjectID;
+}
+catch ( err )
+{
+	curDescObjectID = OptInt( PARAMETERS.GetOptProperty( "desc_object_id" ), null );
+	try
+	{
+		if ( curDescObjectID == null )
+			throe "no_doc_id";
+		curDescObject = OpenDoc( UrlFromDocID( curDescObjectID ) ).TopElem;
+	}
+	catch ( e )
+	{
+		curDescObjectID = curObjectID;
+		curDescObject = curObject;
+	}
+}
+if ( curDescObject != null )
+{
+	switch ( curDescObject.Name )
+	{
+		case 'document':
+		case 'knowledge_part':
+		case 'wiki_article':
+		case 'wiki_base':
+			sDescFieldName = 'text_area';
+			break;
+
+		case "library_material":
+			sDescFieldName = "description";
+			break;
+
+		default:
+			sDescFieldName = 'desc';
+			break;
+	}
+	if ( sDescFieldName == 'text_area' )
+		curDescObject = tools_web.obtain_text_area( curDescObjectID, curDescObject );
+
+	if ( curDescObject.Child( sDescFieldName ).HasValue || curDesc_sText != '' )
+	{
+		try
+		{
+			curDescDispPanel;
+		}
+		catch( err )
+		{
+			curDescDispPanel = tools_web.is_true( PARAMETERS.GetOptProperty( "disp_panel", false ) );
+		}
+		if ( curDescDispPanel )
+		{
+%>
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Class="XAML-panel-desc" Expanded="1" Width="100%">
+<%
+		}
+		else
+		{
+%>
+	<StackPanel Class="XAML-stack-description">
+<%
+		}
+
+		if ( curDesc_sText != '' )
+		{
+%>
+	<Label><![CDATA[<%=curDesc_sText%>]]></Label>
+<%
+		}
+		else
+		{
+			bDescSimpleView = tools_web.is_true( tools_web.get_web_param( curParams, 'global.desc_simple_view', false, true ) );
+			if ( bDescSimpleView )
+			{
+%>
+<HTMLBox Dynamic="true"><![CDATA[
+<script type="text/javascript">
+var iFontSize = 3;
+var arrFontSizes = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'];
+var iImgSize = 3;
+var arrImgSizes = ['40%', '60%', '80%', '100%', '120%', '140%', '160%'];
+var sDiv = 'div.s-h-contaner';
+
+function fnUpFontSize()
+{
+	if ( iFontSize >= ( arrFontSizes.length - 1 ) )
+	{
+		iFontSize = arrFontSizes.length - 1;
+		return false;
+	}
+	$( sDiv ).css('font-size', arrFontSizes[ ++iFontSize ] );
+}
+function fnDownFontSize()
+{
+	if ( iFontSize <= 0 )
+	{
+		iFontSize = 0;
+		return false;
+	}
+	$( sDiv ).css('font-size', arrFontSizes[ --iFontSize ] );
+}
+$("img.s-h-img").click(function(){
+	$(this).css("width","auto");
+	$(this).css("height","auto");
+	$(this).css("max-width","none");
+	$(this).css("max-height","none");
+})
+</script>
+<style>
+div.s-h-contaner
+{
+	font-size: medium;
+}
+div.s-h-toolbar
+{
+}
+img.s-h-img
+{
+	max-width: 100px;
+	max-height: 100px;
+}
+span.s-h-b
+{
+	font-weight: bold;
+}
+</style>
+<div class="s-h-toolbar">
+<a href="javascript:void(0);" onclick="fnUpFontSize()"><img src="pics/font_size_up.png" alt="Up"/></a> <a href="javascript:void(0);" onclick="fnDownFontSize()"><img src="pics/font_size_down.png" alt="Down"/></a>
+</div>
+<div class="s-h-contaner">
+<%
+				Request.Session.Env.SetProperty( 'curDescObjectID', curDescObjectID );
+				Response.Write( tools_library.convert_to_simple_html( tools_web.get_web_desc( ( bLangDesc ? tools_web.get_language_desc( curDescObject.Child( sDescFieldName ), Session.Env ) : curDescObject.Child( sDescFieldName ) ), ({'mode':'data'}) ) ) );
+%>
+</div>
+]]></HTMLBox>
+<%
+			}
+			else
+			{
+%>
+<HTMLBox><![CDATA[<%=tools_web.get_web_desc( ( bLangDesc ? tools_web.get_language_desc( curDescObject.Child( sDescFieldName ), Session.Env ) : curDescObject.Child( sDescFieldName ) ), ({'mode':'data'}) )%>]]></HTMLBox>
+<%
+			}
+		}
+		if ( curDescDispPanel )
+		{
+%>
+</Panel>
+<%
+		}
+		else
+		{
+%>
+	</StackPanel>
+<%
+		}
+	}
+}
+%>
+</SPXMLScreen>

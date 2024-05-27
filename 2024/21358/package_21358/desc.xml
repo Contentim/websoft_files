@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<download_packages SPXML-FORM="x-local://wtv/wtv_form_download_packages.xmd">
+	<download_package>
+		<id>ahele0gxrd</id>
+		<type>objects</type>
+		<url>update_2024_02_22_15_35_ahele0gxrd.zip</url>
+		<package_date>2024-02-22T15:35:57+00:00</package_date>
+	</download_package>
+</download_packages>

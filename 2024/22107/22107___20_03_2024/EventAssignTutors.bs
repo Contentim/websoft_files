@@ -1,0 +1,1339 @@
+﻿function getParam(_arrFormFields, _sName)
+{
+	result = "";
+	try
+	{
+		_tmpFld = ArrayOptFind(_arrFormFields, "This.name=='" + _sName + "'");
+		result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+	}
+	catch (_err)
+	{
+		result = "";
+		return result;
+	}
+	return result;
+}
+
+function getSubordinates(sAccessLevel)
+{
+	switch(sAccessLevel)
+	{
+		case "manager":
+			var teApplication = tools_app.cur_application.Object;
+		
+			_manager_type_id = 0;
+				
+			if ( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ) != undefined )
+			{
+				_manager_type_id = OptInt( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ).value, 0 );
+			}
+			
+			if ( _manager_type_id == 0 )
+			{
+				_manager_type_id = ArrayOptFirstElem( XQuery('for $elem in boss_types where $elem/code = \'education_manager\' return $elem/Fields(\'id\')') );
+				if ( _manager_type_id == undefined )
+				{
+					_manager_type_id = 0;
+				}
+				else
+				{
+					_manager_type_id = _manager_type_id.id.Value;
+				}
+			}
+
+			arrSubordinates = tools.call_code_library_method("libMain", "get_subordinate_records", [ curUserID, ['func'], true, '', null, '', true, true, true, true, [_manager_type_id], true ]);
+			arrSubordinates.push(curUserID);
+			break;
+		case "lpe_manager":
+			arrSubordinates = tools.call_code_library_method("libMain", "get_subordinate_records", [ curUserID, ['func'], true, '', null, '', true, true, true, true, [], true ]);
+			arrSubordinates.push(curUserID);
+			break;
+		case "default":
+			arrSubordinates = [];
+			break;
+	}
+			
+	return ArrayMerge(arrSubordinates, 'This', ',');
+}
+
+function getObjectIDs(_arrFormFields, _sName)
+{
+	sObjectIDs = "";
+	if (getParam(_arrFormFields, _sName) == undefined || getParam(_arrFormFields, _sName) == "")
+	{
+		try
+		{
+			sObjectIDs = SELECTED_OBJECT_IDS + "";
+		}
+		catch (_err)
+		{
+			sObjectIDs = "";
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = OBJECT_ID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = curObjectID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+	}
+	else
+		sObjectIDs = getParam(_arrFormFields, _sName) + "";
+	return sObjectIDs;
+}
+
+function isLastStep(_arrFormFields)
+{
+	_sStep = "1";
+	_oStep = ArrayOptFind(_arrFormFields, "This.name == 'step'");
+	if (_oStep != undefined)
+		_sStep = _oStep.value;
+	result = true;
+	if (getParam(_arrFormFields, "action_tutors") == "admin" && (tools_web.is_true(getParam(_arrFormFields, "select_lectors")) || tools_web.is_true(getParam(_arrFormFields, "select_tutors")) || tools_web.is_true(getParam(_arrFormFields, "select_event_preparations"))))
+		result = false;
+	if (tools_web.is_true(getParam(_arrFormFields, "select_lectors")) && OptInt(_sStep) < 4)
+		result = false;
+	if (tools_web.is_true(getParam(_arrFormFields, "select_tutors")) && OptInt(_sStep) < 4)
+		result = false;
+	if (tools_web.is_true(getParam(_arrFormFields, "select_event_preparations")) && OptInt(_sStep) < 4)
+		result = false;
+	if (getParam(_arrFormFields, "send_notification") == "admin" || tools_web.is_true(getParam(_arrFormFields, "text_notification")))
+		result = false;
+
+	return result;
+}
+
+function getEventsName(_sEvents)
+{
+	_arrEvents = tools.xquery("for $ev in events where MatchSome($ev/id, (" + StrReplace(_sEvents, ';', ',') + ")) return $ev/Fields('id','name')");
+
+	if (ArrayCount(_arrEvents) > 2)
+	{
+		_aEvents = [];
+		arrEv = ArrayDirect(_arrEvents);
+
+		for (i=0; i < 2; i++)
+		{
+			_aEvents.push(String(arrEv[i].name))
+		}
+		_sObjectsName = i18n.t( 'meropriyatiya' ) + ArrayMerge(_aEvents, 'This', ', ') + i18n.t( 'ieshe' ) + (ArrayCount(_arrEvents)-2);
+	}
+	else if (ArrayCount(_arrEvents) == 1)
+		_sObjectsName = i18n.t( 'meropriyatie' ) + ArrayMerge(_arrEvents, 'name', ',');
+	else
+		_sObjectsName = i18n.t( 'meropriyatiya' ) + ArrayMerge(_arrEvents, 'name', ', ');
+
+	return _sObjectsName
+}
+
+///FORM
+function getFormMessage(_sMessage)
+{
+	var oForm;
+	oForm = {
+		command: "alert",
+		msg: _sMessage,
+		confirm_result: {
+			command: "reload_page"
+		}
+	}
+
+	return oForm;
+}
+
+function getFormSelectObject(_arrFormFields, sAccessLevel)
+{
+	var oForm;
+
+	if (isLastStep(_arrFormFields))
+		bTitle = i18n.t( 'vypolnit' );
+	else
+		bTitle = i18n.t( 'dalee' );
+
+	_statusEvent = getParam(_arrFormFields, "status_event");
+
+	if (sAccessLevel == 'tutor')
+	{
+		oEvents = tools.call_code_library_method( "libEducation", "GetTrainerEvents", [ curUserID, curUser, null, null, sAccessLevel, null, null, null, null, null, null, null, null, "fields", null, ({}), ({}), ""]);
+		sQueryQual = "MatchSome($elem/id, (" + ArrayMerge(oEvents.array, 'id', ',') + "))";
+		if (_statusEvent == "plan")
+			sQueryQual = sQueryQual + " and " + "($elem/status_id = 'plan' or $elem/status_id = 'project')";
+	}
+	else
+	{
+		sQueryQual = '';
+		if (_statusEvent == "plan")
+			sQueryQual = "($elem/status_id = 'plan' or $elem/status_id = 'project')";
+	}
+
+	oForm =
+	{
+		command: "select_object",
+		catalog_name: "event",
+		xquery_qual: sQueryQual,
+		multi_select: true,
+		title: i18n.t( 'vyberitemeropr' ),
+		field_name: "objectID",
+		form_fields:
+			[
+				{
+					name: "step",
+					type: "hidden",
+					value: "1"
+				}
+			]
+	};
+
+	return oForm;
+}
+
+function getFormSelectAction(_arrFormFields)
+{
+	var oForm;
+	var _sObjectIDs = getObjectIDs(_arrFormFields, "objectID");
+	if (isLastStep(_arrFormFields))
+		bTitle = i18n.t( 'vypolnit' );
+	else
+		bTitle = i18n.t( 'dalee' );
+
+	isMulti = ArrayCount( String( _sObjectIDs ).split( ";" ) ) > 1;
+
+	oForm =
+	{
+		command: "display_form",
+		title: i18n.t( 'izmenenieprepo' ),
+		form_fields:
+			[
+				{
+					name: "step",
+					type: "hidden",
+					value: "2"
+				},
+				{
+					name: "objectID",
+					type: "hidden",
+					value: _sObjectIDs
+				},
+				{
+					name: "events_name",
+					type: "paragraph",
+					value: getEventsName(_sObjectIDs)
+				}
+			],
+		buttons:
+			[
+				{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+				{ name: "submit", label: bTitle, type: "submit", css_class: "btn-cancel-custom" }
+			],
+		no_buttons: false
+	};
+	
+	if ( isMulti )
+	{
+		oForm.height = 310;
+		oForm.form_fields.push ({
+			name: "action_tutors",
+			label: i18n.t( 'vyberitedeystv' ),
+			type: "radio",
+			entries: [{ name: i18n.t( 'dobavit' ), value: "add" }, { name: i18n.t( 'zamenit' ), value: "replace" }],
+			value: "",
+			mandatory: true,
+			validation: "nonempty",
+			column: 1
+		});
+	}
+	else
+	{
+		oForm.height = 330;
+		oForm.form_fields.push ({
+			name: "action_tutors",
+			label: i18n.t( 'vyberitedeystv' ),
+			type: "radio",
+			entries: [{ name: i18n.t( 'dobavit' ), value: "add" }, { name: i18n.t( 'zamenit' ), value: "replace" }, { name: i18n.t( 'redaktirovat' ), value: "edit" }],
+			value: "",
+			mandatory: true,
+			validation: "nonempty",
+			column: 1
+		});
+	}
+	
+	return oForm;
+}
+
+function getFormSelectLectors(_arrFormFields)
+{
+	var oForm;
+	var _sObjectIDs = getObjectIDs(_arrFormFields, "objectID");
+	
+	isMulti = ArrayCount( String( getObjectIDs ).split( ";" ) ) > 1;
+	
+	if (isLastStep(_arrFormFields))
+		bTitle = i18n.t( 'vypolnit' );
+	else
+		bTitle = i18n.t( 'dalee' );
+
+	_arrLectorIDs = [];
+	_actionTutors = getParam(_arrFormFields, "action_tutors") + "";
+	
+	if ( isMulti && _actionTutors == "edit" )
+	{
+		_actionTutors = "add";
+	}
+	
+	_elem_id = getParam( _arrFormFields, "ELEMENT_IDS" );
+
+	if (_actionTutors == "edit" || _actionTutors == "replace")
+	{
+		_docObject = tools.open_doc(OptInt(_sObjectIDs, 0));
+		if ( _docObject != undefined )
+		{
+			if ( _elem_id == "" || _elem_id == undefined )
+			{
+				_arrLectorIDs = ArrayExtract( _docObject.TopElem.lectors, "This.PrimaryKey" );
+			}
+			else
+			{
+				_arrLectorIDs = String( _elem_id ).split( ";" );
+			}
+		}
+	}
+	
+	oForm =
+	{
+		command: "select_object",
+		catalog_name: "lector",
+		multi_select: ( _elem_id == "" || _elem_id == undefined || StrContains( _elem_id, ";" ) ),
+		title: i18n.t( 'vyberiteprepod' ),
+		field_name: "lectorIDs",
+		selected_object_ids: ArrayMerge( _arrLectorIDs, 'This', ';' ),
+		form_fields:
+		[
+			{
+				name: "step",
+				type: "hidden",
+				value: "3"
+			},
+			{
+				name: "objectID",
+				type: "hidden",
+				value: _sObjectIDs
+			},
+			{
+				name: "action_tutors",
+				type: "hidden",
+				value: _actionTutors
+			},
+			{
+				name: "ELEMENT_IDS",
+				type: "hidden",
+				value: _elem_id
+			}
+			]
+	};
+	return oForm;
+}
+
+function getFormSelectTutors(_arrFormFields, sAccessLevel)
+{
+	var oForm;
+	var _sObjectIDs = getObjectIDs(_arrFormFields, "objectID");
+	
+	isMulti = ArrayCount( String( _sObjectIDs ).split( ";" ) ) > 1;
+
+	_arrTutorIDs = [];
+	_actionTutors = getParam(_arrFormFields, "action_tutors") + "";
+	if ( isMulti && _actionTutors == "edit" )
+	{
+		_actionTutors = "add";
+	}
+
+	_elem_id = getParam( _arrFormFields, "ELEMENT_IDS" );
+
+	if (_actionTutors == "edit" || _actionTutors == "replace")
+	{
+		_docObject = tools.open_doc(OptInt(_sObjectIDs, 0));
+		if ( _docObject != undefined )
+		{
+			if ( _elem_id == "" || _elem_id == undefined )
+			{
+				_arrTutorIDs = ArrayExtract( _docObject.TopElem.tutors, "This.PrimaryKey" );
+			}
+			else
+			{
+				_arrTutorIDs = String( _elem_id ).split( ";" );
+			}
+		}
+	}
+
+	if (sAccessLevel == "manager" || sAccessLevel == 'lpe_manager')
+	{
+		sQueryQual = "MatchSome($elem/id, (" + getSubordinates(sAccessLevel) + "))";
+		_dispTreeSelector = false;
+	}
+	else
+	{
+		sQueryQual = '';
+		_dispTreeSelector = true;
+	}
+	
+	oForm =
+	{
+		command: "select_object",
+		catalog_name: "collaborator",
+		xquery_qual: sQueryQual,
+		multi_select: ( _elem_id == "" || _elem_id == undefined || StrContains( _elem_id, ";" ) ),
+		title: i18n.t( 'vyberiteotvets' ),
+		field_name: "tutorIDs",
+		selected_object_ids: ArrayMerge( _arrTutorIDs, 'This', ';' ),
+		disp_tree_selector: _dispTreeSelector,
+		form_fields:
+		[
+			{
+				name: "step",
+				type: "hidden",
+				value: "4"
+			},
+			{
+				name: "objectID",
+				type: "hidden",
+				value: _sObjectIDs
+			},
+			{
+				name: "action_tutors",
+				type: "hidden",
+				value: _actionTutors
+			},
+			{
+				name: "lectorIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "lectorIDs") + ""
+			},
+			{
+				name: "ELEMENT_IDS",
+				type: "hidden",
+				value: _elem_id
+			}
+		]
+	};
+	return oForm;
+}
+
+function getFormSelectEvenPreparations(_arrFormFields, sAccessLevel)
+{
+	var oForm;
+	var _sObjectIDs = getObjectIDs(_arrFormFields, "objectID");
+	
+	isMulti = ArrayCount( String( _sObjectIDs ).split( ";" ) ) > 1;
+	if (isLastStep(_arrFormFields))
+		bTitle = i18n.t( 'vypolnit' );
+	else
+		bTitle = i18n.t( 'dalee' );
+
+	_arrPreparationIDs = [];
+	_actionTutors = getParam(_arrFormFields, "action_tutors") + "";
+	
+	if ( isMulti && _actionTutors == "edit" )
+	{
+		_actionTutors = "add";
+	}
+
+	_elem_id = getParam( _arrFormFields, "ELEMENT_IDS" );
+
+	if (_actionTutors == "edit" || _actionTutors == "replace")
+	{
+		_docObject = tools.open_doc(OptInt(_sObjectIDs, 0));
+		if ( _docObject != undefined )
+		{
+			if ( _elem_id == "" || _elem_id == undefined )
+			{
+				_arrPreparationIDs = ArrayExtract( _docObject.TopElem.even_preparations, "This.PrimaryKey" );
+			}
+			else
+			{
+				_arrPreparationIDs = String( _elem_id ).split( ";" );
+			}
+		}
+	}
+
+	if (sAccessLevel == "manager" || sAccessLevel == 'lpe_manager')
+	{
+		sQueryQual = "MatchSome($elem/id, (" + getSubordinates(sAccessLevel) + "))";
+		_dispTreeSelector = false;
+	}
+	else
+	{
+		sQueryQual = '';
+		_dispTreeSelector = true;
+	}
+
+	oForm =
+	{
+		command: "select_object",
+		catalog_name: "collaborator",
+		xquery_qual: sQueryQual,
+		multi_select: ( _elem_id == "" || _elem_id == undefined || StrContains( _elem_id, ";" ) ),
+		title: i18n.t( 'vyberiteotvets_1' ),
+		field_name: "evenPreparationIDs",
+		selected_object_ids: ArrayMerge( _arrPreparationIDs, 'This', ';' ),
+		disp_tree_selector: _dispTreeSelector,
+		form_fields:
+		[
+			{
+				name: "step",
+				type: "hidden",
+				value: "5"
+			},
+			{
+				name: "objectID",
+				type: "hidden",
+				value: _sObjectIDs
+			},
+			{
+				name: "action_tutors",
+				type: "hidden",
+				value: _actionTutors
+			},
+			{
+				name: "lectorIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "lectorIDs") + ""
+			},
+			{
+				name: "tutorIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "tutorIDs") + ""
+			},
+			{
+				name: "ELEMENT_IDS",
+				type: "hidden",
+				value: _elem_id
+			}
+		]
+	};
+	return oForm;
+}
+
+function getFormParamNotification(_arrFormFields)
+{
+	var oForm;
+	var _sObjectIDs = getObjectIDs(_arrFormFields, "objectID");
+	
+	oForm =
+	{
+		command: "display_form",
+		title: i18n.t( 'izmenenieprepo' ),
+		form_fields:
+		[
+			{
+				name: "step",
+				type: "hidden",
+				value: "6"
+			},
+			{
+				name: "objectID",
+				type: "hidden",
+				value: _sObjectIDs
+			},
+			{
+				name: "events_name",
+				type: "paragraph",
+				value: getEventsName(_sObjectIDs)
+			},
+			{
+				name: "type_send",
+				type: "hidden",
+				value: getParam(_arrFormFields, "type_send") + ""
+			},
+			{
+				name: "lectorIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "lectorIDs") + ""
+			},
+			{
+				name: "action_tutors",
+				type: "hidden",
+				value: getParam(_arrFormFields, "action_tutors") + ""
+			},
+			{
+				name: "tutorIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "tutorIDs") + ""
+			},
+			{
+				name: "evenPreparationIDs",
+				type: "hidden",
+				value: getParam(_arrFormFields, "evenPreparationIDs") + ""
+			},
+			{
+				name: "ELEMENT_IDS",
+				type: "hidden",
+				value: getParam(_arrFormFields, "ELEMENT_IDS")
+			}
+		],
+		buttons:
+		[
+			{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+			{ name: "submit", label: i18n.t( 'vypolnit' ), type: "submit", css_class: "btn-cancel-custom" }
+		],
+		no_buttons: false
+	};
+	
+	if (getParam(_arrFormFields, "send_notification") + "" == "admin")
+	{
+		oForm.height = 300
+		oForm.form_fields.push({
+			name: "send_notification",
+			label: i18n.t( 'vyberiteadresa' ),
+			type: "radio",
+			entries: [{ name: i18n.t( 'dobavlennympre' ), value: "tutors_add" }, { name: i18n.t( 'vsemprepodavat' ), value: "tutors_all" }],
+			value: "tutors_add",
+			mandatory: true,
+			validation: "nonempty",
+			column: 1
+		});
+	}
+	
+	if (tools_web.is_true(getParam(_arrFormFields, "text_notification")))
+	{
+		oForm.height = 300;
+		oForm.form_fields.push({
+			name: "text_notification",
+			type: "text",
+			value: "",
+			label: i18n.t( 'vveditetekstko' ),
+			mandatory: false
+		});
+	}
+	if ( getParam(_arrFormFields, "send_notification") + "" == "admin" && tools_web.is_true(getParam(_arrFormFields, "text_notification")))
+		oForm.height = 400;
+	
+	return oForm;
+}
+
+///MAIN
+ERROR = "";
+MESSAGE = "";
+RESULT = {};
+
+var oResult = new Object();
+
+try
+{
+	arrFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch (_err)
+{
+	arrFormFields = [];
+}
+
+actionTutors = getParam(arrFormFields, "action_tutors");
+sendNotification = getParam(arrFormFields, "send_notification");
+statusEvent = getParam(arrFormFields, "status_event");
+selectLectors = getParam(arrFormFields, "select_lectors");
+selectTutors = getParam(arrFormFields, "select_tutors");
+selectEventPreparations = getParam(arrFormFields, "select_event_preparations");
+textNotification = getParam(arrFormFields, "text_notification");
+sApplicationCode = PARAMETERS.GetOptProperty( "sAPPLICATION", null );
+
+iAccessLevel = tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, sApplicationCode ] );
+
+if (iAccessLevel == 0)
+{
+	oRes = tools.call_code_library_method("libMain",  "GetActionRules", [curUserID, curObjectID]);
+
+	if (selectTutors)
+	{
+		if (ArrayOptFindByKey(oRes.result, 'event_change_tutors_right', 'rule') == undefined)
+			ERROR = i18n.t( 'netpravnaizmen' )
+	}
+	if (selectLectors)
+	{
+		if (ArrayOptFindByKey(oRes.result, 'event_change_lectors_right', 'rule') == undefined)
+			ERROR = i18n.t( 'netpravnaizmen_1' )
+	}
+	if (selectEventPreparations)
+	{
+		if (ArrayOptFindByKey(oRes.result, 'event_change_preparators_right', 'rule') == undefined)
+			ERROR = i18n.t( 'netpravnaizmen_2' )
+	}
+
+	if (ERROR != '')
+		oResult = getFormMessage(ERROR);
+	else
+		sAccessLevel = "lpe_manager"
+}
+else
+{
+	sAccessLevel = "";
+	switch(iAccessLevel)
+	{
+		case 10:
+		case 7:
+			sAccessLevel = "admin";
+			break;
+		case 5: 
+			sAccessLevel = "manager";
+			break;
+		case 3: 
+			sAccessLevel = "tutor";
+			break;
+		case 1: 
+			sAccessLevel = "observer";
+			break;
+	}
+}
+
+
+sStep = "";
+oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+if (oStep != undefined)
+	sStep = oStep.value;
+
+sObjectIDs = getObjectIDs(arrFormFields, "objectID");
+
+if (ArrayOptFirstElem(arrFormFields) == undefined)
+{
+	if (sObjectIDs == "")
+		oResult = getFormSelectObject(arrFormFields, sAccessLevel);
+	else
+		sStep = "1";
+}
+
+sElemID = PARAMETERS.GetOptProperty( "ELEMENT_IDS", "" );
+if ( sElemID != "" )
+{
+	arrFormFields.push( { name: "ELEMENT_IDS", value: sElemID } )
+}
+
+isMulti = ArrayCount( String( sObjectIDs ).split( ";" ) ) > 1;
+if ( isMulti && actionTutors == "edit" )
+{
+	actionTutors = "add";
+}
+
+if (sStep != "")
+{
+	if (ERROR != "")
+	{
+		oResult = getFormMessage(ERROR);
+	}
+	else if ( sElemID != "" && actionTutors == "delete" && !tools_web.is_true( getParam(arrFormFields, "is_confirm") ) )
+	{
+		oResult = {
+			command: "confirm", 
+			msg: i18n.t( 'vyhotiteudalit' ), 
+			confirm_result: { command: "eval", 
+				form_fields: [
+					{
+						name: "step",
+						type: "hidden",
+						value: "1"
+					},
+					{
+						name: "is_confirm",
+						type: "hidden",
+						value: true
+					}
+				],
+				buttons:
+					[
+						{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+						{ name: "submit", label: i18n.t( 'vypolnit' ), type: "submit", css_class: "btn-cancel-custom" }
+					],
+				no_buttons: false
+			}
+		};
+
+
+	}
+	else
+	{
+		if (sStep == "1")
+		{
+			if (actionTutors == "admin" && (tools_web.is_true(selectTutors) || tools_web.is_true(selectEventPreparations) || tools_web.is_true(selectLectors)) && sElemID == "")
+				oResult = getFormSelectAction(arrFormFields);
+			else
+			{
+				sStep = "2";
+				oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+				if (oStep != undefined)
+					oStep.value = "2";
+			}
+		}
+		if (sStep == "2")
+		{
+			if ( tools_web.is_true(selectLectors) && ( sElemID == "" || actionTutors != "delete" ) )
+				oResult = getFormSelectLectors(arrFormFields);
+			else
+			{
+				sStep = "3";
+				oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+				if (oStep != undefined)
+					oStep.value = "3";
+			}
+		}
+		if (sStep == "3")
+		{
+			if (tools_web.is_true(selectTutors) && ( sElemID == "" || actionTutors != "delete" ) )
+				oResult = getFormSelectTutors(arrFormFields, sAccessLevel);
+			else
+			{
+				sStep = "4";
+				oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+				if (oStep != undefined)
+					oStep.value = "4";
+			}
+		}
+		if (sStep == "4")
+		{
+			if (tools_web.is_true(selectEventPreparations) && ( sElemID == "" || actionTutors != "delete" ) )
+				oResult = getFormSelectEvenPreparations(arrFormFields, sAccessLevel);
+			else
+			{
+				sStep = "5";
+				oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+				if (oStep != undefined)
+					oStep.value = "5";
+			}
+		}
+		if (sStep == "5")
+		{
+			if (sendNotification == "admin" || tools_web.is_true(textNotification))
+				oResult = getFormParamNotification(arrFormFields);
+			else
+			{
+				sStep = "6";
+				oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+				if (oStep != undefined)
+					oStep.value = "6";
+			}
+		}
+		if (sStep == "6")
+		{
+			iCountObject = 0;
+			iCountLector = 0;
+			iCountTutor = 0;
+			iCountEvenPreparation = 0;
+			sObjectIDs = getObjectIDs(arrFormFields, "objectID");
+			arrObjects = [];
+			if (sObjectIDs != "" || sObjectIDs != "undefined")
+			{
+				sObjectIDs = StrReplace(sObjectIDs, ";", ",");
+				arrObjects = ArraySelectAll(tools.xquery("for $elem in events where MatchSome($elem/id, (" + sObjectIDs + ")) return $elem/Fields('id', 'status_id')"));
+			}
+			else
+				ERROR = i18n.t( 'neukazanomerop' );
+
+			if (ERROR == "")
+			{
+				if (ArrayCount(arrObjects) > 0)
+				{
+					for (oObject in arrObjects)
+					{
+						if (statusEvent == "plan" && (oObject.status_id != "plan" && oObject.status_id != "project"))
+							continue;
+
+						docEvent = tools.open_doc(OptInt(oObject.id, 0));
+						docEventTE = docEvent.TopElem;
+						
+						_arrPersonGroups = [];
+						if (selectLectors)
+							_arrPersonGroups.push("lectorIDs");
+						if (selectTutors)
+							_arrPersonGroups.push("tutorIDs");
+						if (selectEventPreparations)
+							_arrPersonGroups.push("evenPreparationIDs"); 
+
+						arrLectors = [];
+						for (_sPersonGroup in _arrPersonGroups)
+						{
+							sPersonIDs = getParam(arrFormFields, _sPersonGroup);
+							if (sPersonIDs != "")
+							{
+								sPersonIDs = StrReplace(sPersonIDs, ";", ",");
+								if (_sPersonGroup == "lectorIDs")
+								{
+									arrLectors = ArraySelectAll(tools.xquery("for $elem in lectors where MatchSome($elem/id, (" + sPersonIDs + ")) return $elem/Fields('id', 'email')"));
+								}
+								else
+								{
+									arrLectors = ArraySelectAll(tools.xquery("for $elem in collaborators where MatchSome($elem/id, (" + sPersonIDs + ")) return $elem/Fields('id', 'email')"));
+								}
+								
+								_elem_id = OptInt( getParam(arrFormFields, "ELEMENT_IDS"), 0 );
+
+								switch (_sPersonGroup)
+								{
+									case "lectorIDs":
+										{
+											if ( _elem_id > 0 && tools_web.is_true( selectLectors ) )
+											{
+
+												//_child = docObject.TopElem.lectors.GetOptChildByKey( OptInt( _elem_id ) );
+												_child = ArrayOptFind( docEventTE.lectors, "StrInt( This.lector_id ) == StrInt( _elem_id )" );
+												if ( _child != undefined )
+												{
+													if ( actionTutors == "replace" && ArrayCount(arrLectors) > 0)
+													{
+														_child.lector_id = ArrayOptFirstElem( arrLectors ).id;
+														iCountLector++;
+													}
+													else if ( actionTutors == "delete" )
+													{
+														docEventTE.lectors.DeleteChildByKey( OptInt( _elem_id ) );
+
+														/**********/
+														/**********/
+														/**********/
+														/**********/
+														/*
+														sQuery = "for $elem in lectors where MatchSome( $elem/id, ( " + OptInt( _elem_id ) + " ) ) return $elem";
+														oLector = ArrayOptFirstElem(tools.xquery(sQuery));
+
+														switch()
+														{
+															case "collaborator":
+
+																if(oLector.person_id.HasValue)
+																{
+																	sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + OptInt( _elem_id ) + " ) ) return $elem";
+																	oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+																	oNotification = {
+																		lector_type: '',
+																		lector_fullname: oPerson.fullname.Value,
+																		lector_email: oPerson.email.Value,
+																		lector_sex: oPerson.sex.Value,
+																		event_id: docEventTE.id.Value,
+																		event_name: docEventTE.name.Value,
+																		event_start_date: docEventTE.start_date.Value
+																	}
+																}
+																break;
+															case "invitee":
+																break;
+														}
+														*/
+
+														sQuery = "for $elem in lectors where MatchSome( $elem/id, ( " + _elem_id + " ) ) return $elem";
+														xarrLector = tools.xquery(sQuery);
+														oLector = ArrayOptFirstElem(xarrLector);
+
+														if(oLector != undefined)
+														{
+															iPersonID = ArrayOptFirstElem(ArrayExtract(xarrLector, "This.person_id.Value"));
+
+															sLectorType = oLector.type.Value;
+
+															switch(sLectorType)
+															{
+																case 'invitee':
+
+																	docLector = tools.open_doc(_elem_id);
+
+																	if(docLector != undefined)
+																	{
+																		docLectorTE = docLector.TopElem;
+
+																		if(docLectorTE.middlename.Value != '')
+																		{
+																			sLectorFullname = docLectorTE.lastname.Value + ' ' + docLectorTE.firstname.Value + ' ' + docLectorTE.middlename.Value;
+																		} else {
+																			sLectorFullname = docLectorTE.lastname.Value + ' ' + docLectorTE.firstname.Value;
+																		}
+
+																		sLectorSex = docLectorTE.sex.Value;
+																		sLectorEmail = docLectorTE.email.Value;
+																	}
+																	break;
+																case 'collaborator':
+																	sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + iPersonID + " ) ) return $elem";
+																	oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+																	if(oPerson != undefined)
+																	{
+																		sLectorFullname = oPerson.fullname.Value;
+																		sLectorSex = oPerson.sex.Value;
+																		sLectorEmail = oPerson.email.Value;
+																	}
+																	break;
+															}
+
+														    oNotification = {
+																lector_type: sLectorType,
+																lector_fullname: sLectorFullname,
+																lector_sex: sLectorSex,
+																lector_email: sLectorEmail,
+																event_id: docEventTE.id.Value,
+																event_name: docEventTE.name.Value,
+																event_start_date: docEventTE.start_date.Value
+															};
+
+															bCheckEmail = tools.call_code_library_method("libMain", "check_email_value", [ sLectorEmail ]);
+															if (bCheckEmail)
+															{
+																bResultSend = tools.create_notification( '56', OptInt(_elem_id, 0), oNotification );
+															}
+														}
+													}
+												}
+											}
+											else
+											{
+												if (actionTutors != "add" && ArrayCount(arrLectors) > 0)
+													docEventTE.lectors.Clear();
+												for (lector in arrLectors)
+												{
+													_lector = docEventTE.lectors.ObtainChildByKey(lector.id);
+													iCountLector++;
+												}
+											}
+
+											break;
+										}
+									case "tutorIDs":
+										{
+											if ( _elem_id > 0 && tools_web.is_true( selectTutors ) )
+											{
+												//_child = docObject.TopElem.tutors.GetOptChildByKey( OptInt( _elem_id ) );
+												_child = ArrayOptFind( docEventTE.tutors, "StrInt( This.collaborator_id ) == StrInt( _elem_id )" );
+												if ( _child != undefined )
+												{
+													if ( actionTutors == "replace" && ArrayCount(arrLectors) > 0)
+													{
+														_child.collaborator_id = ArrayOptFirstElem( arrLectors ).id;
+														tools.common_filling( 'collaborator', _child, OptInt( ArrayOptFirstElem( arrLectors ).id ));
+														iCountTutor++;
+													}
+													else if ( actionTutors == "delete" )
+													{
+														docEventTE.tutors.DeleteChildByKey( OptInt( _elem_id ) );
+
+														sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + OptInt( _elem_id ) + " ) ) return $elem";
+														oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+														oNotification = {
+															lector_type: '',
+															lector_fullname: oPerson.fullname.Value,
+															lector_email: oPerson.email.Value,
+															lector_sex: oPerson.sex.Value,
+															event_id: docEventTE.id.Value,
+															event_name: docEventTE.name.Value,
+															event_start_date: docEventTE.start_date.Value
+														}
+
+
+														/************/
+														/*** LOG ****/
+														/************/
+														    CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ oNotification ]]);
+														/*************/
+														/** END LOG **/
+														/*************/
+														
+
+														bCheckEmail = tools.call_code_library_method("libMain", "check_email_value", [ oPerson.email.Value ]);
+														if (bCheckEmail)
+														{
+															bResultSend = tools.create_notification( '52', OptInt(_elem_id, 0), oNotification );
+														}
+													}
+												}
+											}
+											else
+											{
+												if (actionTutors != "add" && ArrayCount(arrLectors) > 0)
+													docEventTE.tutors.Clear();
+												for (lector in arrLectors)
+												{
+													_tutor = docEventTE.tutors.ObtainChildByKey(lector.id);
+													tools.common_filling('collaborator', _tutor, OptInt(lector.id));
+													iCountTutor++;
+												}
+											}
+											break;
+										}
+									case "evenPreparationIDs":
+										{
+											if ( _elem_id > 0 && tools_web.is_true( selectEventPreparations ) )
+											{
+												_child = ArrayOptFind( docEventTE.even_preparations, "OptInt(This.even_preparation_id) == OptInt(_elem_id)" );
+
+												if ( _child != undefined )
+												{
+													if ( actionTutors == "replace" && ArrayCount(arrLectors) > 0)
+													{
+														_child.person_id = ArrayOptFirstElem( arrLectors ).id;
+														tools.common_filling( 'collaborator', _child, OptInt( ArrayOptFirstElem( arrLectors ).id ));
+														iCountEvenPreparation++;
+													}
+													else if ( actionTutors == "delete" )
+													{
+														docEventTE.even_preparations.DeleteChildByKey(  _child.even_preparation_id.Value );
+
+														sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + OptInt( _child.person_id.Value ) + " ) ) return $elem";
+														oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+														oNotification = {
+															lector_type: '',
+															lector_fullname: oPerson.fullname.Value,
+															lector_email: oPerson.email.Value,
+															lector_sex: oPerson.sex.Value,
+															event_id: docEventTE.id.Value,
+															event_name: docEventTE.name.Value,
+															event_start_date: docEventTE.start_date.Value
+														}
+
+														bCheckEmail = tools.call_code_library_method("libMain", "check_email_value", [ oPerson.email.Value ]);
+														if (bCheckEmail)
+														{
+															bResultSend = tools.create_notification( '54', OptInt(_elem_id, 0), oNotification );
+														}
+													}
+												}
+											}
+											else
+											{
+												if (actionTutors != "add" && ArrayCount(arrLectors) > 0)
+													docEventTE.even_preparations.Clear();
+												for (lector in arrLectors)
+												{
+													_preparation = docEventTE.even_preparations.ObtainChildByKey(lector.id);
+													_preparation.person_id = lector.id;
+													tools.common_filling('collaborator', _preparation, OptInt(lector.id));
+													iCountEvenPreparation++;
+												}
+											}
+											break;
+										}
+								}
+								checkSend = false;
+
+								if (send_notification == "tutors_add")
+								{
+									if (actionTutors == "add")
+										checkSend = true;
+								}
+								else
+									checkSend = true;
+
+								if (ERROR == "" && checkSend)
+								{
+									if (textNotification == undefined || textNotification == "undefined")
+										textNotification = "";
+
+									codeNotification = "";
+
+									switch (_sPersonGroup)
+									{
+										case "lectorIDs":
+											{
+												codeNotification = "55";
+												break;
+											}
+										case "tutorIDs":
+											{
+												codeNotification = "51";
+												break;
+											}
+										case "evenPreparationIDs":
+											{
+												codeNotification = "53";
+												break;
+											}
+									}
+
+									for (_lector in arrLectors)
+									{
+										bResultSend = false;
+										sLectorEmail = '';
+										oNotification = {
+											lector_type: '',
+											lector_fullname: '',
+											lector_email: '',
+											lector_sex: '',
+											event_id: '',
+											event_name: '',
+											event_start_date: ''
+										}
+										
+										try
+										{
+											switch(_lector.Name)
+											{
+												case 'collaborator': // ответственный за мероприятие
+													sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + _lector.id + " ) ) return $elem";
+													oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+													if(oPerson != undefined)
+													{
+														oNotification = {
+															lector_type: '',
+															lector_fullname: oPerson.fullname.Value,
+															lector_email: oPerson.email.Value,
+															lector_sex: oPerson.sex.Value,
+															event_id: docEventTE.id.Value,
+															event_name: docEventTE.name.Value,
+															event_start_date: docEventTE.start_date.Value
+														}
+														
+														bCheckEmail = tools.call_code_library_method("libMain", "check_email_value", [ oPerson.email.Value ]);
+														if (bCheckEmail)
+														{
+															// 151 - Вы были включены в состав ответственных за *** проведение *** мероприятия
+															// 153 - Вы были включены в состав ответственных за *** подготовку *** мероприятия
+															bResultSend = tools.create_notification( codeNotification, OptInt(_lector.id, 0), oNotification );
+														}
+													}
+													break;
+												case 'lector': // преподаватель
+													sQuery = "for $elem in lectors where MatchSome( $elem/id, ( " + _lector.id.Value + " ) ) return $elem";
+													xarrLector = tools.xquery(sQuery);
+													oLector = ArrayOptFirstElem(xarrLector);
+
+													if(oLector != undefined)
+													{
+														iPersonID = ArrayOptFirstElem(ArrayExtract(xarrLector, "This.person_id.Value"));
+
+														sLectorType = oLector.type.Value;
+
+														switch(sLectorType)
+														{
+															case 'invitee':
+																docLector = tools.open_doc(_lector.id.Value);
+
+																if(docLector != undefined)
+																{
+																	docLectorTE = docLector.TopElem;
+
+																	if(docLectorTE.middlename.Value != '')
+																	{
+																		sLectorFullname = docLectorTE.lastname.Value + ' ' + docLectorTE.firstname.Value + ' ' + docLectorTE.middlename.Value;
+																	} else {
+																		sLectorFullname = docLectorTE.lastname.Value + ' ' + docLectorTE.firstname.Value;
+																	}
+
+																	sLectorSex = docLectorTE.sex.Value;
+																	sLectorEmail = docLectorTE.email.Value;
+																}
+
+																break;
+															case 'collaborator':
+																sQuery = "for $elem in collaborators where MatchSome( $elem/id, ( " + iPersonID + " ) ) return $elem";
+																oPerson = ArrayOptFirstElem(tools.xquery(sQuery));
+
+																if(oPerson != undefined)
+																{
+																	sLectorFullname = oPerson.fullname.Value;
+																	sLectorSex = oPerson.sex.Value;
+																	sLectorEmail = oPerson.email.Value;
+																}
+																break;
+														}
+													}
+
+													oNotification = {
+														lector_type: sLectorType,
+														lector_fullname: sLectorFullname,
+														lector_sex: sLectorSex,
+														lector_email: sLectorEmail,
+														event_id: docEventTE.id.Value,
+														event_name: docEventTE.name.Value,
+														event_start_date: docEventTE.start_date.Value
+													}
+
+													bCheckEmail = tools.call_code_library_method("libMain", "check_email_value", [ sLectorEmail ]);
+													if (bCheckEmail)
+													{
+														bResultSend = tools.create_notification( codeNotification, OptInt(_lector.id, 0), oNotification );
+													}
+												break;
+											}
+										}
+										catch (_err)
+										{
+											ERROR = i18n.t( 'oshibkageneraci' ) + _err;
+										}
+									}
+								}
+							}
+						}
+						try
+						{
+							docEvent.Save();
+							iCountObject++;
+						}
+						catch (_err)
+						{
+							ERROR = i18n.t( 'oshibkadostupa' ) + _err;
+							iCountLector = 0;
+							iCountTutor = 0;
+							iCountEvenPreparation = 0;
+							break;
+						}
+					}
+				}
+				else
+					ERROR = i18n.t( 'nenaydenoukaza' );
+			}
+
+			if (iCountLector > 0)
+			{
+				if (actionTutors == "add")
+					MESSAGE = i18n.t( 'prepodavatelid' );
+				else if (actionTutors == "edit")
+					MESSAGE = i18n.t( 'spisokprepodav' );
+				else if (actionTutors == "replace")
+					MESSAGE = i18n.t( 'spisokprepodav_1' );
+			}
+			
+			if (iCountTutor > 0)
+			{
+				if (actionTutors == "add")
+					MESSAGE = i18n.t( 'otvetstvennyed' );
+				else if (actionTutors == "edit")
+					MESSAGE = i18n.t( 'spisokotvetstv' );
+				else if (actionTutors == "replace")
+					MESSAGE = i18n.t( 'spisokotvetstv_1' );
+			}
+			
+			if (iCountEvenPreparation > 0)
+			{
+				if (actionTutors == "add")
+					MESSAGE = i18n.t( 'otvetstvennyez' );
+				else if (actionTutors == "edit")
+					MESSAGE = i18n.t( 'spisokotvetstv_2' );
+				else if (actionTutors == "replace")
+					MESSAGE = i18n.t( 'spisokotvetstv_3' );
+			}
+			
+			if ( actionTutors == "delete" )
+			{
+				MESSAGE = i18n.t( 'zapisudalena' );
+			}
+
+			if (ERROR != "")
+				oResult = getFormMessage(ERROR);
+			else
+				oResult = getFormMessage(MESSAGE);
+			
+		}
+	}
+}
+
+RESULT = oResult;

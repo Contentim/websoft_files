@@ -1,0 +1,151 @@
+﻿<SPXMLScreen>
+<%
+	var bDisplayDesc = true;
+	var bOpenSimplifiedDialogEvent = tools_web.is_true( PARAMETERS.GetOptProperty( "bOpenSimplifiedDialogEvent", "0" ) );
+	var sStartDate = Trim(PARAMETERS.GetOptProperty( "start_date","" ));
+	var sFinishDate = PARAMETERS.GetOptProperty( "finish_date" );
+	var sStatus = PARAMETERS.GetOptProperty( "status_id" );
+	var sColor = PARAMETERS.GetOptProperty( "color" );
+	var sType = PARAMETERS.GetOptProperty( "type" );
+	var sDesc = PARAMETERS.GetOptProperty( "desc", "" );
+	var sColorClass = PARAMETERS.GetOptProperty( "class" );
+	sDate = "";
+	bIsMobile = curDevice.disp_type == "mobile";
+	dFinishDate = sFinishDate != "" ? Date(sFinishDate) : null;
+	
+if(sStartDate != "")
+	{
+	dStartDate = Date(sStartDate);
+	if(sFinishDate != "")
+		{
+		dFinishDate = Date(sFinishDate);			
+			if(Day(dStartDate) == Day(dFinishDate))
+			{
+			sDate = StrDate(dStartDate, false, false) + " / " + StrTime(dStartDate) + " – " + StrTime(dFinishDate);
+			}
+		else
+			{
+			sDate = StrInt(Day(dStartDate), 2) + "." + StrInt(Month(dStartDate), 2) + " / " + StrTime(dStartDate) + " – " + StrInt(Day(dFinishDate), 2) + "." + StrInt(Month(dFinishDate), 2) + " / " + StrTime(dFinishDate); 
+			}
+		}
+		else
+		{
+			sDate = StrDate(dStartDate, true, false);
+		}
+	}
+
+iEventID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+teEvent = OpenDoc( UrlFromDocID( iEventID ) ).TopElem;
+
+sPlace = "";
+if(teEvent.place_id.HasValue && teEvent.place_id.OptForeignElem != undefined)
+{
+					
+	sPlace = tools_web.get_cur_lng_name( teEvent.place_id.ForeignElem.name, curLng.short_id );				
+	if(teEvent.place.HasValue)
+	{
+		sPlace += ", " + teEvent.place;
+	}
+}
+else if(teEvent.place.HasValue)
+{
+	sPlace = teEvent.place;
+}
+
+if ( teEvent.ChildExists( "resource_id" ) && teEvent.resource_id.HasValue )
+	sObjectImageUrl = tools_web.get_object_source_url( "resource", teEvent.resource_id );
+else
+	sObjectImageUrl = "images/" + teEvent.Name + ".png";
+
+if( bOpenSimplifiedDialogEvent )
+	sClickAction = "SET=SimplifiedDialogEvent/object_id," + iEventID + ";OPENDIALOG=SimplifiedDialogEvent;"
+else
+	sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( null, iEventID, { doc_id: curDocID } );
+
+sName = PARAMETERS.GetOptProperty( "name" );
+iImageSize = !bIsMobile ? 150 : 80;
+if( bOpenSimplifiedDialogEvent )
+{
+%>
+	<Dialog Name="SimplifiedDialogEvent" Source="<%=PARAMETERS.GetOptProperty( "sSimplifiedCustomWebTemplateCode", "0" )%>" Title="<%=tools_web.get_web_const( "c_event", curLngWeb )%>"  Width="<%=bIsMobile ? "100%" : "80%"%>">
+		<Param Name="object_id" Value=""/>
+		<Param Name="show_button" Value="<%=PARAMETERS.GetOptProperty( "bShowOpenButton", "0" )%>"/>
+		<Param Name="use_timezone" Value="<%=PARAMETERS.GetOptProperty( "bUseTimezone", "0" )%>"/>
+	</Dialog>
+<%
+}
+%>
+
+<Grid Width="100%" Class="XAML-grid-list-item">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100%"/>
+<%
+		if(!bIsMobile)
+		{
+%>		
+		<GridColumn/>
+<%
+		}
+%>		
+	</GridColumns>
+	<GridRow>
+		<Image Click="<%=sClickAction%>" Source="pics/1blank.gif" Class="XAML-image-list-image">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+<%
+		if(!bIsMobile)
+		{
+%>
+		<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+			<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+			<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+				<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+			</Link>
+				
+				<Label Class="XAML-label-status <%=sColorClass%>">
+					<![CDATA[<%=sStatus%>]]>
+				</Label>
+			</StackPanel>
+<%
+			if(sDate != "")
+			{
+%>
+			<Label Class="XAML-label-tile-subtitle">
+				<![CDATA[<%=sDate%>]]>
+			</Label>
+<%
+			}
+			if(sDesc != "")
+			{
+%>
+			<Label Class="XAML-label-tile-desc">
+				<![CDATA[<%=sDesc%>]]>
+			</Label>
+<%
+			}
+%>
+		</StackPanel>
+<%
+		}
+		else
+		{
+%>
+
+		<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+			<Label Class="XAML-label-list-date">
+				<%=StrDate(dStartDate, false, false)%>
+			</Label>
+			<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+				<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+			</Link>
+			<Label Class="XAML-label-status <%=sColorClass%>">
+				<![CDATA[<%=sStatus%>]]>
+			</Label>
+		</StackPanel>
+<%
+		}
+%>
+	</GridRow>
+</Grid>
+</SPXMLScreen>

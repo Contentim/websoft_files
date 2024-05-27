@@ -1,0 +1,266 @@
+﻿<%
+// const_start
+sConstHeader = tools_web.get_web_const( 'planypodborape', curLngWeb );
+sConstVacancyType = tools_web.get_web_const( 'tipvakansii', curLngWeb );
+sConstSelectBudgetPeriod = tools_web.get_web_const( 'vyberitebyudzhet', curLngWeb );
+sConstRecruitmentMethods = tools_web.get_web_const( 'sposobypodbora', curLngWeb );
+sConstCandidateSources = tools_web.get_web_const( 'istochnikikandi', curLngWeb );
+// const_end
+sUpdateAction = "REFRESH";
+iBudgetPeriodId = CONTEXT.GetOptProperty("budget_period_id", "");
+if(iBudgetPeriodId == "")
+	iBudgetPeriodId = OptInt(tools_web.get_web_param( curParams, "recruitment_plans.budget_period_default", 0, true ), "");
+if(iBudgetPeriodId == 0)
+	iBudgetPeriodId = "";
+
+iSubLevelsMax = OptInt(tools_web.get_web_param( curParams, "recruitment_plans.sub_levels_max", "3", true ), 3);
+
+bAllowStateSelection = tools_web.is_true(tools_web.get_web_param( curParams, "recruitment_plans.allow_state_selection", true, true ));
+sDefaultStatus = tools_web.get_web_param( curParams, "recruitment_plans.default_state", "all", true );
+	
+sSelectedStatus = CONTEXT.GetOptProperty("status", sDefaultStatus);
+%>
+<SPXMLScreen>
+<Label Class="XAML-object-title-label"><![CDATA[<%=( curDoc == null ? sConstHeader : tools_web.get_cur_lng_name( curDoc.name, curLng.short_id ) )%>]]></Label>
+	<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+		<GridRow>
+			<StackPanel Orientation="Horizontal"  Adapt="true">			
+					<Label Class="XAML-grid-label-name" Width="150"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>						
+					<%
+						curSelector = {
+							"id": "budget_period_id",
+							"object_id": iBudgetPeriodId,
+							"object_name":  "",
+							"object_id_item_name": "budget_period_id",
+							"multi_select": "false",
+							"catalog_name": "budget_period",
+							"width": "200",
+							"close_action": sUpdateAction,
+							"selected_object_ids": ""
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+					%>
+			</StackPanel>
+			<StackPanel Orientation="Horizontal" Width="50%"  Adapt="true">
+				<Label Class="XAML-grid-label-name" Width="70"><%=tools_web.get_web_const( "c_status", curLngWeb )%>: </Label>
+			<%
+				if(bAllowStateSelection)
+				{
+			%>
+				<ComboBox Name="status" Width="160" Change="<%=sUpdateAction%>" SelectedItem="<%=sSelectedStatus%>">
+				  <ComboBoxItem Value="all"><%=tools_web.get_web_const( "c_all", curLngWeb )%></ComboBoxItem>
+			<%
+					for(catState in curLngCommon.recruitment_plan_state_types)
+					{
+			%>
+				  <ComboBoxItem Value="<%=catState.id%>"><%=curLngCommon.recruitment_plan_state_types.GetChildByKey( catState.id ).name%></ComboBoxItem>
+			<%
+					}
+			%>
+				</ComboBox>
+			<%
+				}
+				else
+				{
+			%>
+				<Label Width="70"><%=((sSelectedStatus != "all") ? curLngCommon.recruitment_plan_state_types.GetChildByKey( sSelectedStatus ).name : tools_web.get_web_const( "c_all", curLngWeb ))%></Label>
+				<Edit Name="status" Hidden="1"><%=sSelectedStatus%></Edit>
+			<%
+				}
+			%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+<%
+
+if(iBudgetPeriodId != "")
+{
+	sQuery = "for $elem in recruitment_plans where $elem/budget_period_id = " + iBudgetPeriodId;
+	if(sSelectedStatus != "all")
+		sQuery += " and $elem/state = '" + sSelectedStatus + "'";
+	sQuery += " return $elem";
+	xarrPlans = XQuery(sQuery); alert('xarrPlans ' + ArrayCount(xarrPlans));
+	arrPlans = new Array();
+
+	xarrBudgetPeriods = XQuery("for $elem in budget_periods where $elem/parent_id=" + iBudgetPeriodId + " return $elem");
+
+	for(catPlan in xarrPlans)
+	{
+		docPlan = OpenDoc(UrlFromDocID(catPlan.id));
+		if(docPlan.TopElem.coordinators.GetOptChildByKey(curUserID) != undefined)
+		{
+			arrPlans.push(docPlan);
+		}
+	}
+%>
+
+	<Collection Name="CollectionPlans">
+		<Data>
+<%
+	iSubLevelsCount = 0;
+	for(docPlan in arrPlans)
+	{
+		tePlan = docPlan.TopElem;
+		catSubdisivion = tePlan.subdivision_id.OptForeignElem;
+		arrSubs = new Array();
+		iCurLevelCounter = 0;
+		while(catSubdisivion != undefined && iCurLevelCounter < iSubLevelsMax)
+		{
+			arrSubs.push(catSubdisivion.name);
+			catSubdisivion = catSubdisivion.parent_object_id.OptForeignElem;
+			iCurLevelCounter++;
+		}
+		iCurSubLevelsCount = ArrayCount(arrSubs);
+		if(iCurSubLevelsCount > iSubLevelsCount)
+			iSubLevelsCount = iCurSubLevelsCount;
+			
+		sSubdivision = (tePlan.subdivision_id.OptForeignElem != undefined) ? tePlan.subdivision_id.OptForeignElem.name : "";
+		sVacancyType = (tePlan.vacancy_type_id.OptForeignElem != undefined) ? tePlan.vacancy_type_id.OptForeignElem.name : "";
+		sGrade = (tePlan.grade_id.OptForeignElem != undefined) ? tePlan.grade_id.OptForeignElem.name : "";
+		sPositionFamily = (tePlan.position_family_id.OptForeignElem != undefined) ? tePlan.position_family_id.OptForeignElem.name : "";
+		sSubdivisionGroup = (tePlan.subdivision_group_id.OptForeignElem != undefined) ? tePlan.subdivision_group_id.OptForeignElem.name : "";
+		
+		sRecrMethods = "";
+		for(fldMethod in tePlan.recruitment_methods)
+		{
+			try
+			{
+				sRecrMethods += XmlAttrEncode(fldMethod.recruitment_method_id.ForeignElem.name) + ", ";
+			}
+			catch(x)
+			{
+			}
+		}
+		if(sRecrMethods != "")
+			sRecrMethods = StrLeftRange(sRecrMethods, String(sRecrMethods).length - 2);
+		
+		
+		sCandSources = "";
+		for(fldSource in tePlan.candidate_sources)
+		{
+			try
+			{
+				sCandSources += XmlAttrEncode(fldSource.candidate_source_id.ForeignElem.name) + ", ";
+			}
+			catch(x)
+			{
+			}
+		}
+		if(sCandSources != "")
+			sCandSources = StrLeftRange(sCandSources, String(sCandSources).length - 2);
+		
+%>
+			<Row>
+				<Cell Id="id" Value="<%=docPlan.DocID%>"/>
+				<Cell Id="position_family" Value="<%=XmlAttrEncode(sPositionFamily)%>"/>
+				<Cell Id="subdivision_group" Value="<%=XmlAttrEncode(sSubdivisionGroup)%>"/>
+				<Cell Id="position" Value="<%=XmlAttrEncode(tePlan.position_name)%>"/>
+				<Cell Id="grade" Value="<%=XmlAttrEncode(sGrade)%>"/>
+<%
+				iSubCounter = ArrayCount(arrSubs);
+				iCurSubLevel = iSubCounter-1;
+				for(i=0; i<iSubCounter; i++)
+				{
+%>
+				<Cell Id="subdivision<%=iCurSubLevel%>" Value="<%=XmlAttrEncode(arrSubs[i])%>"/>
+<%
+						iCurSubLevel--;
+				}
+%>
+				<Cell Id="vacancy_type" Value="<%=XmlAttrEncode(sVacancyType)%>"/>
+				<Cell Id="state" Value="<%=curLngCommon.recruitment_plan_state_types.GetChildByKey( tePlan.state ).name%>"/>
+				<Cell Id="methods" Value="<%=sRecrMethods%>"/>
+				<Cell Id="sources" Value="<%=sCandSources%>"/>
+<%
+		for(catPeriod in xarrBudgetPeriods)
+		{
+			fldPeriod = tePlan.budget_periods.GetOptChildByKey(catPeriod.id);
+			sPeriodValue = (fldPeriod == undefined) ? "" : fldPeriod.quantity;
+%>
+				<Cell Id="<%=catPeriod.id%>" Value="<%=sPeriodValue%>"/>
+<%
+		
+		}
+%>
+				<Cell Id="quantity" Value="<%=tePlan.quantity%>"/>
+			</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+<%	
+	curCollectionMenu = {
+		"id": "DataGridPlansMenu" ,
+		"catalog_name": "recruitment_plan",
+		"data_grid_id":  "DataGridPlans"
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+	<DataGrid Name="DataGridPlans" Title="" Source="{CollectionPlans}" <%=(curDevice.disp_type != "mobile" ? "Height='400'" : "Height='200'")%> ShowHeader="true" Selection="single" <%=(curDevice.disp_type != "mobile" ? "Width='100%'" : "Width='300'")%>>
+		<DataGridColumn Title="ID" Value="id" Hidden="1" Ghost="false"/>
+<%
+		if (curDevice.disp_type != "mobile")
+		{
+%>
+			<DataGridColumn Title="<%=tools.get_web_str("c_position")%>" Value="position" Width="150" Type="link" Sortable="true" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id : curDocID } )%>"/>
+			<DataGridColumn Title="<%=tools.get_web_str("re7n9mti11")%>" Value="position_family" Type="string" Sortable="true"/>
+			<DataGridColumn Title="<%=tools.get_web_str("1akgrp8ook")%>" Value="subdivision_group" Type="string" Sortable="true"/>
+<%				
+			if(iSubLevelsCount > 1)
+			{
+				for(i=1; i<=iSubLevelsCount; i++)
+				{
+%>
+					<DataGridColumn Title="<%=StrReplace(tools_web.get_web_const( 'pozdrazdelenie', curLngWeb ),"{0}", i)%>" Value="subdivision<%=(i-1)%>" Width="150" Type="string" Sortable="true"/>
+<%
+				}
+			}
+			else
+			{
+%>
+					<DataGridColumn Title="<%=tools.get_web_str("c_subd")%>" Value="subdivision0" Width="150" Type="string"/>
+<%
+			}
+%>
+			<DataGridColumn Title="<%=sConstVacancyType%>" Value="vacancy_type" Type="string"/>
+			<DataGridColumn Title="<%=sConstRecruitmentMethods%>" Value="methods" Type="string"/>
+			<DataGridColumn Title="<%=sConstCandidateSources%>" Value="sources" Type="string"/>		
+			<DataGridColumn Title="<%=tools.get_web_str("hadn53sf2d")%>" Value="grade" Type="string" Sortable="true"/>
+			<DataGridColumn Title="<%=tools.get_web_str("c_status")%>" Value="state" Type="string" Sortable="true"/>
+<%
+			for(catPeriod in xarrBudgetPeriods)
+			{
+%>
+				<DataGridColumn Title="<%=XmlAttrEncode(catPeriod.name)%>" Value="<%=catPeriod.id%>" Width="130" Type="string"/>
+<%
+		
+			}
+%>
+			<DataGridColumn Title="<%=tools.get_web_str("vagb_summary")%>" Value="quantity" Width="150" Type="string"/>
+<%
+		}
+		else
+		{
+%>
+			<DataGridColumn Title="<%=tools.get_web_str("c_position")%>" Value="position" Width="100%" Type="link" Sortable="true" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id : curDocID } )%>"/>
+<%
+		}
+%>
+		
+		<Menu Source="{CatalogListMenuDataGridPlansMenu}"/>
+	</DataGrid>
+<%
+}
+else	
+{
+%>
+	<Label><%=sConstSelectBudgetPeriod%></Label>
+<%
+}
+%>
+</SPXMLScreen>

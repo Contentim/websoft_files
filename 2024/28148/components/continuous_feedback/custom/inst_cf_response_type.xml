@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>m9tb033hy6</id>
+		<server_version>3.0.0.0 (2021.11.29)</server_version>
+	</basic>
+	<response_types>
+		<response_type>
+			<code>responce_collaborator</code>
+			<name>Обратная связь по сотруднику</name>
+			<object_type>collaborator</object_type>
+			<create_redirect>responses</create_redirect>
+			<basic_desc_field>f_ijn5</basic_desc_field>
+			<basic_score_field>f_r5bq</basic_score_field>
+			<id>0x6579344E79D7E05B</id>
+		</response_type>
+		<response_type>
+			<code>responce_project_participant</code>
+			<name>Обратная связь по участнику проекта</name>
+			<object_type>project_participant</object_type>
+			<create_redirect>responses</create_redirect>
+			<basic_desc_field>f_6d75</basic_desc_field>
+			<basic_score_field>f_t3s5</basic_score_field>
+			<id>0x657932A150FA1CD0</id>
+		</response_type>
+	</response_types>
+	<custom_templates>
+		<response_type>
+			<items>
+				<item>
+					<fields>
+						<field>
+							<name>f_6d75</name>
+							<type>text</type>
+							<title>Отзыв об участнике проекта</title>
+							<disp_web>1</disp_web>
+							<is_required>0</is_required>
+						</field>
+						<field>
+							<name>f_t3s5</name>
+							<type>combo</type>
+							<title>Оценка (от 1 до 5)</title>
+							<entries>
+								<entry>
+									<value>1</value>
+								</entry>
+								<entry>
+									<value>2</value>
+								</entry>
+								<entry>
+									<value>3</value>
+								</entry>
+								<entry>
+									<value>4</value>
+								</entry>
+								<entry>
+									<value>5</value>
+								</entry>
+							</entries>
+							<disp_web>1</disp_web>
+							<is_required>1</is_required>
+						</field>
+					</fields>
+					<id>0x657932A150FA1CD0</id>
+				</item>
+				<item>
+					<fields>
+						<field>
+							<name>f_ijn5</name>
+							<type>text</type>
+							<title>Отзыв о сотруднике</title>
+							<disp_web>1</disp_web>
+							<is_required>0</is_required>
+						</field>
+						<field>
+							<name>f_r5bq</name>
+							<type>combo</type>
+							<title>Оценка (от 1 до 5)</title>
+							<entries>
+								<entry>
+									<value>1</value>
+								</entry>
+								<entry>
+									<value>2</value>
+								</entry>
+								<entry>
+									<value>3</value>
+								</entry>
+								<entry>
+									<value>4</value>
+								</entry>
+								<entry>
+									<value>5</value>
+								</entry>
+							</entries>
+							<disp_web>1</disp_web>
+							<is_required>1</is_required>
+						</field>
+					</fields>
+					<id>0x6579344E79D7E05B</id>
+				</item>
+			</items>
+		</response_type>
+	</custom_templates>
+</data>

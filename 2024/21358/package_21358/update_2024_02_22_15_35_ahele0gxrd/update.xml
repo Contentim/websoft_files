@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>ahele0gxrd</id>
+		<create_date>2024-02-22T15:35:57+00:00</create_date>
+		<server_version>2023.2.839 (2024-02-10)</server_version>
+	</basic>
+	<workflows>
+		<workflow>
+			<id>0x6334C6DCB9B97300</id>
+			<code>WR202</code>
+			<name VALUE="##'Заявка сотрудник -&gt; руководитель'##"/>
+			<conditions>
+				<condition>
+					<type>if_cur_user</type>
+					<cur_user_type>is_real_boss</cur_user_type>
+					<and_or>&amp;&amp;</and_or>
+				</condition>
+			</conditions>
+			<condition_eval_str>tools.is_real_boss()</condition_eval_str>
+			<desc_str VALUE="##'Если текущий пользователь -&gt; непосредственный руководитель.'##"/>
+			<has_error>false</has_error>
+			<is_false>false</is_false>
+			<add_conditions>
+				<has_error>false</has_error>
+				<is_false>false</is_false>
+			</add_conditions>
+			<workflow_fields>
+				<workflow_field>
+					<name>f71u59</name>
+					<type>text</type>
+					<title VALUE="##'ru=комментарий руководителя;en=manager comment'##"/>
+					<field_group_id>gubr1u</field_group_id>
+				</workflow_field>
+			</workflow_fields>
+			<states>
+				<state>
+					<code>for_approve</code>
+					<name VALUE="##'ru=На согласовании;en=Pending Approval'##"/>
+				</state>
+				<state>
+					<code>state4</code>
+					<name VALUE="##'ru=Заявка удовлетворена;en=Request approved'##"/>
+				</state>
+				<state>
+					<code>spt2mw</code>
+					<name VALUE="##'ru=Отменена;en=Abolished'##"/>
+				</state>
+			</states>
+			<field_groups>
+				<field_group>
+					<code>gubr1u</code>
+					<name VALUE="##'ru=руководитель;en=manager'##"/>
+					<read_conditions>
+						<has_error>false</has_error>
+						<is_false>false</is_false>
+					</read_conditions>
+					<write_conditions>
+						<conditions>
+							<condition>
+								<type>if_cur_user</type>
+								<cur_user_type>is_boss</cur_user_type>
+								<and_or>||</and_or>
+								<eval_str>gg</eval_str>
+							</condition>
+							<condition>
+								<type>if_cur_user</type>
+								<cur_user_type>is_next_boss</cur_user_type>
+								<and_or>&amp;&amp;</and_or>
+							</condition>
+						</conditions>
+						<condition_eval_str>tools.is_boss()||tools.is_next_boss()</condition_eval_str>
+						<desc_str VALUE="##'Если текущий пользователь -&gt; руководитель подразделения Или текущий пользователь -&gt; руководитель вышестоящего подразделения.'##"/>
+						<has_error>false</has_error>
+						<is_false>false</is_false>
+					</write_conditions>
+				</field_group>
+			</field_groups>
+			<actions>
+				<action>
+					<code>ai3zfh</code>
+					<name VALUE="##'ru=Согласовать заявку;en=Approve request'##"/>
+					<operations>
+						<operation>
+							<type>set_workflow_state</type>
+							<workflow_state_id>state4</workflow_state_id>
+						</operation>
+						<operation>
+							<type>set_request_status</type>
+							<request_status_id>close</request_status_id>
+						</operation>
+						<operation>
+							<type>request_processing</type>
+						</operation>
+						<operation>
+							<type>eval_str</type>
+							<eval_str>try &#10;{&#10;   if( _source.TopElem.type == 'course'){&#10;      tools.create_notification( '2', _source.TopElem.id.Value, "", null, _source.TopElem );&#10;   }&#10;} &#10;catch(err) &#10;{ &#10;   alert('WL4 '+err); &#10;}</eval_str>
+						</operation>
+					</operations>
+					<conditions>
+						<condition>
+							<type>if_cur_user</type>
+							<cur_user_type>is_person_func_manager</cur_user_type>
+							<and_or>||</and_or>
+							<begin_bracket>(</begin_bracket>
+							<person_id>6148914691236517121</person_id>
+						</condition>
+						<condition>
+							<type>if_cur_user</type>
+							<cur_user_type>is_boss</cur_user_type>
+							<and_or>&amp;&amp;</and_or>
+							<finish_bracket>)</finish_bracket>
+						</condition>
+						<condition>
+							<type>if_workflow_state_id</type>
+							<workflow_state_id>for_approve</workflow_state_id>
+							<and_or>&amp;&amp;</and_or>
+						</condition>
+					</conditions>
+					<condition_eval_str>(tools.is_person_func_manager()||tools.is_boss())&amp;&amp;curObject.workflow_state=="for_approve"</condition_eval_str>
+					<desc_str VALUE="##'Если ( текущий пользователь -&gt; функциональный руководитель в карточке сотрудника Или текущий пользователь -&gt; руководитель подразделения ) И текущий этап документооборота равен "ru=На согласовании;en=Pending Approval".'##"/>
+					<has_error>false</has_error>
+					<is_false>false</is_false>
+				</action>
+				<action>
+					<code>az79s9</code>
+					<name VALUE="##'ru=Отклонить заявку;en=Reject request'##"/>
+					<operations>
+						<operation>
+							<type>set_request_status</type>
+							<workflow_state_id>state2</workflow_state_id>
+							<request_status_id>ignore</request_status_id>
+						</operation>
+						<operation>
+							<type>set_workflow_state</type>
+							<workflow_state_id>spt2mw</workflow_state_id>
+						</operation>
+						<operation>
+							<type>send_notification</type>
+							<notification_id>768614336404564483</notification_id>
+						</operation>
+					</operations>
+					<conditions>
+						<condition>
+							<type>if_cur_user</type>
+							<cur_user_type>is_person_func_manager</cur_user_type>
+							<and_or>||</and_or>
+							<begin_bracket>(</begin_bracket>
+						</condition>
+						<condition>
+							<type>if_cur_user</type>
+							<cur_user_type>is_boss</cur_user_type>
+							<and_or>&amp;&amp;</and_or>
+							<finish_bracket>)</finish_bracket>
+						</condition>
+						<condition>
+							<type>if_workflow_state_id</type>
+							<workflow_state_id>for_approve</workflow_state_id>
+							<and_or>&amp;&amp;</and_or>
+						</condition>
+					</conditions>
+					<condition_eval_str>(tools.is_person_func_manager()||tools.is_boss())&amp;&amp;curObject.workflow_state=="for_approve"</condition_eval_str>
+					<desc_str VALUE="##'Если ( текущий пользователь -&gt; функциональный руководитель в карточке сотрудника Или текущий пользователь -&gt; руководитель подразделения ) И текущий этап документооборота равен "ru=На согласовании;en=Pending Approval".'##"/>
+					<has_error>false</has_error>
+					<is_false>false</is_false>
+				</action>
+			</actions>
+			<default_state>for_approve</default_state>
+			<auto_submit_fields>true</auto_submit_fields>
+			<destination_object_name>assessment_appraise</destination_object_name>
+			<is_std>true</is_std>
+		</workflow>
+	</workflows>
+</data>

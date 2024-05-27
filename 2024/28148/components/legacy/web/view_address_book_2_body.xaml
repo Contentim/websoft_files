@@ -1,0 +1,433 @@
+﻿<SPXMLScreen>
+<%
+	// const_start
+	var oConstAB = ({
+		"address_book": "Адресная книга",
+		"filters": tools_web.get_web_const("c_filter", curLngWeb),
+		"org_chart": "Оргструктура"
+	});
+	// const_end
+
+	var iOrgID, iSubID, bThinMode = curDevice.disp_type == "mobile";
+		
+	switch (tools_web.get_web_param(curParams, "address_book_body.org_select", "all", true))
+	{
+		case "current":
+			iOrgID = curUser.org_id.Value;
+			break;
+		case "selected":
+			iOrgID = OptInt(tools_web.get_web_param(curParams, "address_book_body.org_select.org_id", "", false), null);
+			break;
+		default:
+			iOrgID = null;
+			break;
+	}
+	
+	switch (tools_web.get_web_param(curParams, "address_book_body.sub_select", "all", true))
+	{
+		case "current":
+			iSubID = curUser.position_parent_id.Value;
+			break;
+		case "selected":
+			iSubID = OptInt(tools_web.get_web_param(curParams, "address_book_body.sub_select.sub_id", "", false), null);
+			break;
+		default:
+			iSubID = null;
+			break;
+	}
+	
+	var selSubID = OptInt(CONTEXT.GetOptProperty("SelectedSubID"), null);
+	if (selSubID == null)
+	{
+		selSubID = (iSubID == null ? iOrgID : iSubID);
+	}
+	
+	var bShowDesc = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_description", "0", true));
+	
+	var teSelSub, sInitialElemName;
+	if (selSubID == null)
+		teSelSub = undefined;
+	else if (bShowDesc)
+	{
+		teSelSub = tools.open_doc(selSubID);
+		if (teSelSub != undefined)
+			teSelSub = teSelSub.TopElem;
+	}
+	else
+		teSelSub = ArrayOptFirstElem(XQuery("for $elem in subs where $elem/id = " + XQueryLiteral(selSubID) + " return $elem/Fields('id','name')"))
+	
+	if (teSelSub != undefined)
+		sInitialElemName = teSelSub.name.Value;
+	else
+		sInitialElemName = "";
+	
+	var iSubGroupID = OptInt(tools_web.get_web_param(curParams, "address_book_body.sub_group_id", "", true), null);
+
+	var bShowOnInit = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_on_init", "0", true));
+	
+	var sTreeType = tools_web.get_web_param(curParams, "address_book_body.tree_type", "tree", true);
+	var sViewMode = tools_web.get_web_param(curParams, "address_book_body.view_mode", "grid", true);
+	var bExportButton = ( tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.bExportButton", "1", true)));
+	
+	switch(sViewMode) // COMPATIBILITY WITH V1
+	{
+		case "tile": break;
+		default:
+			sViewMode = "data_grid";
+	}
+	
+
+	var iPageSize = OptInt(tools_web.get_web_param(curParams, "address_book_body.view_mode.page_size", "0", true), 0);
+	
+	var bShowDismissed = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_dismissed", "0", true));
+	
+	var bUseCollaboratorInfoTuning = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.use_collaborator_tuning", "0", true));
+	
+	var bShowLetters = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_alphabet", "0", true));
+	
+	var sElemsShowList = String(tools_web.get_web_param(curParams, "address_book_body.view_mode.fields", "fullname;email", true));
+	
+	var bShowTree = ( tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_tree", "0", true)));
+	
+	var sSearchType = tools_web.get_web_param(curParams, "address_book_body.advanced_search", "", true);
+	
+	var aFilters, aFilter, oFilter, sFilter, i, aFiltersIDs = String(tools_web.get_web_param(curParams, "address_book_body.filters", "", true)).split(";");
+	if (ArrayCount(aFiltersIDs) > 0)
+	{
+		i = 0;
+		
+		aFilters = new Array();
+		for (sFilter in aFiltersIDs)
+		{
+			switch(sFilter)
+			{
+				case "fullname":
+					oFilter = {"name": "AddressBookSearchName", "title": tools_web.get_web_const("c_fio", curLngWeb), "type": "string", "value": ""};
+					break;
+				case "email":
+					oFilter = {"name": "AddressBookSearchEmail", "title": tools_web.get_web_const("uf_email", curLngWeb), "type": "string", "value": ""};
+					break;
+				case "phone":
+					oFilter = {"name": "AddressBookSearchPhone", "title": tools_web.get_web_const("uf_phone", curLngWeb), "type": "string", "value": ""};
+					break;
+				case "subdivision":
+					oFilter = {"name": "AddressBookSearchSub", "title": tools_web.get_web_const("c_subd", curLngWeb), "type": "string", "value": ""};
+					break;
+				case "region":
+					oFilter = {"name": "AddressBookRegion", "title": tools_web.get_web_const("vrb_region", curLngWeb), "type": "foreign_elem", "catalog_name": "region"};
+					break;
+				case "place":
+					oFilter = {"name": "AddressBookPlace", "title": tools_web.get_web_const("c_place", curLngWeb), "type": "foreign_elem", "catalog_name": "place"};
+					break;
+				case "position_common":
+					oFilter = {"name": "AddressBookPositionCommon", "title": tools_web.get_web_const("c_position_common", curLngWeb), "type": "foreign_elem", "catalog_name": "position_common"};
+					break;
+				default:
+					oFilter = null;
+			}
+			if (oFilter != null)
+			{
+				if (i % 3 == 0)
+				{
+					aFilter = new Array()
+					aFilters.push(aFilter);
+				}
+				aFilter.push(oFilter);
+				i++;
+			}
+		}
+	}
+	else
+		aFilters = null;
+	
+	
+	
+	var curTitle = {
+		"type": "simple",
+		"image_url": "/images/book.png",
+		"title": oConstAB.address_book
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	
+	
+%>
+	<Edit Name="SelectedSubID" Hidden="1"><%=(selSubID != null ? selSubID : "")%></Edit>
+<!--	
+	<Grid Width="100%" Class="XAML-grid-container">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100%"/>
+		</GridColumns>
+
+		<GridRow Class="XAML-object-title">
+			<Image Source="images/book.png" Width="32" Height="32"/>
+			<Label Class="XAML-label-header-1"><![CDATA[<%=oConstAB.address_book%>]]></Label>
+		</GridRow>
+	</Grid>
+-->
+	
+	<TabControl Name="sliderTab" DisplayMode1="onehandedconcertina" TabsHidden="1" MinHeight="500" TabsWidth_="20" ActiveTab="<%=CONTEXT.GetOptProperty("sliderTab",0)%>">
+	
+<%
+	if (bShowTree)
+	{
+%>
+		<TabItem Title="">
+
+			<Collection Name="SearchSubTree" Source="address_book_tree">
+				<Param Name="org_id" Value="<%=(iOrgID != null ? iOrgID : "")%>"/>
+				<Param Name="sub_id" Value="<%=(iSubID != null ? iSubID : "")%>"/>
+			</Collection>
+
+			<StackPanel Class="XAML-stack-container">
+				<StackPanel Class="XAML-stack-container">
+					<StackPanel Orientation="Vertical" Class="XAML-stack-filters-container" Align="right">
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-filter" Align="right">
+						<Button Class="XAML-button XAML-button-list XAML-button-view icon-tree2" Toggle="1" ToggleGroup="GTree_selector" Pressed="<%=(sTreeType != "chart")%>" Click="HIDE=SubdivisionChart;SHOW=SubdivisionTree;UPDATE=SubdivisionTree"></Button>
+						<Button Class="XAML-button XAML-button-view icon-th-large" Toggle="1" ToggleGroup="GTree_selector" Pressed="<%=(sTreeType == "chart")%>" Click="HIDE=SubdivisionTree;SHOW=SubdivisionChart;UPDATE=SubdivisionChart"></Button>
+					</StackPanel>
+					</StackPanel>
+					<StackPanel Orientation="Vertical">
+						<Tree Name="SubdivisionTree" Source="{SearchSubTree}" DataID="id" DataParent="parent_id" DataTitle="name" 
+			DataIcon="icon" Click="SET=SelectedSubID,{id};SET=currentlySelectedSubTitle,{name};SET=sliderTab,1;<%=(bShowDesc ? "REFRESH;" : "UPDATE=CatalogListDataGridaddressBookView,CatalogListDataTileaddressBookView,AddressBookLettersPanel")%>" Hidden="<%=(sTreeType == "chart")%>"/>
+
+						<WTTree Width="100%" Name="SubdivisionChart" Source="{SearchSubTree}" Selectable="0" DataID="id" DataParent="parent_id" DataTitle="name" DataText="name" DataImage="icon" NodeMode="normal" LevelsOpen="2" NodeClick="SET=SelectedSubID,{id};SET=currentlySelectedSubTitle,{name};SET=sliderTab,1;<%=(bShowDesc ? "REFRESH;" : "UPDATE=CatalogListDataGridaddressBookView,CatalogListDataTileaddressBookView,AddressBookLettersPanel")%>" Hidden="<%=(sTreeType != "chart")%>" DisplayToggle="true" ElementLayout="fonticon|text=name"></WTTree>
+					</StackPanel>
+				</StackPanel>
+			</StackPanel>
+		</TabItem>
+<%
+	}
+%>		
+		<TabItem Title="<%=oConstAB.address_book%>">
+			<TabControl Name="AddressBookBodyTab" ActiveTab="0" TabsHidden="<%=iSubGroupID == null%>">
+				<TabItem Class="icon-users2" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_collaborators", curLngWeb ) )%>" ShowHeader="<%=(iSubGroupID != null)%>">
+				
+				<Action Source="ExcelExporterAction" Name="excelExportAction" Success="OPENWINDOW=/assessment_excel_export.html?mode=htmlfileurl&htmlfileurl={xls_url}&header=vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+					<Param Name="sCollection" Value=""/>
+					<Param Name="sCollectionData" Value=""/>
+					<Param Name="sData" Value=""/>
+					<Param Name="sMode" Value=""/>
+					<Param Name="sColumnList" Value=""/>
+				</Action>
+				
+				
+<%
+		if (bShowTree || iOrgID != null)
+		{
+%>
+					<Grid Width="100%" Class="XAML-grid-container">
+							<GridColumns>
+<%
+			if (bShowTree)
+			{
+%>
+								<GridColumn/>
+<%
+			}
+%>		
+								<GridColumn Width="100%"/>
+							</GridColumns>
+
+							<GridRow>
+<%
+			if (bShowTree)
+			{
+%>
+								<Link Click="SET=sliderTab,0" Class="icon-arrow-left"></Link>
+<%
+			}
+%>		
+								<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedSubTitle" Editable="0"><%=sInitialElemName%></Edit>		
+						
+							</GridRow>
+					</Grid>		
+<%
+		}
+		if (bShowLetters)
+		{
+%>
+					<Edit Hidden="1" Name="firstLetterCode"><%=CONTEXT.GetOptProperty("firstLetterCode", "")%></Edit>
+					<Panel Source="address_book_letters_panel" Name="AddressBookLettersPanel" ShowHeader="0">
+						<Param Name="sub_id" Value="{SelectedSubID}"/>
+						<Param Name="show_dismissed" Value="<%=(bShowDismissed ? "1": "0")%>"/>
+						<Param Name="firstlettercode" Value="{firstLetterCode}"/>
+					</Panel>
+<%
+		}
+		if (bShowDesc && teSelSub != undefined && teSelSub.desc.HasValue)
+		{
+%>
+			<StackPanel Class="XAML-stack-course-map-info" Name="SubDescription" Orientation="Vertical" Hidden="0">
+				<HTMLBox>											
+					<![CDATA[
+						<%=tools_web.get_web_desc( teSelSub.desc.Value, UrlFromDocID( teSelSub.id.Value ), (teSelSub.Name + ".desc") )%>
+					]]>
+				</HTMLBox>
+			</StackPanel>
+<%
+		}
+		var curView = {
+			"id": "addressBookView",
+			"disp_selectors": aFilters != null,
+			"disp_search": true,
+			"disp_filter": false,
+			"disp_paging": (iPageSize > 0),
+			"catalog_name": "collaborator",
+			"disp_type": sViewMode,
+			"height": null,
+			"tile_template": "collaborator_tile",
+			"row_filters": aFilters,
+			"collection": {
+				"name": "address_book",
+				"params": ([
+					{"name": "org_id", "value": (iOrgID != null ? iOrgID : "")},
+					{"name": "sub_id", "value": "{SelectedSubID}"},
+					{"name": "search_string", "value": "{CatalogListSearchaddressBookView}"},
+					{"name": "firstletter_code", "value": "{firstLetterCode}"},
+					{"name": "advanced_search_url", "value": ("fio={AddressBookSearchName}&email={AddressBookSearchEmail}&phone={AddressBookSearchPhone}&sub={AddressBookSearchSub}&regionid={AddressBookRegion}&placeid={AddressBookPlace}&position_common={AddressBookPositionCommon}&showdsmsd=" + (bShowDismissed ? "1": "0"))},
+					{"name": "column_list", "value": (CONTEXT.GetOptProperty("CatalogListSelectorsaddressBookView", sViewMode) == "tile" ? "fullname": sElemsShowList)},
+					{"name": "use_collaborator_tuning", "value": (bUseCollaboratorInfoTuning ? 1 : 0)},
+					{"name": "version", "value": "2"},
+					{"name": "search_required", "value": (bShowOnInit ? 0 : 1)},
+					{"name": "advanced_search_type", "value": sSearchType}
+				])
+			}
+		};
+		
+		if (bExportButton)
+			curView.buttons = ([{
+				"name": "excelExportButton",
+				"title": tools_web.get_web_const( "sgsvrm6x6u", curLngWeb ),
+				"click": ("SET=excelExportAction/sCollection,address_book;SET=excelExportAction/sCollectionData,org_id=" + (iOrgID != null ? iOrgID : "") + "&sub_id={SelectedSubID}&search_string={CatalogListSearchaddressBookView}&advanced_search_url=fio={AddressBookSearchName}%26email={AddressBookSearchEmail}%26phone={AddressBookSearchPhone}%26sub={AddressBookSearchSub}%26regionid={AddressBookRegion}%26placeid={AddressBookPlace}%26position_common={AddressBookPositionCommon}%26showdsmsd=" + (bShowDismissed ? "1": "0") + "%26advanced_search_type=" + sSearchType + "%26search_required=0&column_list=" + UrlEncode(sElemsShowList) + "&firstletter_code={firstLetterCode}&version=2;SET=excelExportAction/sData,;SET=excelExportAction/sMode,datagrid;ACTION=excelExportAction")
+				}
+			]);
+		
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+				</TabItem>
+				
+<%
+		if (iSubGroupID != null)
+		{
+			var oColumn, docSubGroup = tools.open_doc(iSubGroupID);
+			if (docSubGroup != undefined)
+			{
+%>
+				<TabItem Title="<%=oConstAB.org_chart%>" Class="icon-org">
+					
+					<Grid Width="100%" Class="XAML-grid-list-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+						</GridColumns>
+<%
+				for (oColumn in docSubGroup.TopElem.subdivisions)
+				{
+%>
+						<GridRow>
+							<Grid Class="XAML-grid-list-item">
+								<GridColumns>
+									<GridColumn Width="32"/>
+									<GridColumn Width="100%"/>
+								</GridColumns>
+								<GridRow>
+									<Link Click="SET=OrgChartCollection/chosen_kingdom_id,<%=oColumn.PrimaryKey%>;UPDATE=OrgChartAlpha" Class="icon-subdivision"/>
+									<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+										<Link Class="XAML-link-list-item-title" Click="SET=OrgChartCollection/chosen_kingdom_id,<%=oColumn.PrimaryKey%>;UPDATE=OrgChartAlpha"><![CDATA[<%=tools_web.get_cur_lng_name( oColumn.subdivision_name, curLng.short_id )%>]]></Link>
+									</StackPanel>
+								</GridRow>
+							</Grid>
+						</GridRow>
+<%
+				}
+%>
+					</Grid>
+					
+					
+					<Collection Name="OrgChartCollection" Source="org_chart_collection">
+						<Param Name="color" Value="gray"/>
+						<Param Name="boss_color" Value="gray"/>
+						<Param Name="func_color" Value="gray"/>
+						<Param Name="field_list" Value="position;subdivision"/>
+						<Param Name="level_cut" Value="10"/>
+						<Param Name="chosen_kingdom_id" Value="0"/>
+						<Param Name="governing_type" Value="org;subdivision;position"/>
+						<Param Name="include_funcmanagement" Value="0"/>
+						<Param Name="try_pop_boss" Value="0"/>
+					</Collection>
+					
+					
+					<WTTree
+
+						Type="tree" 				
+						Class="" 					
+						ElementForm="roundrect"		
+						Connector="rect"			
+						MarkerStart="circle" 		
+						MarkerEnd="arrow"			
+						ElementClass=""				
+						ElementColor=""				
+						ElementClassSelected=""		
+						ElementColorSelected=""	
+						ElementWidth="200" 			
+						ElementHeight="100"			
+						InterElement="25"			
+						InterLevel="100"			
+						BorderWidth="1"				
+						BorderColor=""				
+						LineClass=""				
+						LineWidth="1"				
+						LineColor=""				
+						AllowToggle="true"			
+						TogglerClass=""				
+						TogglerRadius=""			
+						TogglerColor=""				
+						DisplayTips="true"			
+						TipClass=""					
+						TipColor=""					
+						TipBorderColor=""			
+						TipBorderWidth=""			
+						AllowZoom="true" 			
+						UniformZoom="true"			
+						Aspect="0.7"				
+						TipLayout="title=title;image=image|text=desc" 
+						DisplayToggle="true" 
+						
+						Name="OrgChartAlpha"
+						Width="1200"
+						Height="800"
+						Source="{OrgChartCollection}"
+
+						DataID="hier_id"
+						DataParent="parent" 
+						DataSister="sister" 
+						DataTitle="title" 
+						DataText="text" 
+						DataColor="color" 
+						DataImage="image"
+						
+						DataLink="url"
+						DataElemId="id"
+						DataElementForm="form"
+
+						Selectable="false"
+						Orientation="top"
+						Alignment="center"
+						NodeMode="dot"
+						NodeClick=""
+						/>
+					
+					
+					
+				</TabItem>
+<%
+			}
+		}
+%>
+			</TabControl>
+		</TabItem>
+
+	</TabControl>
+
+
+</SPXMLScreen>

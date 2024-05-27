@@ -1,0 +1,36 @@
+﻿<SPXMLScreen>
+
+<%
+	sSelectData = PARAMETERS.GetOptProperty( "select_data", "" );
+	//alert("SelectData: " + sSelectData);
+    sSelectObj = StrRangePos(sSelectData,sSelectData.indexOf('{')+1,sSelectData.indexOf('}'));
+	
+	sCreateAction = "ACTION=PersonsImportAction;"
+%>
+
+	<Action Name="PersonsImportAction" Source="persons_import_excel" Success="ALERT={messageText};CLOSEDIALOG">
+        <Param Name="SelectObject" Value='<%=sSelectObj%>'/>
+	    <Param Name="ResourseId" Value="{CollaboratFile}"/> 
+	</Action>
+
+	<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="120" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+		
+		<GridRow>
+			<Label Class="XAML-grid-label-name" Width="120"><%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>:</Label>
+			<StackPanel Adapt="true">
+				<ResourceField Width="100" Name="CollaboratFile" Source="event_resources"/>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+		
+	<Label/>
+	<Toolbar Width="">
+			<Button Class="XAML-button" Click="<%=sCreateAction%>"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+			<Button Class="XAML-button" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</Toolbar>
+	
+</SPXMLScreen>			

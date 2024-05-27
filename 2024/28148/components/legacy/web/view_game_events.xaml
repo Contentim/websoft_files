@@ -1,0 +1,335 @@
+﻿<SPXMLScreen>
+<%
+	iCurTab = 0 - 1;
+	iArrayRangeNum = OptInt( tools_web.get_web_param( curParams, "game_events.array_range_num", "", true ), 10 );
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( "GameEventsTab" ), OptInt( curUrlQuery.GetOptProperty( "game_events_tab" ), 0 ) );
+	arrTabListParam = String( tools_web.get_web_param( curParams, "game_events.tab_list", "bonus;competence;thanks", true ) ).split( ";" );
+%>
+<TabControl Name="GameEventsTab" ActiveTab="<%=iDefaultTab%>" Class="XAML-uni-content-container" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   BONUS TAB   /////////////////////////////////////////////
+if ( sTabListParam == "bonus" )
+{
+	iCurTab++;
+	sTabTitle = tools_web.get_web_param( curParams, "game_events.tab_list.bonus_tab", tools_web.get_web_const( "peredachikolleg", curLngWeb ), true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+	sBonusCurrencyType = tools_web.get_web_param( curParams, "game_events.tab_list.bonus_tab.bonus_currency_type", "", true );
+	catBonusAccount = ArrayOptFirstElem( XQuery( "for $elem in accounts where $elem/object_id = " + curUserID + " and $elem/currency_type_id = " + XQueryLiteral( sBonusCurrencyType ) + " return $elem" ) );
+	
+	if ( catBonusAccount != undefined )
+	{
+		xarrBonusTransactions = ArrayRange( XQuery( "for $elem in transactions where $elem/account_id = " + catBonusAccount.id + " order by $elem/date descending return $elem" ), 0, iArrayRangeNum );
+		xarrBonusMinusTransactions = ArraySelect( xarrBonusTransactions, "This.direction == 2" );
+		xarrBonusPlusTransactions = ArraySelect( xarrBonusTransactions, "This.direction == 1" );
+
+		xarrBonusMinusAccounts = ArraySelectAll( XQuery( "for $elem in accounts where MatchSome( $elem/id, (" + ArrayMerge( xarrBonusMinusTransactions, "This.account_id", "," ) + ") ) return $elem" ) );
+		xarrBonusPlusAccounts = ArraySelectAll( XQuery( "for $elem in accounts where MatchSome( $elem/id, (" + ArrayMerge( xarrBonusMinusTransactions, "This.account_id", "," ) + ") ) return $elem" ) );
+
+		catBonusPlusTransaction = undefined;
+		iBudgetPeriodID = OptInt( tools_web.get_web_param( curParams, "game_events.tab_list.bonus_tab.budget_period_id", "", true ) );
+		if ( iBudgetPeriodID != undefined )
+		{
+			dBudgetPeriod = tools.open_doc( iBudgetPeriodID )
+			if ( dBudgetPeriod != undefined )
+			{
+				teBudgetPeriod = dBudgetPeriod.TopElem;
+				if ( teBudgetPeriod.start_date.HasValue && teBudgetPeriod.finish_date.HasValue )
+				{
+					xarrBonusPlusTransactions = XQuery( "for $elem in transactions where $elem/account_id = " + catBonusAccount.id + " and $elem/direction = 1 and $elem/date > date('" + teBudgetPeriod.start_date.Value + "') and $elem/date < date('" + teBudgetPeriod.finish_date.Value + "') order by $elem/date descending return $elem" );
+					catBonusPlusTransaction = ArrayOptFirstElem( xarrBonusPlusTransactions );
+				}
+			}
+		}
+
+		if ( false && catBonusPlusTransaction != undefined )
+		{
+%>
+		<Label Class="XAML-game-desc"><![CDATA[<%=StrReplace( tools_web.get_web_const( "vamzachislenoko", curLngWeb ), "{PARAM1}", catBonusPlusTransaction.amount )%>]]></Label>
+<%
+		}
+		if ( ArrayCount( xarrBonusTransactions ) > 0 )
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-list-container">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+<%
+			function getNameQualification( iTransaction, sType )
+			{
+				sQualification = "";
+				sBonusMinusTransComment = "";
+
+				dBonusMinusTransaction = tools.open_doc( iTransaction );
+				if ( dBonusMinusTransaction != undefined )
+				{
+					teBonusMinusTransaction = dBonusMinusTransaction.TopElem;
+
+					if ( teBonusMinusTransaction.object_name.HasValue )
+						sQualification = Trim( UnifySpaces( teBonusMinusTransaction.object_name.Value ) ) ;
+
+					if ( teBonusMinusTransaction.comment.HasValue )
+						sBonusMinusTransComment = Trim( UnifySpaces( teBonusMinusTransaction.comment.Value ) );
+				}
+
+				switch ( sType )
+				{
+					case "name":
+						return sQualification;
+					case "comment":
+						return sBonusMinusTransComment;
+				}
+			}
+
+			function getFullNameTransaction( code, minus )
+			{
+				sPersonFullName = "";
+				if ( minus )
+					catBonusTransferTransaction = ArrayOptFirstElem( XQuery( "for $elem in transactions where $elem/code = " + XQueryLiteral( code ) + " and $elem/direction = 2 return $elem" ) );
+				else
+					catBonusTransferTransaction = ArrayOptFirstElem( XQuery( "for $elem in transactions where $elem/code = " + XQueryLiteral( code ) + " and $elem/direction = 1 return $elem" ) );
+
+				if ( catBonusTransferTransaction != undefined )
+				{
+					cBonusTransferAccount = ArrayOptFirstElem( XQuery( "for $elem in accounts where $elem/id = " + catBonusTransferTransaction.account_id.Value + " return $elem" ) );
+					if ( cBonusTransferAccount != undefined )
+						return sPersonFullName = Trim( UnifySpaces( cBonusTransferAccount.name.Value ) );
+				}
+
+				return sPersonFullName;
+			}
+			
+			for ( catBonusTransaction in xarrBonusTransactions )
+			{
+				if ( ( catBonusMinusTransaction = ArrayOptFindByKey( xarrBonusMinusTransactions, catBonusTransaction.code, "code" ) ) != undefined )
+					catBonusAccount = ArrayOptFindByKey( xarrBonusMinusAccounts, catBonusMinusTransaction.account_id, "id" );
+				else if ( ( catBonusPlusTransaction = ArrayOptFindByKey( xarrBonusPlusTransactions, catBonusTransaction.code, "code" ) ) != undefined )
+					catBonusAccount = ArrayOptFindByKey( xarrBonusPlusAccounts, catBonusPlusTransaction.account_id, "id" );
+				else
+					continue;
+
+				if ( catBonusAccount == undefined )
+					continue;
+
+				if ( catBonusTransaction.direction == 1 )
+				{
+					sLabel = "Вы получили баллов: " + catBonusTransaction.amount.Value;
+
+					sPersonFullName = getFullNameTransaction( catBonusTransaction.code.Value, true );
+					if ( sPersonFullName != "" )
+						sLabel += " от сотрудника: " + sPersonFullName;
+
+					sBonusMinusTransComment = getNameQualification( catBonusPlusTransaction.id.Value, "comment" );
+					if ( sBonusMinusTransComment != "" )
+						sLabel += ", комментарий: " + sBonusMinusTransComment;
+				}
+				else
+				{
+					sPersonFullName = getFullNameTransaction( catBonusTransaction.code.Value, false );
+					sQualification = getNameQualification( catBonusMinusTransaction.id.Value, "name" );
+					sBonusMinusTransComment = getNameQualification( catBonusMinusTransaction.id.Value, "comment" );
+					
+					sLabel = StrReplace( StrReplace( StrReplace( StrReplace( tools_web.get_web_const( "vyperedaliball", curLngWeb ), "{PARAM1}", catBonusTransaction.amount.Value ), "{PARAM2}", sPersonFullName ), "{PARAM3}", sQualification ), "{PARAM4}", sBonusMinusTransComment );
+				}
+%>
+			<GridRow>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn Width="120" Align="Left"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+						<Label><%=StrDate( catBonusTransaction.date, true, false )%></Label>
+						<Label>
+							<![CDATA[<%=sLabel%>]]>
+						</Label>
+					</GridRow>
+				</Grid>
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+<%
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   COMPETENCE TAB   /////////////////////////////////////////////
+if ( sTabListParam == "competence" )
+{
+	iCurTab++;
+	sTabTitle = tools_web.get_web_param( curParams, "game_events.tab_list.competence_tab", tools_web.get_web_const( "vcb_events", curLngWeb ), true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+	sCompetenceCurrencyType = tools_web.get_web_param( curParams, "game_events.tab_list.competence_tab.competence_currency_type", "", true );
+	catCompetenceAccount = ArrayOptFirstElem( XQuery( "for $elem in accounts where $elem/object_id = " + curUserID + " and $elem/currency_type_id = " + XQueryLiteral( sCompetenceCurrencyType ) + " return $elem" ) );
+	if ( catCompetenceAccount != undefined )
+	{
+		xarrCompetenceTransactions = ArrayRange( XQuery( "for $elem in transactions where $elem/account_id = " + catCompetenceAccount.id + " and $elem/direction = 1 order by $elem/date descending return $elem" ), 0, iArrayRangeNum );
+		xarrCompetenceMinusTransactions = ArraySelectAll( XQuery( "for $elem in transactions where MatchSome( $elem/code, (" + ArrayMerge( xarrCompetenceTransactions, "This.code.XQueryLiteral", "," ) + ") ) and $elem/direction = 2 return $elem" ) );
+		xarrCompetenceMinusAccounts = ArraySelectAll( XQuery( "for $elem in accounts where MatchSome( $elem/id, (" + ArrayMerge( xarrCompetenceMinusTransactions, "This.account_id", "," ) + ") ) return $elem" ) );
+		if(ArrayCount(xarrCompetenceTransactions) > 0)
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-list-container">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+<%
+		for ( catCompetenceTransactionElem in xarrCompetenceTransactions )
+		{
+			teCompetenceTransaction = OpenDoc( UrlFromDocID( catCompetenceTransactionElem.id ) ).TopElem;
+				catCompetenceMinusTransaction = ArrayOptFindByKey( xarrCompetenceMinusTransactions, catCompetenceTransactionElem.code, "code" );
+
+			sAmount = ( catCompetenceTransactionElem.amount.HasValue ) ? catCompetenceTransactionElem.amount.Value : "";
+			sTransactionComment = ( teCompetenceTransaction.comment.HasValue ) ? teCompetenceTransaction.comment.Value : "";
+			if ( catCompetenceMinusTransaction == undefined )
+			{
+				dObject = tools.open_doc( teCompetenceTransaction.object_id )
+				if ( dObject != undefined )
+				{
+					teObject = dObject.TopElem;
+					sDesc = StrReplace( StrReplace( tools_web.get_web_const( "vamzachislenoba", curLngWeb ), "{PARAM1}", sAmount ), "{PARAM2}", sTransactionComment );
+				}
+			}
+			else
+			{
+				catCompetenceAccount = ArrayOptFindByKey( xarrCompetenceMinusAccounts, catCompetenceMinusTransaction.account_id, "id" );
+				if ( catCompetenceAccount == undefined )
+					continue;
+
+				dPerson = tools.open_doc( catCompetenceAccount.object_id )
+				if ( dPerson != undefined )
+				{
+					tePerson = dPerson.TopElem;
+					aPersonFullname = [];
+					if ( tePerson.firstname.HasValue ) aPersonFullname.push( tePerson.firstname.Value );
+					if ( tePerson.lastname.HasValue ) aPersonFullname.push( tePerson.lastname.Value );
+					if ( tePerson.middlename.HasValue ) aPersonFullname.push( tePerson.middlename.Value );
+					sDesc = StrReplace( StrReplace( StrReplace( StrReplace( tools_web.get_web_const( "vamzachislenoba_1", curLngWeb ), "{PARAM1}", sAmount ), "{PARAM2}", ArrayMerge( aPersonFullname, "This", " " ) ), "{PARAM3}", teCompetenceTransaction.object_id.ForeignElem.name.Value ), "{PARAM4}", sTransactionComment );
+				}
+			}
+%>
+			<GridRow>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn Width="120" Align="Left"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+				<Label><%=StrDate( catCompetenceTransactionElem.date, true, false )%></Label>
+				<Label><![CDATA[<%=sDesc%>]]></Label>
+			</GridRow>
+				</Grid>
+			</GridRow>
+<%
+		}
+%>
+		</Grid>
+<%
+	}
+		else
+		{
+%>
+		<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+<%
+		}		
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   THANKS TAB   /////////////////////////////////////////////
+if ( sTabListParam == "thanks" )
+{
+	iCurTab++;
+	sTabTitle = tools_web.get_web_param( curParams, "game_events.tab_list.thanks_tab", tools_web.get_web_const( "blagodarnosti", curLngWeb ), true );
+
+	sThanksCurrencyType = tools_web.get_web_param( curParams, "game_events.tab_list.thanks_tab.thanks_currency_type", "", true );
+	xarrThanksTransactions = ArrayRange( XQuery( "for $elem in transactions where some $account in accounts satisfies ( $elem/account_id = $account/id and $account/currency_type_id = " + XQueryLiteral( sThanksCurrencyType ) + " ) order by $elem/date descending return $elem" ), 0, iArrayRangeNum );
+	xarrThanksAccounts = ArraySelectAll( XQuery( "for $elem in accounts where MatchSome( $elem/id, (" + ArrayMerge( xarrThanksTransactions, "This.account_id", "," ) + ") ) return $elem" ) );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+<%
+	if(ArrayCount(xarrThanksTransactions) > 0)
+	{
+%>
+		<Grid Width="100%" Class="XAML-grid-list-container">
+			<GridColumns>
+				<GridColumn/>
+			</GridColumns>
+<%
+	for ( catThanksTransactionElem in xarrThanksTransactions )
+	{
+		teThanksTransaction = OpenDoc( UrlFromDocID( catThanksTransactionElem.id ) ).TopElem;
+		if( !teThanksTransaction.object_id.HasValue )
+			continue;
+		catThanksAccount = ArrayOptFindByKey( xarrThanksAccounts, catThanksTransactionElem.account_id, "id" );
+
+		bPerson=false
+		if ( catThanksAccount.object_id == curUserID )
+		{
+			bPerson=true
+				sDesc = StrReplace( StrReplace( StrReplace( tools_web.get_web_const( "vypoluchiliblag", curLngWeb ), "{PARAM1}", teThanksTransaction.person_fullname ), "{PARAM2}", teThanksTransaction.object_id.ForeignElem.name ), "{PARAM3}", teThanksTransaction.comment );
+		}
+		else if (teThanksTransaction.person_id == curUserID)
+		{
+			bPerson=true
+			tePerson = OpenDoc( UrlFromDocID( catThanksAccount.object_id ) ).TopElem;
+				sDesc = StrReplace( StrReplace( StrReplace( tools_web.get_web_const( "vynapravilibla", curLngWeb ), "{PARAM1}", tePerson.fullname ), "{PARAM2}", teThanksTransaction.object_id.ForeignElem.name ), "{PARAM3}", teThanksTransaction.comment );
+		}
+		if (bPerson)
+		{
+%>
+			<GridRow>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn Width="120" Align="Left"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+				<Label><%=StrDate( catThanksTransactionElem.date, true, false )%></Label>
+				<Label><![CDATA[<%=sDesc%>]]></Label>
+			</GridRow>
+				</Grid>
+			</GridRow>
+<%
+		}
+	}
+%>
+		</Grid>
+<%
+	}
+	else
+	{
+%>
+			<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+<%
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+
+</SPXMLScreen>

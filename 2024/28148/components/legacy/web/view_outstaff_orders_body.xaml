@@ -1,0 +1,67 @@
+﻿<SPXMLScreen>
+<%
+arrBossSubdivisions = [];
+if ( global_settings.settings.outstaff.outstaff_boss_types.ChildNum > 0 )
+{
+	xarrFuncManagers = XQuery( "for $elem in func_managers where $elem/catalog = 'subdivision' and MatchSome( $elem/boss_type_id, ( " + ArrayMerge( global_settings.settings.outstaff.outstaff_boss_types, "This.PrimaryKey", "," ) + " ) ) return $elem" );
+	arrBossSubdivisions = ArrayExtract( xarrFuncManagers, 'object_id' );
+	for ( catFuncManagerElem in xarrFuncManagers )
+		arrBossSubdivisions = ArrayUnion( arrBossSubdivisions, ArrayExtract( tools.xquery( 'for $elem in subdivisions where IsHierChild( $elem/id, ' + catFuncManagerElem.object_id + ' ) order by $elem/Hier() return $elem/id' ), 'id' ) );
+}
+%>
+
+<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( 'zakazynavremen', curLngWeb )%></Label>
+
+<Toolbar Class="XAML-toolbar">
+	<Button Class="XAML-button XAML-button-new" Click="OPENURL=<%=tools_web.get_mode_clean_url( "outstaff_order_create", null, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( 'sozdatzakaznav', curLngWeb )%></Button>
+</Toolbar>
+
+<Action Name="OutstaffOrdersAction" Source="outstaff_order_change" Success="UPDATE=CatalogListDataGridOutstaffOrders" Failure="ALERT={messageText}">
+	<Param Name="action" Value="save"/>
+	<Param Name="selected_objects" Value="{CatalogListDataGridOutstaffOrders}"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Dialog Name="CommentDialog" Source="dlg_edit_text" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vveditetekst', curLngWeb ) )%>" Close="
+	SET=status_comment,{DialogText};
+	ACTION=OutstaffOrdersAction;
+">
+	<Param Name="label" Value="<%=XmlAttrEncode( tools_web.get_web_const( 'c_comment', curLngWeb ) + ':' )%>"/>
+</Dialog>
+<Edit Name="status_comment" Hidden="true"></Edit>
+<%
+curView = {
+	"id": "OutstaffOrders",
+	"catalog_name": "outstaff_order",
+	"xquery_qual": ( "$elem/person_id = " + curUserID + " or $elem/agreement_person_id = " + curUserID + ( ArrayCount( arrBossSubdivisions ) == 0 ? "" : " or MatchSome( $elem/subdivision_id, (" + ArrayMerge( arrBossSubdivisions, "This", "," ) + ") )" ) ),
+	"disp_link": true,
+	"height": "400",
+	"disp_filter": true,
+	"filter_mode": "custom",
+	"filter_items": [
+		{ "field": "status" },
+	],
+	"row_filters": [
+		[
+			{ "name": "budget_period_id", "title" : tools_web.get_web_const( 'c_budget_period', curLngWeb ), "type": "foreign_elem", "catalog_name": "budget_period" },
+			{ "name": "region_id", "title" : tools_web.get_web_const( 'vrb_region', curLngWeb ), "type": "foreign_elem", "catalog_name": "region" },
+			{ "name": "position_common_id", "title" : tools_web.get_web_const( 'c_position_common', curLngWeb ), "type": "foreign_elem", "catalog_name": "position_common", "xquery_qual": "allow_outstaff = true()" },
+		]
+	],
+	"disp_menu": true,
+	"menu_items": [
+		{ "title": tools_web.get_web_const( 'vanb_submit', curLngWeb ), "click": "SET=OutstaffOrdersAction/action,list_set_agreed;OPENDIALOG=CommentDialog" },
+		{ "title": tools_web.get_web_const( "c_reject", curLngWeb ), "click": "SET=OutstaffOrdersAction/action,list_set_cancel;OPENDIALOG=CommentDialog" }
+	]
+};
+if ( false )
+{
+	curView.SetProperty( "disp_menu", true );
+	curView.SetProperty( "menu_items", [
+		{ "title": tools_web.get_web_const( 'vanb_submit', curLngWeb ), "click": "SET=OutstaffOrdersAction/action,list_set_agreed;OPENDIALOG=CommentDialog" },
+		{ "title": tools_web.get_web_const( "c_reject", curLngWeb ), "click": "SET=OutstaffOrdersAction/action,list_set_cancel;OPENDIALOG=CommentDialog" }
+	] );
+}
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</SPXMLScreen>

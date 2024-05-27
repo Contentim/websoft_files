@@ -1,0 +1,229 @@
+﻿<SPXMLScreen>
+<%
+	function get_date( dDate, bIn )
+	{
+		if( bUseTimezone )
+		{
+			if( bIn )
+			{
+				return tools_web.get_timezone_date( dDate, catUserTimezone, catDefaultTimezone )
+			}
+			else
+			{
+				return tools_web.get_timezone_date( dDate, catEventTimezone, catUserTimezone )
+			}
+		}
+		else
+			return dDate
+	}
+	iEventID = OptInt( PARAMETERS.GetOptProperty( "object_id" ) );
+	bShowOpenButton = tools_web.is_true( PARAMETERS.GetOptProperty( "show_button", "0" ) );
+	bUseTimezone = tools_web.is_true( PARAMETERS.GetOptProperty( "use_timezone", "0" ) );
+	teEvent = OpenDoc( UrlFromDocID( iEventID ) ).TopElem;
+	
+	if( bUseTimezone )
+	{
+		catDefaultTimezone = global_settings.settings.timezone_id.HasValue ? global_settings.settings.timezone_id.ForeignElem : null;
+		catUserTimezone = tools_web.get_timezone( curUserID, curUser );
+		catUserTimezone = catUserTimezone.HasValue ? catUserTimezone.ForeignElem : null;
+		catEventTimezone = tools_web.get_timezone( iEventID, teEvent );
+		catEventTimezone = catEventTimezone.HasValue ? catEventTimezone.ForeignElem : null;
+	}
+	
+	bUserRequestExists  = ( ArrayOptFirstElem( XQuery( "for $elem in requests where $elem/person_id = " + curUserID + " and $elem/object_id = " + iEventID + "  and $elem/is_group = false() and $elem/status_id = 'close' return $elem" )) != undefined );
+	xarrBossTypes = tools.get_object_relative_boss_types(curUserID, iEventID);
+	xarrBossTypes = ArrayUnion( xarrBossTypes, XQuery( "for $elem in boss_types where $elem/code = 'current_user' return $elem" ) );
+	bUserIsCollaborator = ArrayOptFind( xarrBossTypes, "This.code == 'event_participaint'" ) != undefined;
+	bFreePlacesExist = true;
+	if(teEvent.max_person_num.HasValue)
+	{
+		iRegisteredPersonsNum = ArrayCount( teEvent.collaborators ) + OptInt( teEvent.unnamed_person_num, 0 );
+		bFreePlacesExist = teEvent.max_person_num > iRegisteredPersonsNum;
+	}
+	
+	feEventType = teEvent.event_type_id.OptForeignElem;
+	if( feEventType != undefined && feEventType.simpl_custom_web_template_id.HasValue )
+	{
+		Response.Write( tools_web.place_xaml( feEventType.simpl_custom_web_template_id.Value ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+%>
+	<Grid Width="100%" Class="XAML-grid-panel-container">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+		<GridRow>
+<%
+	var curTitle = {
+		"object": teEvent
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	sDataClass = tools_web.get_class_for_status( teEvent.status_id );
+	
+%>
+			<Label Class="XAML-label-status <%=sDataClass%>"><%=( teEvent.status_id.HasValue ? curLngCommon.event_status_types.GetChildByKey( teEvent.status_id ).name : "")%></Label>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-grid-info-table adaptive" Adapt="1">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vcb_started", curLngWeb )%>:</Label>
+
+<%
+	dStartDate = get_date( teEvent.start_date, false );
+	dFinishDate = get_date( teEvent.finish_date, false );
+	if( teEvent.finish_date.HasValue && Day( dStartDate ) == Day( dFinishDate ))
+	{
+%>
+			<Label Class="XAML-grid-label-value"><%=StrDate( dStartDate, true, false) + "-" + StrTime( dFinishDate ) %></Label>
+<%
+	}
+	else if( teEvent.finish_date.HasValue )
+	{
+%>
+			<Label Class="XAML-grid-label-value"><%=StrDate( dStartDate, false, false)%> - <%=(StrDate( dFinishDate, false, false))%> <%=StrNonTitleCase( tools_web.get_web_const( "vppb_from", curLngWeb ) )%> <%=StrTime( dStartDate )%> <%=StrNonTitleCase( tools_web.get_web_const( "mkly6lmeds", curLngWeb ) )%> <%=StrTime( dFinishDate )%></Label>
+<%
+	}
+%>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+	if( teEvent.place_id.HasValue && teEvent.place_id.OptForeignElem != undefined)
+	{
+		tePlace = OpenDoc( UrlFromDocID( teEvent.place_id ) ).TopElem;
+		bShowPlaceInfo = tePlace.region_id.HasValue || tePlace.address.HasValue;
+%>
+				<Label><%=tools_web.get_cur_lng_name( teEvent.place_id.ForeignElem.name, curLng.short_id )%><%					
+		if( teEvent.place.HasValue )
+		{
+%><%=", "%><%
+		}
+		if(bShowPlaceInfo)
+		{
+%>
+					<HTMLTip>
+<%
+		
+			if( tePlace.region_id.HasValue && tePlace.region_id.OptForeignElem != undefined )
+			{
+%>
+					<%=tools_web.get_web_const( "vrb_region", curLngWeb )%>: <%=tools_web.get_cur_lng_name( tePlace.region_id.ForeignElem.name, curLng.short_id )%>
+<%
+			}
+			if( tePlace.address.HasValue )
+			{
+%>
+					<%=tools_web.get_web_const( "uf_address", curLngWeb )%>: <%=tools_web.get_cur_lng_name( tePlace.address, curLng.short_id )%>
+<%
+			}
+%>	
+					</HTMLTip>
+<%
+		}
+%>	
+				</Label>
+<%
+	}
+	if( teEvent.place.HasValue )
+	{
+%>
+				<Label><![CDATA[<%=teEvent.place%>]]></Label>
+<%
+	}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	if( teEvent.comment.HasValue )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+			<Label><![CDATA[<%=teEvent.comment%>]]></Label>
+			
+		</GridRow>
+<%
+	}
+
+	if( teEvent.lectors.ChildNum > 0 )
+	{
+		aLectors = new Array();
+		for( lector in teEvent.lectors )
+		{
+			feLector = lector.PrimaryKey.OptForeignElem;
+			if( feLector != undefined )
+				aLectors.push( feLector.lector_fullname )
+		}
+		if( ArrayOptFirstElem( aLectors ) != undefined )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vllec_title", curLngWeb )%>:</Label>
+			<Label><![CDATA[<%=ArrayMerge( aLectors, "This", ", " )%>]]></Label>
+			
+		</GridRow>
+	
+<%
+		}
+	}
+%>
+	</Grid>
+<%
+	if ( ( ( !bUserRequestExists && !bUserIsCollaborator ) ) && teEvent.is_open && teEvent.status_id != "project" && teEvent.status_id != "close" && teEvent.status_id != "cancel" &&  !curUser.in_request_black_list && bFreePlacesExist )
+	{
+		if ( !(teEvent.date_request_over.HasValue && teEvent.date_request_over < Date() ) && !( teEvent.date_request_begin.HasValue && teEvent.date_request_begin > Date() ))
+		{
+			if ( teEvent.default_request_type_id.HasValue && teEvent.default_request_type_id.OptForeignElem != undefined)
+			{
+				teRequest = OpenDoc( UrlFromDocID( teEvent.default_request_type_id ) ).TopElem;
+				if( !teRequest.boss_only || ArrayOptFirstElem(XQuery( "for $elem in func_managers where $elem/person_id=" + curUserID + " return $elem" ) ) != undefined)
+				{
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button XAML-button-request" Click="OPENURL=<%=tools_web.get_mode_clean_url( "request_create", null, { request_type_id: teEvent.default_request_type_id, request_object_id: iEventID } )%>" class="inputButton" onmouseover="this.className='inputButtonOver'" onmouseout="this.className='inputButton'"><%=tools.get_web_str("c_text_create_request")%></Button>
+			<Label/>
+		</GridRow>
+	</Grid>
+			
+<%
+				}
+			}
+		}
+	}
+	else if( bUserRequestExists )
+	{
+		curMessageBox = {
+			"type": "warning",
+			"text": tools_web.get_web_const( "vypodalizayavku", curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Link Width="100" Click="OPENWINDOW=<%=tools_web.get_mode_clean_url( null, iEventID )%>"><%=tools_web.get_web_const( "zzzmore", curLngWeb )%></Link>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>		

@@ -1,0 +1,36 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if ( ISDIALOG )
+{
+	bSelectOnlyTutors=false;
+	strTaskPrefix=''
+	sCatalog = oParamSource.GetOptProperty( 'catalog' , null );
+	if (sCatalog == 'career_reserve')
+	{
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_talent_pool_cr_task_edit.xaml" ) );
+	}
+	else if (sCatalog == 'personnel_reserve')
+	{
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_talent_pool_pr_task_edit.xaml" ) );
+	}
+	else
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+
+}
+else
+{
+	curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'shablonprednazn', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

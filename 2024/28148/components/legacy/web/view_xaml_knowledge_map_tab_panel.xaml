@@ -1,0 +1,112 @@
+﻿<SPXMLScreen>
+<%
+	nName = tools.random_string( 8 );
+	objectKCP_ID = OptInt( tools_web.get_web_param( PARAMETERS, 'KnowledgePartID', '', true ) != '' ? tools_web.get_web_param( PARAMETERS, 'KnowledgePartID', '', true ) : tools_web.get_web_param( PARAMETERS, 'KnowledgeClassifierID', '', true ) )
+	is_open_window = tools_web.get_web_param( PARAMETERS, 'is_open_window', 'false', true )
+	TypeVisible = tools_web.get_web_param( PARAMETERS, 'TypeVisible', 'list', true )
+	ShowAllObjects = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'ShowAllObjects', 'false', true ) );
+	type = tools_web.get_web_param( PARAMETERS, 'type', '', true )
+	objectKCP = null;
+	if( OptInt( objectKCP_ID ) != undefined )
+		objectKCP = OpenDoc( UrlFromDocID( objectKCP_ID ) ).TopElem;
+	else if( !ShowAllObjects && type != "Tag" )
+	{
+%>
+	<Label><![CDATA[<%="Необходимо выбрать классификатор или значение карты знаний в дереве"%>]]></Label>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+	
+	function fnBuildObjectTab()
+	{
+		if( TypeVisible == 'list' )
+		{
+%>
+		<TileView Class="XAML-tileview-list" Name="ObjectKnowledgeTile<%=nName%>" DataSource="{KnowledgeMaterialTile<%=type%>}" Width="100%" PageSize="8" TileWidth="100%" Columns="1" TemplateSource="knowledge_tile_list"  >
+			<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+		</TileView>
+<%
+		}
+		else
+		{
+%>
+		<TileView Name="ObjectKnowledgeTile<%=nName%>" DataSource="{KnowledgeMaterialTile<%=type%>}" Width="100%" TileHeight="370" PageSize="8" TemplateSource="tile_knowledge"  >
+			<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+		</TileView>
+<%
+		}
+	}
+	
+	
+	function fnBuildExpertTab()
+	{
+		if( TypeVisible == 'list' )
+		{
+%>
+		<HTMLBox>
+				<![CDATA[
+					<style>
+						.XAML-image-contain { background-size: contain !important; }
+					</style>
+				]]>
+		</HTMLBox>
+		<TileView Class="XAML-tileview-list" Name="ExpertsKnowledgeTile<%=nName%>" DataSource="{KnowledgeExpertTile<%=type%>}" TemplateSource="knowledge_tile_list"  Width="100%" PageSize="8" TileWidth="100%" Columns="1">
+			<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+		</TileView>
+<%
+		}
+		else
+		{
+%>
+		<HTMLBox>
+				<![CDATA[
+					<style>
+						.XAML-container-image>div { padding: 0px !important; }
+					</style>
+				]]>
+		</HTMLBox>
+		<TileView Name="ExpertsKnowledgeTile<%=nName%>" DataSource="{KnowledgeExpertTile<%=type%>}" TemplateSource="tile_knowledge" TileHeight="290"  Width="100%" PageSize="8">
+			<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+		</TileView>
+<%
+		}
+	}
+	function fnBuildQuestionTab()
+	{
+%>
+		<HTMLBox>
+				<![CDATA[
+					<style>
+						.XAML-image-contain { background-size: contain !important; }
+					</style>
+				]]>
+		</HTMLBox>
+		<TileView Class="XAML-tileview-list" Name="QuestionsKnowledgeTile<%=nName%>" DataSource="{QuestionsCollection<%=type%>}" TemplateSource="knowledge_tile_list" Columns="1" Width="100%" PageSize="8">
+			<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+		</TileView>
+<%
+	}
+
+	nTab = (0-1);
+							
+	switch( tools_web.get_web_param( PARAMETERS, 'KnowlPartBodyTab', '', true ) )
+	{
+		case "objects":
+			fnBuildObjectTab();
+			break;
+		case "experts":
+			fnBuildExpertTab();
+			break;
+		case "questions":
+			fnBuildQuestionTab();
+			break;
+		case "desc":
+			curDescObject = objectKCP;
+			curDescObjectID = objectKCP_ID;
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+			break;
+	}
+
+%>						
+</SPXMLScreen>

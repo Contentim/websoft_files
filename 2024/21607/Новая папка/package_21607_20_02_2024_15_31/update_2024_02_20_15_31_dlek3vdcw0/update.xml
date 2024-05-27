@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>dlek3vdcw0</id>
+		<create_date>2024-02-20T15:31:56+00:00</create_date>
+		<server_version>2023.2.845 (2024-02-20)</server_version>
+	</basic>
+	<notifications>
+		<notification>
+			<id>0x0AAAAAAAAAAAAA19</id>
+			<code>25</code>
+			<name VALUE="##ms_tools.get_const('podchinennyysot')##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>768614336404564605</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+</data>

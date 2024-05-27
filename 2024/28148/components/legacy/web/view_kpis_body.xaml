@@ -1,0 +1,59 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+sConstMyKpi = tools_web.get_web_const( 'moikpi', curLngWeb )
+// const_end
+
+try
+{
+	RedirectUrl=_url;
+}
+catch(ex)
+{
+	RedirectUrl=tools_web.get_mode_clean_url( "kpi", null, {"doc_id": "" + curDocID});
+}
+RedirectUrl = tools_web.convert_mode_clean_url( RedirectUrl );
+
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+
+
+sCoList=String( tools_web.get_web_param( curParams, "kpis.disp_fields", 'code;name;type', true ) )
+bAllowCreate=tools_web.is_true(tools_web.get_web_param( curParams, "kpis.bAllowCreate", 'true', false )) 
+strKPIsType = tools_web.get_web_param( curParams, "kpis.strKPIsType", "all", true );
+
+strAddWhere=''
+if (strKPIsType=='kpi')
+{
+	strAddWhere=' and $elem/is_kpi=true()'
+}
+else if (strKPIsType=='project')
+{
+	strAddWhere=' and $elem/is_kpi=false()'
+}
+
+%>
+	<Panel Title="<%=XmlAttrEncode(sConstMyKpi)%>" Expanded="1" Width="100%">
+<%
+	curView = {
+			"id": "MyKpi",
+			"height": "400",
+			"catalog_name": "kpi",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"list_columns": sCoList,
+			"disp_array": "false",
+			"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url(null, "%7Bid%7D", {"doc_id": "" + curDocID}) )
+		};
+	curView.SetProperty("xquery_qual","(contains($elem/owners_ids,'" + curUserID + "') or $elem/owners_ids='')"+strAddWhere)
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );		
+	if (bAllowCreate)
+	{
+%>
+			<Button Class="XAML-button XAML-button-new" Click="OPENURL=<%=RedirectUrl%>"><%=tools_web.get_web_str('vmk_create_kpi')%></Button>
+<%
+	}
+%>
+	</Panel>
+</SPXMLScreen>

@@ -1,0 +1,22 @@
+﻿<SPXMLScreen>	
+	<Collection Name="ScheduleDays" Source="schedule_days">
+		<Param Name="sTypeCollaborator" Value="<%=tools_web.get_web_param( curParams, "schedule_days.collaborator_type", "org", true )%>"/>
+		<Param Name="sSearch" Value="{SearchCollaborator}"/>
+	</Collection>
+<%
+	curFilter = {
+		'id': tools.random_string( 10 ),
+		'search_field': "SearchCollaborator",
+		'search_width': 150,
+		'disp_search': true,
+		'search_action': "UPDATE=ScheduleDaysCalendar;",
+
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<Calendar Name="ScheduleDaysCalendar" Width="100%" Height="800" DataTitle="name" DataStart="start_date" DataEnd="finish_date" DataFormat="formatfld" DataDesc="desc" Source="{ScheduleDays}"
+		SelectedView="category" CategoryClick="UPDATE=ScheduleDaysCalendar;"
+		DayClick="UPDATE=ScheduleDaysCalendar;" WeekClick="UPDATE=ScheduleDaysCalendar;" MonthClick="UPDATE=ScheduleDaysCalendar;"
+		EventClick="OPENURL=<%=tools_web.get_mode_clean_url( null, "{person_id}" )%>" DataColor="color" Modes="day,month,week,category" CategoryWidth="300" AutoReload="True" RepeatHeader="true"/>
+
+</SPXMLScreen>

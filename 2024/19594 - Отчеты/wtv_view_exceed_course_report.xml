@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+
+<view_exceed_course_report>
+
+	<report_name TYPE="string" DEFAULT="exceed_course_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+	<exported_file_link TYPE="string" TEMP="1"/>
+
+	<course_id TYPE="integer" FOREIGN-ARRAY="courses"/>
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	<exceed_date TYPE="date" EXPR-INIT="Date()"/>
+
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<learnings>
+		<learning MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+			<person_fullname TYPE="string"/>	
+			<person_code TYPE="string"/>
+			<person_org_name TYPE="string"/>	
+			<person_subdivision_name TYPE="string"/>
+			<person_list_staff TYPE="string"/>
+			<person_position_name TYPE="string"/>
+			<course_id TYPE="integer" FOREIGN-ARRAY="courses"/>
+			<course_name TYPE="string"/>
+			<start_usage_date TYPE="date"/>
+			<last_usage_date TYPE="date"/>
+			<max_end_date TYPE="date"/>
+
+			<score TYPE="real"/>
+			<max_score TYPE="real"/>
+			<score_with_percent TYPE="string"/>
+
+			<state_id TYPE="integer" NOT-NULL="1" DEFAULT="0" FOREIGN-ARRAY="common.learning_states"/>
+			<state_name TYPE="string"/>
+			<state_color TYPE="string"/>
+
+			<parent_id TYPE="integer"/>
+
+			<parts>
+				<part MULTIPLE="1" PRIMARY-KEY="course_name">
+					<code TYPE="string"/>
+					<name TYPE="string"/>
+					<course_name TYPE="string"/>
+					<state_id TYPE="integer" NOT-NULL="1" DEFAULT="0" FOREIGN-ARRAY="common.learning_states"/>
+					<state_name TYPE="string"/>
+					<state_color TYPE="string"/>
+					<score TYPE="real" NOT-NULL="1"/>
+					<start_usage_date TYPE="date"/>
+					<last_usage_date TYPE="date"/>
+					<score_with_percent TYPE="string"/>
+				</part>
+			</parts>
+		</learning>
+	</learnings>	
+	
+	
+	<disp_parts TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<disp_learning_type TYPE="string" NOT-NULL="1" DEFAULT="learnings"/>
+	
+	<is_create TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env._learning"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			row_list_field.Clear();
+			row_key_field = '.id';				
+			rowsArray = Array();
+			rowsArrayCounter = 0;
+			for ( _row in rows.Object )
+			{
+					rowsArray[ rowsArrayCounter ] = _row.Env._learning.person_id;
+					rowsArrayCounter++;
+			}
+			rows = ArraySelectDistinct( QueryCatalogByKeys( 'collaborators', 'id', rowsArray ), 'id')	;
+			_num = ArrayCount( rows.Object );
+			
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+			if ( _num == 0 )
+			{   
+			Screen.MsgBox( ms_tools.get_const('u0mnmz31kn'), ms_tools.get_const('7ey6j94yku'), 'warning');
+				Cancel();
+			}
+			
+			return _num;
+	"/>
+</view_exceed_course_report>
+
+
+<OnInit PROPERTY="1" EXPR="
+
+	curUser = tools.get_cur_user();
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

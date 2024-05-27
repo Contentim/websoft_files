@@ -1,0 +1,525 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	curCatalogs;
+}
+catch ( err )
+{
+	curCatalogs = ({});
+}
+try
+{
+	listCatalogs = curCatalogsDoc.catalogs;
+}
+catch ( err )
+{
+	listCatalogs = curObjectID == null || curMode == 'doc_type' ? curDoc.catalogs : curObject.catalogs;
+}
+if ( ArrayCount( listCatalogs ) != 0 )
+{
+
+sCatalogsListID = curCatalogs.GetOptProperty( "id", "" );
+
+sCatalogsListHeight = tools_web.get_web_param( curParams, 'list_catalog.height', '', true );
+
+sCatalogsListViewType = curCatalogs.GetOptProperty( "view_type", tools_web.get_web_param( curParams, "doc_body.tab_list.catalogs_tab.view_type", "list", true ) );
+bDispViewSelector = tools_web.is_true( curCatalogs.GetOptProperty( "disp_view_selector", tools_web.get_web_param( curParams, "doc_body.tab_list.catalogs_tab.disp_view_selector", false, true ) ) );
+
+sCatalogsListObjectsViewType = "default";
+sParamPreffix_curCatalogs = curCatalogs.GetOptProperty( "param_preffix", "" );
+if ( sParamPreffix_curCatalogs == "" )
+{
+	sCatalogsListObjectsViewTypeProp = curCatalogs.GetOptProperty( 'objects_view_type' );
+	if ( sCatalogsListObjectsViewTypeProp != undefined && sCatalogsListObjectsViewTypeProp != '' )
+		sCatalogsListObjectsViewType = sCatalogsListObjectsViewTypeProp;
+
+	bCatalogsListDispSearch = true;
+	sCatalogsListTileTemplate = "object_tile";
+	sCatalogsListTileColumns = "";
+
+}
+else
+{
+	sCatalogsListObjectsViewType = tools_web.get_web_param( curParams, sParamPreffix_curCatalogs + ".objects_view_type", "default", true );
+	bCatalogsListDispSearch = tools_web.is_true( tools_web.get_web_param( curParams, sParamPreffix_curCatalogs + ".disp_search", true, true ) );
+	sCatalogsListTileTemplate = tools_web.get_web_param( curParams, sParamPreffix_curCatalogs + ".tile_template", "object_tile", true );
+	sCatalogsListTileColumns = tools_web.get_web_param( curParams, sParamPreffix_curCatalogs + ".tile_columns", "", true );
+	sCatalogsListHeight = tools_web.get_web_param( curParams, sParamPreffix_curCatalogs + ".height", sCatalogsListHeight, true );
+}
+
+bDispFilters = tools_web.is_true( curCatalogs.GetOptProperty( "disp_filters", true ) );
+
+sUpdateAction = "REFRESH";
+
+if ( sCatalogsListViewType == 'tab' )
+{
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'CatalogsListTab' ), OptInt( curUrlQuery.GetOptProperty( 'catalogs_list_tab' ), 0 ) )
+%>
+<TabControl Name="CatalogsListTab<%=sCatalogsListID%>" ActiveTab="<%=iDefaultTab%>" Width="100%" Class="<%=( bDispFilters ? 'XAML-tabcontrol-filter' : '' )%>">
+<%
+}
+
+for ( fldCatalogElem in listCatalogs )
+{
+	sCatalogsListIDSEC = fldCatalogElem.type + sCatalogsListID;
+	fldCatalogTypeChild = curLngCommon.exchange_object_types.GetOptChildByKey( fldCatalogElem.type );
+	sWebUrl = "";
+	sCatalogTitle = "";
+	sCatalogTitleWeb = "";
+	if ( fldCatalogTypeChild == undefined )
+	{
+		fldCatalogTypeChild = ArrayOptFirstElem( XQuery( "for $elem in doc_types where $elem/object_name = '" + fldCatalogElem.type + "' return $elem" ) );
+		sWebUrl = tools_web.get_mode_clean_url( "doc_type", "[OBJECT_ID]", { doc_id: curDocID } );
+	}
+	else
+	{
+		sCatalogTitle = fldCatalogTypeChild.title.Value;
+		sCatalogTitleWeb = fldCatalogElem.title.Value;
+		if ( sCatalogTitleWeb == '' )
+			sCatalogTitleWeb = fldCatalogTypeChild.web_title.Value;
+
+		switch ( fldCatalogElem.type )
+		{
+			case 'document':
+				sWebUrl = tools_web.get_mode_clean_url( "doc", null, { doc_id: "[OBJECT_ID]" } );
+				break;
+
+			case 'request_type':
+				sWebUrl = tools_web.get_mode_clean_url( "request_create", null, { request_type_id: "[OBJECT_ID]" } );
+				break;
+
+			case 'vacancy':
+				sWebUrl = tools_web.get_mode_clean_url( "vacancy_estaff", "[OBJECT_ID]", { doc_id: curDocID } );
+				break;
+
+			default:
+				sWebUrl = fldCatalogTypeChild.web_template.HasValue ? tools_web.convert_mode_clean_url( fldCatalogTypeChild.web_template + ( StrContains( fldCatalogTypeChild.web_template, '?' ) ? '&' : '?' ) + 'doc_id=' + curDocID + '&object_id=[OBJECT_ID]' ) : '';
+				break;
+		}
+	}
+	sCatalogTitle = tools_web.get_cur_lng_name( sCatalogTitle , curLng.short_id );
+	sCatalogTitleWeb = tools_web.get_cur_lng_name( sCatalogTitleWeb , curLng.short_id );
+
+	sCatalogsListObjectsViewTypeTemp = CONTEXT.GetOptProperty( 'sCatalogsListObjectsViewType' + sCatalogsListIDSEC );
+	if ( sCatalogsListObjectsViewTypeTemp == undefined )
+	{
+		try
+		{
+			if ( sCatalogsListObjectsViewType == 'default' )
+				throw 'default';
+		}
+		catch ( err )
+		{
+			sCatalogsListObjectsViewType = tools_web.get_web_param( curParams, 'list_catalog.view_type', 'grid', true );
+		}
+	}
+	else
+	{
+		sCatalogsListObjectsViewType = sCatalogsListObjectsViewTypeTemp;
+	}
+
+	if ( sCatalogsListViewType == 'tab' )
+	{
+%>
+	<TabItem Title="<%=XmlAttrEncode( sCatalogTitleWeb )%>">
+<%
+	}
+
+	sCond = '';
+	sOrder = '';
+	if ( fldCatalogElem.all )
+	{
+		sOrder = " order by $elem/" + fldCatalogTypeChild.disp_name;
+		switch ( fldCatalogElem.type )
+		{
+			case 'course':
+			case 'assessment':
+				sCond += ( sCond == '' ? ' where' : '' ) + " $elem/status = 'publish'";
+				break;
+		}
+	}
+	else
+	{
+		sCond += ( sCond == '' ? ' where' : '' ) + " MatchSome( $elem/id, (" + ArrayMerge( fldCatalogElem.objects, 'PrimaryKey', ',' ) + ") )";
+	}
+
+	sSearchFieldName_curCatalogs = 'DocCatalogsSearch' + sCatalogsListIDSEC;
+	sSearch = curCatalogs.GetOptProperty( 'search', CONTEXT.GetOptProperty( sSearchFieldName_curCatalogs, '' ) );
+	sCond += sSearch == "" ? "" : ( ( sCond == '' ? ' where' : ' and' ) + " doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( sSearch ) + " )" );
+
+	objectArray = XQuery( "for $elem in " + fldCatalogElem.type + "s" + sCond + sOrder + " return $elem" );
+	if ( ! fldCatalogElem.all )
+	{
+		objectArray = ArraySort( objectArray, "fldCatalogElem.objects.GetChildByKey(This.id).ChildIndex", "+" );
+	}
+
+	arrObjects = [];
+	_comment = sCatalogsListObjectsViewType == 'tile' ? 'Ps.comment' : '';
+	for ( oObjectElem in objectArray )
+	{
+		_comment = sCatalogsListObjectsViewType == 'tile' ? 'Ps.comment' : '';
+		catObject = null;
+		try
+		{
+			if ( global_settings.settings.check_access_on_lists && tools_web.check_access( oObjectElem.PrimaryKey, curUserID, curUser, Session ) == false )
+				continue;
+
+			_template = sWebUrl == '' ? '#' : StrReplace( StrReplace( sWebUrl, "[OBJECT_ID]", oObjectElem.PrimaryKey ), "%5BOBJECT_ID%5D", oObjectElem.PrimaryKey );
+			sTitle = oObjectElem.Child( fldCatalogTypeChild.disp_name ).Value;
+			sTitle = tools_web.get_cur_lng_name( sTitle, curLng.short_id );
+
+			if ( ! fldCatalogElem.all && sCatalogsListObjectsViewType != 'tile' )
+			{
+				fldObject = ArrayOptFindByKey( fldCatalogElem.objects, oObjectElem.id, 'object_id' );
+				if ( fldObject == undefined )
+					_comment = '';
+				else
+					_comment = fldObject.comment.Value;
+			}
+		}
+		catch ( err )
+		{
+			alert( err );
+			sTitle = tools_web.get_web_const( 'c_deleted', curLngWeb );
+			_template = '[DELETED]';
+		}
+
+		if ( sSearch != "" && ! fldCatalogElem.all && ! StrContains( sTitle, sSearch, true ) && ! StrContains( _comment, sSearch, true ) )
+			continue;
+
+		oRes = ({
+			'id': oObjectElem.PrimaryKey.Value,
+			'name': sTitle,
+			'desc': _comment,
+			'url': _template,
+			'count': 0,
+			'date':  '-',
+			'end': '',
+			'authors': 0,
+			'ico': '',
+			'resource_id': ( oObjectElem.ChildExists( 'resource_id' ) ? oObjectElem.resource_id.Value: null ),
+			'create_date':	( oObjectElem.ChildExists( 'create_date' ) ? oObjectElem.create_date.Value: null )
+		});
+		switch ( fldCatalogElem.type )
+		{
+			case 'forum':
+			case 'blog':
+				xarrSubObjectEntry = XQuery( 'for $elem in ' + fldCatalogElem.type + '_entrys where $elem/' + fldCatalogElem.type + '_id = ' + oObjectElem.PrimaryKey + ' order by $elem/create_date descending return $elem' );
+				firstElem = ArrayOptFirstElem( xarrSubObjectEntry );
+				if ( firstElem != undefined )
+				{
+					oRes.SetProperty( 'count', ArrayCount( xarrSubObjectEntry ) );
+					oRes.SetProperty( 'date', StrDate( firstElem.create_date, true, false ) );
+					if ( DateOffset( firstElem.create_date, 259200 ) > CurDate )
+						oRes.SetProperty( 'ico', '/pics/new.gif' );
+				}
+				if ( oObjectElem.Name == 'object' && catObject != null )
+					oObjectElem = catObject;
+				if ( oObjectElem.ChildExists( 'closed' ) && oObjectElem.closed )
+					oRes.SetProperty( 'end', tools_web.get_web_const( 'vfb_end_discus', curLngWeb ) );
+				if ( oObjectElem.ChildExists( 'authors_num' ) )
+					oRes.SetProperty( 'authors', GetObjectProperty( oObjectElem, 'authors_num' ) );
+				break;
+		}
+		arrObjects.push( oRes );
+	}
+
+
+	bDispFilterTitle = sCatalogsListViewType != 'tab';
+	bDispDataGridTitle = sCatalogsListViewType != 'tab' && ! bDispFilters;
+
+	if ( bDispFilters )
+	{
+		curFilter = {
+			'id': sCatalogsListIDSEC,
+			'title': ( bDispFilterTitle ? sCatalogTitleWeb : '' ),
+			'selectors': ( bDispViewSelector ? 'grid;list;list_adv;tile' : '' ),
+			'selectors_field': ( 'sCatalogsListObjectsViewType' + sCatalogsListIDSEC ),
+			'selectors_value': sCatalogsListObjectsViewType,
+			'disp_search': bCatalogsListDispSearch,
+			'search_field': sSearchFieldName_curCatalogs,
+			'schema': 'small'
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+	}
+
+	if ( ArrayCount( arrObjects ) == 0 )
+	{
+		if ( sCatalogsListViewType == 'tab' )
+		{
+%>
+	</TabItem>
+<%
+		}
+		continue;
+	}
+
+	if ( sCatalogsListObjectsViewType != 'list' && sCatalogsListObjectsViewType != 'list_adv' )
+	{
+%>
+<Collection Name="ListCatalogCollection<%=sCatalogsListIDSEC%>">
+<Data>
+<%
+		for ( oObjectElem in arrObjects )
+		{
+%>
+<Row>
+<Cell Id="id" Value="<%=oObjectElem.id%>"/>
+<Cell Id="name" Value="<%=XmlAttrEncode( oObjectElem.name )%>"/>
+<Cell Id="desc" Value="<%=XmlAttrEncode( oObjectElem.desc )%>"/>
+<Cell Id="url" Value="<%=XmlAttrEncode( oObjectElem.url )%>"/>
+<Cell Id="count" Value="<%=oObjectElem.count%>"/>
+<Cell Id="date" Value="<%=oObjectElem.date%>"/>
+<Cell Id="end" Value="<%=XmlAttrEncode( oObjectElem.end )%>"/>
+<Cell Id="authors" Value="<%=oObjectElem.authors%>"/>
+<Cell Id="ico" Value="<%=XmlAttrEncode( oObjectElem.ico )%>"/>
+</Row>
+<%
+		}
+%>
+</Data>
+</Collection>
+<%
+	}
+	switch ( sCatalogsListObjectsViewType )
+	{
+		case 'list':
+			bDispCatalogTitle = tools_web.is_true( curCatalogs.GetOptProperty( "disp_catalog_title" ) );
+%>
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+		for ( oObjectElem in arrObjects )
+		{
+%>
+	<GridRow>
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="32"/>
+				<GridColumn Width="100%"/>
+<%
+			if ( bDispCatalogTitle )
+			{
+%>
+				<GridColumn/>
+<%
+			}
+%>
+			</GridColumns>
+
+			<GridRow>
+				<Link Click="OPENURL=<%=oObjectElem.url%>" Class="icon-link"></Link>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<Link Click="OPENURL=<%=oObjectElem.url%>"><![CDATA[<%=oObjectElem.name%>]]></Link>
+<%
+			if ( ! fldCatalogElem.all && oObjectElem.desc != '' )
+			{
+%>
+					<Label Class="XAML-grid-list-desc"><![CDATA[<%=oObjectElem.desc%>]]></Label>
+<%
+			}
+%>
+				</StackPanel>
+<%
+			if ( bDispCatalogTitle )
+			{
+%>
+				<Label Class="XAML-grid-list-desc" NoWrap="true"><![CDATA[<%=sCatalogTitle%>]]></Label>
+<%
+			}
+%>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+		}
+%>
+</Grid>
+<%
+			break;
+
+		case 'list_adv':
+			sCatalogsViewListAdvComponents = curCatalogs.GetOptProperty( "list_adv_components", tools_web.get_web_param( curParams, 'doc_body.tab_list.catalogs_tab.list_adv_components', 'date;like;dislike;image', false ) );
+
+			arrListAdvComponents = sCatalogsViewListAdvComponents.split( ';' );
+			bDispLike = ArrayOptFind( arrListAdvComponents, "This=='like'" ) != undefined;
+			bDispDislike = ArrayOptFind( arrListAdvComponents, "This=='dislike'" ) != undefined;
+			bDispDate = ArrayOptFind( arrListAdvComponents, "This=='date'" ) != undefined;
+
+			if ( bDispLike || bDispDislike )
+			{
+				catLikes = XQuery( "for $elem in likes where MatchSome( $elem/object_id, (" + ArrayMerge( arrObjects, 'id', ',' ) + ") ) return $elem/Fields('object_id','weight')" );
+			}
+%>
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+			for ( catObjectElem in arrObjects )
+			{
+				sObjectImageUrl = catObjectElem.resource_id != null ? tools_web.get_object_source_url( 'resource', catObjectElem.resource_id ) : ( '/images/' + fldCatalogElem.type + '.png' );
+				bDispDate == bDispDate && catObjectElem.create_date != null;
+%>
+	<GridRow>
+		<Grid Width="100%" Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+				<Image Orientation="Vertical" Class="wt-informer wt-info-image XAML-image-list-image" Source="pics/1blank.gif">
+					<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+				<StackPanel Orientation="Vertical">
+					<Grid Class="XAML-grid-container">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+<%
+				if ( bDispLike )
+				{
+%>
+							<GridColumn/>
+<%
+				}
+				if ( bDispDislike )
+				{
+%>
+							<GridColumn/>
+<%
+				}
+%>
+						</GridColumns>
+
+						<GridRow>
+							<StackPanel Orientation="Vertical" Class="">
+								<Link Class="XAML-link-list-item-title" Click="OPENURL=<%=catObjectElem.url%>"><![CDATA[<%=tools_web.get_cur_lng_name( catObjectElem.name, curLng.short_id )%>]]></Link>
+<%
+				if ( bDispDate )
+				{
+%>
+								<Label Class="XAML-label-list-item-label"><![CDATA[<%=StrDate( catObjectElem.create_date, false, false )%>]]></Label>
+<%
+				}
+%>
+							</StackPanel>
+<%
+				if ( bDispLike )
+				{
+%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+									<Image Source="/pics/1blank.gif" Class="XAML-image-like"/>
+									<Label><![CDATA[<%=ArrayCount( ArraySelect( catLikes, 'object_id==' + catObjectElem.id + '&&weight==1' ) )%>]]></Label>
+								</StackPanel>
+<%
+				}
+				if ( bDispDislike )
+				{
+%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-image-counter">
+									<Image Source="/pics/1blank.gif" Class="XAML-image-dislike"/>
+									<Label><![CDATA[<%=ArrayCount( ArraySelect( catLikes, 'object_id==' + catObjectElem.id + '&&weight==0-1' ) )%>]]></Label>
+								</StackPanel>
+<%
+				}
+%>
+						</GridRow>
+					</Grid>
+					<Label Class="XAML-grid-list-desc XAML-label-list-item-desc"><![CDATA[<%=catObjectElem.desc%>]]></Label>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+			}
+%>
+</Grid>
+<%
+			break;
+
+		case 'tile':
+			sCatalogsListTileWidth = sCatalogsListTileColumns == "" ? "216" : "";
+%>
+<TileView
+	Name="ListCatalogTile<%=sCatalogsListIDSEC%>"
+	Width="100%"
+	TileHeight="300"
+	TileWidth="<%=sCatalogsListTileWidth%>"
+	DataSource="{ListCatalogCollection<%=sCatalogsListIDSEC%>}"
+	TemplateSource="<%=sCatalogsListTileTemplate%>"
+	Columns="<%= ( curDevice.disp_type == 'mobile' ? 1 : sCatalogsListTileColumns ) %>"
+	Height="<%=sCatalogsListHeight%>"
+/>
+<%
+			break;
+
+		default:
+%>
+<DataGrid Name="ListCatalogDataGrid<%=sCatalogsListIDSEC%>" Title="<%=( bDispDataGridTitle ? XmlAttrEncode( sCatalogTitleWeb ) : '' )%>" Source="{ListCatalogCollection<%=sCatalogsListIDSEC%>}" Height="<%=sCatalogsListHeight%>" PageSize="100" Selection="none" Adapt="true">
+	<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={url}"/>
+<%
+			if ( curDevice.disp_type != "mobile" )
+			{
+				switch ( fldCatalogElem.type )
+				{
+					case 'forum':
+%>
+	<DataGridColumn Value="ico" Width="32" Type="fixedimage"/>
+	<DataGridColumn Value="count" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vdb_t_count', curLngWeb ) )%>" Width="100" Type="string"/>
+	<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vfb_act', curLngWeb ) )%>" Width="200" Type="string"/>
+	<DataGridColumn Value="end" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_additional', curLngWeb ) )%>" Width="200" Type="string"/>
+<%
+						break;
+
+					case 'blog':
+%>
+	<DataGridColumn Value="authors" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vbb_authors', curLngWeb ) )%>" Width="100" Type="string"/>
+	<DataGridColumn Value="count" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vbb_messages', curLngWeb ) )%>" Width="100" Type="string"/>
+	<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vbb_last_message_date', curLngWeb ) )%>" Width="200" Type="string"/>
+<%
+						break;
+
+					default:
+						if ( ! fldCatalogElem.all && curDevice.disp_type != "mobile" )
+						{
+%>
+	<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Width="300" Type="string"/>
+<%
+						}
+						break;
+				}
+			}
+%>
+</DataGrid>
+<%
+			break;
+	}
+
+	if ( sCatalogsListViewType == 'tab' )
+	{
+%>
+	</TabItem>
+<%
+	}
+	else
+	{
+%>
+	<Label Class="XAML-label-spacer"/>
+<%
+	}
+}
+
+if ( sCatalogsListViewType == 'tab' )
+{
+%>
+</TabControl>
+<%
+}
+
+}
+%>
+</SPXMLScreen>

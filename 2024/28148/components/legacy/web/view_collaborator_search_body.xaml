@@ -1,0 +1,250 @@
+﻿<SPXMLScreen>
+
+<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( 'doc_person_search', curLngWeb )%></Label>
+<%
+sSearchWord = CONTEXT.GetOptProperty( "search_text", curUrlQuery.GetOptProperty( "world", "" ) );
+
+bAddParams = tools_web.is_true( CONTEXT.GetOptProperty( "add_params", curUrlQuery.GetOptProperty( "add_params", false ) ) );
+
+sSearchFullname = CONTEXT.GetOptProperty( "search_fullname", curUrlQuery.GetOptProperty( "search_fullname", "" ) );
+sSearchPositionName = CONTEXT.GetOptProperty( "search_position_name", curUrlQuery.GetOptProperty( "search_position_name", "" ) );
+sSearchSubdivisionName = CONTEXT.GetOptProperty( "search_subdivision_name", curUrlQuery.GetOptProperty( "search_subdivision_name", "" ) );
+%>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="250"/>
+		<GridColumn Width="250"/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_search", curLngWeb )%>:</Label>
+		<Edit Name="search_text" Width="100%" Change="REFRESH"><%=HtmlEncode( sSearchWord )%></Edit>
+		<Button Click="REFRESH" Class="XAML-button-content"><%=tools_web.get_web_const( "c_search", curLngWeb )%></Button>
+	</GridRow>
+	<GridRow>
+		<Label/>
+		<CheckBox Name="add_params" Checked="<%=bAddParams%>" Check="SHOW=AddParamPanel;" Uncheck="HIDE=AddParamPanel;"><%=tools_web.get_web_const( 'c_additional', curLngWeb )%></CheckBox>
+		<Label/>
+	</GridRow>
+
+</Grid>
+<StackPanel Name="AddParamPanel" Class="XAML-stack-small" Hidden="<%=( ! bAddParams )%>">
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'fiosoderzhit', curLngWeb )%>:</Label>
+			<Edit Name="search_fullname" Width="200" Change="REFRESH"><%=HtmlEncode( sSearchFullname )%></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'nazvaniedolzhno', curLngWeb )%>:</Label>
+			<Edit Name="search_position_name" Width="200" Change="REFRESH"><%=HtmlEncode( sSearchPositionName )%></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'nazvaniepodraz_2', curLngWeb )%>:</Label>
+			<Edit Name="search_subdivision_name" Width="200" Change="REFRESH"><%=HtmlEncode( sSearchSubdivisionName )%></Edit>
+		</GridRow>
+	</Grid>
+</StackPanel>
+<%
+if ( ( ! bAddParams && sSearchWord == "" ) || ( bAddParams && sSearchFullname == "" && sSearchPositionName == "" && sSearchSubdivisionName == "" ) )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+sPersonLinkMode = tools_web.get_web_param( curParams, "collaborator_search.person_link_mode", "collaborator", true );
+sXueryCondition = tools_web.get_web_param( curParams, "collaborator_search.search_xuery_condition", "", false );
+bDismissSearch = tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_search.search_dismiss", false, true ) );
+
+arrCondition = [];
+if ( sSearchWord != "" )
+	arrCondition.push( "doc-contains( $elem/id, '" + DefaultDb + "', " + XQueryLiteral( String( sSearchWord ) ) + " )" );
+if ( ! bDismissSearch )
+	arrCondition.push( "$elem/is_dismiss = false()" );
+if ( bAddParams )
+{
+	if ( sSearchFullname != "" )
+		arrCondition.push( "contains( $elem/fullname, " + XQueryLiteral( String( sSearchFullname ) ) + " )" );
+	if ( sSearchPositionName != "" )
+		arrCondition.push( "contains( $elem/position_name, " + XQueryLiteral( String( sSearchPositionName ) ) + " )" );
+	if ( sSearchSubdivisionName != "" )
+		arrCondition.push( "contains( $elem/position_parent_name, " + XQueryLiteral( String( sSearchSubdivisionName ) ) + " )" );
+}
+
+xarrCollaborators = XQuery( "for $elem in collaborators where " + ArrayMerge( arrCondition, "This", " and " ) + " order by $elem/fullname return $elem" );
+
+if ( ArrayOptFirstElem( xarrCollaborators ) == undefined )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": tools_web.get_web_const( "vsb_error1", curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+else
+{
+	sResultViewType = tools_web.get_web_param( curParams, "collaborator_search.result_view_type", "grid", true );
+
+	bDispPosition = tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_search.result_disp_position", false, true ) );
+	bDispSubdivision = tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_search.result_disp_subdivision", false, true ) );
+	bDispPhoto = tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_search.result_disp_photo", false, true ) );
+
+	if ( sResultViewType == "grid" )
+	{
+%>
+<Grid Width="100%" Class="XAML-grid-info-table first-pic">
+	<GridColumns>
+<%
+		if ( bDispPhoto )
+		{
+%>
+		<GridColumn Width="50"/>
+<%
+		}
+%>
+		<GridColumn Width="440"/>
+<%
+		if ( bDispPosition )
+		{
+%>
+		<GridColumn Width="300"/>
+<%
+		}
+		if ( bDispSubdivision )
+		{
+%>
+		<GridColumn Width="300"/>
+<%
+		}
+%>
+	</GridColumns>
+<%
+		for ( catCollaboratorElem in xarrCollaborators )
+		{
+%>
+	<GridRow>
+<%	
+	if ( bDispPhoto )
+	{
+		if ( catCollaboratorElem.pict_url.HasValue )
+		{
+%>
+<Image Source="<%=catCollaboratorElem.pict_url%>" MaxWidth="50" MaxHeight="100"/>
+<%
+		}
+		else
+		{
+%>
+<Image Source="pics/nophoto.jpg" MaxWidth="50" MaxHeight="100"/>
+<%
+		}
+	}	
+%>	
+		<Link Class="XAML-info-grid-column" Click="OPENURL=<%=XmlAttrEncode( tools_web.get_mode_clean_url( sPersonLinkMode, catCollaboratorElem.id, { doc_id: curDocID } ) )%>"><%=catCollaboratorElem.fullname%></Link>
+<%
+			if ( bDispPosition )
+			{
+%>
+		<Label><%=HtmlEncode( catCollaboratorElem.position_name )%></Label>
+<%
+			}
+			if ( bDispSubdivision )
+			{
+%>
+		<Label><%=HtmlEncode( catCollaboratorElem.position_parent_name )%></Label>
+<%
+			}
+%>
+	</GridRow>
+<%
+		}
+%>
+</Grid>
+<%
+	}
+	else
+	{
+%>
+<Collection Name="CollaboratorSearchResultCollection">
+<Data>
+<%
+	for ( catCollaboratorElem in xarrCollaborators )
+	{
+%>
+<Row>
+<%
+		if ( bDispPhoto )
+		{
+			if ( catCollaboratorElem.pict_url.HasValue )
+			{
+%>
+	<Cell Id="pict_url" Value="<%=XmlAttrEncode( catCollaboratorElem.pict_url )%>" />
+<%
+			}
+			else
+			{
+%>
+	<Cell Id="pict_url" Value="pics/nophoto.jpg" />
+<%				
+			}
+		}
+%>
+	<Cell Id="fullname" Value="<%=XmlAttrEncode( catCollaboratorElem.fullname )%>"/>
+	<Cell Id="link" Value="<%=XmlAttrEncode( tools_web.get_mode_clean_url( sPersonLinkMode, catCollaboratorElem.id, { doc_id: curDocID } ) )%>"/>
+<%
+	if ( bDispPosition )
+	{
+%>
+	<Cell Id="position" Value="<%=XmlAttrEncode( catCollaboratorElem.position_name )%>"/>
+<%
+	}
+	if ( bDispSubdivision )
+	{
+%>
+	<Cell Id="sub" Value="<%=XmlAttrEncode( catCollaboratorElem.position_parent_name )%>"/>
+<%
+	}
+%>
+</Row>
+<%
+	}
+%>
+</Data>
+</Collection>
+<DataGrid Name="CollaboratorSearchResultDataGrid" Source="{CollaboratorSearchResultCollection}" Height="400">
+<%
+	if ( bDispPhoto )
+	{
+%>
+	<DataGridColumn Value="pict_url" Title="" Width="50" Type="image"/>
+<%
+	}
+%>
+	<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_fio', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={link}"/>
+<%
+	if ( bDispPosition )
+	{
+%>
+	<DataGridColumn Value="position" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_position', curLngWeb ) )%>" Width="200" Type="string"/>
+<%
+	}
+	if ( bDispSubdivision )
+	{
+%>
+	<DataGridColumn Value="sub" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_subd', curLngWeb ) )%>" Width="200" Type="string"/>
+<%
+	}
+%>
+</DataGrid>
+<%
+	}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,336 @@
+﻿<%
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+var sConstInBlackList = tools_web.get_web_const( 'kandidatvcherno', curLngWeb );
+
+strPersonLinkType     = tools_web.get_web_param( curParams, "vacancy_response.person_link_type", "collaborator", true );
+bCanSelectOthers      = tools_web.is_true(tools_web.get_web_param( curParams, "vacancy_response.bCanSelectOthers", "0", true ));
+bCanSelectAll         = tools_web.is_true(tools_web.get_web_param( curParams, "vacancy_response.bCanSelectAll", "0", true ));
+bCanSelectFromArchive = tools_web.is_true(tools_web.get_web_param( curParams, "vacancy_response.bCanSelectFromArchive", "0", true ));
+bReadOnly             = true;
+curVacancyID          = null;
+curVacancyDoc         = null;
+curResumeID           = null;
+fldResume             = undefined;
+fldPerson             = undefined;
+
+try
+{
+    curVacancyID  = curObject.vacancy_id;
+    curVacancyDoc = OpenDoc( UrlFromDocID( curVacancyID ) ).TopElem;
+}
+catch( err )
+{}
+
+try
+{
+    curResumeID = curObject.resume_id;
+    fldResume   = curObject.resume_id.OptForeignElem;
+    if ( fldResume != undefined )
+    {
+        fldPerson = fldResume.person_id.OptForeignElem;
+    }
+}
+catch( err )
+{}
+
+if ( oParamSource.HasProperty( "vacancy_id" ) && oParamSource.GetProperty( "vacancy_id" ) != "" )
+{
+    bReadOnly = false;
+    try
+    {
+        curVacancyID  = Int( oParamSource.GetProperty("vacancy_id") );
+        curVacancyDoc = OpenDoc( UrlFromDocID( curVacancyID ) ).TopElem;
+    }
+    catch( err )
+    {
+        alert( err );
+        bReadOnly = true;
+    }
+}
+
+bReadOnly  = ( bReadOnly && curObjectID != null )
+bRecruiter = ( ( curVacancyDoc != null && curVacancyDoc.collaborator_id.HasValue && curVacancyDoc.collaborator_id == curUserID ) || ( curObjectID != null && curObject.recruiter_person_id.HasValue && curObject.recruiter_person_id == curUserID ) )
+
+xarrBossTypes         = tools.get_object_relative_boss_types( curUserID, curObjectID );
+xarrOperations        = tools.get_relative_operations_by_boss_types( xarrBossTypes );
+xarrOperations        = ArraySelect( xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains( ',' + This.operation_catalog_list.Value + ',', ',vacancy_response,' ) )" );
+xarrOperationsActions = ArraySelect( xarrOperations, "This.operation_type == 0" );
+
+bHasOperationActions = false;
+if ( ArrayOptFirstElem( xarrOperationsActions ) != undefined )
+{
+    bHasOperationActions = true;
+}
+
+%>
+
+<SPXMLScreen>
+
+    <Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "otkliknavakans", curLngWeb )%></Label>
+    <Action Name="SendVacancyResponse" Source="SendVacancyResponse" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curVacancyID, {} )%>" Failure="ALERT={messageText}">
+        <Param Name="vacancy_id" Value="<%=curVacancyID%>"/>
+        <Param Name="resume_id" Value="{resume_id}"/>
+        <Param Name="desc" Value="{desc}"/>
+        <Param Name="CONTEXT" Value="{CONTEXT}"/>
+    </Action>
+    
+    <Action Name="SaveVacancyResponse" Source="SaveVacancyResponse" Success="ALERT={!messageText};{PostAction}" Failure="ALERT={!messageText}">
+        <Param Name="iObjectId" Value="<%=curObjectID%>"/>
+        <Param Name="action_id" Value=""/>
+        <Param Name="strStatus" Value=""/>
+        <Param Name="CONTEXT" Value="{CONTEXT}"/>
+    </Action>
+<%
+    if ( bHasOperationActions )
+    {
+        curCollectionMenu = {
+            "id"           : "VacancyResponseBody",
+            "catalog_name" : "vacancy_response",
+            "selected_data": UrlEncode( '[{"id":' + curObjectID + '}]' )
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+    }
+%>
+    <Dialog Name="SetObjectStatusDialog" Source="dlg_set_object_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "uhxrmfu4y8", curLngWeb ) )%>" Width="25%" Close="Set=SaveVacancyResponse/action_id,change_status;SET=SaveVacancyResponse/strStatus,{status};ACTION=SaveVacancyResponse;REFRESH">
+        <Param Name="common_status_collection_name" Value="vacancy_response_status_types"/>
+    </Dialog>
+    
+    <Toolbar Class="XAML-toolbar" Width="100%">
+<%
+    if ( ! bReadOnly )
+    {
+%>
+        <Button Click="ACTION=SendVacancyResponse" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "vcb_submit", curLngWeb )%></Button>
+<%
+    }
+
+    if ( bRecruiter && curObjectID != null )
+    {
+%>
+        <Button Class="XAML-button XAML-button-save" Click="Set=SaveVacancyResponse/action_id,save;Action=SaveVacancyResponse"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+        <Button Click="OPENDIALOG=SetObjectStatusDialog" Class="XAML-button XAML-button-refresh"><%=tools_web.get_web_const( "izmenitstatus", curLngWeb )%></Button>
+<%
+    }
+
+    oParam = {
+        "name_id"   : "VacancyResponseBody",
+        "curUserID" : curUserID,
+        "curUser"   : curUser
+    };
+
+    for ( catActionElem in xarrOperationsActions )
+    {
+
+        sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+        <Button Class="XAML-button XAML-button--<%=catActionElem.action%>" Click="<%=sClick%>"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></Button>
+<%
+    }
+%>
+    </Toolbar>
+<%
+    if ( fldPerson != undefined && fldPerson.id != curUserID && fldPerson.in_request_black_list )
+    {
+        curMessageBox = {
+            "type" : "warning",
+            "text" : sConstInBlackList
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+    }
+%>
+    <Panel Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+        <Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+<%
+    //Просмотр существующего отлика
+    if ( bReadOnly )
+    {
+%>
+        <GridColumns>
+            <GridColumn Width="250"/>
+            <GridColumn/>
+        </GridColumns>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>:</Label>
+            <Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curObject.vacancy_id, { doc_id: curDocID } )%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( ( curVacancyDoc != null ? curVacancyDoc.name : curObject.vacancy_name ), curLng.short_id ))%></Link>
+        </GridRow>
+<%
+        if ( fldPerson != undefined )
+        {
+%>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_fio", curLngWeb )%>:</Label>
+            <Link NoWrap="true" Click="OPENURL=<%=tools_web.get_mode_clean_url( strPersonLinkType, fldPerson.id, { doc_id: curDocID } )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( fldPerson.fullname, curLng.short_id ))%></Link>
+        </GridRow>
+<%
+        }
+%>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_resume", curLngWeb )%>:</Label>
+            <Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'resume', null, { resume_id : curObject.resume_id, doc_id: curDocID } )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( (fldResume!=undefined?fldResume.name:""), curLng.short_id ))%></Link>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_create_date", curLngWeb )%>:</Label>
+            <Label><%=curObject.doc_info.creation.date%></Label>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+            <Label><%=XmlAttrEncode(tools_web.get_cur_lng_name( tools_web.GetVacancyResponseStatus( curObject, null, curLngCommon ), curLng.short_id ))%></Label>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "soprovoditelno", curLngWeb )%>:</Label>
+            <HTMLBox>
+                <![CDATA[
+                    <%=HtmlEncode(tools_web.get_web_desc(curObject.desc, UrlFromDocID( curObjectID ), "vacancy_response.desc" ))%>
+                ]]>
+            </HTMLBox>
+        </GridRow>
+<%
+        //Просмотр существующего отлика
+        if ( curObject.employer_answer.HasValue )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "otvetrabotodat", curLngWeb )%>:</Label>
+                <HTMLBox>
+                    <![CDATA[
+                        <%=HtmlEncode(curObject.employer_answer)%>
+                    ]]>
+                </HTMLBox>
+            </GridRow>
+<%
+        }
+        if ( bRecruiter )
+        {
+%>
+            <GridRow>
+                <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "kommentariyrek", curLngWeb )%>:</Label>
+                <EditBox Name="comment_recruiter" <%=( curDevice.disp_type != "mobile" ? "Width='500'" : "Width='250'" )%> Height="80"><%=XmlAttrEncode( curObjectID != null ? curObject.comment_recruiter : "" )%></EditBox>
+            </GridRow>
+<%
+        }
+    }
+    else
+    {
+%>
+        <GridColumns>
+            <GridColumn Width="250" Align="right"/>
+            <GridColumn/>
+        </GridColumns>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>:</Label>
+            <Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', curVacancyID, {} )%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( (curVacancyDoc!=null?curVacancyDoc.name:curObject.vacancy_name), curLng.short_id ))%></Link>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_resume", curLngWeb )%>:</Label>
+            <Grid Width="100%" Adapt="true">
+                <GridColumns>
+                    <GridColumn Width="250"/>
+                    <GridColumn Width="10"/>
+                    <GridColumn/>
+                </GridColumns>
+
+                <GridRow>
+                    <StackPanel Adapt="true">
+<%
+                    iResumeID     = null;
+                    strResumeName = null;
+                    strXQuery     = "";
+
+                    if ( ! bCanSelectAll )
+                    {
+                        strXQuery = "$elem/person_id=" + curUserID;
+                        
+                        if ( bCanSelectOthers )
+                        {
+                            strXQuery = "(" + strXQuery + " or $elem/creator_person_id=" + curUserID + ")";
+                        }
+                    }
+                    if ( ! bCanSelectFromArchive )
+                    {
+                        strXQuery = strXQuery + ( strXQuery != "" ? " and" : "" ) + " $elem/is_archive=false()";
+                    }
+
+                    arrResumes = XQuery( "for $elem in resumes" + ( strXQuery != '' ? ' where ' : '' ) + strXQuery + " return $elem" );
+                    fldResume  = ArrayOptFirstElem( arrResumes );
+
+                    if ( bCanSelectOthers || bCanSelectAll )
+                    {
+                        fldResume = undefined;
+                    }
+
+                    if ( fldResume != undefined )
+                    {
+                        iResumeID     = fldResume.id;
+                        strResumeName = tools_web.get_cur_lng_name( fldResume.name, curLng.short_id );
+                    }
+                    
+                    curSelector = {
+                        "id"                  : "resume_id",
+                        "object_id"           : iResumeID,
+                        "object_id_item_name" : "resume_id",
+                        "object_name"         : strResumeName,
+                        "multi_select"        : "false",
+                        "catalog_name"        : "resume",
+                        "xquery_qual"         : strXQuery,
+                        "close_action"        : "SHOW=SPOpenResume"
+                    };
+                    Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+                </StackPanel>
+                <Label/>
+                <StackPanel Name="SPOpenResume" Hidden="<%=iResumeID!=null?0:1%>" Adapt="true" Orientation="Vertical">
+                    <Button Click="OPENWINDOW=<%=tools_web.get_mode_clean_url( 'resume', null, { resume_id : '{resume_id}' } )%>" Class="XAML-button-content"><%=tools_web.get_web_const( "kartochkarezyume", curLngWeb )%></Button>
+                </StackPanel>
+                </GridRow>
+            </Grid>
+            </GridRow>
+            <GridRow>
+                <Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "soprovoditelno", curLngWeb )%>:</Label>
+                <EditBox Name="desc" <%=(curDevice.disp_type != "mobile" ? "Width='500'" : "Width='250'")%> Height="80"> </EditBox>
+            </GridRow>
+<%
+    }
+%>
+        </Grid>
+    </Panel>
+<%
+    if ( bRecruiter )
+    {
+        if ( curObjectID != null )
+        {
+            fldCareerReserve = curObject.career_reserve_id.OptForeignElem;
+            if ( fldCareerReserve != undefined )
+            {
+                try
+                {
+                    teCareerReserve = OpenDoc( UrlFromDocID( fldCareerReserve.id ) ).TopElem;
+                }
+                catch(ex)
+                {
+                    teCareerReserve = null;
+                }
+                
+                if ( teCareerReserve != null )
+                {
+%>
+                <Panel Title="<%=tools_web.get_web_const( "vdb_aims", curLngWeb )%>">
+<%
+                    curTalentPoolCRTasksViewer = {
+                        "id"                  : "TalentPoolCRTasksViewer",
+                        "forbid_tasks_edit"   : teCareerReserve.forbid_tasks_edit,
+                        "object_id"           : fldCareerReserve.id,
+                        "select_only_tutors"  : false,
+                        "show_refresh_button" : true
+                    };
+                    Response.Write( EvalCodePageUrl( global_settings.web_path + "view_talent_pool_cr_tasks.xaml" ) );
+%>
+                </Panel>
+<%
+                }
+            }
+        }
+    }
+%>
+</SPXMLScreen>

@@ -1,0 +1,623 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" SAVE-ACTION="
+	UpdateScreens( '*', '*assessment_appraise*' );
+" WINDOW-ICON-URL="//wtv/ico/assessment_appraise.ico" TITLE-EXPR="ms_tools.get_const('vppb_procedure')" BEFORE-SAVE-ACTION="" OK-ACTION="
+	if(!Ps.name.HasValue)
+	{
+		Screen.MsgBox( 'Пожалуйста, заполните название процедуры', ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+	if(!Ps.start_date.HasValue || !Ps.end_date.HasValue)
+	{
+		Screen.MsgBox( 'Пожалуйста, заполните даты начала и окончания проведения процедуры', ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+    if (Ps.start_date.HasValue &amp;&amp; Ps.end_date.HasValue &amp;&amp; Ps.start_date > Ps.end_date)
+    {
+        Screen.MsgBox( ms_tools.get_const('a8cz38vdwa'), ms_tools.get_const('c_error'), 'error', 'ok' );
+        Cancel();
+    }
+" OK-ACTION="
+UpdateScreens( '*', '*' );
+" BEFORE-INIT-ACTION="
+    _curApplication = tools_app.get_cur_application();
+
+    if (!TopElem.doc_info.creation.app_instance_id.HasValue)
+    {
+        _instance = tools_app.create_application_instance().TopElem;
+		TopElem.doc_info.creation.app_instance_id = '0x' + StrHexInt( OptInt( _instance.id ), 16 );
+    }
+
+    TopElem.custom_elems.ObtainChildByKey('isNew').value = ( !TopElem.doc_info.creation.date.HasValue || tools.open_doc(TopElem.id)==undefined ) ? true : false;
+    TopElem.custom_elems.ObtainChildByKey('bCreatePlan').value = false;
+	
+    Screen.EditMode = true;
+	if (Ps.view.plan_selection_way!='plan' &amp;&amp; Ps.view.plan_selection_way!='pa')
+		Ps.view.plan_selection_way = 'plan'
+" RESIZE="1" CUSTOM-FRAME="1" MAXIMIZED="0" BORDER-WIDTH="1" SHADOW="1" WIDTH-EXPR="Screen.EditMode ? '800vpx' : ( Screen.AuxData.GetOptProperty( 'isPreview', false ) ? '100%' : '800vpx' )" HEIGHT-EXPR="Screen.EditMode ? '80%' : '100%'">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/wtv_general_ass.xms"/>
+
+<WITH VAR="iCurUserAccess" EXPR="CallServerMethod(
+						'tools', 
+						'call_code_library_method', 
+						[
+							'libApplication', 
+							'GetPersonApplicationAccessLevel', 
+							[
+								tools.get_cur_user().id, tools_app.get_cur_application().code
+							]
+						]
+					);">
+
+<LINE STD-MARGINS="0">
+<ui2_minimizable_tree SWITCH-TYPE="selector" TARGET="main_selector" NO-IMAGES="0" NO-TOP-LEVEL-IMAGES="0" OPEN-MINIMIZED="1"/>
+<SELECTOR NAME="main_selector">
+
+<PAGE TITLE="##'Информация'##" IMAGE-URL="//wtv/app_pict/icon16_info.svg" VERT-SCROLL="1">
+    
+    <PANEL STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx" VERT-SCROLL="1" HEIGHT="100%" WIDTH="100%">
+    <WITH VAR="isNew" EXPR="tools_web.is_true(TopElem.custom_elems.ObtainChildByKey('isNew').value)">
+    <WITH VAR="_write_access" EXPR=" true||(Ps.status != '1' &amp;&amp; Ps.status != 'x')">
+        <IF EXPR="isNew">
+            <ITEM TYPE="code_name_base" sourceCodeExpr="true"/>
+            <LINE>
+                <TitleLabel TITLE-EXPR="ms_tools.get_const('c_start_date')">
+                    <DATE SOURCE="Ps.start_date" ALLOW-NULL="1" TIME="0" WIDTH="150vpx"/>
+                </TitleLabel>
+                <TitleLabel TITLE-EXPR="ms_tools.get_const('3bywib72ya')">
+                    <DATE SOURCE="Ps.end_date" ALLOW-NULL="1" TIME="0" WIDTH="150vpx"/>
+                </TitleLabel>
+                <TitleLabel TITLE-EXPR="'Администратор процедуры'">
+					<ITEM TYPE="ms_object_selector" SOURCE="Ps.person_id" readOnlyExpr="iCurUserAccess == 5" catalogExpr="'collaborator'" titleExpr="''" WIDTH="316vpx"/>
+				</TitleLabel>
+            </LINE>
+            <TitleLabel TITLE-EXPR="'Бюджетный период'">
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.custom_elems.ObtainChildByKey( 'bp_assessment' ).value" catalogExpr="'budget_period'" titleExpr="''" WIDTH="316vpx"/>
+			</TitleLabel>
+            <TitleLabel TITLE-EXPR="'Список участников'">
+                <COMBO SOURCE="TopElem.custom_elems.ObtainChildByKey('users_type').value" WIDTH="316vpx" ENTRY-TITLE-NO-UPDATE="1">
+                    <COMBO-ENTRY TITLE="Только процедура, без участников" VALUE="none"/>
+                    <IF EXPR="iCurUserAccess &gt; 6">
+						<COMBO-ENTRY TITLE="Все сотрудники, кроме уволенных" VALUE="all"/>
+					</IF>
+                    <COMBO-ENTRY TITLE="Выбранный список" VALUE="select"/>
+                    <IF EXPR="iCurUserAccess &gt; 6">
+						<COMBO-ENTRY TITLE="Входящие в группу" VALUE="group"/>
+					</IF>
+                </COMBO>
+            </TitleLabel>
+            <IF EXPR="TopElem.custom_elems.ObtainChildByKey('users_type').value=='select'">
+                <LINE HEIGHT="edit" WIDTH="100%" CHILD-VERT-ALIGN="bottom">
+                    <LABEL TITLE-EXPR="ms_tools.get_const('8ixbykjfjj')"/>
+
+                    <BUTTON TITLE-EXPR="ms_tools.get_const('vaaeb_sel_colls') + '...'" IMAGE-URL="//wtv/svg/add.svg" ACTION="
+                            dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+                            dlgDoc.TopElem.multi_select = true;
+                            dlgDoc.TopElem.catalog_name = 'collaborator';
+                            dlgDoc.TopElem.value_array = Ps.auditorys;
+
+							if(iCurUserAccess == 5 || iCurUserAccess == 1)
+							{
+								xquery_qual = CallServerMethod(
+                                                                'tools', 
+                                                                'call_code_library_method', 
+                                                                [
+                                                                    'libAssessment', 
+                                                                    'GetXqueryQualForSelectCollHR', 
+                                                                    [
+                                                                        tools.get_cur_user().id, iCurUserAccess, tools_app.get_cur_application()
+                                                                    ]
+                                                                ]
+                                                            );
+								dlgDoc.TopElem.xquery_qual = xquery_qual;
+								dlgDoc.TopElem.disp_tree_selector = false;
+							}	
+                            Screen.ModalDlg( dlgDoc );
+                            Ps.auditorys.Clear();
+
+                            i = 0;
+
+                            for ( _value in dlgDoc.TopElem.values )
+                            {
+                                _aud = Ps.auditorys.ObtainChildByKey( _value.key );
+                                _aud.person_name = _value.key_obj.Object.fullname;
+                                _aud.position_name = _value.key_obj.Object.position_name;
+                                i++;
+                                if (Ps.max_auditory.HasValue &amp;&amp; i &gt;= Ps.max_auditory)	break;
+                            }
+
+                            Ps.Doc.SetChanged( true );
+                    " ALIGN="right"/>
+                    <BUTTON TITLE-EXPR="ms_tools.get_const('c_clear')" IMAGE-URL="//wtv/svg/del.svg" ACTION="
+                        Ps.auditorys.Clear();
+                        Ps.groups.Clear();
+                        Ps.Doc.SetChanged( true );
+                    " ALIGN="right"/>
+                </LINE>
+                <PANEL HEIGHT="20%" SUNKEN="1">
+                    <LIST NAME="AudViewList" LOOP-EXPR="
+                        var bPersonalDataMode = ((tools.sys_db_capability & tools.UNI_CAP_PD) != 0);
+
+                        if (bPersonalDataMode)
+                        {
+                            var fldAud, catPersonName, xarrPersonsNames = tools.xquery('for $elem in collaborators where MatchSome($elem/id, (' +ArrayMerge(TopElem.auditorys, 'This.PrimaryKey', ',')+ ')) return $elem/Fields(\'id\',\'fullname\')');
+                            for (fldAud in Ps.auditorys)
+                            {
+                                catPersonName = ArrayOptFindByKey(xarrPersonsNames, fldAud.PrimaryKey.Value, 'id');
+                                if (catPersonName != undefined)
+                                    fldAud.person_name = catPersonName.fullname;
+                            }
+                        }
+
+                        var aRes = Ps.auditorys;
+                        return aRes;
+                    ">
+                        <ROW OPEN-ACTION="
+                                    try
+                                    {
+                                        _temp_assessment_plan = ArrayFirstElem(XQuery( 'for $assessment_plan in assessment_plans where $assessment_plan/assessment_appraise_id = ' + Ps.id +' and $assessment_plan/person_id = ' + ListElem.PrimaryKey + ' return $assessment_plan' ));
+                                        ObtainDocScreen( UrlFromDocID( _temp_assessment_plan.id ) );
+                                    }
+                                    catch(_ho_ho_ho_)
+                                    {
+                                        ObtainDocScreen( UrlFromDocID( ListElem.PrimaryKey ) );
+                                    }
+                        " DELETE-ACTION="ListElem.Delete(); Ps.Doc.SetChanged(true);" IMAGE-URL=".ico" IMAGE-URL-EXPR="(ListElem.Name == 'auditory'? 'ico/collaborator.ico': (ListElem.Name == 'group'? 'ico/group.ico': ''))" BK-COLOR-EXPR="(ListElem.Name == 'group' ? '220,220,220':'')">
+                            <COL WIDTH="50%" TITLE-EXPR="(ListElem.Name == 'auditory' ? ListElem.person_name: (ListElem.Name == 'group'? ListElem.PrimaryKey.ForeignElem.name: ''))" COL-TITLE-EXPR="ms_tools.get_const('c_fio')" ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+                            <COL WIDTH="50%" TITLE-EXPR="(ListElem.Name == 'auditory' ? ListElem.position_name: (ListElem.Name == 'group' ? ms_tools.get_const('c_group'):''))" COL-TITLE-EXPR="ms_tools.get_const('c_position')" ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+                        </ROW>
+                    </LIST>
+                </PANEL>
+            </IF>
+            <IF EXPR="TopElem.custom_elems.ObtainChildByKey('users_type').value=='group'">
+                <ITEM TYPE="ms_object_selector" SOURCE="TopElem.custom_elems.ObtainChildByKey('users_group_id').value" catalogExpr="'group'" WIDTH="316vpx"/>
+            </IF>
+            <BR/>
+            <ITEM TYPE="comment_base"/>
+            <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+			
+			<PANEL NAME="PanelDlgBottom" STD-MARGINS="0" PADDING="24vpx 24vpx 24vpx 24vpx">
+				<LINE WIDTH="100%" HORIZ-SPACING="16vpx">
+					<BUTTON TITLE="##ms_tools.get_const('c_cancel')##" WIDTH="100vpx" HEIGHT="32px" ALIGN="right" CMD="2"/>
+					<BUTTON TITLE-EXPR="'Создать процедуру'" IMAGE-URL="//wtv/svg/save.svg" HEIGHT="32px" ACTION="
+                        if(Ps.start_date > Ps.end_date)
+                        {
+                            ActiveScreen.MsgBox('Дата начала не может быть больше даты окончания.',ms_tools.get_const('c_info'), 'info', 'ok' );
+							Cancel();
+                        }
+
+						if( Ps.custom_elems.ObtainChildByKey('users_type').value=='select' &amp;&amp; ArrayCount(Ps.auditorys)==0 )
+						{
+							ActiveScreen.MsgBox('Необходимо добавить сотрудников.',ms_tools.get_const('c_info'), 'info', 'ok' );
+							Cancel();
+						}
+						else
+						{
+							TopElem.custom_elems.ObtainChildByKey('bCreatePlan').value = true;
+                            UpdateScreens( '*', '*' );
+							Screen.RunCommand( 'Ok' );
+						}
+					" ALIGN="right"/>
+				</LINE>
+			</PANEL>
+        </IF>
+        <IF EXPR="!isNew">
+            <IF EXPR="iCurUserAccess == 1 || iCurUserAccess == 3">
+				<LINE>
+					<EditLabel SOURCE="Ps.code" TITLE="##ms_tools.get_const('c_code')##" READ-ONLY-EXPR="true"  WIDTH="150vpx"/>
+					<EditLabel SOURCE="Ps.name" TITLE="##ms_tools.get_const('c_name')##" READ-ONLY-EXPR="true"  WIDTH="316vpx" FULL-WIDTH="1"/>
+				</LINE>
+			</IF>
+			<ELSE>
+			<ITEM TYPE="code_name_base" sourceCodeExpr="true"/>
+            </ELSE>
+            <IF EXPR="iCurUserAccess == 1 || iCurUserAccess == 3">
+                <LINE>
+                    <TitleLabel TITLE-EXPR="ms_tools.get_const('c_start_date')">
+                        <LABEL TITLE-EXPR="StrDate(Ps.start_date, false, false)" WIDTH="150vpx"/>
+                    </TitleLabel>
+                    <TitleLabel TITLE-EXPR="ms_tools.get_const('3bywib72ya')">
+                        <LABEL TITLE-EXPR="StrDate(Ps.end_date, false, false)" WIDTH="150vpx"/>
+                    </TitleLabel>
+                </LINE>
+            </IF>
+            <ELSE>
+                <LINE>
+                    <TitleLabel TITLE-EXPR="ms_tools.get_const('c_start_date')">
+                        <DATE SOURCE="Ps.start_date" ALLOW-NULL="1" TIME="0" WIDTH="150vpx"/>
+                    </TitleLabel>
+                    <TitleLabel TITLE-EXPR="ms_tools.get_const('3bywib72ya')">
+                        <DATE SOURCE="Ps.end_date" ALLOW-NULL="1" TIME="0" WIDTH="150vpx"/>
+                    </TitleLabel>
+                    <TitleLabel TITLE-EXPR="'Администратор процедуры'">
+                        <ITEM TYPE="ms_object_selector" SOURCE="Ps.person_id" catalogExpr="'collaborator'" readOnlyExpr="iCurUserAccess == 5" titleExpr="''" WIDTH="316vpx"/>
+                    </TitleLabel>
+                </LINE>
+                <LINE>
+                    <TitleLabel TITLE-EXPR="'Бюджетный период'">
+                        <ITEM TYPE="ms_object_selector" SOURCE="Ps.custom_elems.ObtainChildByKey( 'bp_assessment' ).value" catalogExpr="'budget_period'" titleExpr="''" WIDTH="316vpx"/>
+                    </TitleLabel>
+                </LINE>
+            </ELSE>
+
+            <LINE>
+                <LABEL TITLE-EXPR="ms_tools.get_const('c_status')"/>
+                <LABEL TITLE-EXPR="Ps.status.ForeignElem.name" BOLD="1"/>
+            </LINE>
+
+            <ITEM TYPE="comment_base"/>
+
+            <IF EXPR="Ps.status != '1' &amp;&amp; Ps.status != 'x' ">
+                <TitleLabel TITLE-EXPR="'Список участников'">
+                    <COMBO SOURCE="TopElem.custom_elems.ObtainChildByKey('users_type').value" WIDTH="316vpx" ENTRY-TITLE-NO-UPDATE="1">
+                        <COMBO-ENTRY TITLE="Выбранный список" VALUE="select"/>
+						<IF EXPR="iCurUserAccess &gt; 6">
+							<COMBO-ENTRY TITLE="Входящие в группу" VALUE="group"/>
+						</IF>
+                    </COMBO>
+                </TitleLabel>
+
+                <IF EXPR="TopElem.custom_elems.ObtainChildByKey('users_type').value=='select'">
+                    <LINE HEIGHT="edit" WIDTH="100%" CHILD-VERT-ALIGN="bottom">
+                        <LABEL TITLE-EXPR="'Добавить в оценку'"/>
+
+                        <BUTTON TITLE-EXPR="ms_tools.get_const('vaaeb_sel_colls') + '...'" IMAGE-URL="//wtv/svg/add.svg" ACTION="
+                                dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+                                dlgDoc.TopElem.multi_select = true;
+                                dlgDoc.TopElem.catalog_name = 'collaborator';
+                                dlgDoc.TopElem.value_array = Ps.auditorys;
+
+								if(iCurUserAccess == 5 || iCurUserAccess == 1)
+								{
+									xquery_qual = CallServerMethod(
+                                                                'tools', 
+                                                                'call_code_library_method', 
+                                                                [
+                                                                    'libAssessment', 
+                                                                    'GetXqueryQualForSelectCollHR', 
+                                                                    [
+                                                                        tools.get_cur_user().id, iCurUserAccess, tools_app.get_cur_application()
+                                                                    ]
+                                                                ]
+                                                            );
+									dlgDoc.TopElem.xquery_qual = xquery_qual
+								}	
+
+                                Screen.ModalDlg( dlgDoc );
+                                Ps.auditorys.Clear();
+
+                                i = 0;
+
+                                for ( _value in dlgDoc.TopElem.values )
+                                {
+                                    _aud = Ps.auditorys.ObtainChildByKey( _value.key );
+                                    _aud.person_name = _value.key_obj.Object.fullname;
+                                    _aud.position_name = _value.key_obj.Object.position_name;
+                                    i++;
+                                    if (Ps.max_auditory.HasValue &amp;&amp; i &gt;= Ps.max_auditory)	break;
+                                }
+
+                                Ps.Doc.SetChanged( true );
+                        " ALIGN="right"/>
+                        <BUTTON TITLE-EXPR="'Добавить в процедуру'" IMAGE-URL="//wtv/svg/save.svg" ACTION="
+                            if( ArrayCount(Ps.auditorys)==0 )
+                            {
+                                ActiveScreen.MsgBox('Необходимо добавить сотрудников.',ms_tools.get_const('c_info'), 'info', 'ok' );
+                                Cancel();
+                            }
+                            else
+                            {
+                                if( ActiveScreen.MsgBox('Добавить выбранных сотрудников?','Добавление сотрудников', 'question', 'yes,no' ) )
+                                {
+                                    TopElem.custom_elems.ObtainChildByKey('bCreatePlan').value = true;
+                                    
+                                    Screen.RunCommand( 'Ok' );
+                                }
+                            }
+                        " ALIGN="right"/>
+                    </LINE>
+
+                    <PANEL HEIGHT="20%" SUNKEN="1" MIN-HEIGHT="120vpx">
+                        <LIST NAME="AudViewList" LOOP-EXPR="
+                            return Ps.auditorys
+                        ">
+                            <ROW OPEN-ACTION="" DELETE-ACTION="" IMAGE-URL="//wtv/ico/collaborator.ico">
+                                <COL WIDTH="50%" TITLE-EXPR="(ListElem.Name == 'auditory' ? ListElem.person_name: (ListElem.Name == 'group'? ListElem.PrimaryKey.ForeignElem.name: ''))" COL-TITLE-EXPR="ms_tools.get_const('c_fio')" ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+                                <COL WIDTH="50%" TITLE-EXPR="(ListElem.Name == 'auditory' ? ListElem.position_name: (ListElem.Name == 'group' ? ms_tools.get_const('c_group'):''))" COL-TITLE-EXPR="ms_tools.get_const('c_position')" ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+                            </ROW>
+                        </LIST>
+                    </PANEL>
+                </IF>
+                <IF EXPR="TopElem.custom_elems.ObtainChildByKey('users_type').value=='group'">
+                <PANEL STD-MARGINS="1" PADDING="20vpx 0vpx 0vpx 0vpx">
+                    <LINE HEIGHT="edit" WIDTH="100%" CHILD-VERT-ALIGN="bottom">
+                        <ITEM TYPE="ms_object_selector" SOURCE="TopElem.custom_elems.ObtainChildByKey('users_group_id').value" catalogExpr="'group'" WIDTH="316vpx"/>
+                        <BUTTON TITLE-EXPR="'Добавить в процедуру'" IMAGE-URL="//wtv/svg/save.svg" ACTION="
+                            if( Trim(TopElem.custom_elems.ObtainChildByKey('users_group_id').value)=='' ||  OptInt(TopElem.custom_elems.ObtainChildByKey('users_group_id').value,undefined)==undefined )
+                            {
+                                ActiveScreen.MsgBox('Необходимо добавить сотрудников.',ms_tools.get_const('c_info'), 'info', 'ok' );
+                                Cancel();
+                            }
+                            else
+                            {
+                                if( ActiveScreen.MsgBox('Добавить выбранных сотрудников?','Добавление сотрудников', 'question', 'yes,no' ) )
+                                {
+                                    TopElem.custom_elems.ObtainChildByKey('bCreatePlan').value = true;
+                                    
+                                    Screen.RunCommand( 'Ok' );
+                                }
+                            }
+                            " ALIGN="right"/>
+                    </LINE>
+                    <BR/>
+                </PANEL>
+                </IF>
+            </IF>
+			<WITH VAR="iCountPlans" EXPR=" 
+				ArrayCount(tools.xquery('for $elem in assessment_plans where $elem/assessment_appraise_id='+Ps.id+' return $elem'));
+				">
+				<LINE>
+					<LABEL TITLE-EXPR="'Всего фокус персон в процедуре'"/>
+					<LABEL TITLE-EXPR="iCountPlans" BOLD="1"/>
+				</LINE>
+			</WITH>
+			<WITH VAR="iCountPas" EXPR=" 
+				ArrayCount(tools.xquery('for $elem in pas where $elem/assessment_appraise_id='+Ps.id+' return $elem'));
+				">
+				<LINE>
+					<LABEL TITLE-EXPR="'Всего анкет'"/>
+					<LABEL TITLE-EXPR="iCountPas" BOLD="1"/>
+				</LINE>
+			</WITH>
+			<WITH VAR="iCountIsDonePas" EXPR=" 
+				ArrayCount(tools.xquery('for $elem in pas where $elem/assessment_appraise_id = '+Ps.id+' and $elem/is_done = 1 return $elem'));
+				">
+				<LINE>
+					<LABEL TITLE-EXPR="'Всего завершенных анкет'"/>
+					<LABEL TITLE-EXPR="iCountIsDonePas" BOLD="1"/>
+				</LINE>
+			</WITH>
+
+            <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+            <PANEL NAME="PanelDlgBottom" STD-MARGINS="0" PADDING="24vpx 24vpx 24vpx 24vpx">
+                <LINE WIDTH="100%" HORIZ-SPACING="16vpx">
+                    <BUTTON TITLE="##ms_tools.get_const('c_cancel')##" WIDTH="100vpx" HEIGHT="32px" ALIGN="right" CMD="2"/>
+                    <IF EXPR="_write_access">
+                        <BUTTON TITLE="##ms_tools.get_const('c_save')##" WIDTH="100vpx" HEIGHT="32px" ALIGN="right" CMD="1"/>
+                    </IF>
+                </LINE>
+            </PANEL>
+        </IF>
+
+    </WITH>
+    </WITH>
+    </PANEL>
+
+</PAGE>
+<IF EXPR="(iCurUserAccess == 7 || iCurUserAccess == 10) &amp;&amp; TopElem.doc_info.creation.date.HasValue">
+<PAGE TITLE="##'Настройки'##" IMAGE-URL="//wtv/app_pict/icon16_settings.svg"  VERT-SCROLL="1">
+	<LABEL TITLE-EXPR="'Настройки процедуры'" FONT-WEIGHT="600" FONT-SIZE="16"/>
+	<BR/>
+
+	<WITH VAR="docInstance" EXPR="tools.open_doc(TopElem.doc_info.creation.app_instance_id)">
+	
+	<PANEL VERT-SCROLL="1" WIDTH="100%" HEIGHT="-80vpx" STD-MARGINS="1" PADDING="0vpx 24vpx 16vpx 24vpx">
+		<LABEL TITLE-EXPR="Ps.name" FONT-WEIGHT="800" FONT-SIZE="16"/>
+		<BR/>
+		
+		<LOOP EXPR="
+			arrElemNames = ['process'];
+			arrSettings = [];
+			for (_wv in docInstance.TopElem.wvars)
+			{
+				if ( ArrayOptFind( arrElemNames, 'This == _wv.name' ) != undefined )
+				{
+					arrSettings.push(_wv);
+				}
+			}
+
+			return arrSettings;" VAR="_option">
+			<PanelTitle NAME-EXPR="_option.name;" 
+					TITLE-EXPR="
+						if ( _option.description == '#empty#' )
+						{
+							return ( _option.required ? '* ': '' ) + 'Параметры';
+						}
+						else if ( _option.description != '' )
+						{
+							return ( _option.required ? '* ': '' ) + _option.description;
+						}
+						else
+						{
+							return '';
+						} 
+					" WIDTH="100%" STD-MARGINS="1">
+
+					<LOOP EXPR="
+						arrExcludeWvars = ['iAssessmentLibrary'];
+						arrWvarCond = [];
+						for( _wvar in ArraySelectByKey(docInstance.TopElem.wvars, _option.name, 'parent_wvar_name' ) )
+						{
+							if( ArrayOptFind( arrExcludeWvars, 'This == _wvar.name' ) != undefined )
+							{
+								continue;
+							}
+							
+							bCond = true;
+							
+							if( _wvar.view.conditions.ChildNum != 0 )
+							{
+								for( _cond in _wvar.view.conditions )
+								{
+									if ( _cond.wvar_name != '' )
+									{
+										checkWvar = ArrayOptFindByKey( docInstance.TopElem.wvars, _cond.wvar_name, 'name' );
+										if( checkWvar != undefined )
+										{
+											switch( _cond.option_type )
+											{
+												case 'eq': bCond = ( checkWvar.value == _cond.value ); break;
+												case 'neq': bCond = ( checkWvar.value != _cond.value ); break;
+												case 'cn': bCond = ( StrContains( checkWvar.value, _cond.value ) ); break;
+												case 'ncn': bCond = ( !StrContains( checkWvar.value, _cond.value ) ); break;
+												case 'lt': bCond = ( OptReal( checkWvar.value, 999 ) < OptReal( _cond.value, 0 ) ); break;
+												case 'lte': bCond = ( OptReal( checkWvar.value, 999 ) <= OptReal( _cond.value, 0 ) ); break;
+												case 'gt': bCond = ( OptReal( checkWvar.value, 0 ) > OptReal( _cond.value, 999 ) ); break;
+												case 'gte': bCond = ( OptReal( checkWvar.value, 0 ) >= OptReal( _cond.value, 999 ) ); break;
+											}
+							
+											if( bCond &amp;&amp; _cond.and_or == 'or' || !bCond &amp;&amp; _cond.and_or == 'and' )
+											{
+												break;
+											}
+										}
+									}
+								}
+							}
+							if( bCond )
+							{
+								arrWvarCond.push( _wvar );
+							}
+						}
+
+						return ArraySort(arrWvarCond, 'position', '+')" VAR="_wvar">
+    
+						<!-- <IF EXPR="_wvar.type == 'foreign_elem' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<WITH VAR="isMultiple" EXPR="StrBegins( _wvar.value, '[' ) || StrBegins( _wvar.value, '{' )">
+								<WITH VAR="arrValues" EXPR="isMultiple ? ParseJson( _wvar.value ) : ( _wvar.value.HasValue ? ArrayExtract( _wvar.value.Value.split( ';' ), '({__value:This})' ) : [] )">
+									<IF EXPR="isMultiple">
+										<ITEM TYPE="ms_list_edit_base" SOURCE="(TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value)" dataAllExpr="true" titleExpr="'* ' + _wvar.description" catalogExpr="_wvar.catalog" heightExpr="'6gr'" columnsExpr="
+														[
+															{ 'name': '__value', 'title': _wvar.catalog.ForeignElem.title.Value, 'type': 'foreign_elem', 'catalog': _wvar.catalog.Value, 'width': '30zr' },
+															{ 'name': 'comment', 'title': 'Комментарий', 'width': '100%' }
+														]
+										"/>
+									</IF>
+									<ELSE>
+										<ITEM TYPE="ms_object_selector" catalogExpr="_wvar.catalog" SOURCE="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value" titleExpr="'* ' + _wvar.description" ALLOW-NULL="1" WIDTH="100%"/>
+									</ELSE>
+								</WITH>
+							</WITH>
+						</IF> -->
+
+						<IF EXPR="_wvar.type == 'bool' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<LINE ADAPTIVE="0" MULTILINE="0" WIDTH="100%" CHILD-VERT-ALIGN="top" HORIZ-SPACING="8vpx">
+								<CHECK SOURCE="tools_web.is_true((TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value))" SET-VALUE-ACTION="
+										if (NewValue)
+										{
+											TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = true;
+										}
+										else
+										{
+											TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = false;
+										}
+								"/>
+								<LABEL TITLE-EXPR="_wvar.description" MULTILINE="1" FONT-SIZE="10"/>
+							</LINE>
+						</IF>
+						<IF EXPR="_wvar.type == 'integer' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<TitleLabel TITLE-EXPR="'* ' + _wvar.description">
+								<EDIT SOURCE="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value" WIDTH="100%" SET-VALUE-ACTION="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = OptInt(NewValue, 0)" HEIGHT="32px"/>
+							</TitleLabel>
+						</IF>
+						<IF EXPR="_wvar.type == 'list' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<TitleLabel TITLE-EXPR="'* ' + _wvar.description" WIDTH="100%">
+								<WITH VAR="arrEntries" EXPR="_wvar.value == '' ? [] : String(_wvar.value).split( ';' )">
+									<LOOP EXPR="_wvar.entries" VAR="ListElem">
+										<LINE ADAPTIVE="0" MULTILINE="0" WIDTH="100%" CHILD-VERT-ALIGN="top" HORIZ-SPACING="8vpx">
+											<CHECK SOURCE="ArrayOptFind(arrEntries, 'This==' + CodeLiteral(ListElem.ChildExists('id') ? ListElem.id : ListElem.name)) != undefined" SET-VALUE-ACTION="
+												if (NewValue)
+												{
+													fldValue = (TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value);
+													fldValue.Value += (fldValue.HasValue ? ';' : '') + (ListElem.ChildExists('id') ? ListElem.id : ListElem.name);
+												}
+												else
+												{
+													_wvar.value = ArrayMerge(ArraySelect(arrEntries, 'This!=' + CodeLiteral((ListElem.ChildExists('id') ? ListElem.id : ListElem.name))), 'This', ';');
+												}
+											"/>
+											<LABEL TITLE-EXPR="ListElem.name" MULTILINE="1" FONT-SIZE="10"/>
+										</LINE>
+									</LOOP>
+								</WITH>
+							</TitleLabel>
+						</IF>
+						<IF EXPR="_wvar.type == 'string' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<EditLabel TITLE-EXPR="'* ' + _wvar.description" SOURCE="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value"
+                            SET-VALUE-ACTION="
+									TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(NewValue);
+									TopElem.Doc.SetChanged(true);
+								"/>
+						</IF>
+						<IF EXPR="_wvar.type == 'text' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<EditLabel TITLE-EXPR="'* ' + _wvar.description" SOURCE="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value" SET-VALUE-ACTION="
+									TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(NewValue);
+									TopElem.Doc.SetChanged(true);
+								" MULTILINE="1" VERT-SCROLL="1" HEIGHT="5gr"/>
+						</IF>
+						<IF EXPR="_wvar.type == 'real' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<EditLabel TITLE-EXPR="'* ' + _wvar.description" SOURCE="OptInt((TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value), null)" WIDTH="150vpx" SET-VALUE-ACTION="
+									TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = OptInt(NewValue, null);
+									TopElem.Doc.SetChanged(true);
+								"/>
+						</IF>
+						<IF EXPR="_wvar.type == 'combo' &amp;&amp; !tools_web.is_true(_wvar.silent)">
+							<ComboLabelEntry TITLE-EXPR="_wvar.description" SOURCE="TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value=='' ? TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvar.name).value) : TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value" EDITABLE="1" WIDTH="300vpx" entriesExpr="
+								var _entry, a = ([]);
+									for (_entry in _wvar.entries)
+										a.push(({'title': _entry.name, 'value': _entry.id}));
+										return a;
+							" SET-VALUE-ACTION="
+									TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvar.name).value = Trim(NewValue);
+									TopElem.Doc.SetChanged(true);
+								"/>
+						</IF>
+					</LOOP>
+			</PanelTitle>
+			<SPLIT FIXED="1" FULL-HEIGHT="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+		</LOOP>
+		
+	</PANEL>
+
+		<LINE HEIGHT="edit" WIDTH="100%" CHILD-VERT-ALIGN="bottom">
+			<BUTTON TITLE="##ms_tools.get_const('c_cancel')##" WIDTH="100vpx" HEIGHT="32px" ALIGN="right" CMD="2"/>
+			<BUTTON TITLE-EXPR="'Сохранить настройки'" HEIGHT="32px" IMAGE-URL="//wtv/svg/save.svg" ACTION="
+					
+					for(_wvars in docInstance.TopElem.wvars)
+					{
+						if(Trim(TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvars.name).value)!='' &amp;&amp; Trim(TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvars.name).value)!=Trim(docInstance.TopElem.wvars.ObtainChildByKey(_wvars.name).value))
+						{
+							docInstance.TopElem.wvars.ObtainChildByKey(_wvars.name).value = Trim(TopElem.custom_elems.ObtainChildByKey('wvars_'+_wvars.name).value);
+							TopElem.custom_elems.DeleteChildByKey('wvars_'+_wvars.name);
+						}
+					}
+					if ( tools_app.save_application_object( docInstance, null, docInstance.TopElem.application_id.Value ) )
+					{
+						ActiveScreen.MsgBox('Настройки сохранены.',ms_tools.get_const('c_info'), 'info', 'ok' );
+					}
+					else
+					{
+						ActiveScreen.MsgBox('Недостаточно прав на сохранение настроек.',ms_tools.get_const('c_error'), 'error', 'ok' );
+					}
+					Screen.Close()
+				" ALIGN="right"/>
+		</LINE>
+	</WITH>
+	
+</PAGE>
+</IF>
+
+</SELECTOR>
+</LINE>
+</WITH>
+
+<COMMAND-HANDLER CMD="Assessment_Switch_Status" ACTION="
+    if (Ps.status == '0') Ps.status = '1'; else Ps.status = '0';
+    Ps.Doc.SetChanged( true );
+"/>
+
+</SPXML-SCREEN>

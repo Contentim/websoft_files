@@ -1,0 +1,9 @@
+﻿<%
+	width = tools_web.get_web_param( PARAMETERS, "width", "", true );
+	text = tools_web.get_web_param( PARAMETERS, "text", "", true );
+
+	style = tools_web.get_web_param( PARAMETERS, "class", "", true );
+%>
+<SPXMLScreen>
+	<Edit Editable="false" Class="<%=style%>" <%=( width != "" ? 'Width="' + width + '"' : "" )%>><%=text%></Edit>
+</SPXMLScreen>

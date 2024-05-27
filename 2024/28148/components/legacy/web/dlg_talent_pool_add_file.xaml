@@ -1,0 +1,46 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+	iObjectId = OptInt(oParamSource.GetOptProperty( 'iObjectId' ),null);
+	sTaskIDs=String(oParamSource.GetOptProperty( 'task_id' ));
+	oSelected = tools.read_object( sTaskIDs );	
+	try
+	{
+		arrTaskIDs=ArrayExtract( oSelected, "id" );
+	}
+	catch(ex)
+	{
+		arrTaskIDs=[]
+		for (fldSelectedElem in oSelected)
+		{
+			arrTaskIDs.push({"task_id":fldSelectedElem.task_id,"obj_id":fldSelectedElem.obj_id} )
+		}
+	}	
+	sTaskIDs=(tools.object_to_text(arrTaskIDs,'json'))
+
+%>
+<SPXMLScreen>
+	<Edit  Name="sTaskIDs" Hidden="1"><%=XmlAttrEncode(sTaskIDs)%></Edit>
+	<Action Name="AddFile" Source="talent_pool_file_add" Success="ALERT={!messageText};CLOSEDIALOG" Failure="ALERT={!messageText};">
+		<Param Name="iObjectId" Value="<%=iObjectId%>"/>
+		<Param Name="task_id" Value="{sTaskIDs}"/>	
+		<Param Name="iSelectedObject" Value="{SelectedFile}"/>
+	</Action>
+	<StackPanel Orientation="Horizontal">
+			<Label Width="110" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>:</Label>
+			<ResourceField Name="SelectedFile" Width="200" Source="resources"/>
+	</StackPanel>
+		
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=AddFile">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

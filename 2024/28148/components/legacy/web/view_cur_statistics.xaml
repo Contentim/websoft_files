@@ -1,0 +1,393 @@
+﻿<%
+/*
+Свойства curStatistics:
+te_object - TopElem объекта по которому строится статистика
+object_id - id объекта по которому строится статистика
+start_date - начала периода за который строится статистика
+finish_date - окончание периода за который строится статистика
+type_visible - тип отображения ( vertical, horizontal )
+horizontal_cnt - количество показателей отображаемых в строке, при type_visible=horizontal
+max_cnt - максимальное количество отображаемых показателей ( 0 - без ограничений )
+b_random_show - отображать в случайном порядке
+statistics_recrs - массив показателей ( поля id, title, action, schema )
+statistics_periods - массив типов расчетов показателей ( none, absolute, period )
+role_id - id категории из которой выводить показатели (  можно список категорий через "," )
+view_types - массив типов отображения ( 'tile', 'table' )
+schema - цвет информеров ( blue, red, green, black, orange, white, violet )
+arr_added_informers - массив информеров, которые необходимо добавить к выборке ( поля id, action, schema, title, value, value_str, output_type, icon )
+*/
+function get_title_view_type( name )
+{
+	switch( name )
+	{
+		case "tile":
+			return tools_web.get_web_const( "plitki", curLngWeb );
+		case "table":
+			return tools_web.get_web_const( "vcrb_table", curLngWeb );
+	}
+}
+function create_tile_statistic()
+{
+	curInformers = ({
+		"informers": [],
+		"schema": sColorSchema
+	});
+	iStatisticsCnt = 0;
+%>
+<StackPanel Adapt="1" Orientation="<%=sTypeVisibleStatistics == 'vertical' ? 'Vertical' : 'Horizontal'%>" Class="XAML-stack-tiles-container">
+<%
+	for( stat_recr in arrStatisticDatas )
+	{
+
+		if( sTypeVisibleStatistics != 'vertical' && iStatisticsCnt > 0 && iStatisticsCnt%iStatisticsHorizontalCnt == 0 )
+		{
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+			curInformers = ({
+				"informers": [],
+				"schema": sColorSchema
+			});
+%>
+</StackPanel>
+<Label/>
+<StackPanel Adapt="1" Orientation="<%=sTypeVisibleStatistics == 'vertical' ? 'Vertical' : 'Horizontal'%>" Class="XAML-stack-tiles-container">
+<%
+		}
+		sIconUrl = tools_web.get_object_source_url( 'resource', stat_recr.icon, { 'type': 'icon', 'Session': Request.Session } );
+		sStatisticsRecrTitle = stat_recr.title;
+		switch( stat_recr.output_type )
+		{
+			
+			case "percent":
+				curInformers.informers.push({
+					"type": "scale_number",
+					"title": sStatisticsRecrTitle,
+					"count": OptReal( StrReal( stat_recr.value, 1 ), 0 ),
+					"max_count": 100.0,
+					"action": stat_recr.action,
+					"disp_desc": false,
+					"icon": sIconUrl,
+					"schema": stat_recr.schema
+				});
+				break;
+				
+			
+			case "number":
+				curInformers.informers.push({
+					"type": "number",
+					"title": sStatisticsRecrTitle,
+					"action": stat_recr.action,
+					"value": stat_recr.value_str,
+					"icon": sIconUrl,					
+					"schema": stat_recr.schema
+				});
+				break;
+				
+			default:
+				curInformers.informers.push({
+					"type": "string",
+					"title": sStatisticsRecrTitle,
+					"action": stat_recr.action,
+					"value": stat_recr.value_str,
+					"icon": sIconUrl,					
+					"schema": stat_recr.schema
+				});
+				break;
+
+		}
+		iStatisticsCnt++;
+	}
+	//alert( tools.object_to_text(curInformers, 'json') )
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+</StackPanel>
+<%
+}
+function create_table_statistic()
+{
+%>
+<Grid Width="100%" Class="XAML-grid-info-table adaptive" Adapt="1">
+	<GridColumns>
+		<GridColumn/>
+<%
+	if( sTypeVisibleStatistics == "horizontal" )
+	{
+%>
+		<GridColumn/>
+<%
+	}
+%>
+	</GridColumns>
+<%
+	for( stat_recr in arrStatisticDatas )
+	{
+%>
+	<GridRow>
+<%
+		if( stat_recr.action == "" )
+		{
+%>
+		<Label Class="XAML-grid-label-name"><%=stat_recr.title%></Label>
+<%
+		}
+		else
+		{
+%>
+		<Link Click="<%=stat_recr.action%>" Class="XAML-grid-label-name"><%=stat_recr.title%></Link>
+<%
+		}
+		if( sTypeVisibleStatistics != "horizontal" )
+		{
+%>
+	</GridRow>
+	<GridRow>
+<%
+		}
+%>
+		<Grid Width="100%" Adapt="0">
+			<GridColumns>
+<%
+		if( sTypeVisibleStatistics == "horizontal" )
+		{
+%>
+				<GridColumn Width="50"/>
+<%
+		}
+%>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+<%
+		if( stat_recr.output_type == "percent" )
+		{
+			if( sTypeVisibleStatistics != "horizontal" )
+			{
+%>
+				<StackPanel Orientation="Horizontal">
+<%
+			}
+%>
+					<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container circular-scale-container">
+						<ContScale Name="ScoreScaleStatistics<%=sStatisticsId%>" Type="circular" Height="30" Class="wt-info-course-score-scale XAML-contscale" FullScale="100" DiagramPart="0.4" DisplayValue="false" DisplayFirstValueAnyway="true" DisplayPercent="true">
+							<Val Value="<%=stat_recr.value%>" Title="" DisplayTip="false"/>
+						</ContScale>
+					</StackPanel>
+<%
+			if( sTypeVisibleStatistics != "horizontal" )
+			{
+%>
+					<Label Width="10"/>
+<%
+			}
+		}
+		else if( sTypeVisibleStatistics == "horizontal" )
+		{
+%>
+		
+				<Label/>
+<%
+		}
+%>
+		
+				<Label Class="XAML-grid-label-value"><%=stat_recr.value_str%></Label>
+<%
+		if( stat_recr.output_type == "percent" && sTypeVisibleStatistics != "horizontal" )
+		{
+%>
+				</StackPanel>
+<%
+		}
+%>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+	}
+%>
+</Grid>
+<%
+}
+
+sStatisticsId = curStatistics.GetOptProperty( 'id', tools.random_string( 10 ) );
+sStatisticsTitle = curStatistics.GetOptProperty( 'title', '' );
+
+teStatisticsObject = curStatistics.GetOptProperty( 'te_object', null );
+iStatisticsObjectId = OptInt( curStatistics.GetOptProperty( 'object_id', '' ) );
+if( teStatisticsObject == null && iStatisticsObjectId != undefined )
+{
+	teStatisticsObject = OpenDoc( UrlFromDocID( iStatisticsObjectId ) ).TopElem;
+}
+if( teStatisticsObject == null )
+{
+	teStatisticsObject = curObject;
+	iStatisticsObjectId = curObjectID
+}
+aViewTypes = curStatistics.GetOptProperty( 'view_types', ['tile'] )
+
+try
+{
+	dStartDate = Date( curStatistics.GetOptProperty( 'start_date', '' ) );
+}
+catch( ex )
+{
+	dStartDate = null;
+}
+try
+{
+	dFinishDate = Date( curStatistics.GetOptProperty( 'finish_date', '' ) );
+}
+catch( ex )
+{
+	dFinishDate = null;
+}
+
+sTypeVisibleStatistics = curStatistics.GetOptProperty( 'type_visible', 'horizontal' );
+iStatisticsHorizontalCnt = OptInt( curStatistics.GetOptProperty( 'horizontal_cnt', 4 ), 4 );
+arrStatisticsTypes = curStatistics.GetOptProperty( 'statistics_recrs', [] );
+arrStatisticsPeriods = curStatistics.GetOptProperty( 'statistics_periods', [ 'none', 'absolute' ] );
+sColorSchema = curStatistics.GetOptProperty( 'schema', '' );
+
+iStatisticsMaxCnt = OptInt( curStatistics.GetOptProperty( 'max_cnt', 0 ), 0 );
+bStatisticsRandomShow = tools_web.is_true( curStatistics.GetOptProperty( 'b_random_show', false ) );
+
+aStatisticsRecrConds = new Array();
+aStatisticsRecrConds.push( ' $i/is_enabled = true() ' );
+aStatisticsRecrConds.push( ' $i/is_enabled = true() ' );
+if( ArrayOptFirstElem( arrStatisticsPeriods ) != undefined )
+{
+	aStatisticsRecrConds.push( ' MatchSome( $i/period_calc_type, ( ' + ArrayMerge( arrStatisticsPeriods, 'XQueryLiteral( This )', ',' ) + ' ) ) ' )
+}
+if( ArrayOptFirstElem( arrStatisticsTypes ) != undefined )
+{
+	aStatisticsRecrConds.push( ' MatchSome( $i/id, ( ' + ArrayMerge( arrStatisticsTypes, 'This.id', ',' ) + ' ) ) ' );
+}
+if( teStatisticsObject == null )
+{
+	aStatisticsRecrConds.push( ' IsEmpty( $i/catalog ) = true() ' );
+}
+else
+{
+	aStatisticsRecrConds.push( ' MatchSome( $i/catalog, ( ' + XQueryLiteral( teStatisticsObject.Name ) + ' ) ) '  );
+}
+iRoleStatisticsRecrId = curStatistics.GetOptProperty( 'role_id', '' );
+if( iRoleStatisticsRecrId != '' )
+{
+	aStatisticsRecrConds.push( ' MatchSome( $i/role_id, ( ' + iRoleStatisticsRecrId + ' ) ) '  );
+}
+
+xarrStatisticsRecrs = XQuery( 'for $i in statistic_recs where ' + ArrayMerge( aStatisticsRecrConds, 'This', ' and ' ) + ' order by $i/code return $i' );
+arrStatisticDatas = new Array();
+
+arrStatisticsRecrs = ArraySelectAll( xarrStatisticsRecrs );
+arrAddedInformers = curStatistics.GetOptProperty( "arr_added_informers", [] );
+arrStatisticsRecrs = ArrayUnion( arrStatisticsRecrs, arrAddedInformers )
+if( bStatisticsRandomShow )
+	arrStatisticsRecrs = ArraySort( arrStatisticsRecrs, "Random( 0, 1000 )", "-" );
+
+iStatisticsCnt = 0;
+for( stat_recr in arrStatisticsRecrs )
+{
+	if( iStatisticsMaxCnt > 0 && iStatisticsCnt >= iStatisticsMaxCnt )
+		break;
+		
+	try
+	{
+		stat_recr.Name;
+	}
+	catch( ex )
+	{
+		arrStatisticDatas.push( { id: stat_recr.GetOptProperty( "id", "" ), action: stat_recr.GetOptProperty( "action", "" ), schema: stat_recr.GetOptProperty( "schema", "" ), title: stat_recr.GetOptProperty( "title", "" ), value: stat_recr.GetOptProperty( "value", "" ), value_str: stat_recr.GetOptProperty( "value_str", "" ), output_type: stat_recr.GetOptProperty( "output_type", "" ), icon: stat_recr.GetOptProperty( "icon", "" ) } );
+		iStatisticsCnt++;
+		continue;
+	}
+
+	teStatisticsRecr = OpenDoc( UrlFromDocID( stat_recr.id ) ).TopElem;
+	if( teStatisticsRecr.informer.output_type == "object" )
+	{
+		continue;
+	}
+	dStRecStartDate = dStartDate;
+	if( dStRecStartDate == null )
+		dStRecStartDate = teStatisticsRecr.period_calc_type == 'absolute' ? teStatisticsRecr.start_date : null;
+	dStRecFinishDate = dFinishDate;
+	if( dStRecFinishDate == null )
+		dStRecFinishDate = teStatisticsRecr.period_calc_type == 'absolute' ? teStatisticsRecr.finish_date : null;
+	
+	oStatisticsData = tools.obtain_statistic_data( stat_recr.id, iStatisticsObjectId, null, dStRecStartDate, dStRecFinishDate, true );
+	if( IsArray( oStatisticsData ) )
+		oStatisticsData = ArrayOptFirstElem( oStatisticsData );
+
+	if( oStatisticsData == undefined || oStatisticsData == null )
+		continue;
+
+	sStatisticsRecrTitle = tools_web.get_cur_lng_name( ( teStatisticsRecr.informer.title.HasValue ? teStatisticsRecr.informer.title.Value : teStatisticsRecr.name.Value ), curLng.short_id );
+	oStatisticData = new Object();
+	oStatisticData.id = stat_recr.id.Value;
+	
+	oStatisticsTypes = ArrayOptFind( arrStatisticsTypes, "This.id == stat_recr.id" )
+	oStatisticData.action = "";
+	oStatisticData.schema = ""
+	if( oStatisticsTypes != undefined )
+	{
+		oStatisticData.title = oStatisticsTypes.GetOptProperty( "title", sStatisticsRecrTitle );
+		oStatisticData.action = oStatisticsTypes.GetOptProperty( "action", "" );
+		oStatisticData.schema = oStatisticsTypes.GetOptProperty( "schema", "" );
+	}
+	else
+		oStatisticData.title = sStatisticsRecrTitle;
+		
+	if( oStatisticData.schema == "" )
+		oStatisticData.schema = sColorSchema != "" ? sColorSchema : teStatisticsRecr.informer.color.Value;
+
+	oStatisticData.icon = teStatisticsRecr.resource_id;
+
+	oStatisticData.value = oStatisticsData.value.Value;
+	oStatisticData.value_str = oStatisticsData.value_str.Value;
+	oStatisticData.output_type = teStatisticsRecr.informer.output_type.Value;
+	arrStatisticDatas.push( oStatisticData );
+	iStatisticsCnt++;
+}
+
+if( ArrayOptFirstElem( arrStatisticDatas ) != undefined )
+{
+	if( ArrayCount( aViewTypes ) > 1 )
+	{
+%>
+<TabControl>
+<%
+	}
+
+	for( vt in aViewTypes )
+	{
+		if( ArrayCount( aViewTypes ) > 1 )
+		{
+%>
+	<TabItem Title="<%=get_title_view_type( vt )%>">
+<%
+		}
+		
+		switch( vt )
+		{
+			case "tile":
+				create_tile_statistic();
+				break;
+			case "table":
+				create_table_statistic();
+				break;
+		}
+		if( ArrayCount( aViewTypes ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+
+	if( ArrayCount( aViewTypes ) > 1 )
+	{
+%>
+</TabControl>
+<%
+	}
+}
+%>
+<Label/>

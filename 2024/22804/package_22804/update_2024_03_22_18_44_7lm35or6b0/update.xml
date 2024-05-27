@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>7lm35or6b0</id>
+		<create_date>2024-03-22T18:44:26+00:00</create_date>
+		<server_version>2023.2.860 (2024-03-13)</server_version>
+	</basic>
+	<notifications>
+		<notification>
+			<id>0x63773FCD6CFE7AED</id>
+			<code>websoft_after_answer_expert_question</code>
+			<name VALUE="##'Уведомление сотрудника об ответе эксперта на ранее заданный вопрос'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>7167267483512896238</notification_template_id>
+				</recipient>
+				<recipient>
+					<recipient_type>add</recipient_type>
+					<notification_template_id>7167267483512896238</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+		<notification>
+			<id>0x63773FCD6CFE7AEB</id>
+			<code>websoft_after_create_expert_question</code>
+			<name VALUE="##'Уведомление экспертам о создании вопроса'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>7167267483512896236</notification_template_id>
+				</recipient>
+				<recipient>
+					<recipient_type>add</recipient_type>
+					<notification_template_id>7167267483512896236</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+	<notification_templates>
+		<notification_template>
+			<id>0x63773FCD6CFE7AEE</id>
+			<code>websoft_after_answer_expert_question</code>
+			<name VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<subject VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<body>&lt;% if ( ObjectType(Text) == 'JsObject' ){%&gt;&#10;&lt;%&#10;sCollaboratorSex = Text.collaborator_sex == "w" ? "ая" : "ый";&#10;sCollaboratorAddressing = 'Уважаем' + sCollaboratorSex;&#10;&#10;sExpertAppeal = ( Text.expert_sex.HasValue &amp;&amp; Text.expert_sex == "w" ) ? "ответила" : "ответил";&#10;%&gt;&#10;&lt;%=sCollaboratorAddressing%&gt; &lt;%=Text.collaborator_name%&gt;, &lt;%=Text.expert_name%&gt; &lt;%=sExpertAppeal%&gt; на Ваш вопрос «&lt;%=Text.question_text%&gt;».&#10;&#10;Ответ эксперта: &lt;%=Text.answer_text%&gt;&#10;&#10;Посмотреть полностью вопрос и ответ можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + Text.question_id)%&gt;&#10;&lt;% } %&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x63773FCD6CFE7AEC</id>
+			<code>websoft_after_create_expert_question</code>
+			<name VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<subject VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<body>&lt;% if ( ObjectType(Text) == 'JsObject' ){%&gt;&#10;&lt;%&#10;sExpertSex = Text.expert_sex == "w" ? "ая" : "ый";&#10;sExpertAddressing = 'Уважаем' + sExpertSex;&#10;&#10;sCollaboratorAppeal = ( Text.collaborator_sex.HasValue &amp;&amp; Text.collaborator_sex == "w" ) ? "задала" : "задал";&#10;%&gt;&#10;&lt;%=sExpertAddressing%&gt; &lt;%=Text.expert_name%&gt;, &lt;%=Text.collaborator_name%&gt; &lt;%=sCollaboratorAppeal%&gt; Вам вопрос «&lt;%=Text.question_text%&gt;».&#10;&#10;Ответить на него можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + Text.question_id)%&gt;&#10;&lt;% } %&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

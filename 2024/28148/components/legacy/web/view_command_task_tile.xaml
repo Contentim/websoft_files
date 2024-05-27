@@ -1,0 +1,61 @@
+﻿<SPXMLScreen>
+<%
+	var iTaskId = Int( PARAMETERS.GetOptProperty( "id" ) );
+	teTask = OpenDoc( UrlFromDocID( iTaskId ) ).TopElem;
+	sTmpClass = tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" );
+	feStatus = teTask.status.ForeignElem
+	function get_status_name( catElem )
+	{
+		if( catElem.id == "0" )
+			return "Выполняется";
+		return catElem.name.Value;
+	}
+%>
+	<Dialog Name="DialogShowTask" Source="dlg_command_task" Title="<%=XmlAttrEncode( "Задача" )%>" Close="REFRESH;">
+		<Param Name="task_id" Value="<%=iTaskId%>"/>
+	</Dialog>
+		<HTMLBox>
+		<![CDATA[
+			<style>
+				.<%=sTmpClass%>{
+					color: rgb(<%=feStatus.text_color%>) !important;
+					background-color: rgb(<%=feStatus.bk_color%>) !important;
+				}
+			</style>
+		]]>
+	</HTMLBox>
+<Grid Width="100%" Class="XAML-grid-list-item">
+	<GridColumns>
+		<GridColumn/>
+	</GridColumns>
+	<GridRow>
+		<Grid Width="100%">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+				<GridColumn Width="150"/>
+			</GridColumns>
+			<GridRow>
+				<Link Click="OPENDIALOG=DialogShowTask">
+					<![CDATA[<%=teTask.name%>]]>
+				</Link>
+				<StackPanel Class="XAML-stack-container XAML-status-container <%=sTmpClass%>" Orientation="Horizontal" Adapt="1">
+					<Label><%=get_status_name( feStatus )%></Label>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+	<GridRow>
+		<Grid Width="100%">
+			<GridColumns>
+				<GridColumn Width="18%"/>
+				<GridColumn Width="82%"/>
+			</GridColumns>
+			<GridRow>
+				<Label><%=( teTask.date_plan.HasValue ? StrDate( teTask.date_plan, false ) : "" )%></Label>
+				<Label><%=( teTask.assigner_id.HasValue ? teTask.assigner_id.ForeignElem.fullname.Value : "" )%></Label>
+			</GridRow>
+		</Grid>
+
+	</GridRow>
+</Grid>
+</SPXMLScreen>

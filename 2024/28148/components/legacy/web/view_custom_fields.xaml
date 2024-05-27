@@ -1,0 +1,773 @@
+﻿<%
+curCustomFields_arrCustomFields = curCustomFields.fields;
+if ( ArrayCount( curCustomFields_arrCustomFields ) != 0 )
+{
+	arrCustomFieldNames = Array();
+	bModify = tools_web.is_true( curCustomFields.GetOptProperty( 'modify_eval' ) );
+	sFieldModify = curCustomFields.GetOptProperty( 'field_modify_eval', false );
+	fldCustomFieldsSource = curCustomFields.GetOptProperty( 'source', null );
+	arrRequiredCustomFields = curCustomFields.GetOptProperty( 'required_fields', null );
+	oContext = curCustomFields.GetOptProperty( 'context', CONTEXT );
+	sDefaultComboBoxWidth = curDevice.disp_type != "" ? '' : '300';
+	sComboBoxWidth = curCustomFields.GetOptProperty( 'combo_box_width', sDefaultComboBoxWidth );
+	arrCustomFields_bDispPages = tools_web.is_true( curCustomFields.GetOptProperty( 'disp_pages' ) );
+	sConditionAction_curCustomFields = curCustomFields.GetOptProperty( 'condition_action', 'REFRESH' );
+	if ( ObjectType( ArrayFirstElem( curCustomFields_arrCustomFields ) ) == "JsObject" )
+	{
+		bConditionAction_curCustomFields = false;
+	}
+	else
+	{
+		bConditionAction_curCustomFields = sConditionAction_curCustomFields != "" && ArrayOptFind( curCustomFields_arrCustomFields, "This.ChildExists('view')&&ArrayCount(This.view.conditions)!=0" ) != undefined;
+	}
+	if ( ! bConditionAction_curCustomFields )
+	{
+		sConditionAction_curCustomFields = "";
+	}
+	arrCustomFields_bDateDispTime = tools_web.is_true( curCustomFields.GetOptProperty( 'date_disp_time', true ) );
+
+
+	bAuth = false;
+	try
+	{
+		if ( curUserID != null )
+			bAuth = true;
+	}
+	catch ( err )
+	{
+	}
+
+	bDrawGridRows = ! ( curDevice.disp_type != "" );
+
+	try
+	{
+		curObject_curCustomFields = curCustomFields.GetOptProperty( 'cur_object', curObject );
+	}
+	catch ( err )
+	{
+		curObject_curCustomFields = null;
+	}
+
+	if ( curObject_curCustomFields != null && curObject_curCustomFields.ReadOnly )
+	{
+		curObject_curCustomFields = curObject_curCustomFields.Clone();
+	}
+
+
+function drowCustomFields( arrCustomFieldsParam, sIDParam )
+{
+	bDrawGridColumns = bDrawGridRows && tools_web.is_true( curCustomFields.GetOptProperty( 'draw_grid_columns', true ) );
+	if ( bDrawGridColumns )
+	{
+%>
+<Grid Width="100%" Name="CustomFieldGrid<%=curCustomFields.GetOptProperty( 'id', '' )%><%=sIDParam%>" Hidden="<%=curCustomFields.GetOptProperty( 'hidden', '0' )%>" Class="XAML-grid-info-table">
+	<GridColumns>
+		<GridColumn Width="<%=curCustomFields.GetOptProperty( 'width', '250' )%>"/>
+		<GridColumn/>
+	</GridColumns>
+<%
+	}
+
+		bTextRequired = false;
+
+		if ( bModify && bConditionAction_curCustomFields && curObject_curCustomFields != null && curObject_curCustomFields.ChildExists( 'custom_elems' ) )
+		{
+			for ( fldFieldElem in arrCustomFieldsParam )
+			{
+				sValue = oContext.GetOptProperty( fldFieldElem.name );
+				if ( sValue == undefined )
+				{
+					if ( fldCustomFieldsSource != null )
+					{
+						fldField = fldCustomFieldsSource.GetOptChildByKey( fldFieldElem.name );
+						sValue = fldField == undefined ? '' : fldField.value;
+					}
+					else
+					{
+						sValue = '';
+					}
+				}
+				else if ( ObjectType( sValue ) == 'JsArray' )
+				{
+					sValue = ArrayMerge( ArraySelectByKey( sValue, true, 'checked' ), 'value', ';' );
+				}
+				curObject_curCustomFields.custom_elems.ObtainChildByKey( fldFieldElem.name ).value = sValue;
+			}
+		}
+
+		for ( fldFieldElem in arrCustomFieldsParam )
+		{
+			sFieldType_custom_fields = String( fldFieldElem.type );
+//			if ( sFieldType_custom_fields == 'file' && ! bAuth && bModify )
+//				continue;
+
+			try
+			{
+				if ( curObject_curCustomFields != null && bConditionAction_curCustomFields && ArrayCount( fldFieldElem.view.conditions ) != 0 )
+				{
+					bShow_arrCustomFields = SafeEval( tools.create_filter_javascript( fldFieldElem.view.conditions ), [ { 'fldFieldElem': fldFieldElem, 'tools': tools, 'curObject': curObject_curCustomFields } ] );
+					if ( ! bShow_arrCustomFields )
+						continue;
+				}
+			}
+			catch ( err )
+			{
+				alert( err );
+			}
+
+			oValue_custom_fields = ({});
+			sValue = oContext.GetOptProperty( fldFieldElem.name );
+			if ( sValue == undefined )
+			{
+				if ( fldCustomFieldsSource != null )
+				{
+					fldField = fldCustomFieldsSource.GetOptChildByKey( fldFieldElem.name );
+					sValue = fldField == undefined ? '' : fldField.value;
+				}
+				else
+				{
+					sValue = '';
+				}
+			}
+			if ( StrBegins( sValue, '{' ) && StrEnds( sValue, '}' ) )
+			{
+				try
+				{
+					oValue_custom_fields = SafeEval( '(' + sValue + ')' );
+					sUrl_custom_fields = oValue_custom_fields.GetOptProperty( 'url', '' );
+					if ( sUrl_custom_fields != '' )
+					{
+						sFieldType_custom_fields = 'url';
+						sValue = sUrl_custom_fields;
+					}
+				}
+				catch ( err )
+				{
+				}
+			}
+			else if ( StrBegins( sValue, "http://" ) || StrBegins( sValue, "https://" ) )
+			{
+				sFieldType_custom_fields = 'url';
+			}
+			arrCustomFieldNames.push( '' + fldFieldElem.name );
+
+			try
+			{
+				curCustomFields_sWidth = GetObjectProperty( fldFieldElem, 'width' );
+			}
+			catch ( e_field )
+			{
+				curCustomFields_sWidth = '';
+			}
+			try
+			{
+				curCustomFields_sHeight = GetObjectProperty( fldFieldElem, 'height' );
+			}
+			catch ( e_field )
+			{
+				curCustomFields_sHeight = '';
+			}
+			try
+			{
+				curCustomFields_sClass = GetObjectProperty( fldFieldElem, 'class' );
+			}
+			catch ( e_field )
+			{
+				curCustomFields_sClass = '';
+			}
+
+			sGridRowClass = sFieldType_custom_fields == "list" || sFieldType_custom_fields == "text" || sFieldType_custom_fields == "richtext" ? "XAML-gridrow-multiline" : "";
+
+	if ( bDrawGridRows )
+	{
+%>
+	<GridRow Class="<%=sGridRowClass%>">
+<%
+	}
+
+			bModifyField = true;
+			if ( ! bModify )
+				bModifyField = tools.safe_execution( sFieldModify );
+
+			bShortField_curCustomFields = sFieldType_custom_fields == 'string' || sFieldType_custom_fields == 'text' || sFieldType_custom_fields == 'heading' || sFieldType_custom_fields == 'richtext';
+
+			if ( bModifyField )
+			{
+				try
+				{
+					curCustomFields_sMaxChars = GetObjectProperty( fldFieldElem, 'max_chars' );
+				}
+				catch ( e_field )
+				{
+					curCustomFields_sMaxChars = '';
+				}
+
+				if ( arrRequiredCustomFields == null )
+				{
+					try
+					{
+						bIsRequired = tools_web.is_true( GetObjectProperty( fldFieldElem, 'is_required' ) );
+					}
+					catch ( err )
+					{
+						bIsRequired = false;
+					}
+				}
+				else
+				{
+					bIsRequired = ArrayOptFind( arrRequiredCustomFields, "This=='" + fldFieldElem.name + "'" ) != undefined;
+				}
+				switch ( sFieldType_custom_fields )
+				{
+					case 'heading':
+%>
+		<Label Class="XAML-info-grid-title-column"><%=( bIsRequired ? "* " : "" )%></Label>
+<%
+						break;
+
+					default:
+%>
+		<Label Class="XAML-info-grid-title-column"><![CDATA[<%=( ( bIsRequired ? "* " : "" ) + tools_web.get_cur_lng_name( fldFieldElem.title, curLng.short_id ) )%>:]]></Label>
+<%
+						break;
+				}
+				if ( bIsRequired )
+					bTextRequired = true;
+
+				try
+				{
+					curCustomFields_sComment = GetObjectProperty( fldFieldElem, 'comment' );
+				}
+				catch ( e_field )
+				{
+					try
+					{
+						curCustomFields_sComment = GetObjectProperty( fldFieldElem, 'tooltip' );
+					}
+					catch ( e_field2 )
+					{
+						curCustomFields_sComment = '';
+					}
+				}
+				if ( curCustomFields_sComment != '' )
+				{
+%>
+	<StackPanel Orientation="<%=( bShortField_curCustomFields ? 'Vertical' : 'Horizontal' )%>" Class="XAML-stack-container" Adapt="true">
+<%
+				}
+
+				switch ( sFieldType_custom_fields )
+				{
+					case 'heading':
+%>
+		<Label Class="XAML-label-header-4 <%=curCustomFields_sClass%>" NoWrap="false" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>"><![CDATA[<%=tools_web.get_cur_lng_name( fldFieldElem.title, curLng.short_id )%>]]></Label>
+<%
+						break;
+
+					case 'bool':
+%>
+		<CheckBox Name="<%=fldFieldElem.name%>" Checked="<%=sValue%>" Class="<%=curCustomFields_sClass%>" Change="<%=XmlAttrEncode( sConditionAction_curCustomFields )%>" Value="true"></CheckBox>
+<%
+						break;
+
+					case 'combo':
+						if ( curCustomFields_sClass == '' )
+							curCustomFields_sClass = 'XAML-input-medium';
+%>
+
+		<ComboBox Name="<%=fldFieldElem.name%>"
+			SelectedItem="<%=XmlAttrEncode( sValue )%>"
+			Class="<%=curCustomFields_sClass%>"
+			Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : sComboBoxWidth )%>"
+			Height="<%=curCustomFields_sHeight%>"
+			Change="<%=XmlAttrEncode( sConditionAction_curCustomFields )%>">
+			<ComboBoxItem Value="#empty#"><%=tools_web.get_web_const( 'pusto', curLngWeb )%></ComboBoxItem>
+<%
+						for ( fldEntryElem in fldFieldElem.entries )
+						{
+%>
+			<ComboBoxItem Value="<%=XmlAttrEncode( fldEntryElem.value )%>"><![CDATA[<%=tools_web.get_cur_lng_name( fldEntryElem.value, curLng.short_id )%>]]></ComboBoxItem>
+<%
+						}
+%>
+		</ComboBox>
+<%
+						break;
+
+					case 'list':
+						arrCustomFieldNames.push( fldFieldElem.name + 'IsObject' );
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+			<Edit Name="<%=fldFieldElem.name%>IsObject" Hidden="true"/>
+			<Collection Name="<%=fldFieldElem.name%>Collection">
+				<Data>
+<%
+						arrSelected = sValue == '' ? [] : ( ObjectType( sValue ) == "JsArray" ? ArraySelectByKey( sValue, true, 'checked' ) : ArrayExtract( String( sValue ).split( ";" ), "({'value':This})" ) );
+						for ( fldEntryElem in fldFieldElem.entries )
+						{
+%>
+				<Row>
+					<Cell Id="checked" Value="<%=( ArrayOptFindByKey( arrSelected, fldEntryElem.value, 'value' ) != undefined )%>"/>
+					<Cell Id="value" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( fldEntryElem.value, curLng.short_id ) )%>"/>
+					<Cell Id="action" Value="<%=XmlAttrEncode( sConditionAction_curCustomFields )%>"/>
+				</Row>
+<%
+						}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="<%=fldFieldElem.name%>" Source="{<%=fldFieldElem.name%>Collection}" ShowHeader="false" Class="<%=curCustomFields_sClass%>" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>">
+				<DataGridColumn Value="checked" Editable="true" Ghost="false" Width="60" Type="checkbox" Click="action"/>
+				<DataGridColumn Value="value" Ghost="false" Width="100%" Type="string"/>
+			</DataGrid>
+		</StackPanel>
+<%
+						break;
+
+					case 'date':
+						try
+						{
+							arrCustomFields_bDateDispTime_Field = tools_web.is_true( GetObjectProperty( fldFieldElem, 'date_disp_time' ) );
+						}
+						catch ( e_field )
+						{
+							arrCustomFields_bDateDispTime_Field = arrCustomFields_bDateDispTime;
+						}
+						sFormat_curCustomFields = "d.m.Y H:i:s";
+						try
+						{
+							if ( arrCustomFields_bDateDispTime_Field )
+							{
+								sValue = StrDate( Date( sValue ), true, true );
+							}
+							else
+							{
+								sFormat_curCustomFields = "d.m.Y";
+								sValue = StrDate( Date( sValue ), false, false );
+							}
+						}
+						catch ( err )
+						{
+						}
+%>
+		<DatePicker Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>" Format="<%=sFormat_curCustomFields%>" Change="<%=XmlAttrEncode( sConditionAction_curCustomFields )%>"><![CDATA[<%=sValue%>]]></DatePicker>
+<%
+						break;
+
+					case 'text':
+						iHeightTextField_custom_fields = OptInt( tools_web.get_web_param( curParams, 'custom_fields.height_text_field', 200, true ), 200 );
+						sValue = StrReplace( sValue, ']]>', ']>' );
+%>
+		<EditBox Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : '100%' )%>" Height="<%=( curCustomFields_sHeight != '' ? curCustomFields_sHeight : iHeightTextField_custom_fields )%>" MaxLength="<%=curCustomFields_sMaxChars%>"><![CDATA[<%=sValue%>]]></EditBox>
+<%
+						break;
+
+					case 'integer':
+					case 'number':
+					case 'real':
+					case 'float':
+						if ( curCustomFields_sClass == '' )
+							curCustomFields_sClass = 'XAML-input-medium';
+
+						sKeys = sFieldType_custom_fields == 'integer' || sFieldType_custom_fields == 'number' ? '#!1-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-10000:STOP' : '#!1-43:STOP;#!47:STOP;#!58-10000:STOP;#!S1-10000:STOP';
+%>
+		<Edit Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : sDefaultComboBoxWidth )%>" Height="<%=curCustomFields_sHeight%>" MaxLength="<%=curCustomFields_sMaxChars%>" KeyPress="<%=sKeys%>"><![CDATA[<%=sValue%>]]></Edit>
+<%
+						break;
+
+					case "richtext":
+%>
+		<RichEdit Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : '100%' )%>" Height="<%=( curCustomFields_sHeight != '' ? curCustomFields_sHeight : sDefaultComboBoxWidth )%>"><![CDATA[<%=sValue%>]]></RichEdit>
+<%
+						break;
+
+					case 'file':
+						sTitle = '';
+						if ( sValue != '' )
+							try
+							{
+								teCustomFieldObject = OpenDoc( UrlFromDocID( Int( sValue ) ) ).TopElem;
+								sTitle = tools.get_disp_name_value( teCustomFieldObject );
+							}
+							catch ( err )
+							{
+								sTitle = tools_web.get_web_const( 'c_deleted', curLngWeb );
+							}
+
+						if ( curCustomFields_sClass == '' )
+						{
+							curCustomFields_sClass = 'XAML-input-medium';
+						}
+%>
+		<ResourceField Name="<%=fldFieldElem.name%>" CurrentValue="<%=sValue%>" CanCreate="true" CanSelect="true" CanDownload="true" Source="resouce_field" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : '350' )%>" Height="<%=curCustomFields_sHeight%>"><![CDATA[<%=HtmlEncode(sTitle)%>]]></ResourceField>
+<%
+						break;
+
+					case 'foreign_elem':
+						curSelector = {
+							"id": RValue( fldFieldElem.name ),
+							"class": curCustomFields_sClass,
+							"width": ( curCustomFields_sWidth != '' ? curCustomFields_sWidth : sDefaultComboBoxWidth ),
+							"height": curCustomFields_sHeight,
+							"catalog_name": ( sFieldType_custom_fields == "file" ? "resource" : RValue( fldFieldElem.catalog ) ),
+							"object_id": sValue,
+							"object_id_item_name": RValue( fldFieldElem.name ),
+							"can_be_empty": ( ! bIsRequired ),
+							"close_action": sConditionAction_curCustomFields
+						};
+						try
+						{
+							sXqueryQual = RValue( fldFieldElem.xquery_qual );
+						}
+						catch ( err )
+						{
+							sXqueryQual = '';
+						}
+						if ( sXqueryQual != '' )
+						{
+							try
+							{
+								sXqueryQual = EvalCodePage( sXqueryQual, true );
+								curSelector.SetProperty( 'xquery_qual', sXqueryQual );
+							}
+							catch ( err )
+							{
+								alert( err );
+							}
+						}
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						break;
+
+					case 'password':
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Dialog Name="<%=fldFieldElem.name%>dlgPassword" Source="dlg_password_change" Title="<%=tools_web.get_web_const( 'smenaparolya', curLngWeb )%>" Close="SET=<%=fldFieldElem.name%>,(autosaved);ALERT=<%=UrlEncode(tools_web.get_web_const( 'ka_mess_save', curLngWeb ))%>">
+				<Param Name="user_id" Value="<%=curUserID%>"/>
+				<Param Name="autosave" Value="1"/>
+			</Dialog>
+			<Button Click="OPENDIALOG=<%=fldFieldElem.name%>dlgPassword" Class="<%=curCustomFields_sClass%>" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>"><%=tools_web.get_web_const( 'smenitparol', curLngWeb )%></Button>
+			<Edit Name="<%=fldFieldElem.name%>" Hidden="1"></Edit>
+		</StackPanel>
+<%
+						break;
+
+					case "imagefile":
+%>
+		<StackPanel Orientation="<%=( bDrawGridRows ? "Horizontal" : "Vertical" )%>" Class="XAML-stack-container">
+			<Image Source="<%=sValue%>" MaxWidth="600" UpdateOnLoad="1"/>
+			<ResourceField Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : '100%' )%>" Height="<%=curCustomFields_sHeight%>" CanSelect="False" CurrentValue="<%=sValue%>"/>
+		</StackPanel>
+<%
+						break;
+
+					case "radio":
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+						for ( fldEntryElem in fldFieldElem.entries )
+						{
+%>
+			<RadioButton Name="<%=fldFieldElem.name%>" Value="<%=XmlAttrEncode( fldEntryElem.name )%>" Checked="<%=( fldEntryElem.name == sValue )%>" Class="<%=curCustomFields_sClass%>" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>"><![CDATA[<%=tools_web.get_cur_lng_name( fldEntryElem.value, curLng.short_id )%>]]></RadioButton>
+			<Label Width="20"/>
+<%
+						}
+%>
+		</StackPanel>
+<%
+						break;
+
+					case "________________url__________________":
+						sTitle_custom_fields = oValue_custom_fields.GetOptProperty( 'title', '' );
+						if ( sTitle_custom_fields == '' )
+							sTitle_custom_fields = sValue;
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Edit Name="<%=fldFieldElem.name%>" Hidden="1"><![CDATA[<%=sValue%>]]></Edit>
+			<Link Click="OPENURL=<%=XmlAttrEncode( sValue )%>" Class="<%=curCustomFields_sClass%>" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>"><![CDATA[<%=sTitle_custom_fields%>]]></Link>
+		</StackPanel>
+<%
+						break;
+
+					default:
+%>
+		<Edit Name="<%=fldFieldElem.name%>" Class="<%=curCustomFields_sClass%>" Width="<%=( curCustomFields_sWidth != '' ? curCustomFields_sWidth : '100%' )%>" Height="<%=curCustomFields_sHeight%>" MaxLength="<%=curCustomFields_sMaxChars%>"><![CDATA[<%=sValue%>]]></Edit>
+<%
+				}
+			}
+			else
+			{
+				switch ( sFieldType_custom_fields )
+				{
+					case 'heading':
+%>
+		<Label Class="XAML-info-grid-title-column"> </Label>
+<%
+						break;
+
+					default:
+%>
+		<Label Class="XAML-info-grid-title-column"><![CDATA[<%=tools_web.get_cur_lng_name( fldFieldElem.title, curLng.short_id )%>:]]></Label>
+<%
+						break;
+				}
+				sDownloadHref = '';
+				bNoWrap = true;
+
+				try
+				{
+					curCustomFields_sComment = GetObjectProperty( fldFieldElem, 'comment' );
+				}
+				catch ( e_field )
+				{
+					try
+					{
+						curCustomFields_sComment = GetObjectProperty( fldFieldElem, 'tooltip' );
+					}
+					catch ( e_field2 )
+					{
+						curCustomFields_sComment = '';
+					}
+				}
+				if ( curCustomFields_sComment != '' )
+				{
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-container" Adapt="true">
+<%
+				}
+
+				switch ( sFieldType_custom_fields )
+				{
+					case 'file':
+					case 'foreign_elem':
+						iValue = undefined;
+						if ( sValue != '' )
+							try
+							{
+								iValue = Int( sValue );
+								teCustomFieldObject = OpenDoc( UrlFromDocID( iValue ) ).TopElem;
+								sValue = tools.get_disp_name_value( teCustomFieldObject );
+								if ( sFieldType_custom_fields == 'file' )
+								{
+									sDownloadHref = '/download_file.html?file_id=' + iValue + '&sid=' + tools_web.get_sum_sid( iValue, Session.sid );
+								}
+							}
+							catch ( err )
+							{
+								iValue = undefined;
+								sValue = tools_web.get_web_const( 'c_deleted', curLngWeb );
+							}
+						break;
+
+					case 'bool':
+						sValue = tools_web.is_true( sValue ) ? tools_web.get_web_const( "c_yes", curLngWeb ) : tools_web.get_web_const( "c_no", curLngWeb );
+						break;
+
+					case "combo":
+					case "radio":
+						bNoWrap = false;
+						sValue = tools_web.get_cur_lng_name( sValue, curLng.short_id );
+						break;
+
+					case "list":
+					{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+						for ( sValueElem in String( sValue ).split( ";" ) )
+						{
+%>
+			<Label><![CDATA[<%=sValueElem%>]]></Label>
+<%
+						}
+%>
+		</StackPanel>
+<%
+						break;
+					}
+
+					case 'string':
+					case 'text':
+						bNoWrap = false;
+						break;
+
+					case 'date':
+						try
+						{
+							arrCustomFields_bDateDispTime_Field = tools_web.is_true( GetObjectProperty( fldFieldElem, 'date_disp_time' ) );
+						}
+						catch ( e_field )
+						{
+							arrCustomFields_bDateDispTime_Field = arrCustomFields_bDateDispTime;
+						}
+						try
+						{
+							if ( arrCustomFields_bDateDispTime_Field )
+								sValue = StrDate( Date( sValue ), true, true );
+							else
+								sValue = StrDate( Date( sValue ), false, false );
+						}
+						catch ( err )
+						{
+						}
+						break;
+				}
+				switch ( sFieldType_custom_fields )
+				{
+					case 'heading':
+%>
+		<Label Class="XAML-label-header-4 <%=curCustomFields_sClass%>" NoWrap="false" Width="<%=curCustomFields_sWidth%>" Height="<%=curCustomFields_sHeight%>"><![CDATA[<%=tools_web.get_cur_lng_name( fldFieldElem.title, curLng.short_id )%>]]></Label>
+<%
+						break;
+
+					case 'file':
+					case 'foreign_elem':
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+						sClickAction = "";
+						if( sFieldType_custom_fields == "foreign_elem" && iValue != undefined )
+						{
+							catCommonElem = common.exchange_object_types.GetOptChildByKey( fldFieldElem.catalog )
+							if( catCommonElem != undefined && catCommonElem.web_template.HasValue )
+							{
+								sClickAction = "OPENWINDOW=" + tools_web.get_mode_clean_url( null, iValue );
+							}
+						}
+						if( sClickAction != "" )
+						{
+%>
+			<Link Class="XAML-right-margin" Click="<%=sClickAction%>"><![CDATA[<%=sValue%>]]></Link>
+<%
+						}
+						else
+						{
+%>
+			<Label NoWrap="1" Class="XAML-right-margin"><![CDATA[<%=sValue%>]]></Label>
+<%
+						}
+						if ( sDownloadHref != '' )
+						{
+%>
+			<Link Click="OPENWINDOW=<%=sDownloadHref%>"><%=tools_web.get_web_const( "vrb_download_file", curLngWeb )%></Link>
+<%
+						}
+%>
+		</StackPanel>
+<%
+						break;
+
+					case "richtext":
+%>
+		<HTMLBox Width="100%" Height="<%=sDefaultComboBoxWidth%>"><![CDATA[<%=sValue%>]]></HTMLBox>
+<%
+						break;
+
+					case "imagefile":
+%>
+		<Image Source="<%=sValue%>" MaxWidth="600"/>
+<%
+						break;
+
+					case "url":
+						sTitle_custom_fields = oValue_custom_fields.GetOptProperty( 'title', '' );
+						if ( sTitle_custom_fields == '' )
+						{
+							sTitle_custom_fields = sValue;
+						}
+%>
+		<Link Click="OPENURL=<%=XmlAttrEncode( sValue )%>"><![CDATA[<%=sTitle_custom_fields%>]]></Link>
+<%
+						break;
+
+					case "text":
+						sValue = StrReplace( HtmlEncode( sValue ), "\n", "\n<br/>" );
+%>
+		<HTMLBox Class="XAML-right-margin" Width="100%" Dynamic="false"><![CDATA[<%=sValue%>]]></HTMLBox>
+<%
+						break;
+
+					default:
+%>
+		<Label NoWrap="<%=bNoWrap%>" Class="XAML-right-margin"><![CDATA[<%=sValue%>]]></Label>
+<%
+						break;
+				}
+			}
+
+			if ( curCustomFields_sComment != '' )
+			{
+%>
+		<Label Class="XAML-label-desc"><![CDATA[<%=curCustomFields_sComment%>]]></Label>
+	</StackPanel>
+<%
+			}
+
+	if ( bDrawGridRows )
+	{
+%>
+	</GridRow>
+<%
+	}
+	else
+	{
+%>
+	<StackPanel Height="10" Class=""/>
+<%
+	}
+		}
+
+		if ( bTextRequired )
+		{
+			if ( bDrawGridRows )
+			{
+%>
+	<GridRow>
+		<Label/>
+		<Label><![CDATA[<%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%>]]></Label>
+	</GridRow>
+<%
+			}
+			else
+			{
+%>
+	<Label><![CDATA[<%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%>]]></Label>
+	<StackPanel Height="10" Class=""/>
+<%
+			}
+		}
+
+	if ( bDrawGridColumns )
+	{
+%>
+</Grid>
+<%
+	}
+}
+
+
+	if ( arrCustomFields_bDispPages )
+	{
+		curCustomFields_fldTemplate = curCustomFields.GetOptProperty( 'template' );
+
+		drowCustomFields( ArraySelectByKey( curCustomFields_arrCustomFields, '', 'sheet_id' ), '' );
+
+		for ( curCustomFields_fldSheetElem in curCustomFields_fldTemplate.sheets )
+		{
+			curCustomFields_arrCustomFieldsSheet = ArraySelectByKey( curCustomFields_arrCustomFields, curCustomFields_fldSheetElem.id, 'sheet_id' );
+			if ( ArrayCount( curCustomFields_arrCustomFieldsSheet ) == 0 )
+				continue;
+%>
+		<Panel Title="<%=XmlAttrEncode( curCustomFields_fldSheetElem.title )%>" Width="100%">
+<%
+			drowCustomFields( ArraySelectByKey( curCustomFields_arrCustomFields, curCustomFields_fldSheetElem.id, 'sheet_id' ), curCustomFields_fldSheetElem.id );
+%>
+		</Panel>
+<%
+		}
+	}
+	else
+	{
+		drowCustomFields( curCustomFields_arrCustomFields, '' );
+	}
+}
+%>

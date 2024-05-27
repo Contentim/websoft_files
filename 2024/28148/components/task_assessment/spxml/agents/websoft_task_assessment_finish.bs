@@ -1,0 +1,108 @@
+﻿var sLogName = "websoft_task_assessment_finish";
+EnableLog(sLogName);
+LogEvent(sLogName, "Агент: Автоматически завершать проектную оценку - начало");
+
+function FindNextBP(teAssessmentAppraise)
+{
+	oRes = undefined;
+	iOldBP = OptInt(teAssessmentAppraise.custom_elems.ObtainChildByKey("bp_assessment").value);
+	if (iOldBP != undefined)
+	{
+		catOldBP = ArrayOptFirstElem(tools.xquery("for $elem in budget_periods where $elem/id = " + iOldBP + " return $elem/Fields('period_type', 'role_id', 'finish_date')"))
+		if (catOldBP.role_id.HasValue)
+		{
+			var sRoleCondition = " and MatchSome( $elem/role_id, ( " + ArrayMerge( catOldBP.role_id, "This", "," ) + " ) )";
+		}
+		else
+		{
+			var sRoleCondition = " and IsEmpty($elem/role_id)=true()";
+		}
+
+		if (catOldBP != undefined)
+		{
+			sXQuery = "for $elem in budget_periods where $elem/period_type = " + XQueryLiteral(catOldBP.period_type)  + " and $elem/id != " + iOldBP + " and $elem/start_date > " + XQueryLiteral(catOldBP.finish_date.Value)  + sRoleCondition + " order by $elem/start_date return $elem/Fields('id', 'finish_date')";
+			catNewBP = ArrayOptFirstElem(tools.xquery(sXQuery));
+			if (catNewBP != undefined)
+			{
+				oRes = catNewBP;
+			}
+
+		}
+	}
+
+	return oRes;
+}
+
+function GenerateAssessmentAppraiseName(sAppraiseName, teNewAssessmentAppraise)
+{
+	var sAppraiseNameTemp = (sAppraiseName != "" ? sAppraiseName+" " : "" );
+	sAppraiseNameTemp = sAppraiseNameTemp + "(" + StrDate(teNewAssessmentAppraise.start_date.Value, false) + ( teNewAssessmentAppraise.end_date.HasValue ? "-"+StrDate(teNewAssessmentAppraise.end_date.Value, false) : "" ) + ")";
+
+	var sAppraiseNameTempForCheck = sAppraiseNameTemp;
+	var sXQuery = "for $elem in assessment_appraises where $elem/name = " + XQueryLiteral(sAppraiseNameTemp) + " return $elem/Fields('id')";
+	var n = 1;
+	while (ArrayOptFirstElem(tools.xquery(sXQuery)) != undefined)
+	{
+		n++;
+		sAppraiseNameTempForCheck = sAppraiseNameTemp + " " + n;
+		sXQuery = "for $elem in assessment_appraises where $elem/name = " + XQueryLiteral(sAppraiseNameTempForCheck) + " return $elem/Fields('id')";
+	}
+
+	return sAppraiseNameTempForCheck;
+}
+
+try
+{
+	bCreateNewAppraise = tools_web.is_true(Param.bCreateNewAppraise);
+	sAppraiseName = Trim(Param.sAppraiseName+"");
+
+	var catTaskAssessmentAppl = ArrayFirstElem( tools.xquery("for $elem in applications where $elem/code = 'websoft_task_assessment' return $elem/Fields('id')") );
+	if (catTaskAssessmentAppl != undefined)
+	{
+		var xarrApplInstances = tools.xquery("for $elem in application_instances where $elem/application_id = " + catTaskAssessmentAppl.id.Value + " return $elem/Fields('id')");
+
+		var dYesterday = Date(StrDate(DateOffset(Date(), -86400), false)+" 00:00:00");
+		var xarrAssessmentAppraises = tools.xquery("for $elem in assessment_appraises where MatchSome( $elem/app_instance_id, (" + ArrayMerge(xarrApplInstances, "XQueryLiteral('0x' + StrHexInt( This.id, 16 ))", ",") + ") ) and $elem/end_date <= " + XQueryLiteral(dYesterday) + " return $elem/Fields('id','name')");
+		for ( catAssessmentAppraise in xarrAssessmentAppraises)
+		{
+			LogEvent(sLogName, StrReplace(StrReplace('Процедура оценки "{PARAM1}" (ID={PARAM2}) завершена', "{PARAM1}", catAssessmentAppraise.name.Value), "{PARAM2}", catAssessmentAppraise.id.Value));
+
+			if (bCreateNewAppraise)
+			{
+				docAssessmentAppraise = tools.open_doc(catAssessmentAppraise.id);
+				teAssessmentAppraise = docAssessmentAppraise.TopElem;
+
+				docNewAssessmentAppraise = OpenNewDoc( 'x-local://wtv/wtv_assessment_appraise.xmd' );
+				docNewAssessmentAppraise.BindToDb();
+				teNewAssessmentAppraise = docNewAssessmentAppraise.TopElem;
+				teNewAssessmentAppraise.start_date = StrDate(Date(), false);
+
+				catNewBP = FindNextBP(teAssessmentAppraise);
+				if (catNewBP != undefined)
+				{
+					teNewAssessmentAppraise.custom_elems.ObtainChildByKey("bp_assessment").value = catNewBP.id.Value;
+					teNewAssessmentAppraise.end_date = catNewBP.finish_date.Value
+				}
+				teNewAssessmentAppraise.name = GenerateAssessmentAppraiseName(sAppraiseName, teNewAssessmentAppraise);
+
+				xarrPersons = tools.xquery("for $elem in assessment_plans where $elem/assessment_appraise_id = " + catAssessmentAppraise.id + " return $elem/Fields('person_id')");
+				for (catPerson in xarrPersons)
+				{
+					auditorys = teNewAssessmentAppraise.auditorys.ObtainChildByKey( catPerson.person_id.Value );
+					tools.common_filling( 'collaborator', auditorys, auditorys.person_id );
+				}
+
+				teNewAssessmentAppraise.person_id = teAssessmentAppraise.person_id;
+				docNewAssessmentAppraise.Save();
+				tools.call_code_library_method("libTaskAssessment", "InitObject", [docNewAssessmentAppraise]);
+				tools.call_code_library_method("libTaskAssessment", "FillObject", [docNewAssessmentAppraise]);
+			}
+		}
+	}
+}
+catch(_err)
+{
+	LogEvent(sLogName, "ERROR: " + _err)
+}
+
+LogEvent(sLogName, "Агент: Автоматически завершать проектную оценку - завершен")

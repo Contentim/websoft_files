@@ -1,0 +1,40 @@
+﻿<%
+	//Server.Execute( "include/user_init.html" );
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+_title = oParamSource.GetOptProperty( 'title' );
+
+%>
+<SPXMLScreen>
+	<Label Class="XAML-info-grid-title-column"><%=XmlAttrEncode(_title)%></Label>
+	<Action Name="SaveCustomFields" Source="save_custom_field" Success="ALERT={messageText};REFRESH" Failure="ALERT={messageText}">
+		<Param Name="doc_id" Value="<%=oParamSource.GetOptProperty( 'doc_id' )%>"/>
+		<Param Name="object_id" Value="<%=oParamSource.GetOptProperty( 'object_id' )%>"/>
+		<Param Name="catalog" Value="<%=oParamSource.GetOptProperty( 'catalog' )%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+<%
+	try
+	{
+		curObjectID = Int(oParamSource.GetOptProperty( 'object_id' ))
+		curObject = OpenDoc( UrlFromDocID( curObjectID) ).TopElem;
+		fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+		name_grid = "customFieldsEditGrid";
+		if ( fldCustomElems != null )
+		{
+			curCustomFields = {
+				"id": name_grid,
+				"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+				"source": curObject.custom_elems,
+				"modify_eval": true
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		}
+	}
+	catch(err)
+	{}
+%>
+	<StackPanel Orientation="Horizontal" Align="center" Class="actionButtonsStackPanel">		
+		<Button Class="XAML-button XAML-button-ok" Width="100" Click="CONFIRM=<%=tools_web.get_web_const( 'vcb_mess_confirm', curLngWeb )%>;ACTION=SaveCustomFields;CLOSEDIALOG"><%=tools_web.get_web_const( "vdfcf_save_close", curLngWeb )%></Button>
+		<Button Class="XAML-button XAML-button-cancel" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</StackPanel>
+</SPXMLScreen>

@@ -1,0 +1,108 @@
+﻿<SPXMLScreen Class="my_team_block">
+<%
+var sConst_Title = "Моя команда";
+var sConst_More = "Далее";
+
+// 170502
+
+var sLayout = tools_web.get_web_param( curParams, "my_team_block.sLayout", "tile", true );
+var iPageSize = Int(tools_web.get_web_param( curParams, "my_team_block.page_size", 3, true ));
+var bPaging = (iPageSize!=0);
+var sMore = tools_web.get_web_param( curParams, "my_team_block.more_text", sConst_More, true );
+var sMoreLeft = tools_web.get_web_param( curParams, "my_team_block.sMoreLeft", "[#]", true );
+
+var sListIcon = tools_web.get_web_param( curParams, "my_team_block.sListIcon", "left", true );
+var bDisplayIcon = sListIcon!="none";
+var bDisplayName = tools_web.is_true(tools_web.get_web_param( curParams, "my_team_block.bListDisplayName", true, true ));
+var bDisplayPosition = tools_web.is_true(tools_web.get_web_param( curParams, "my_team_block.bListDisplayPosition", true, true ));
+
+var sTitle = tools_web.get_web_param( curParams, "my_team_block.sTitle", sConst_Title, true );
+
+var sListCustomClass = tools_web.get_web_param( curParams, "my_team_block.sListCustomClass", "", false );
+var sListItemCustomClass = tools_web.get_web_param( curParams, "my_team_block.sListItemCustomClass", "", false );
+
+var sTeamType = tools_web.get_web_param( curParams, "my_team_block.team_type", "sub_persons", true );
+var sMaxCount = tools_web.get_web_param( curParams, "my_team_block.max_count", "", true );
+
+var iTileWidth = tools_web.get_web_param( curParams, "my_team_block.tile_width", 124, true );
+var iTileColumns = tools_web.get_web_param( curParams, "my_team_block.tile_columns", "", true );
+var iTileHeight = tools_web.get_web_param( curParams, "my_team_block.tile_height", 200, true );
+var sTileTemplate = tools_web.get_web_param( curParams, "my_team_block.tile_tamplate", "person_tile", true );
+var sTileCollection = tools_web.get_web_param( curParams, "my_team_block.tile_collection", "my_team_block", true );
+var iHeight = tools_web.get_web_param( curParams, "my_team_block.height", 400, true );
+
+var bObjectCurUser = tools_web.is_true( tools_web.get_web_param( curParams, "my_team_block.object_cur_user", true, true ) );
+var bHideDismissedUsers = tools_web.is_true( tools_web.get_web_param( curParams, "my_team_block.hide_dismissed_users", true, true ) );
+
+%>
+<StackPanel Orientation="Vertical" Class=" XAML-stack-block">
+	<Label Class="XAML-label-block-header"><%=sTitle%></Label>
+<%
+if(sLayout=="tile")
+{
+	if ( iTileColumns != "" )
+		iTileWidth = "";
+%>
+<Collection Name="MyTeamCollection" Source="<%=sTileCollection%>">
+	<Param Name="team_type" Value="<%=sTeamType%>"/>
+	<Param Name="max_count" Value="<%=sMaxCount%>"/>
+	<Param Name="object_cur_user" Value="<%=bObjectCurUser%>"/>
+	<Param Name="hide_dismissed_users" Value="<%=bHideDismissedUsers%>"/>
+</Collection>
+
+
+
+	<StackPanel Orientation="Vertical" Class="XAML-grid-list-container">
+
+		<TileView
+			Name="qwerty"
+			Width="100%"
+			Height="<%=iHeight%>"
+			TileHeight="<%=iTileHeight%>"
+			TileWidth="<%=iTileWidth%>"
+			DataSource="{MyTeamCollection}"
+			TemplateSource="<%=sTileTemplate%>"
+			Columns="<%=iTileColumns%>"
+		>
+			<Param Name="tile_width" Value="<%=iTileWidth%>"/>
+		</TileView>
+
+	</StackPanel>
+<%
+}
+else if(sLayout=="list")
+{
+	var teCollection = OpenDoc( UrlFromDocID( ArrayOptFirstElem( tools.xquery( "for $elem in remote_collections where $elem/code = " + XQueryLiteral( sTileCollection ) + " return $elem/id, $elem/__data" ) ).id ) ).TopElem;
+	teCollection.wvars.ObtainChildByKey( 'team_type' ).value = sTeamType;
+	teCollection.wvars.ObtainChildByKey( 'max_count' ).value = sMaxCount;
+	teCollection.wvars.ObtainChildByKey( 'object_cur_user' ).value = bObjectCurUser;
+
+	var oCollectionResult = teCollection.evaluate( "raw", Request );
+	arrPersons = oCollectionResult.result
+
+	var iMaxCount = OptInt( sMaxCount, null );
+	if ( iMaxCount != null )
+	{
+		arrPersons = ArrayRange( arrPersons, 0, iMaxCount );
+	}
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-uni-content-container">
+			<WTXList Name="Colleagues" Layout="list" Paging="<%=String(bPaging)%>" DisplayIcon="<%=String(bDisplayIcon)%>" DisplayName="<%=String(bDisplayName)%>" DisplayPosition="<%=String(bDisplayPosition)%>" ItemsPerPage="<%=iPageSize%>" MoreText="<%=sMore%>" MoreLeft="<%=sMoreLeft%>" IconPosition="<%=sListIcon%>" ListClass="<%=sListCustomClass%>" ListItemClass="<%=sListItemCustomClass%>" >
+<%
+				for ( catPersonElem in arrPersons )
+				{
+					sLink = tools_web.get_mode_clean_url("collaborator", catPersonElem.id, ({"doc_id": curDocID}));
+					sURL = tools_web.get_object_source_url( 'person', catPersonElem.id, '200x200' );
+%>
+					<Val Name="<%=XmlAttrEncode( catPersonElem.fullname )%>" Position="<%=XmlAttrEncode( catPersonElem.position_name )%>" Link="<%=sLink%>" ImageSrc="<%=sURL%>"/>
+<%
+				}
+%>
+			</WTXList>
+		</StackPanel>
+<%
+}
+%>
+</StackPanel>
+
+</SPXMLScreen>

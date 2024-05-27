@@ -1,0 +1,102 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+<table border="1" cellpadding="2" cellspacing="0">
+	<tr>
+		<td colspan="8" align="right">&nbsp;</td>
+<%
+		for ( fldQuestionElem in Ps.questions )
+		{
+%>
+		<td align="center" colspan="4" bgcolor="#FF4433"><b><%=fldQuestionElem.text%></b></td>
+<%
+		}
+%>
+	</tr>
+	<tr>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('wrm4ebg7c9')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_org')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_subd')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_position')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_status')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_score')%></b></td>
+<%
+		for ( fldQuestionElem in Ps.questions )
+		{
+%>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_type')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_result')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('xahay8meiw')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vieb_correct')%></b></td>
+<%
+		}
+%>
+	</tr>
+<%
+	for ( fldLearningElem in Ps.learnings )
+	{
+		try
+		{
+%>
+		<tr valign="top">
+			<td width="300"><%=fldLearningElem.person_fullname%></td>
+			<td width="300"><%=fldLearningElem.person_code%></td>
+			<td width="300"><%=( fldLearningElem.person_id.OptForeignElem.org_name != undefined ? fldLearningElem.person_id.OptForeignElem.org_name : ms_tools.get_const( 'jmkcjvkz8n' ) )%></td>
+			<td width="300"><%=TopElem.disp_person_list_staff ? fldLearningElem.person_list_staff : fldLearningElem.person_subdivision_name%></td>
+			<td width="300"><%=fldLearningElem.person_position_name%></td>
+			<td width="110" align="center"><%=StrDate( Date( fldLearningElem.start_usage_date ), true, false )%></td>
+			<td width="90" align="center"><%=fldLearningElem.state_id.ForeignElem.name%></td>
+			
+			<%if(fldLearningElem.max_score == 0){%>
+				<td width="50" align="center"></td>
+			<%} else {%>
+				<td width="50" align="center"><%try { fldLearningElem.max_score != null ? Response.Write( fldLearningElem.score + ' (' + ( ( 100 * fldLearningElem.score ) / fldLearningElem.max_score ) + '%)' ) : Response.Write( fldLearningElem.score ) } catch ( e ) {  }%></td>
+			<%}%>
+			
+
+<% 
+		for ( fldQuestionElem in Ps.questions )
+		{
+			fldQuestionChild = fldLearningElem.questions.GetOptChildByKey( fldQuestionElem.PrimaryKey );
+			if ( fldQuestionChild == undefined )
+			{
+%>
+			<td width="200"></td>
+			<td width="80"></td>
+			<td width="300"></td>
+			<td width="300"></td>
+<%
+			}
+			else
+			{
+
+			_bgcolor = ( fldQuestionChild.result == StrNonTitleCase( ms_tools.get_const('r1s987zw3e') )) ? "#FFCCCC" : ( fldQuestionChild.result == StrNonTitleCase( ms_tools.get_const('lcnwu5wcgk') ) ? "#CCFFCC" : "#FFFFFF" ) ;
+%>
+			<td width="200" align="center"><%=fldQuestionChild.quest_type%></td>
+			<td width="80" align="center" bgcolor="<%=_bgcolor%>"><%=fldQuestionChild.result%></td>
+			<td width="300" align="center"><%=fldQuestionChild.answer%></td>
+			<td width="300" align="center"><%=( StrBegins( fldQuestionChild.correct_answer, '=' ) ? StrRightRangePos( fldQuestionChild.correct_answer, 1 ) : fldQuestionChild.correct_answer )%></td>
+<%
+			}
+		}
+%>
+		</tr>
+<%
+		}
+		catch( e )
+		{
+			alert( e );
+		}
+	}
+%>
+</table>
+</body>
+</html>

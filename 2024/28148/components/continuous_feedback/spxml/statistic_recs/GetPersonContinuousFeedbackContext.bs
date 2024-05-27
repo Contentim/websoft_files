@@ -1,0 +1,16 @@
+try
+{
+	var oRes = tools.call_code_library_method( "libContinuousFeedback", "GetPersonContinuousFeedbackContext", [] );
+
+	ERROR = oRes.error;
+	MESSAGE = oRes.errorText;
+	if( ERROR == 0 )
+	{
+		VALUE_STR = EncodeJson( oRes.result );
+	}
+}
+catch ( g_err )
+{
+	ERROR = 1;
+	MESSAGE = "ERROR: StatisticRec: GetPersonContinuousFeedbackContext:\r\n" + g_err;
+}

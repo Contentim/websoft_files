@@ -1,0 +1,351 @@
+﻿<%
+try
+{
+	curHost;
+}
+catch(e)
+{
+	curHost = tools.open_doc(Env.curHostID).TopElem;
+}
+
+// const_start
+	var oConstPI = ({
+		"gdpr": "Подтвердите согласие на обработку персональных данных",
+		"gdpr_title": "Соглашение о персональных данных"
+	});
+// const_end
+	curUser = OpenDoc( UrlFromDocID( curUserID ) ).TopElem;
+	bDisplayReadOnly = tools_web.is_true( tools_web.get_web_param( curParams, "bDisplayReadOnly", false, true ) );
+	bCheckWebAvailability = tools_web.is_true( tools_web.get_web_param( curParams, "bCheckWebAvailability", false, true ) );
+
+	var aFieldsDef = ([
+	({
+		"name": "lastname",
+		"title": tools_web.get_web_const("uf_last_name", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "firstname",
+		"title": tools_web.get_web_const("uf_name", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "middlename",
+		"title": tools_web.get_web_const("uf_s_name", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "sex",
+		"title": tools_web.get_web_const("vpb_sex", curLngWeb),
+		"type": "radio",
+		"entries": ([
+				({"name":"m","value": tools_web.get_web_const("vpb_m", curLngWeb)}),
+				({"name":"w","value": tools_web.get_web_const("vpb_w", curLngWeb)})
+		]),
+		"tab" : "common"
+	}),
+	({
+		"name": "birth_date",
+		"title": tools_web.get_web_const("vpb_birthday", curLngWeb),
+		"type": "date",
+		"tab" : "common",
+		"date_disp_time": false
+	}),
+	({
+		"name": "address",
+		"title": tools_web.get_web_const("uf_address", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "phone",
+		"title": tools_web.get_web_const("uf_phone", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "email",
+		"title": tools_web.get_web_const("uf_email", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "login",
+		"title": tools_web.get_web_const("uf_login", curLngWeb),
+		"type": "string",
+		"tab" : "common"
+	}),
+	({
+		"name": "password",
+		"title": tools_web.get_web_const("veb_pass", curLngWeb),
+		"type": "password",
+		"tab" : "common"
+	}),
+	({
+		"name": "desc",
+		"title": tools_web.get_web_const( 'upi_about_me', curLngWeb ),
+		"type": "richtext",
+		"tab" : "additional"
+	}),
+	({
+		"name": "pict_url",
+		"title": tools_web.get_web_const( 'foto', curLngWeb ),
+		"type": "imagefile",
+		"tab" : "additional"
+	}),
+	({
+		"name": "personal_config.avatar_filename",
+		"title": tools_web.get_web_const( 'vfb_how_show_avatar', curLngWeb ),
+		"type": "imagefile",
+		"tab" : "settings"
+	}),
+	({
+		"name": "personal_config.nick",
+		"title": tools_web.get_web_const( 'psevdonim', curLngWeb ),
+		"type": "string",
+		"tab" : "settings"
+	}),
+	({
+		"name": "gdpr",
+		"title": oConstPI.gdpr_title,
+		"epic": true,
+		"tab" : "common"
+	})
+	]);
+
+	var aTabs = ([
+		({
+			"id": "common",
+			"title": tools_web.get_web_const( 'cavr3d3iwk', curLngWeb )
+		}),
+		({
+			"id": "additional",
+			"title": tools_web.get_web_const( 'vnrqm9djn5', curLngWeb ),
+			"include": (["custom_elems"])
+		}),
+		({
+			"id": "settings",
+			"title": tools_web.get_web_const( '5mrwmycid9', curLngWeb ),
+			"include": (["portal_tune"])
+		})
+	]);
+
+	var aTuningFields = ([
+			"disp_personal_info",
+			"disp_login",
+			"disp_sex",
+			"disp_desc",
+			"disp_files",
+			"disp_birthdate",
+			"disp_birthdate_year",
+			"disp_resume",
+			"allow_personal_chat_request",
+			"personal_chat_confirmation_required"
+		]);
+	
+
+	function printTab(oTab)
+	{
+		var fldReqFieldElem, oFieldDef, bRequired;
+		var vValue;
+
+		var aThisTabFields = [];
+		var aEpicFields = [];
+		var oContext = ({});
+
+		for ( oFieldDef in aFieldsDef )
+		{
+			if ( oFieldDef.tab != oTab.id )
+				continue;
+
+			if ( oFieldDef.name == "password" && curUser.change_password )
+			{
+				oFieldDef.SetProperty( 'is_required', true );
+				oFieldDef.SetProperty( 'is_web_edit', true );
+			}
+			else
+			{
+				fldReqFieldElem = ArrayOptFind( global_settings.settings.required_fields, "This.PrimaryKey==" + CodeLiteral( oFieldDef.name ) );
+				if ( fldReqFieldElem == undefined || ( ! fldReqFieldElem.is_web_edit.Value && ! bDisplayReadOnly ) )
+					continue;
+				curHost = tools_web.get_cur_host( Session.Env );
+				if (oFieldDef.name != "password" || curHost.portal_auth_type != "ntlm")
+					oFieldDef.SetProperty( 'is_required', fldReqFieldElem.is_required.Value );
+				oFieldDef.SetProperty( 'is_web_edit', fldReqFieldElem.is_web_edit.Value );
+				oContext.SetProperty( oFieldDef.name, curUser.EvalPath(oFieldDef.name).Value );
+			}
+			
+			oFieldDef.name = StrReplace(oFieldDef.name, ".", "_");
+			if (oFieldDef.GetOptProperty("epic") == true)
+				aEpicFields.push(oFieldDef);
+			else
+				aThisTabFields.push(oFieldDef);
+		}
+
+		if (oTab.HasProperty("include"))
+		{
+			var sIncludeElem, sFieldName, aArray, oField;
+			for ( sIncludeElem in oTab.include )
+			{
+				switch ( sIncludeElem )
+				{
+					case "custom_elems":
+						for ( fldReqFieldElem in ArraySelectByKey( global_settings.settings.required_fields, true, "is_custom" ) )
+							if ( fldReqFieldElem.is_web_edit.Value || bDisplayReadOnly )
+							{
+								oFieldDef = custom_templates.collaborator.fields.GetOptChildByKey( fldReqFieldElem.name.Value );
+								if ( oFieldDef != undefined && (!bCheckWebAvailability || oFieldDef.disp_web.Value == true))
+								{
+									sFieldName = "custom_elems_" + oFieldDef.name;
+									oContext.SetProperty( sFieldName, curUser.custom_elems.ObtainChildByKey( oFieldDef.name ).value.Value );
+									oField = ({
+										"name": sFieldName,
+										"type": oFieldDef.type.Value,
+										"title": oFieldDef.title.Value,
+										"catalog": oFieldDef.catalog.Value,
+										"entries": oFieldDef.entries,
+										"is_web_edit": fldReqFieldElem.is_web_edit.Value,
+										"is_required": fldReqFieldElem.is_required.Value
+									});
+									
+									if (oField.type == "date" && oFieldDef.ChildExists("date_disp_time"))
+										oField.date_disp_time = oFieldDef.date_disp_time;
+									
+									aThisTabFields.push( oField );
+								}
+							}
+						break;
+					case "portal_tune":
+						aArray = ArrayExtract( aTuningFields, "curUser.Child(This)" );
+						for ( fldReqFieldElem in aArray )
+						{
+							oContext.SetProperty( fldReqFieldElem.Name, fldReqFieldElem.Value );
+							aThisTabFields.push( {
+								"name": fldReqFieldElem.Name,
+								"type": "bool",
+								"title": tools.get_field_title( fldReqFieldElem, curLngWeb ),
+								"is_web_edit": true,
+								"is_required": false
+							} );
+						}
+						break;
+				}
+			}
+		}
+
+		if ( ArrayCount( aThisTabFields ) > 0 || ArrayCount(aEpicFields) > 0 )
+		{
+%>
+		<TabItem Title="<%=XmlAttrEncode( oTab.title )%>">
+<%
+			curCustomFields = {
+				"id": oTab.id,
+				"fields": aThisTabFields,
+				"context": oContext,
+				"modify_eval": false,
+				"field_modify_eval": "fldFieldElem.GetOptProperty('is_web_edit',false)",
+				"draw_grid_columns": true,
+				"combo_box_width": "100%"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+			
+		
+		for (oFieldDef in aEpicFields)
+		{
+			switch(oFieldDef.name)
+			{
+				case "gdpr":
+				try
+				{
+					vValue = LoadUrlText("x-local://source/gdpr.html");
+				}
+				catch(_x_)
+				{
+					vValue = oConstPI.gdpr;
+				}
+%>
+				<Grid Width="100%" Name="CustomFieldGridcommon" Hidden="0" Class="XAML-grid-info-table">
+					<GridColumns>
+						<GridColumn Width="90%"/>
+						<GridColumn Width="10%" ALIGN="center"/>
+					</GridColumns>
+					<GridRow>
+						<HTMLBox><![CDATA[<%=vValue%>]]></HTMLBox>
+						<CheckBox Name="<%=oFieldDef.name%>" Checked="<%=curUser.gdpr%>" Value="true"></CheckBox>
+					</GridRow>
+				</Grid>
+<%
+				
+				break;
+			}
+		}
+%>
+		</TabItem>
+<%
+		}
+	}
+%>
+<SPXMLScreen>
+<%
+	var oTabElem, oUserVerifyInfo = tools_web.get_user_data("user_verification_" + curUserID);
+	if (oUserVerifyInfo != null)
+		oUserVerifyInfo = oUserVerifyInfo.GetOptProperty("user_verification", null);
+
+	var sRedirect = "";
+	if (oUserVerifyInfo != null)
+	{
+		var aLameArray = oUserVerifyInfo.GetOptProperty("lame_array");
+		sRedirect = oUserVerifyInfo.GetOptProperty("save_url", "");
+
+		if (sRedirect != "")
+			sRedirect = ";OPENURL=" + UrlEncode16(sRedirect);
+		if (IsArray(aLameArray))
+		{
+			var sFldName, oSomeField, sList = "";
+			for (sFldName in aLameArray)
+			{
+				oSomeField = ArrayOptFindByKey( aFieldsDef, sFldName, "name" );
+				if (oSomeField == undefined)
+				{
+					oSomeField = custom_templates.collaborator.fields.GetOptChildByKey(sFldName);
+					if (oSomeField != undefined)
+						oTabElem = ArrayOptFind(aTabs, "This.HasProperty('include') && ArrayOptFind(This.include, 'This == \"custom_elems\"')");
+				}
+				else
+				{
+					oTabElem = ArrayOptFindByKey( aTabs, oSomeField.tab, "id" );
+				}
+
+				if (oSomeField != undefined)
+				{
+					sList += (sList != "" ? ", " : "") + oSomeField.title;
+					if (oTabElem != undefined)
+						sList += "(" + oTabElem.title + ")";
+				}
+			}
+			curMessageBox = ({
+				"type": "info",
+				"text": (tools_web.get_web_const( 'nezapolnenyobya', curLngWeb ) + ": " + sList)
+			});
+			Response.Write(EvalCodePageUrl(global_settings.web_path + "view_message_box.xaml"));
+		}
+	}
+%>
+	<Action Name="PersonalInfoSave" Source="PersonalInfoSave" Success="ALERT={messageText}<%=sRedirect%>" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="photo_max_width" Value="<%=OptInt(tools_web.get_web_param( curParams, "personal_info.max_pic_width", "", true ), "")%>"/>
+	</Action>
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "redaktirovanie_1", curLngWeb )%></Label>
+	<Toolbar Class="XAML-toolbar">
+		<Button Class="XAML-button XAML-button-save" Click="ACTION=PersonalInfoSave"><%=tools_web.get_web_const("c_save", curLngWeb)%></Button>
+	</Toolbar>
+	<TabControl Name="PersonalDataTab" ActiveTab="0">
+<%
+	for (oTabElem in aTabs)
+		printTab(oTabElem);
+%>
+	</TabControl>
+</SPXMLScreen>

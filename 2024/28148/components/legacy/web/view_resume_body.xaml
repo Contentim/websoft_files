@@ -1,0 +1,2966 @@
+﻿<%
+	bInsert = false;
+
+	try
+	{
+		curResumeID = OptInt(curResumeObject.GetOptProperty( 'curResumeID', null ), null);
+		if ( curResumeID != null )
+		{
+			try
+			{
+				curObjectID  = curResumeID;
+				curObject    = Env.GetOptProperty( 'curResume', null );
+				curObjectDoc = OpenDoc( UrlFromDocID( curResumeID ) );
+				curObject    = curObjectDoc.TopElem;
+
+				Env.SetProperty( 'curResume', curObject );
+			}
+			catch ( err )
+			{
+				curObjectID = null;
+			}
+			
+			iOverrideTamplateID = OptInt( curResumeObject.GetOptProperty( 'iOverrideTamplateID', null ), null );
+			
+			bInsert = true;
+			
+			if ( iOverrideTamplateID != null )
+			{
+				fldOverrideTamplate = ArrayOptFirstElem( XQuery('for $elem in override_web_templates where $elem/is_enabled = true() and $elem/id = ' + iOverrideTamplateID + ' return $elem'))
+				if ( fldOverrideTamplate != undefined )
+				{
+					teOverrideTamplate = null;
+					try
+					{
+						teOverrideTamplate = OpenDoc( UrlFromDocID(fldOverrideTamplate.id) ).TopElem;
+					}
+					catch(ex)
+					{
+					}
+					if ( teOverrideTamplate != null)
+					{
+						curParams = new SafeObject;
+						tools_web.set_web_params(curParams, teOverrideTamplate.wvars, true );
+						Request.Session.Env.SetProperty('curParams', curParams);
+					}
+				}
+			}
+		}
+	}
+	catch(ex)
+	{
+		curResumeID = '';
+	}
+
+	function buildNewUrlQuery(arrParams)
+	{
+		var sHref = 'view _doc.html?';
+		for ( fldElem in curUrlQuery )
+		{
+			if ( fldElem != '' && ArrayOptFind( arrParams, 'StrLowerCase(This)==\'' + fldElem + '\'' ) == undefined )
+			{
+				sHref += UrlEncode( fldElem ) + '=' + UrlEncode( curUrlQuery.GetProperty( fldElem ) ) + '&amp;';
+			}
+		}
+		return sHref;
+	}
+
+	if ( curUrlQuery.HasProperty('resume_id') )
+	{
+		//sReadyAction = 'OPENURL=' + buildNewUrlQuery(['resume_id']) + 'object_id=' + OptInt(curUrlQuery.GetOptProperty('resume_id',null), null);
+		sReadyAction = 'OPENURL=' + tools_web.get_mode_clean_url( curUrlQuery.GetOptProperty( 'mode', null ), OptInt( curUrlQuery.GetOptProperty('resume_id', null ), null ), { doc_id: curUrlQuery.GetOptProperty( 'doc_id', null ) } );
+%>
+
+		<SPXMLScreen Ready="<%=sReadyAction%>"></SPXMLScreen>
+
+<%
+		Cancel();
+	}
+
+	var NewDoc    = false;
+	var bReadOnly = true;
+
+	var bCreatingNewPerson = false;
+	var sDispType          = curDevice.disp_type;
+	var bDesctop           = sDispType != 'mobile';
+	var iMaxPhotoHeight    = '400';
+	var iMaxPhotoWidth     = '500';
+
+	var iNameLength        = 16;
+	var iDefaultWidth      = '300';
+	var iDatePickerWidth   = '';
+	var sDescRichEditWidth = '98%';
+
+	if ( ! bDesctop )
+	{
+		iMaxPhotoHeight    = '100%';
+		iMaxPhotoWidth     = '100%';
+		iDefaultWidth      = '100%';
+		sDescRichEditWidth = '92%';
+	}
+	try
+	{
+		if ( curObject == null || curObject == undefined )
+		{
+			throw 'new doc'
+		}
+	}
+	catch( err )
+	{
+		NewDoc    = true;
+		bReadOnly = false;
+	}
+
+	//--- functions
+
+	function fnBuildObjectSelector(oSourceObjectParams)
+	{
+		strSelectorType = oSourceObjectParams.GetOptProperty('selector_type', 'selector');
+		if (strSelectorType == 'selector')
+		{
+			curSelector = {
+			'id'                 : oSourceObjectParams.GetOptProperty('id', ''),
+			'object_id'          : oSourceObjectParams.GetOptProperty('object_id', ''),
+			'object_id_item_name': oSourceObjectParams.GetOptProperty('object_id_item_name', ''),
+			'multi_select'       : 'false',
+			'display_object_ids' : oSourceObjectParams.GetOptProperty('display_object_ids', ''),
+			'object_name'        : oSourceObjectParams.GetOptProperty('object_name', ''),
+			'width'              : oSourceObjectParams.GetOptProperty('width', iDefaultWidth),
+			'catalog_name'       : oSourceObjectParams.GetOptProperty('catalog_name', '')
+			}
+		
+			curSelector.SetProperty('close_action', oSourceObjectParams.GetOptProperty('close_action', 'STOP'));
+			Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_selector.xaml' ) );
+		}
+		else
+		{	
+			sCatalogName    = oSourceObjectParams.GetOptProperty('catalog_name', 'place');
+			sDispName       = common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name;
+			arrObjects      = XQuery('for $elem in ' + sCatalogName + 's order by $elem/' + sDispName + ' return $elem');
+			iDefaultId      = oSourceObjectParams.GetOptProperty('object_id', null);
+			strDefaultValue = oSourceObjectParams.GetOptProperty('default_value', tools_web.get_web_const( 'pusto', curLngWeb ));
+%>
+			<ComboBox Name="<%=oSourceObjectParams.GetOptProperty('id', '')%>" Width="<%=oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth )%>" Change="<%=oSourceObjectParams.GetOptProperty('close_action','STOP')%>">
+				<ComboBoxItem Value="" <%=(iDefaultId == null ? 'Selected=\"true\"' : '')%>><%=(iDefaultId == null ? '' : XmlAttrEncode(strDefaultValue))%></ComboBoxItem>
+<%
+				for(catObject in arrObjects)
+				{
+%>
+					<ComboBoxItem Value="<%=catObject.PrimaryKey%>" Selected="<%=(catObject.PrimaryKey == iDefaultId)%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( catObject.Child(sDispName).Value, curLng.short_id ))%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+<%
+		}
+	}
+
+	function fnEvalCreator()
+	{
+		var bEvalResult = false;
+		
+		try
+		{
+			if ( Trim( UnifySpaces(strEvalCreator) ) == '')
+			{
+				bEvalResult = false;
+			}
+			else
+			{
+				bEvalResult = tools.safe_execution(strEvalCreator);
+				bEvalResult = bEvalResult ? true : false;
+			}
+		}
+		catch(ex)
+		{
+		}
+
+		return bEvalResult
+	} 
+ 
+	function fnGetField(strCodeParam)
+	{
+		oField = undefined;
+		try
+		{
+			oField = ArrayOptFind(arrFields, "This.id == '" + strCodeParam + "'");
+		}
+		catch(ex)
+		{
+		}
+		return oField
+	}
+ 
+	function getBlockElemTitle(sBlockNameParam, bFullParam)
+	{
+		var sTabTitle   = sBlockNameParam;
+		var sParamValue = tools_web.get_web_param( curParams, 'resume.block_list.' + sBlockNameParam, '', true );
+
+		if (sParamValue == '')
+		{
+			switch(sBlockNameParam)
+			{
+				case 'contacts':
+				{
+					sTabTitle = tools_web.get_web_const( 'vrb_contacts', curLngWeb );
+					break;
+				}
+				case 'prof_area':
+				{
+					sTabTitle = tools_web.get_web_const( ( sTabsDispType != 'w' ? 'vrb_experience' : 'opytraboty' ), curLngWeb );
+					break;
+				}
+				case 'projects':
+				{
+					sTabTitle = tools_web.get_web_const( '159pmteyyz', curLngWeb );
+					break;
+				}
+				case 'edu':
+				{
+					sTabTitle = tools_web.get_web_const( ( sTabsDispType != 'w' ? 'vrb_edu_courses' : 'vrb_education' ), curLngWeb );
+					break;
+				}
+				case 'publications':
+				{
+					sTabTitle = tools_web.get_web_const( 'publikacii', curLngWeb );
+					break;
+				}
+				case 'lngs':
+				{
+					sTabTitle = tools_web.get_web_const( 'vrb_lng_is', curLngWeb );
+					break;
+				}
+				case 'skills':
+				{
+					sTabTitle = tools_web.get_web_const( 'navyki', curLngWeb );
+					break;
+				}
+				case 'additional':
+				{
+					sTabTitle = tools_web.get_web_const( ( sTabsDispType != 'w' ? 'vrb_extra_info' : 'c_additional' ), curLngWeb );
+					break;
+				}
+				case 'custom_fields':
+				{
+					sTabTitle = tools_web.get_web_const( ( sTabsDispType != 'w' ? 'wlcwah2eod' : '3v1axw09i2' ), curLngWeb );
+					break;
+				}
+				case 'general':
+				{
+					sTabTitle = tools_web.get_web_const( ( sTabsDispType != 'w' ? 'vrb_basic_info' : 'cavr3d3iwk' ), curLngWeb );
+					break;
+				}
+				case 'object_custom_block':
+				{
+					sTabTitle = tools_web.get_web_const( 'c_block', curLngWeb );
+					break;
+				}
+				case 'files':
+				{
+					sTabTitle = tools_web.get_web_const( 'vdb_files', curLngWeb );
+					break;
+				}
+				case 'desc':
+				{
+					sTabTitle = tools_web.get_web_const( 'podrobnoeopisa', curLngWeb );
+					break;
+				}
+			}
+			
+		}
+		else
+		{
+			sTabTitle = tools_web.get_cur_lng_name( sParamValue, curLng.short_id )
+		}
+		
+		if ( sDispType == 'tab' && sTabsDispType == 'w' && !bFullParam )
+			sTabTitle = StrCharCount( sTabTitle ) > iNameLength ? Trim(StrLeftCharRange( sTabTitle, iNameLength )) + '...' :  sTabTitle;
+		return sTabTitle
+	}
+
+	function fnGetBlockVisibility(strCodeParam)
+	{
+		return ( ArrayOptFind( arrBlockListParam, "This == '" + strCodeParam + "'" ) != undefined )
+	}
+
+	function updateFieldsArray(arrCodesParam, strBlockParam, bRequiredParam)
+	{
+		for (strFieldCode in arrCodesParam)
+		{
+			if (Trim(strFieldCode) != '')
+			{
+				oField = ArrayOptFind(arrFields, "This.id == '" + strFieldCode + "'");
+				if (oField == undefined)
+				{
+					oField                       = new Object;
+					oField.id                    = strFieldCode;
+					oField.Title                 = getFieldNameById(oField.id)
+					oField.object_field_id       = strFieldCode;
+					oField.sBlockName            = strBlockParam;
+					oField.type                  = 'input';
+					oField.catalog_selector_type = strCatalogTypeSelector;
+					oField.name                  = '';
+					oField.value                 = '';
+					oField.foreign_elem          = '';
+					
+					switch (strFieldCode)
+					{
+						case 'birth_date':
+						{
+							oField.type = 'date';
+							break;
+						}
+						case 'dominant_skills':
+						{
+							oField.type = 'text';
+							break;
+						}
+						case 'photo':
+						{
+							oField.object_field_id = 'resource_id';
+							oField.type            = 'photo';
+							break;
+						}
+						case 'currency_type':
+						{
+							oField.object_field_id = 'currency_type_id';
+							break;
+						}
+						case 'profession_area_id':
+						{
+							oField.object_field_id = 'profession_id';
+							break;
+						}
+						case 'email':
+						{
+							oField.sBlockName = 'contacts';
+							break;
+						}
+						case 'work_phone':
+						{
+							oField.type       = 'phone';
+							oField.sBlockName = 'contacts';
+							break;
+						}
+						case 'mobile_phone':
+						{
+							oField.type       = 'phone';
+							oField.sBlockName = 'contacts';
+							break;
+						}
+						case 'phone':
+						{
+							oField.type       = 'phone';
+							oField.sBlockName = 'contacts';
+							break;
+						}
+						case 'address':
+						{
+							oField.sBlockName = 'contacts';
+							oField.type       = 'text';
+							break;
+						}
+						case 'region_id':
+						{
+							oField.catalog_selector_type = strRegionSelector;
+							break;
+						}
+					}
+					
+					if ( curObject.ChildExists( oField.object_field_id ) )
+					{
+						fldObjectField = curObject.Child( oField.object_field_id );
+						oField.SetProperty( 'value', fldObjectField );
+						sForeign = fldObjectField.ForeignArrayCodeStr;
+						if (sForeign != '')
+						{
+							if (StrContains( sForeign, '.' ))
+							{
+								oField.SetProperty('foreign_elem', sForeign.split('.')[1]);
+								oField.SetProperty('type', sForeign.split('.')[0]);
+							}
+							else
+							{
+								if (  StrEnds( sForeign, 's' ) )
+								{
+									sForeign = StrLeftRange( sForeign, StrLen( sForeign ) - 1 );
+								}
+								
+								oField.SetProperty('foreign_elem', sForeign);
+								oField.SetProperty('type', 'catalog');
+
+								fldForeignObject = fldObjectField.OptForeignElem;
+								if (fldForeignObject != undefined)
+								{
+									oField.SetProperty( 'name', tools_web.get_cur_lng_name( fldForeignObject.name, curLng.short_id ) );
+								}
+								else if ( oField.value != '' && oField.value != null && oField.value != undefined)
+								{
+									oField.SetProperty( 'name', tools_web.get_web_str('c_deleted') );
+								}
+							}
+						}
+					}
+					else if (oField.id == 'firstname' || oField.id == 'lastname' || oField.id == 'middlename')
+					{
+						oField.SetProperty( 'value', oFIO.GetOptProperty(oField.id, null) );
+					}
+
+					arrFields.push(oField);
+				}
+				oField.bRequired = bRequiredParam;
+			}
+		}
+	}
+
+	function getFieldNameById(sFieldIdParam)
+	{
+		var sReturn = '';
+		switch (sFieldIdParam)
+		{
+			case 'name':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_position', curLngWeb );
+				break;
+			}
+			case 'photo':
+			{
+				sReturn = tools_web.get_web_const( 'k2882qi9bo', curLngWeb );
+				break;
+			}
+			case 'sex':
+			{
+				sReturn = tools_web.get_web_const( 'vpb_sex', curLngWeb );
+				break;
+			}
+			case 'birth_date':
+			{
+				sReturn = tools_web.get_web_const( 'vpb_birthday', curLngWeb );
+				break;
+			}
+			case 'family_status':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_family_status', curLngWeb );
+				break;
+			}
+			case 'min_wage':
+			{
+				sReturn = tools_web.get_web_const( 'minimalnyyurov', curLngWeb );
+				break;
+			}
+			case 'max_wage':
+			{
+				sReturn = tools_web.get_web_const( 'maksimalnyyuro', curLngWeb );
+				break;
+			}
+			case 'employment_type_id':
+			{
+				sReturn = tools_web.get_web_const( 'c_employment_type', curLngWeb );
+				break;
+			}
+			case 'exp_years':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_service', curLngWeb );
+				break;
+			}
+			case 'academic_degree':
+			{
+				sReturn = tools_web.get_web_const( 'uchenayastepen', curLngWeb );
+				break;
+			}
+			case 'academic_heading':
+			{
+				sReturn = tools_web.get_web_const( 'uchenoezvanie', curLngWeb );
+				break;
+			}
+			case 'educ_type_id':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_education', curLngWeb );
+				break;
+			}
+			case 'profession_area_id':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_professional_field', curLngWeb );
+				break;
+			}
+			case 'region_id':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_region', curLngWeb );
+				break;
+			}
+			case 'phone':
+			{
+				sReturn = tools_web.get_web_const( 'uf_phone', curLngWeb );
+				break;
+			}	
+			case 'mobile_phone':
+			{
+				sReturn = tools_web.get_web_const( 'org_telm', curLngWeb );
+				break;
+			}
+			case 'work_phone':
+			{
+				sReturn = tools_web.get_web_const( 'org_telw', curLngWeb );
+				break;
+			}	
+			case 'email':
+			{
+				sReturn = tools_web.get_web_const( 'uf_email', curLngWeb );
+				break;
+			}
+			case 'address':
+			{
+				sReturn = tools_web.get_web_const( 'uf_address', curLngWeb );
+				break;
+			}
+			case 'currency_type':
+			{
+				sReturn = tools_web.get_web_const( 'vkakoyvalyutepr', curLngWeb );
+				break;
+			}	
+			case 'lastname':
+			{
+				sReturn = tools_web.get_web_const( 'uf_last_name', curLngWeb );
+				break;
+			}	
+			case 'firstname':
+			{
+				sReturn = tools_web.get_web_const( 'uf_name', curLngWeb );
+				break;
+			}	
+			case 'middlename':
+			{
+				sReturn = tools_web.get_web_const( 'uf_s_name', curLngWeb );
+				break;
+			}	
+			case 'schedule_id':
+			{
+				sReturn = tools_web.get_web_const( 'grafikraboty', curLngWeb );
+				break;
+			}
+			case 'dominant_skills':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_skils', curLngWeb );
+				break;
+			}
+			case 'schedule_work_id':
+			{
+				sReturn = tools_web.get_web_const( 'ibcxjyydad', curLngWeb );
+				break;
+			}
+			case 'vacancy_source_id':
+			{
+				sReturn = tools_web.get_web_const( 'istochnikvakans', curLngWeb );
+				break;
+			}
+			case 'main_lng':
+			{
+				sReturn = tools_web.get_web_const( 'vrb_lng_my', curLngWeb );
+				break;
+			}
+			default:
+			{
+				sReturn = sFieldIdParam;
+				break;
+			}
+		}
+		return sReturn
+	}
+
+	function fnDateDiff(EndDateParam, StartDateParam, strReturnTypeParam)
+	{
+		var iResult   = null;
+		var StartDate = null;
+		var EndDate   = null;
+		
+		try
+		{
+			if (strReturnTypeParam == 'year')
+			{
+				Years = 1;
+			}
+			else if (strReturnTypeParam == 'day')
+			{
+				Years = 365;
+			}
+			else
+			{
+				Years = 31536000;
+			}
+			
+			try
+			{
+				StartDate = Date(StartDateParam);
+				EndDate   = Date(EndDateParam);
+			}
+			catch(ex){}
+			
+			if ( StartDate != null && EndDate != null )
+			{
+				StartDate = Date(StartDateParam);
+				EndDate   = Date(EndDateParam);
+				
+				StartYear  = Year(StartDate);
+				StartMonth = Month(StartDate);
+				StartDay   = Day(StartDate);
+				
+				EndYear  = Year(EndDate);
+				EndMonth = Month(EndDate);
+				EndDay   = Day(EndDate);
+				
+				iYears = EndYear - StartYear;
+
+				if ( EndMonth < (StartMonth ) )
+				{
+					iYears--;
+				}
+				if ( ((StartMonth) == EndMonth) && (EndDay < StartDay) )
+				{ 
+					iYears--;
+				}
+				iResult = iYears * Years;
+			}
+		}
+		catch(ex)
+		{
+			alert('fnDateDiff: ' + ex);
+		}
+		return iResult
+	}
+
+	function fnWordDateDiff(EndDateParam, StartDateParam, strReturnTypeParam)
+	{
+		var strResult = null;
+		var StartDate = null;
+		var EndDate   = null;
+		
+		try
+		{
+			try
+			{
+				StartDate = Date(StartDateParam);
+				EndDate   = Date(EndDateParam);
+			}
+			catch(ex){}
+
+			if ( StartDate != null && EndDate != null)
+			{
+				if (StartDate <= EndDate)
+				{ 
+					StartYear  = Year(StartDate);
+					StartMonth = Month(StartDate);
+					StartDay   = Day(StartDate);
+					
+					EndYear  = Year(EndDate);
+					EndMonth = Month(EndDate);
+					EndDay   = Day(EndDate);
+					
+					iYears = EndYear - StartYear;
+					if (EndMonth < StartMonth)
+					{
+						iYears--;
+					}
+					if ( ((StartMonth) == EndMonth) && (EndDay < StartDay) )
+					{ 
+						iYears--;
+					}
+					if (iYears != 0)
+					{
+						strResult = iYears + ' ' + oDayModTypes.arrYears[IntModType( iYears )]
+					}
+					
+					if ( (strReturnTypeParam == 'day') || (strReturnTypeParam == 'month') )
+					{
+						if (EndMonth >= StartMonth)
+						{
+							iMonth = EndMonth - StartMonth;
+						}
+						else
+						{
+							iMonth = (EndMonth + 12) - StartMonth;
+						}
+
+						if (EndDay < StartDay)
+						{
+							iMonth--;
+						}
+						
+						if (iMonth != 0)
+						{
+							strResult = strResult + ( Trim(strResult) != '' ? ', ' : '' ) + iMonth + ' ' + oDayModTypes.arrMonths[IntModType( iMonth )];
+						}
+						
+						if (strReturnTypeParam == 'day')
+						{
+							if (EndDay >= StartDay)
+							{
+								iDay = EndDay - StartDay;
+							}
+							else
+							{
+								iDay = (EndDay + 30) - StartDay;
+							}
+							if (iDay != 0)
+							{
+								strResult = strResult + ( Trim(strResult) != '' ? ', ' : '' ) + iDay + ' ' + oDayModTypes.arrDays[IntModType( iDay )];
+							}
+						}
+					}
+				}
+			}
+		}
+		catch(ex)
+		{
+			alert('fnWordDateDiff: ' + ex);
+		}
+		return strResult
+	}
+
+	function fnGetResumeFillingTypeText(strTypeNameParam)
+	{
+		var strText = '';
+
+		try
+		{
+			switch (strTypeNameParam)
+			{
+				case 'usual':
+					strText = tools_web.get_web_str( '8fmvpa0u0h' );
+					break;
+				case 'file':
+					strText = tools_web.get_web_str( 'c_file' );
+					break; 
+			case  'html_desc':
+					strText = tools_web.get_web_str( 'htmlopisaniere' );
+					break;
+			}
+		}
+		catch(ex){}
+
+		return strText
+	}
+
+	function fnGetResumePersonFullname()
+	{
+		var fldPerson   = curObject.person_id.OptForeignElem;
+		var strFullname = '';
+
+		if (fldPerson != undefined)
+		{
+			strFullname = fldPerson.fullname
+		}
+		else if (curObject.person_id.ChildExists('sd') && curObject.person_id.sd.ChildExists('fullname'))
+		{
+			strFullname = curObject.person_id.sd.fullname;
+		}	
+		
+		if ( bShowPersonLink )
+		{
+%>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( strPersonLinkType, curObject.person_id, { doc_id : curDocID } );%>"><%=XmlAttrEncode(fldPerson.fullname)%></Link>
+<%
+		}
+		else
+		{
+%>
+			<Label><%=XmlAttrEncode(strFullname)%></Label>
+<%
+		}
+	}
+
+	function fnGetResumeInvitedString()
+	{
+		if (bShowVacancyResponseExistence)
+		{
+			strIcon = 'icons/star_grey.png';
+			strAlt  = tools_web.get_web_const( 'netotklikovnav', curLngWeb );
+			
+			arrVacancys = XQuery('for $elem in vacancys where $elem/is_closed = false() return $elem');
+			arrVacancyResponses = ArraySelect( QueryCatalogByKeys( 'vacancy_responses', 'vacancy_id', ArrayExtract(arrVacancys, 'This.id') ), "This.status != 'rejected' && This.resume_id == " + curObjectID );
+			
+			if (ArrayOptFind(arrVacancyResponses, "This.status == 'invited'") != undefined)
+			{
+				strIcon = 'icons/star_red.png';
+				strAlt  = tools_web.get_web_const( 'estpriglashenie', curLngWeb );
+			}
+			else if (ArrayOptFirstElem(arrVacancyResponses) != undefined)
+			{
+				strIcon = 'icons/star_yellow.png';
+				strAlt  = tools_web.get_web_const( 'estotklikinava', curLngWeb );
+			}
+			else if (ArrayOptFirstElem(XQuery('for $elem in selected_resumes where $elem/person_id = ' + curUserID + ' and $elem/resume_id = ' + curObjectID + ' return $elem')) != undefined)
+			{
+				strIcon = 'icons/star_yellow.png';
+				strAlt  = tools_web.get_web_const( 'votobrannyhrez', curLngWeb );
+			}
+			if ( bReadOnly && strReadOnlyTypeView == 'hr' )
+			{
+%>
+				&nbsp;<img src="<%=strIcon%>" alt="<%=XmlAttrEncode(strAlt)%>" title="<%=XmlAttrEncode(strAlt)%>" style="width:24px;height:24px">
+<%
+			}
+			else
+			{
+%>
+				<Label></Label><Label><%=XmlAttrEncode('(' + strAlt + ')')%></Label>
+<%
+			}
+		}
+	}
+
+	function buildElem(oFieldParam)
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( oFieldParam.Title + ( oFieldParam.bRequired ? '*' : '' ) )%>:</Label>
+<%
+			if (oFieldParam.id == 'photo')
+			{
+				sUrl = 'pics/nophoto.jpg';
+				if (oFieldParam.value != '' && oFieldParam.value != null && oFieldParam.value != undefined)
+				{
+					sUrl = 'download_file.html?file_id=' + OptInt(oFieldParam.value) + '&sid=' + tools_web.get_sum_sid( OptInt(oFieldParam.value), Session.sid );
+				}
+%>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container" Adapt="true">
+					<Image Source="<%=sUrl%>" MaxWidth="<%=iMaxPhotoWidth%>" UpdateOnLoad="1"/>
+<%
+				if ( !bReadOnly )
+				{
+%>
+					<ResourceField Name="<%=oFieldParam.object_field_id%>" Width="<%=iMaxPhotoWidth%>" Height="<%=iMaxPhotoHeight%>" Source="resources" TitleName="<%=XmlAttrEncode(oFieldParam.name)%>" CurrentValue="<%=oFieldParam.value%>" CanCreate="true" CanSelect="true" CanDownload="true"><%=XmlAttrEncode(oFieldParam.name)%></ResourceField>
+<%
+				}
+%>
+				</StackPanel>
+<%
+			}
+			else if (oFieldParam.id == 'family_status')
+			{
+				arrFamilyStatus = [
+					{'id':'married',    'value':tools_web.get_web_const( 'vrb_married', curLngWeb )},
+					{'id':'not_married','value':tools_web.get_web_const( 'vrb_unmarried', curLngWeb )},
+					{'id':'divorced',   'value':tools_web.get_web_const( 'vrb_divorcee', curLngWeb )},
+				];
+				
+				sValue = oFieldParam.value;
+				
+				if (bReadOnly)
+				{
+					strStatusName = '';
+					if (sValue != '')
+					{
+						oFamilyStatus = ArrayOptFind( arrFamilyStatus, "This.id == '" + sValue + "'" );
+						if (oFamilyStatus != undefined)
+						{
+							strStatusName = oFamilyStatus.value;
+						}
+					}
+%>
+					<Label><%=XmlAttrEncode(strStatusName)%></Label>
+<%
+				}
+				else
+				{
+%>
+					<ComboBox Name="<%=oFieldParam.object_field_id%>" Width="<%=iDefaultWidth%>">
+						<ComboBoxItem Value="" Selected="<%=sValue == '' ? 'True' : 'False'%>"></ComboBoxItem>
+<%		
+						for( fldElem in arrFamilyStatus)
+						{
+							strSelected = '';
+							if (oFieldParam.value == fldElem.id)
+							{
+								strSelected =' Selected="True"';
+							}
+
+							try
+							{
+%>
+								<ComboBoxItem Value="<%=fldElem.id%>" Change=""<%=strSelected%>><%=XmlAttrEncode(fldElem.value)%></ComboBoxItem>
+<%
+							}
+							catch(ex)
+							{
+								//alert(ex)
+							}
+						}
+%>
+					</ComboBox>
+<%
+				}
+			}
+			else if (oFieldParam.id == 'sex')
+			{
+				sValue = oFieldParam.value;
+				if (bReadOnly)
+				{
+%>
+					<Label><%=XmlAttrEncode( ( sValue == 'w' ? tools_web.get_web_str('vpb_w') : ( sValue == 'm' ? tools_web.get_web_str('vpb_m') : '' ) ) )%></Label>
+<%
+				}
+				else
+				{
+%>
+					<ComboBox Name="<%=oFieldParam.object_field_id%>" Width="<%=iDefaultWidth%>">
+						<ComboBoxItem Value="" Selected="<%=sValue == '' ? 'True' : 'False'%>"></ComboBoxItem>
+						<ComboBoxItem Value="w" Selected="<%=sValue == 'w' ? 'True' : 'False'%>"><%=( tools_web.get_web_const( 'vpb_w', curLngWeb ) )%></ComboBoxItem>
+						<ComboBoxItem Value="m" Selected="<%=sValue == 'm' ? 'True' : 'False'%>"><%=( tools_web.get_web_const( 'vpb_m', curLngWeb ) )%></ComboBoxItem>
+					</ComboBox>
+<%
+				}
+			}
+			else if (oFieldParam.type == 'catalog')
+			{
+				if (!bReadOnly)
+				{
+					oSourceObject = {
+						'id'                  : oFieldParam.object_field_id,
+						'object_id'           : oFieldParam.value,
+						'object_id_item_name' : oFieldParam.id,
+						'multi_select'        : 'false',
+						'catalog_name'        : oFieldParam.foreign_elem,
+						'selector_type'       : oFieldParam.catalog_selector_type
+					};
+
+					oSourceObject.SetProperty('close_action', '');
+					fnBuildObjectSelector(oSourceObject);
+				}
+				else
+				{
+%>
+					<Label><%=XmlAttrEncode(oFieldParam.name)%></Label>
+<%
+				}
+			}
+			else if ( oFieldParam.type == 'common' || oFieldParam.type == 'lists' )
+			{
+				if (oFieldParam.type == 'common')
+					arrElems = curLngCommon.EvalPath(oFieldParam.foreign_elem);
+				else
+					arrElems = lists.EvalPath(oFieldParam.foreign_elem);
+					
+				if (!bReadOnly)
+				{
+%>
+					<ComboBox Name="<%=oFieldParam.object_field_id%>" Width="<%=iDefaultWidth%>">
+<%
+					for(fldElem in arrElems)
+					{
+						strSelected = '';
+						if (oFieldParam.value == fldElem.id)
+						{
+							strSelected = ' Selected="True"';
+						}
+
+						try
+						{
+%>
+							<ComboBoxItem Value="<%=fldElem.id%>" Change=""<%=strSelected%>><%=XmlAttrEncode(tools_web.get_cur_lng_name( arrElems.GetChildByKey( fldElem.id).name, curLng.short_id ))%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+							//alert(ex)
+						}
+					}
+%>
+					</ComboBox>
+<%
+				}
+				else
+				{	
+					sText = '';
+					fldElem = arrElems.GetOptChildByKey(oFieldParam.value);
+					if (fldElem != undefined)
+					{
+						sText = tools_web.get_cur_lng_name( fldElem.name, curLng.short_id );
+					}
+%>
+					<Label><%=XmlAttrEncode(sText)%></Label>
+<%
+				}
+			}
+			else if (oFieldParam.type == 'text')
+			{
+				sValue = oFieldParam.value;
+				if (bReadOnly)
+				{
+%>
+					<HTMLBox><![CDATA[<%=HtmlEncode(sValue)%>]]></HTMLBox>
+<%
+				}
+				else
+				{
+%>
+					<EditBox Name="<%=oFieldParam.object_field_id%>" Width="100%"><%=sValue%></EditBox>
+<%
+				}
+			}
+			else if (oFieldParam.type == 'date')
+			{
+				sValue = oFieldParam.value;
+				if (sValue != '')
+				{
+					sValue = StrDate(sValue, false, false);
+				}
+				if (bReadOnly)
+				{
+%>
+					<Label><%=XmlAttrEncode(sValue)%></Label>
+<%
+				}
+				else
+				{
+%>
+					<DatePicker Name="<%=oFieldParam.object_field_id%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=sValue%></DatePicker>
+<%
+				}
+				if (oFieldParam.id == 'birth_date')
+				{
+					if ( bCountAge && sValue != '')
+					{
+%>
+		</GridRow>
+		<GridRow>
+						<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(tools_web.get_web_str('vrb_age'))%>:</Label>
+						<Label><%=XmlAttrEncode(fnDateDiff( Date(), sValue, 'year' ))%></Label>
+<%
+					}
+				}
+			}
+			else if (oFieldParam.type == 'phone')
+			{
+				sValue = oFieldParam.value;
+				if (bReadOnly)
+				{
+%>
+					<Label><%=XmlAttrEncode(sValue)%></Label>
+<%
+				}
+				else
+				{
+%>
+					<StackPanel Orientation="Horizontal">
+						<Edit Name="<%=oFieldParam.object_field_id%>" Width="<%=iDefaultWidth%>" Hidden="<%=(bShowMultiPhoneFields ? '1' : '0')%>"><%=sValue%></Edit>
+<%
+					if (bShowMultiPhoneFields)
+					{
+%>
+						<StackPanel Adapt="true" Orientation="Horizontal">
+<%
+						arrPhoneParts = String(sValue).split('-');
+						strPart1 = '';
+						strPart2 = '';
+						strPart3 = '';
+						
+						try
+						{
+							strPart1 = arrPhoneParts[0];
+						}
+						catch(ex)
+						{
+						}
+						try
+						{
+							strPart2 = arrPhoneParts[1];
+						}
+						catch(ex)
+						{
+						}
+						
+						try
+						{
+							strPart3 = arrPhoneParts[2];
+						}
+						catch(ex)
+						{
+						}
+
+						if (ArrayOptFirstElem(arrRegionCodes) != undefined)
+						{
+%>
+							<ComboBox Name="<%=oFieldParam.object_field_id + '1'%>" Width="120">
+<%
+							for (strCode in arrRegionCodes)
+							{
+								strSelected = '';
+								if (strCode == strPart1)
+								{
+									strSelected = ' Selected=\"True\"';
+								}
+
+								try
+								{
+%>
+									<ComboBoxItem Value="<%=XmlAttrEncode(strCode)%>" <%=strSelected%>><%=XmlAttrEncode(strCode)%></ComboBoxItem>
+<%
+								}
+								catch(ex)
+								{
+									//alert(ex)
+								}
+							}
+%>
+							</ComboBox>
+<%
+						}
+						else
+						{
+%>						
+							<Edit Name="<%=oFieldParam.object_field_id + '1'%>" Width="30%"><%=strPart1%></Edit>
+<%
+						}
+%>
+							<StackPanel Orientation="Horizontal">
+								<Label>(</Label>
+								<Edit Name="<%=oFieldParam.object_field_id + '2'%>" Width="150"><%=strPart2%></Edit>
+								<Label>)</Label>
+							</StackPanel>
+							<Edit Name="<%=oFieldParam.object_field_id + '3'%>" Width="100%"><%=strPart3%></Edit>
+						</StackPanel>
+<%
+					}
+%>
+					</StackPanel>
+<%
+				}
+			}
+			else
+			{
+				sValue = oFieldParam.value;
+				if (bReadOnly)
+				{
+%>
+					<Label><%=XmlAttrEncode(sValue)%></Label>
+<%
+				}
+				else
+				{
+%>
+					<Edit Name="<%=oFieldParam.object_field_id%>" Width="<%=iDefaultWidth%>"><%=sValue%></Edit>
+<%
+				}
+			}
+%>
+		</GridRow>
+<%
+	}
+
+	function fnReadOnly()
+	{
+		var bReturn = true;
+		if (!bInsert)
+		{   
+			if ( ( curObject.creator_person_id.HasValue && curObject.creator_person_id == curUserID ) || ( curObject.person_id == curUserID ) ) 
+			{
+				bReturn = false;
+			}
+			else if (fnEvalCreator())
+			{	
+				bReturn = false;
+			}
+		}
+		return bReturn
+	}
+	//-- end functions
+
+	iDefaultVacancySourceID = OptInt( tools_web.get_web_param( curParams, 'resume.visible_fields.iDefaultVacancySourceID', null, true ),null);
+	strEvalCreator          = String( tools_web.get_web_param( curParams, 'resume.strEvalCreator', 'false', true ) );
+
+	bShowResumeTypeSelector = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowResumeTypeSelector', 'false', true ));
+	iResumeTypeGroupID      = OptInt( tools_web.get_web_param( curParams, 'resume.bShowResumeTypeSelector.iResumeTypeGroupID', null, true ),null);
+	
+	bShowResumeTypeSelectorToBoss     = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowResumeTypeSelector.bShowResumeTypeSelectorToBoss', 'false', true ));
+	strResumeTypeSelectorDefaultValue = tools_web.get_web_param( curParams, 'resume.bShowResumeTypeSelector.strResumeTypeSelectorDefaultValue', 'self', true );
+
+	if ( NewDoc )
+	{
+		curObject = OpenNewDoc( 'x-local://wtv/wtv_resume.xmd' ).TopElem;
+		curObjectID = null;
+		
+		if (fnEvalCreator())
+		{
+			bCreatingNewPerson = (strResumeTypeSelectorDefaultValue == 'not_self');
+			if (bShowResumeTypeSelector)
+			{
+				if (curUrlQuery.HasProperty('resume_type'))
+				{
+					bCreatingNewPerson = curUrlQuery.GetOptProperty('resume_type', strResumeTypeSelectorDefaultValue) == 'not_self';
+				}
+			}
+		}
+		
+		iVacancySourceID = null;
+		try
+		{
+			if ( curUrlQuery.HasProperty( 'Query' ) && curUrlQuery.HasProperty( 'vacancy_source_id' ) )
+			{
+				iVacancySourceID = OptInt(curUrlQuery.GetProperty( 'vacancy_source_id' ), null);
+			}
+		}
+		catch(ex)
+		{
+		}
+		
+		if ( iVacancySourceID == null )
+		{
+			iVacancySourceID = iDefaultVacancySourceID;
+		}
+		
+		if (iVacancySourceID != null)
+		{
+			fldVacancySource = ArrayOptFirstElem(XQuery('for $elem in vacancy_sources where $elem/id = ' + iVacancySourceID + ' return $elem'));
+			if (fldVacancySource != undefined)
+			{
+				curObject.vacancy_source_id = iVacancySourceID;
+			}
+		}
+	}
+	else
+	{
+		bReadOnly = fnReadOnly();
+	}
+
+	bShowMultiPhoneFields   = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowMultiPhoneFields', 'false', true ));
+	strRegionCodes          = tools_web.get_web_param( curParams, 'resume.bShowMultiPhoneFields.strRegionCodes', '', true );
+	bShowDeleteResumeButton = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowDeleteResumeButton', 'true', true ));
+	bIncludeArchive         = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bIncludeArchive', 'true', true ));
+	iResumesCount           = OptInt( tools_web.get_web_param( curParams, 'resume.resumes_count', null, true ), null);
+	
+	bShowVacancyResponseExistence = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowVacancyResponseExistence', 'false', true ));
+
+	bShowPersonLink     = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowPersonLink', 'false', true ));
+	strPersonLinkType   = tools_web.get_web_param( curParams, 'resume.link_type', 'collaborator', true );
+	bFillInCreatorEmail = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bFillInCreatorEmail', 'true', true ));
+	bFillInCreatorSex   = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bFillInCreatorSex', 'true', true ));
+	bFillInCreatorBirth = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bFillInCreatorBirth', 'true', true ));
+	bCountAge           = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bCountAge', 'true', true ));
+	bShowTitle          = tools_web.is_true(tools_web.get_web_param( curParams, 'resume.bShowTitle', 'true', true ));
+	sTitleText          = tools_web.get_web_param( curParams, 'resume.bShowTitle.sTitleText', '', true );
+	strReadOnlyTypeView = String( tools_web.get_web_param( curParams, 'resume.read_only_type_view', 'web_tutor', true ) );
+	sDispType           = tools_web.get_web_param( curParams, 'resume.block_list.disp_type', 'list', true );
+	sTabsDispType       = bInsert ? 'n' : tools_web.get_web_param( curParams, 'resume.block_list.disp_type.tabs_disp_type', 'w', true );
+	strRegionSelector   = tools_web.get_web_param( curParams, 'resume.RegionSelector', 'dropdown', true ) == 'dropdown' ? 'combo' : 'selector';
+	
+	strCatalogTypeSelector = tools_web.get_web_param( curParams, 'resume.CatalogTypeSelector', 'dropdown', true )
+
+	iDefaultSkillsLeftColumnWidth = OptInt(tools_web.get_web_param( curParams, 'resume.iDefaultSkillsLeftColumnWidth', '300', true ), 300);
+	if (sTabsDispType == 'w' && iDefaultSkillsLeftColumnWidth >= 300)
+	{
+		iDefaultSkillsLeftColumnWidth = 200;
+	}
+
+	strBlockList = String( tools_web.get_web_param( curParams, 'resume.block_list', 'general;contacts;prof_area;projects;edu;publications;lngs;skills;additional;custom_fields', true ) );
+	arrBlockListParam = strBlockList.split( ';' );
+
+	if (curObject.filling_type != 'usual')
+	{
+		arrBlockListParam = ArraySelect(arrBlockListParam, "This == 'general' || This == 'contacts' || This == 'custom_fields'");
+		if (curObject.filling_type == 'html_desc')
+		{
+			arrBlockListParam.push('desc');
+		}
+		if (curObject.filling_type == 'file')
+		{
+			arrBlockListParam.push('files');
+		}
+	}
+
+	if (NewDoc)
+	{
+		arrBlockListParam = ArraySelect(arrBlockListParam, "This != 'prof_area' && This != 'edu' && This != 'projects' && This != 'publications' && This != 'lngs' && This != 'skills'");
+	}
+
+	arrRegionCodes = ArraySelect(strRegionCodes.split( ';' ), "Trim(This) != ''");
+	xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+
+	arrProfAreaBlockVisibleFields  = String( tools_web.get_web_param( curParams, 'resume.block_list.prof_area.visible_fields', 'we_start_date;we_finish_date;we_org_name;we_position_name;we_desc;we_region_id;we_profession_area_id;we_org_phone;we_org_fax;we_org_email;we_org_address;we_org_site', true ) ).split(';');
+	arrProfAreaBlockRequiredFields = String( tools_web.get_web_param( curParams, 'resume.block_list.prof_area.required_fields', '', true ) ).split(';');
+
+	arrEduBlockVisibleFields  = String( tools_web.get_web_param( curParams, 'resume.block_list.edu.visible_fields', 'edu_year;edu_name;edu_specialisation;edu_type;edu_result;edu_site', true ) ).split(';');
+	arrEduBlockRequiredFields = String( tools_web.get_web_param( curParams, 'resume.block_list.edu.required_fields', '', true ) ).split(';');
+
+	arrProjectBlockVisibleFields  = String( tools_web.get_web_param( curParams, 'resume.block_list.project.visible_fields', 'project_sphere;project_type;project_examination_year;project_year;project_desc', true ) ).split(';');
+	arrProjectBlockRequiredFields = String( tools_web.get_web_param( curParams, 'resume.block_list.project.required_fields', '', true ) ).split(';');
+	
+	arrPubBlockVisibleFields  = String( tools_web.get_web_param( curParams, 'resume.block_list.pub.visible_fields', 'pub_date;pub_name;pub_publisher;pub_link', true ) ).split(';');
+	arrPubBlockRequiredFields = String( tools_web.get_web_param( curParams, 'resume.block_list.pub.required_fields', '', true ) ).split(';');
+
+	strVisibleFieldCodes = String( tools_web.get_web_param( curParams, 'resume.visible_fields', 'name;sex;family_status;birth_date;min_wage;max_wage;currency_type;educ_type_id;employment_type_id;schedule_work_id;profession_area_id;exp_years;academic_degree;academic_heading;phone;mobile_phone;work_phone;email;schedule_id;vacancy_source_id;region_id;address', true ) );
+
+	strRequiredFieldCodes = String( tools_web.get_web_param( curParams, 'resume.required_fields', 'name', true ) );
+	if (bCreatingNewPerson)
+	{
+		if ( StrContains( strVisibleFieldCodes, 'lastname', true ) == false && StrContains( strVisibleFieldCodes, 'firstname', true ) == false && StrContains(strVisibleFieldCodes, 'middlename', true) == false)
+		{
+			strVisibleFieldCodes = 'lastname;firstname;middlename;' + strVisibleFieldCodes;
+		}
+		
+		if (StrContains(strRequiredFieldCodes, 'email', true) == false)
+		{
+			strRequiredFieldCodes = strRequiredFieldCodes + ';email';
+		}
+		
+		if (StrContains(strRequiredFieldCodes,'lastname',true)==false&&StrContains(strRequiredFieldCodes,'firstname',true)==false&&StrContains(strRequiredFieldCodes,'middlename',true)==false)
+		{
+			strRequiredFieldCodes = strRequiredFieldCodes + ';lastname;firstname;middlename';
+		}
+	}
+	else
+	{
+		arrFIOFields = ['lastname','firstname','middlename'];
+		for (strFIOField in arrFIOFields)
+		{
+			strVisibleFieldCodes  = StrReplace(strVisibleFieldCodes, strFIOField, '');
+			strRequiredFieldCodes = StrReplace(strRequiredFieldCodes, strFIOField, '');
+		}
+	}
+
+	var oFIO = {};
+	if ( NewDoc )
+	{
+		if (bFillInCreatorEmail)
+		{
+			curObject.email = curUser.email;
+		}
+		if (!bCreatingNewPerson)
+		{
+			if (bFillInCreatorSex)
+			{
+				curObject.sex = curUser.sex;
+			}
+			if (bFillInCreatorBirth)
+			{
+				curObject.birth_date = curUser.birth_date;
+			}
+		}
+		else
+		{
+			if (curUrlQuery.HasProperty('recommendation_id'))
+			{
+				try
+				{
+					teRecommendation = OpenDoc( UrlFromDocID( Int(curUrlQuery.GetProperty( 'recommendation_id' ))) ).TopElem;
+					oFIO.SetProperty('lastname', teRecommendation.lastname);
+					oFIO.SetProperty('firstname', teRecommendation.firstname);
+					oFIO.SetProperty('middlename', teRecommendation.middlename);
+					curObject.email = teRecommendation.email;
+					curObject.phone = teRecommendation.phone;
+					curObject.mobile_phone = teRecommendation.mobile_phone;
+					curObject.work_phone = teRecommendation.work_phone;
+				}
+				catch(ex)
+				{
+					alert(ex)
+				}
+			}
+		}
+	}
+
+	var arrFields = [];
+
+	arrVisibleFieldCodes = strVisibleFieldCodes.split( ';' );
+	updateFieldsArray(arrVisibleFieldCodes, 'general', false);
+
+	if (fnGetBlockVisibility('additional'))
+		updateFieldsArray(Array('dominant_skills'), 'additional', false);
+
+	if (fnGetBlockVisibility('desc'))
+		updateFieldsArray(Array('desc'), 'desc', false);
+
+	if (fnGetBlockVisibility('prof_area'))
+		updateFieldsArray(arrProfAreaBlockVisibleFields, 'prof_area', false);
+
+	if (fnGetBlockVisibility('edu'))
+		updateFieldsArray(arrEduBlockVisibleFields, 'edu', false);
+
+	if (fnGetBlockVisibility('projects'))
+		updateFieldsArray(arrProjectBlockVisibleFields, 'projects', false);
+
+	if (fnGetBlockVisibility('publications'))
+		updateFieldsArray(arrPubBlockVisibleFields, 'publications', false);
+	
+	if (fnGetBlockVisibility('lngs'))
+	{
+		var arrBlocksForMainLng = Array('additional','general');
+		for (strBlockName in arrBlocksForMainLng)
+		{
+			if (fnGetBlockVisibility(strBlockName))
+			{
+				updateFieldsArray(Array('main_lng'), strBlockName, false);
+				break;
+			}
+		}
+		updateFieldsArray(Array('lng_lng_id','lng_level'), 'lngs', false)	
+	}
+
+	if (fnGetBlockVisibility('skills'))
+		updateFieldsArray(Array('skill_level_id'), 'skills', false);
+	
+	arrRequiredFieldCodes = strRequiredFieldCodes.split( ';' );
+	updateFieldsArray(arrRequiredFieldCodes, 'general', true);
+
+	if (fnGetBlockVisibility('prof_area'))
+		updateFieldsArray(arrProfAreaBlockRequiredFields, 'prof_area', true);
+
+	if (fnGetBlockVisibility('edu'))
+		updateFieldsArray(arrEduBlockRequiredFields, 'edu', true);
+
+	if (fnGetBlockVisibility('projects'))
+		updateFieldsArray(arrProjectBlockRequiredFields, 'projects', true);
+
+	if (fnGetBlockVisibility('publications'))
+		updateFieldsArray(arrPubBlockRequiredFields, 'publications', true);
+
+	strDefaultResumeFillingType = String( tools_web.get_web_param( curParams, 'resume.default_resume_type', 'usual', true ) );
+	strResumeFillingTypes = String( tools_web.get_web_param( curParams, 'resume.resume_filling_type', '', true ) );
+	arrResumeFillingTypes = [];
+
+	if ( ! NewDoc )
+	{
+		arrTemp = strResumeFillingTypes.split( ';' );
+		for ( sResumeFillingType in arrTemp )
+		{
+			if ( Trim( sResumeFillingType ) != '')
+			{
+				arrResumeFillingTypes.push( { 'code' : sResumeFillingType, 'text' : fnGetResumeFillingTypeText( sResumeFillingType ) } );
+			}
+		}
+
+		if (ArrayOptFirstElem(arrResumeFillingTypes) != undefined)
+		{
+			if ( ArrayOptFind(arrResumeFillingTypes, "This.code == '" + strDefaultResumeFillingType + "'") == undefined )
+			{
+				arrResumeFillingTypes.push({'code':strDefaultResumeFillingType, 'text':fnGetResumeFillingTypeText(strDefaultResumeFillingType)});
+			}
+			if ( ArrayOptFind(arrResumeFillingTypes, "This.code == '" + curObject.filling_type + "'") == undefined )
+			{
+				arrResumeFillingTypes.push({'code':curObject.filling_type, 'text':fnGetResumeFillingTypeText(curObject.filling_type)});
+			}
+		}
+	}
+	else
+	{
+		arrResumeFillingTypes.push({'code':'usual', 'text':fnGetResumeFillingTypeText('usual')});
+	}
+
+	if ( strReadOnlyTypeView == 'hr' )
+	{
+		oDayModTypes = new Object;
+		oDayModTypes.arrYears = [];
+		oDayModTypes.arrYears.push(StrLowerCase(tools.get_web_str('let')));
+		oDayModTypes.arrYears.push(StrLowerCase(tools.get_web_str('god')));
+		oDayModTypes.arrYears.push(StrLowerCase(tools.get_web_str('goda')));
+	
+		oDayModTypes.arrMonths = [];
+		oDayModTypes.arrMonths.push(StrLowerCase(tools.get_web_str('mesyacev')));
+		oDayModTypes.arrMonths.push(StrLowerCase(tools.get_web_str('tm5jxtl2m3')));
+		oDayModTypes.arrMonths.push(StrLowerCase( tools_web.get_web_const( 'mesyaca', curLngWeb ) ));
+		
+		oDayModTypes.arrDays = [];
+		oDayModTypes.arrDays.push(StrLowerCase(tools.get_web_str('2kaidfx9na')));
+		oDayModTypes.arrDays.push(StrLowerCase(tools.get_web_str('w6n76t3f75')));
+		oDayModTypes.arrDays.push(StrLowerCase(tools.get_web_str('dnya')));
+	}
+
+	Redirect = '';
+	try
+	{
+		strRedirect = Trim( Request.Session.Env.GetOptProperty( 'sStartMode', '' ) );
+
+		if ( strRedirect != '' )
+		{
+			Redirect = tools_web.convert_xss( strRedirect );
+		}
+	}
+	catch( ex )
+	{
+		// alert( 'ex: ' + ex );
+	}
+
+	if ( Redirect != '' )
+	{
+		sReturnUrl = tools_web.get_mode_clean_url( Redirect, null, { } );
+
+		if ( Redirect == 'recommendation' )
+		{
+			try
+			{
+				iRecommendationID = Trim( Request.Session.Env.GetOptProperty( 'sStartModeObjectID', null ) );
+				if ( iRecommendationID != null )
+					sReturnUrl = tools_web.get_mode_clean_url( Redirect, OptInt( iRecommendationID ), { } );
+			}
+			catch( e )
+			{
+			}
+		}
+
+		if ( Redirect == 'career_reserve' )
+		{
+			sReturnUrl = sReturnUrl + '&tab=3';
+		}
+	}
+	else
+	{
+		sReturnUrl = tools_web.get_mode_clean_url( 'resumes', null, { doc_id : curDocID } );
+	}
+
+	sDefaultSuccessAction = 'ALERT={!ResumeDefaultAlertMessage};REFRESH;';
+	sDefaultFailureAction = 'ALERT={!messageText}';
+	sFieldNames = ArrayMerge(arrFields, 'This.object_field_id', ';');
+	sRequiredFieldNames = ArrayMerge(ArraySelect(arrFields, 'This.bRequired'), 'This.object_field_id', ';');
+
+	if ( NewDoc )
+	{
+		//sDefaultSuccessAction = 'OPENURL=' + buildNewUrlQuery(['resume_type','object_id']) + 'object_id={object_id}';
+		sDefaultSuccessAction = 'OPENURL=' + tools_web.get_mode_clean_url( curUrlQuery.GetOptProperty( 'mode', null ), '{object_id}', { doc_id: curUrlQuery.GetOptProperty( 'doc_id', null ) } );
+		sDefaultFailureAction = 'ALERT={!messageText};{!ResultUrl}';
+	}
+
+	sSaveAction = 'SET=ResumeAction/sAction,save;Set=CONTEXT,;SET=ResumeAction/CONTEXT,{CONTEXT};SET=ResumeAction/iObjectId,' + curObjectID + ';SET=ResumeSuccessAction,' + UrlEncode(sDefaultSuccessAction) + ';SET=ResumeFailureAction,' + UrlEncode(sDefaultFailureAction) + ';SET=sFieldNames,' + UrlEncode(sFieldNames) + ';SET=sRequiredFieldNames,' + UrlEncode(sRequiredFieldNames) + ';Action=ResumeAction;';
+
+	sFillingChangeAction = 'SET=ResumeAction/sAction,save;CONTEXT=ResumeObjectContextGroup;SET=ResumeAction/CONTEXT,{CONTEXT};SET=ResumeAction/iObjectId,' + curObjectID + ';SET=ResumeSuccessAction,' + UrlEncode(sDefaultSuccessAction) + ';SET=ResumeFailureAction,' + UrlEncode(sDefaultFailureAction) + ';SET=sFieldNames,' + UrlEncode('filling_type') + ';SET=sRequiredFieldNames,;Action=ResumeAction;';
+%>
+	<SPXMLScreen>
+		<Edit Name="ResumeDefaultAlertMessage" Hidden="1"><%=XmlAttrEncode(tools_web.get_web_const( 'dannyesohraneny', curLngWeb ))%></Edit>
+		<Edit Name="ResumeSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+		<Edit Name="ResumeFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+		<Edit Name="sFieldNames" Hidden="1"></Edit>
+		<Edit Name="sRequiredFieldNames" Hidden="1"></Edit>
+
+		<Action Name="ResumeAction" Source="resume_change" Success="{!ResumeSuccessAction}" Failure="{!ResumeFailureAction}">
+			<Param Name="iObjectId" Value=""/>
+			<Param Name="CONTEXT" Value=""/>
+			<Param Name="sAction" Value=""/>
+			<Param Name="sFieldNames" Value="{sFieldNames}"/>
+			<Param Name="sRequiredFieldNames" Value="{sRequiredFieldNames}"/>
+			<Param Name="bNewDoc" Value="<%=NewDoc%>"/>
+		</Action>
+
+		<ContextGroup Name="ResumeObjectContextGroup" Items="filling_type,is_archive"/>
+
+		<Edit Name="ResumeObjectChildrenName" Hidden="1"></Edit>
+		<Edit Name="ResumeObjectChildID" Hidden="1"></Edit>
+		<Edit Name="resumes_count" Hidden="1"><%=iResumesCount%></Edit>
+		<Edit Name="include_archive_resumes" Hidden="1"><%=bIncludeArchive%></Edit>
+		<Edit Name="is_archive" Hidden="1"><%=curObject.is_archive%></Edit>
+		<Edit Name="ResumeSelectDialogCloseAction" Hidden="1">ALERT={!messageText}</Edit>
+
+		<Dialog Name="ResumeSelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_choose', curLngWeb ) )%>" Close="{!ResumeSelectDialogCloseAction}">
+			<Param Name="catalog_name" Value="print_form"/>
+			<Param Name="multi_select" Value="false"/>
+			<Param Name="xquery_qual" Value="<%=("$elem/object_name='"+curObject.Name+"'")%>"/>
+			<Param Name="disp_filter" Value="false"/>
+			<Param Name="show_all" Value="false"/>
+			<Param Name="can_be_empty" Value="false"/>
+			<Param Name="selected_object_ids" Value="true"/>
+			<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+		</Dialog>
+
+		<Action Name="ResumePrintAction" Source="resume_change" Success="OPENWINDOW=view_print_form.html?print_form_id={object_id}&sid={object_sid}&object_id=<%=(curObjectID==null ? null : curObjectID)%>" Failure="<%=UrlEncode(sDefaultFailureAction)%>">
+			<Param Name="sAction" Value="get_sid"/>
+			<Param Name="iObjectId" Value=""/>
+			<Param Name="CONTEXT" Value=""/>
+		</Action>
+<%
+
+	if ( NewDoc )
+	{
+		if ( bShowTitle )
+		{
+%>
+			<Label Class='XAML-object-title-label'><%=( sTitleText == '' ? 'Новое резюме' : sTitleText )%></Label>
+<%
+		}
+	}
+
+	arrElems = [''];
+
+	if (!bReadOnly)
+	{
+		arrResumeTypes = [];
+		bShow = false;
+
+		if (bShowResumeTypeSelector)
+		{
+			if (!curObject.person_id.HasValue)
+			{
+				if (fnEvalCreator())
+				{
+					bShow = true;
+				}
+				if (iResumeTypeGroupID != null)
+				{
+					bShow = !bShow ? ( ArrayOptFirstElem(XQuery('for $elem in group_collaborators where $elem/group_id = ' + iResumeTypeGroupID + ' and $elem/collaborator_id =' + curUserID + ' return $elem')) != undefined ) : bShow;
+				}
+				if (bShowResumeTypeSelectorToBoss)
+				{
+					bShow = !bShow ? ( ArrayOptFirstElem(XQuery('for $elem in func_managers where $elem/is_native = true() and $elem/person_id = ' + curUserID + ' return $elem')) != undefined ) : bShow;
+				}
+				if ( bShow )
+				{
+					//sHref = buildNewUrlQuery(['resume_type']);
+					sHref = tools_web.get_mode_clean_url( curUrlQuery.GetOptProperty( 'mode', null ), null, { doc_id : curUrlQuery.GetOptProperty( 'doc_id', null ) } );
+					arrResumeTypes.push({'code':'self','text':tools_web.get_web_const( 'sobstvennoerez', curLngWeb ), 'url':sHref});
+					arrResumeTypes.push({'code':'not_self','text':tools_web.get_web_const( 'rezyumenakandid', curLngWeb ), 'url':sHref});
+					strResumeType = curUrlQuery.GetOptProperty('resume_type', strResumeTypeSelectorDefaultValue);
+				}
+			}
+		}
+		if ( ArrayCount(arrResumeFillingTypes) > 1 || ArrayOptFirstElem(arrResumeTypes) != undefined )
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+			<GridColumns>
+				<GridColumn/>
+				<GridColumn/>
+			</GridColumns>
+<%
+		if (ArrayCount(arrResumeFillingTypes) > 1)
+		{
+
+%>		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(tools_web.get_web_str('tipzapolneniya'))%>:</Label>
+			<ComboBox Name="filling_type" Width="<%=iDefaultWidth%>">
+<%
+			for (fldElem in arrResumeFillingTypes)
+			{
+				strSelected = '';
+				if (curObject.filling_type == fldElem.code)
+				{
+					strSelected = ' Selected=\"True\"';
+				}
+
+				try
+				{
+%>
+					<ComboBoxItem Value="<%=fldElem.code%>" Change="<%=sFillingChangeAction%>"<%=strSelected%>><%=XmlAttrEncode(fldElem.text)%></ComboBoxItem>
+<%
+				}
+				catch(ex)
+				{
+					//alert(ex)
+				}
+			}
+%>
+			</ComboBox>
+		</GridRow>
+<%
+		}
+
+		if (ArrayCount(arrResumeTypes) > 1)
+		{
+%>		
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(tools_web.get_web_str('tipsozdavaemog'))%>:</Label>
+			<ComboBox Name="resume_type" Width="<%=iDefaultWidth%>">
+<%
+			for (fldElem in arrResumeTypes)
+			{
+				strSelected = '';
+				if (strResumeType == fldElem.code)
+				{
+					strSelected = ' Selected=\"True\"';
+				}
+
+				try
+				{
+%>
+					<ComboBoxItem Value="<%=fldElem.code%>" Change="OPENURL=<%=fldElem.url + '/resume_type/' + fldElem.code%>"<%=strSelected%>><%=XmlAttrEncode(fldElem.text)%></ComboBoxItem>
+<%
+				}
+				catch(ex)
+				{
+					//alert(ex)
+				}
+			}
+%>
+			</ComboBox>
+		</GridRow>
+<%
+		}
+%>
+		</Grid>
+	
+<%
+		}
+	}
+
+	if ( curObject.person_id != curUserID && curObject.person_id.HasValue && curObject.person_id.OptForeignElem != undefined && curObject.person_id.OptForeignElem.in_request_black_list )
+	{
+		curMessageBox = {
+			'type': 'error',
+			'text': tools_web.get_web_const( 'kandidatvcherno', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_message_box.xaml' ) );
+	}
+
+	if (curObject.is_archive)
+	{
+		curMessageBox = {
+			'id':'is_archive',
+			'type': 'warning',
+			'text': tools_web.get_web_const( 'rezyumenahodits', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + 'view_message_box.xaml' ) );
+	}
+
+	if ( !bReadOnly || ( strReadOnlyTypeView == 'web_tutor' && bReadOnly ) )
+	{
+		if ( sDispType == 'tab' )
+		{
+%>
+			<TabControl Name="ResumeBodyTab<%=curObjectID%>" Preservable="1" Adapt="true" TabsLocation="<%=sTabsDispType%>" TabsWidth="200" Width="100%">
+<%
+		}
+
+		for (sBlockElem in arrBlockListParam)
+		{
+			sTitle = getBlockElemTitle(sBlockElem, false);
+			if ( sDispType == 'tab' )
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode(sTitle)%>">
+<%
+			}
+			else if ( sDispType == 'list' )
+			{
+%>
+				<Panel Title="<%=XmlAttrEncode( sTitle )%>">
+<%
+			}
+			//alert(sBlockElem)
+
+			//---container body start
+			switch(sBlockElem)
+			{
+				case 'lngs': //языки
+				{
+				}
+				case 'edu': //образование
+				{
+				}
+				case 'projects': //проекты
+				{
+				}
+				case 'publications': //публикации
+				{
+				}
+				case 'prof_area': //профессиональный опыт
+				{
+%>
+					<Panel Source="resume_child_item" Name="<%=sBlockElem%>_panel" ShowHeader="0" Width="100%" Class="XAML-without-padding-and-margin">
+						<Param Name="sChildElem" Value="<%=sBlockElem%>"/>
+						<Param Name="sFieldNames" Value="<%=ArrayMerge(ArraySelect(arrFields,"This.sBlockName=='"+sBlockElem+"'"),"This.id",";")%>"/>
+						<Param Name="sRequiredFieldNames" Value="<%=ArrayMerge(ArraySelect(arrFields,"This.sBlockName=='"+sBlockElem+"'&&This.bRequired"),"This.id",";")%>"/>
+						<Param Name="bReadOnly" Value="<%=bReadOnly%>"/>
+						<Param Name="iDefaultWidth" Value="<%=iDefaultWidth%>"/>
+						<Param Name="iDatePickerWidth" Value="<%=iDatePickerWidth%>"/>
+						<Param Name="iElemsInRow" Value="<%=(sDispType == 'tab'&&sTabsDispType=="w"?2:3)%>"/>
+						<Param Name="strCatalogTypeSelector" Value="<%=strCatalogTypeSelector%>"/>
+					</Panel>
+<%
+					break;
+				}
+				case "skills": //навыки
+				{
+%>
+					<Panel Source="resume_skills" Name="skills_panel" ShowHeader="0" Width="100%" Class="XAML-without-padding-and-margin">
+						<Param Name="sChildElem" Value="<%=sBlockElem%>"/>
+						<Param Name="bReadOnly" Value="<%=bReadOnly%>"/>
+						<Param Name="iDefaultWidth" Value="<%=iDefaultWidth%>"/>
+						<Param Name="iDefaultLeftColumnWidth" Value="<%=iDefaultSkillsLeftColumnWidth%>"/>
+					</Panel>
+<%
+				break;
+				}
+				case "general": //основная информация
+				{
+				}
+				case "additional": //дополнительные сведения
+				{
+				}
+				case "contacts": //контакты
+				{
+					arrTempFields = ArraySelect(arrFields, "This.sBlockName == '" + sBlockElem + "'")
+					if (undefined != ArrayOptFirstElem(arrTempFields))
+					{
+%>
+						<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="true">
+							<GridColumns>
+								<GridColumn Width="50%"/>
+								<GridColumn/>
+							</GridColumns>
+<%
+						if (sBlockElem == "general")
+						{
+							if (curObject.person_id.HasValue)
+							{
+%>
+								<GridRow>
+									<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(tools_web.get_web_str("c_fio"))%>:</Label>
+									<StackPanel Orientation="Horizontal" Adapt="true">
+									<%fnGetResumePersonFullname()%><%fnGetResumeInvitedString()%>
+									</StackPanel>
+								</GridRow>
+<%
+							}
+							else if (bCreatingNewPerson)
+							{
+								arrFIOTempFields = ArraySelect( arrTempFields, "This.id == 'firstname' || This.id == 'lastname' || This.id == 'middlename'" );
+								for (oField in arrFIOTempFields)
+								{
+									buildElem(oField);
+								}
+							}
+						
+							arrTempFields = ArraySelect( arrTempFields, "This.id != 'firstname' && This.id != 'lastname' && This.id != 'middlename'" );
+						}
+
+						for (oField in arrTempFields)
+						{
+							//alert(oField.id+" "+oField.type)
+							buildElem(oField);
+						}
+%>
+						</Grid>
+<%
+					}
+					break;
+				}
+				case "custom_fields":
+				{
+					arrCustomFieldNames = Array();
+					fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+					if (fldCustomElems != null)
+					{
+						curCustomFields = {
+							"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+							"source": curObject.custom_elems,
+							"draw_grid_columns":true,
+							"modify_eval": !bReadOnly
+						};
+						curCustomFields.SetProperty('id', "customFieldsEditGrid");
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					}
+					break;
+				}
+				case "files":
+				{
+					allowChangeFiles = !bReadOnly;
+					bStaticCollection = bReadOnly;
+					sFilesListViewType = "datagrid";
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+					break;
+				}
+				case "desc":
+				{
+					curDescObject = curObject;
+					curDescObjectID = curObjectID;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+					break;
+				}
+				case "object_custom_block": //настраиваемый блок
+				{
+					xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" );
+					if (ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+					{
+						for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+						{
+							Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+						}
+					}
+					break;
+				}
+			}
+			//---container body end
+	
+			if (sDispType == "tab")
+			{
+%>
+				</TabItem>
+<%
+			}
+			else if (sDispType == "list")
+			{
+%>
+				</Panel>
+<%
+			}
+		}
+
+		if (sDispType == "tab")
+		{
+%>
+			</TabControl>
+<%
+		}
+	}
+	else //--hr sites view start
+	{
+		arrWorkExperiences = curObject.work_experiences;
+		arrEducations      = curObject.educations;
+		arrProjects        = curObject.projects;
+		arrPublications    = curObject.publications;
+		arrSkills          = curObject.skills;
+		arrLngs            = curObject.lngs;
+
+%>
+		<StackPanel Class="XAML-stack-description">
+			<HTMLBox>
+			<![CDATA[
+			<div>
+<%
+		bDispPhoto = false;
+		curPhotoField = fnGetField("photo");
+
+		if (curPhotoField != undefined)
+		{
+			bDispPhoto = true;
+		}
+		if (bDispPhoto) 
+		{
+%>
+			<table border="0" width="100%">
+			<tr>
+				<td width="50%" valign="top">
+<%
+		}
+%>
+			<font size="+2"><strong><%fnGetResumePersonFullname()%></strong></font><%fnGetResumeInvitedString()%>
+			<div style="padding-left:10px">
+			<br/>
+<%
+		curField = fnGetField("sex");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('vpb_sex')%>:</strong>&nbsp;<%=HtmlEncode( StrNonTitleCase( curObject.sex == "w" ? tools_web.get_web_str('vpb_w') : (curObject.sex == "m" ? tools_web.get_web_str('vpb_m') : '')) )%><br/>
+<%
+		}
+
+		curField = fnGetField("family_status");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('vrb_family_status')%>:</strong>&nbsp;
+<%
+			strResponse=''
+			if (curObject.family_status == "married")
+			{
+				strResponse=tools_web.get_web_str('vrb_married')
+			}
+			else if (curObject.family_status == "not_married")
+			{
+				strResponse=tools_web.get_web_str('vrb_unmarried')
+			}
+			else if (curObject.family_status == "divorced")
+			{
+				strResponse=tools_web.get_web_str('vrb_divorcee')
+			}
+%>
+			<%=HtmlEncode(strResponse)%>
+			<br/>
+<%
+		}
+
+		curField = fnGetField("birth_date");
+		if (curField != undefined)
+		{
+%>	
+			<strong><%=tools_web.get_web_str('vrb_age')%>:</strong>&nbsp;<%=fnDateDiff(Date(),curObject.birth_date, 'year')%><br/>
+			<strong><%=tools_web.get_web_str('vpb_birthday')%>:</strong>&nbsp;<%=HtmlEncode(curObject.birth_date )%><br/>
+<%
+		}
+
+		curField = fnGetField("phone");
+		if (curField!=undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('uf_phone')%>:</strong>&nbsp;<%=HtmlEncode( curObject.phone )%><br/>	
+<%
+		}
+
+		curField = fnGetField("mobile_phone");
+		if (curField != undefined)
+		{
+%>	
+			<strong><%=tools_web.get_web_str('org_telm')%>:</strong>&nbsp;<%=HtmlEncode( curObject.mobile_phone )%><br/>					
+<%
+		}
+
+		curField = fnGetField("work_phone");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('org_telw')%>:</strong>&nbsp;<%=HtmlEncode( curObject.work_phone )%><br/>	
+<%
+		}
+
+		curField = fnGetField("email");
+		if (curField != undefined)
+		{
+%>
+			<strong>E-mail:</strong>&nbsp;<a href="mailto:<%=XmlAttrEncode(curObject.email)%>" target="_top"><%=HtmlEncode( curObject.email )%></a><br/	
+<%
+		}
+
+		curField = fnGetField("address");
+		if (curField != undefined)
+		{
+%>		
+			<strong><%=tools_web.get_web_str('uf_address')%>:</strong>&nbsp;<%=HtmlEncode(curObject.address )%><br/>
+<%
+		}
+
+		curField = fnGetField("region_id");
+		if (curField!=undefined)
+		{
+%>		
+			<strong><%=tools_web.get_web_str('vrb_region')%>:</strong>&nbsp;<%=( curObject.region_id.OptForeignElem == undefined ? "" : HtmlEncode(tools_web.get_cur_lng_name( curObject.region_id.OptForeignElem.name, curLng.short_id )) )%><br/>
+<%
+		}
+
+%>
+			<br/>
+
+			<%=tools_web.get_web_const( 'rezyumeobnovleno', curLngWeb )%>:&nbsp;<%=StrDate(curObject.doc_info.modification.date,false,false)%>
+
+			</div>
+<%
+		if (bDispPhoto) 
+		{
+%>
+			</td>
+			<td align="center">
+<%
+			fldResource = curObject.resource_id.OptForeignElem;
+			if (fldResource!=undefined)
+			{
+%>
+				<div style="max-width:<%=iMaxPhotoWidth%>;max-height:<%=iMaxPhotoHeight%>"><img class="wtInfoTablePhotoActive" style="max-width:100%;max-height:100%" src="download_file.html?file_id=<%=curObject.resource_id%>&sid=<%=tools_web.get_sum_sid( curObject.resource_id, Session.sid )%>"/></div>
+<%
+			}
+			else
+			{
+%>
+				<div class="wtInfoTablePhotoContainer"><img class="wtInfoTablePhoto" src="pics/nophoto.jpg"/></div>
+<%
+			}
+%>
+			</td>
+			</tr>
+			</table>
+<%  
+		}
+%>
+			<br/>
+			<font size="+1"><u><%=tools_web.get_web_const( 'zhelaemayadolzhno_1', curLngWeb )%></u></font><br/><br/>
+			<div style="padding-left:10px">
+<%
+		curField = fnGetField("name");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=HtmlEncode(curObject.name )%></strong><br/>
+<%
+		}
+
+		bHasWageBr = false;
+		strWage = '';
+
+		curField = fnGetField("min_wage");
+		if (curField != undefined)
+		{
+			strWage = curObject.min_wage.HasValue?curObject.min_wage : '';
+		}
+
+		curField = fnGetField("max_wage");
+		if (curField != undefined)
+		{
+			strWage = strWage + ( ( strWage != '' && curObject.max_wage.HasValue ? ' - ' : '' ) + ( curObject.max_wage.HasValue ? curObject.max_wage : '' ) );
+		}
+		
+		if (Trim(strWage) != '')
+		{
+			bHasWageBr = true;
+%>
+			<strong><%=tools_web.get_web_str('kuw4uwwgsl')%>:</strong>&nbsp;<%=HtmlEncode( strWage )%>.
+<%
+		}
+
+		curField = fnGetField("currency_type");
+		if (curField != undefined)
+		{
+			if (curObject.currency_type_id.OptForeignElem != undefined)
+			{
+				bHasWageBr = true;
+				strResponse = StrNonTitleCase(curObject.currency_type_id.OptForeignElem.name.Value);
+%>
+				<strong><%=tools_web.get_web_str('c_currency_type')%>:</strong>&nbsp;<%=HtmlEncode( strResponse )%>
+<%
+			}
+		}
+		
+		if (bHasWageBr)
+		{
+%>
+			<br/>
+<%
+		}
+
+		curField = fnGetField("exp_years");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('vrb_service')%>:</strong>&nbsp;<%=HtmlEncode(curObject.exp_years )%><br/>
+<%
+		}
+
+		curField = fnGetField("profession_area_id");
+		if (curField != undefined)
+		{
+			strResponse = ( curObject.profession_id.OptForeignElem == undefined ? '' : XmlAttrEncode(tools_web.get_cur_lng_name( curObject.profession_id.OptForeignElem.name, curLng.short_id )) )
+%>
+			<strong><%=tools_web.get_web_str('vrb_professional_field')%>:</strong>&nbsp;<%=HtmlEncode( strResponse )%><br/>
+<%
+		}
+
+		curField = fnGetField("employment_type_id");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('c_employment_type')%>:</strong>&nbsp;<%=HtmlEncode( curObject.employment_type_id.OptForeignElem == undefined ? '' : HtmlEncode(curObject.employment_type_id.OptForeignElem.name)  )%><br/>
+<%
+		}
+
+		curField = fnGetField("schedule_work_id");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('ibcxjyydad')%>:</strong>&nbsp;<%=HtmlEncode( curObject.schedule_work_id.OptForeignElem == undefined ? '' : HtmlEncode(curObject.schedule_work_id.OptForeignElem.name)  )%><br/>
+<%
+		}
+		
+		curField = fnGetField("educ_type_id");
+		if (curField != undefined)
+		{
+			strResponse = '';
+			fldElem = ArrayOptFind( curLngCommon.educ_types, "This.id == '" + curObject.educ_type_id + "'");
+			if (fldElem != undefined)
+			{
+				strResponse = fldElem.name;
+			}
+%>
+			<strong><%=tools_web.get_web_str('vrb_education')%>:</strong>&nbsp;<%=HtmlEncode( strResponse )%><br/>
+<%
+		}
+
+		curField = fnGetField("academic_degree");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('uchenayastepen')%>:</strong>&nbsp;<%=HtmlEncode(curObject.academic_degree )%><br/>
+<%
+		}
+
+		curField = fnGetField("academic_heading");
+		if (curField != undefined)
+		{
+%>
+			<strong><%=tools_web.get_web_str('uchenoezvanie')%>:</strong>&nbsp;<%=HtmlEncode(curObject.academic_heading )%><br/>
+<%
+		}
+%>
+			</div>
+<%
+		if (fnGetBlockVisibility('prof_area'))
+		{
+			strExperience = '';
+	  
+			fldStartDateField        = fnGetField('we_start_date');
+			fldFinishDateField       = fnGetField('we_finish_date');
+			curFieldOrgName          = fnGetField('we_org_name');
+			curFieldPositionName     = fnGetField('we_position_name');
+			curFieldRegionId         = fnGetField('we_region_id');
+			curFieldProfessionAreaId = fnGetField('we_profession_area_id');
+			curFieldOrgDesc          = fnGetField('we_desc');
+			curFieldOrgPhone         = fnGetField('we_org_phone');
+			curFieldOrgFax           = fnGetField('we_org_fax');
+			curFieldOrgEmail         = fnGetField('we_org_email');
+			curFieldOrgAddress       = fnGetField('we_org_address');
+			curFieldOrgSite          = fnGetField('we_org_site');
+			
+			if ( fldStartDateField != undefined && fldFinishDateField != undefined )
+			{
+				dMinDate = null;
+				dMaxDate = Date();
+
+				fldMinDate = ArrayOptMin(ArraySelect(arrWorkExperiences, 'This.start_date.HasValue'), 'This.start_date');
+				if (fldMinDate != undefined)
+				{
+					dMinDate = fldMinDate.start_date;
+				}
+
+				iExperienceCount = ArrayCount(arrWorkExperiences);
+				
+				fldMaxDate = ArrayOptMin(ArraySelect(arrWorkExperiences,'This.finish_date.HasValue'),'This.finish_date');
+				if (fldMaxDate != undefined)
+				{
+					if (fldMaxDate.ChildIndex == (iExperienceCount - 1))
+					{
+						dMaxDate = fldMaxDate.finish_date;
+					}
+				}
+
+				strExperience = Trim(fnWordDateDiff(dMaxDate, dMinDate, 'month'));
+				strExperience = (strExperience != '' ? ' ' : '') + strExperience;
+			}
+%>	
+			<br/>
+			<font size="+1"><u><%=tools_web.get_web_str('opytraboty')%><%=strExperience%></u></font><br/><br/>
+			<div style="padding-left:10px">
+<%
+		if ( fldStartDateField != undefined || fldFinishDateField != undefined || curFieldOrgName != undefined || curFieldPositionName != undefined || curFieldRegionId != undefined || curFieldProfessionAreaId != undefined || curFieldOrgDesc != undefined || curFieldOrgPhone != undefined || curFieldOrgFax != undefined || curFieldOrgEmail != undefined || curFieldOrgAddress != undefined || curFieldOrgSite != undefined )
+		{
+%>
+			<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+			for (_elem in arrWorkExperiences)
+			{
+				strDates = '';
+				if (fldStartDateField != undefined)
+				{
+					strDates = ( _elem.start_date.HasValue ? StrInt( Month( _elem.start_date ), 2 ) + '.' + Year( _elem.start_date )  : '' )
+				}
+				
+				if (fldFinishDateField != undefined)
+				{ 
+					strDates = strDates + ( strDates != '' && _elem.finish_date.HasValue ? ' - ' : '' ) + ( _elem.finish_date.HasValue ? StrInt( Month( _elem.finish_date ), 2 ) + '.' + Year( _elem.finish_date )  : '' )
+				}
+%>	
+				<tr>
+<%
+				if ( fldStartDateField != undefined || fldFinishDateField != undefined )
+				{
+%>
+					<td width="20%" valign="top">
+					<strong><%=HtmlEncode(strDates)%></strong><br/>	
+<%
+					if ( fldStartDateField != undefined && fldFinishDateField != undefined )
+					{
+%>
+						<%=HtmlEncode(fnWordDateDiff(_elem.finish_date,_elem.start_date,'month'))%>
+<%
+					}
+%>
+					</td>
+<%
+				}
+
+				if ( curFieldOrgName != undefined || curFieldPositionName != undefined || curFieldRegionId != undefined || curFieldProfessionAreaId != undefined || curFieldOrgDesc != undefined || curFieldOrgPhone != undefined || curFieldOrgFax != undefined || curFieldOrgEmail != undefined || curFieldOrgAddress != undefined || curFieldOrgSite != undefined )
+				{
+%>
+					<td width="80%" valign="top">
+					<table width="100%" border="0">
+<%
+					if (curFieldOrgName != undefined)
+					{
+%>
+						<tr>
+							<td colspan="2"><strong><%=HtmlEncode(_elem.org_name)%></strong></td>
+<%
+					}
+					if (curFieldPositionName != undefined)
+					{
+%>						</tr>
+						<tr>
+							<td width="20%"><strong><%=tools_web.get_web_str('c_position')%>:</strong></td>
+							<td align="left" valign="top" width="100%">
+								<%=HtmlEncode(_elem.position_name)%>	
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldRegionId != undefined && _elem.region_id.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('vrb_region')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=(_elem.region_id.OptForeignElem == undefined ? "" : HtmlEncode(tools_web.get_cur_lng_name( _elem.region_id.OptForeignElem.name, curLng.short_id )))%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldProfessionAreaId != undefined && _elem.profession_id.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_const( 'sferadeyatelnos', curLngWeb )%>:</strong></td>
+							<td align="left" valign="top">
+<%
+								strResponse=(_elem.profession_id.OptForeignElem == undefined ? '' : XmlAttrEncode(tools_web.get_cur_lng_name( _elem.profession_id.OptForeignElem.name, curLng.short_id )))
+%>
+								<%=HtmlEncode(strResponse )%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldOrgPhone != undefined && _elem.org_phone.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('rabochiytelefon')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.org_phone)%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldOrgFax != undefined && _elem.org_fax.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('faksorganizacii')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.org_fax)%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldOrgEmail != undefined && _elem.org_email.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('emailorganizac')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.org_email)%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldOrgSite != undefined && _elem.org_site.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('saytorganizacii')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.org_site)%>
+							</td>
+						</tr>
+<%
+					}
+					if ( curFieldOrgAddress != undefined && _elem.org_address.HasValue )
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('pochtovyyadreso')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.org_address)%>
+							</td>
+						</tr>
+<%
+					}
+					if (curFieldOrgDesc!=undefined&&_elem.desc.HasValue)
+					{
+%>
+						<tr>
+							<td><strong><%=tools_web.get_web_str('vrb_functions')%>:</strong></td>
+							<td align="left" valign="top">
+								<%=HtmlEncode(_elem.desc)%>	
+							</td>
+						</tr>
+<%
+					}
+%>
+				 	</table>
+			 		</td>
+<%
+				}
+%>
+				</tr>
+<%
+			}
+%>
+			</table>
+<%
+		}
+%>
+			</div>
+			<br/>
+<%
+		}
+
+		if (fnGetBlockVisibility("projects"))
+		{
+			curFieldProjectSphere          = fnGetField("project_sphere");
+			curFieldProjectType            = fnGetField("project_type");
+			curFieldProjectExaminationYear = fnGetField("project_examination_year");
+			curFieldProjectYear            = fnGetField("project_year");
+			curFieldProjectDesc            = fnGetField("project_desc");
+%>	
+			<font size="+1"><u><%=tools_web.get_web_str('159pmteyyz')%></u></font><br/><br/>
+			<div style="padding-left:10px">
+<%
+			if ( curFieldProjectSphere != undefined || curFieldProjectType != undefined || curFieldProjectExaminationYear != undefined || curFieldProjectYear != undefined || curFieldProjectDesc != undefined )
+			{
+%>
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+				for (_elem in arrProjects)
+				{
+%>
+					<tr>
+<%
+					if ( curFieldProjectExaminationYear != undefined || curFieldProjectYear != undefined )
+					{
+%>	
+						<td width="20%" valign="top">
+							<table width="100%" border="0">
+<%
+						if ( curFieldProjectYear != undefined && _elem.year.HasValue )
+						{
+%>
+							<tr>
+								<td width="40%"><strong><%=tools_web.get_web_str('godprovedeniya')%>:</strong></td>
+								<td align="left" valign="top"><%=HtmlEncode(_elem.year)%></td>
+							</tr>
+<%
+						}
+						if (curFieldProjectExaminationYear!=undefined&&_elem.examination_year.HasValue)
+						{
+%>
+							<tr>
+								<td width="40%"><strong><%=tools_web.get_web_str('godprovedeniyae')%>:</strong></td>
+								<td align="left" valign="top"><%=HtmlEncode(_elem.examination_year)%></td>
+							</tr>
+<%
+						}
+%>
+							</table>
+						</td>
+<%
+					}
+
+					if ( curFieldProjectSphere != undefined || curFieldProjectType != undefined || curFieldProjectDesc != undefined )
+					{
+%>	
+						<td width="80%" valign="top">
+							<table width="100%" border="0">
+<%
+						if ( curFieldProjectSphere != undefined && _elem.sphere.HasValue )
+						{
+%>
+							<tr>
+								<td width="20%"><strong><%=tools_web.get_web_str('predmetnayaobla')%>:</strong></td>
+								<td align="left" valign="top" width="100%">
+									<%=HtmlEncode(_elem.sphere)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldProjectType != undefined && _elem.type.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('tipproekta')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.type)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldProjectDesc != undefined && _elem.desc.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('opisanieproekta')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.desc)%>	
+								</td>
+							</tr>
+<%
+						}
+%>
+							</table>
+						</td>
+<%
+					}
+%>
+					</tr>
+<%
+				}
+%>
+				</table>
+<%
+			}
+%>
+			</div>
+			<br/>
+<%
+		}
+
+		if (fnGetBlockVisibility("edu"))
+		{ 
+			curFieldEduName           = fnGetField("edu_name");
+			curFieldEduSpecialisation = fnGetField("edu_specialisation");
+			curFieldEduType           = fnGetField("edu_type");
+			curFieldEduResult         = fnGetField("edu_result");
+			curFieldEduYear           = fnGetField("edu_year");
+			curFieldEduSite           = fnGetField("edu_site");
+%>	
+			<font size="+1"><u><%=tools_web.get_web_str('vrb_edu_courses')%></u></font><br/><br/>
+			<div style="padding-left:10px">
+<%
+			if ( curFieldEduName != undefined || curFieldEduSpecialisation != undefined || curFieldEduType != undefined || curFieldEduResult != undefined || curFieldEduYear != undefined || curFieldEduSite != undefined )
+			{ 
+%>
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+				for (_elem in arrEducations)
+				{
+%>	
+					<tr>
+<%
+					if (curFieldEduYear != undefined)
+					{
+%>
+						<td width="20%" valign="top">
+<%
+						if (_elem.date.HasValue)
+						{
+%>
+							<table width="100%" border="0">
+								<tr>
+									<td width="40%"><strong><%=tools_web.get_web_str('vrb_finish_year')%>:</strong></td>
+									<td align="left" valign="top"><%=HtmlEncode(_elem.date)%></td>
+								</tr>
+							</table>
+<%
+						}
+%>
+						</td>
+<%
+					}
+
+					if ( curFieldEduName != undefined || curFieldEduSpecialisation != undefined || curFieldEduType != undefined || curFieldEduResult != undefined || curFieldEduSite != undefined )
+					{
+%>
+						<td width="80%" valign="top">
+							<table width="100%" border="0">
+<%
+						if ( curFieldEduName != undefined && _elem.name.HasValue )
+						{
+%>
+							<tr>
+								<td width="20%"><strong><%=tools_web.get_web_str('c_name')%>:</strong></td>
+								<td align="left" valign="top" width="100%">
+									<%=HtmlEncode(_elem.name)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldEduSpecialisation != undefined && _elem.specialisation.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('vrb_faculty')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.specialisation)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldEduType != undefined && _elem.type.HasValue )
+						{
+							strResponse = '';
+							fldElem = ArrayOptFind(curLngCommon.expended_educ_types, "This.id == '" + _elem.type + "'");
+							if (fldElem != undefined)
+							{
+								strResponse = fldElem.name;
+							}
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('c_type')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(strResponse)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldEduResult != undefined && _elem.result.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('vrb_result')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.result)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldEduSite != undefined && _elem.site.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('saytvuza')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.site)%>	
+								</td>
+							</tr>
+<%
+						}
+%>
+							</table>
+						</td>
+<%
+					}
+%>
+					</tr>
+<%
+				}
+%>		
+				</table>
+<%
+			}
+%>
+			</div>
+<%
+		}
+
+		if (fnGetBlockVisibility("publications"))
+		{
+%>
+			<font size="+1"><u><%=tools_web.get_web_str('publikacii')%></u></font><br/><br/>
+			<div style="padding-left:10px">
+<%
+			curFieldPubName      = fnGetField("pub_name");
+			curFieldPubPublisher = fnGetField("pub_publisher");
+			curFieldPubDate      = fnGetField("pub_date");
+			curFieldPubLink      = fnGetField("pub_link");
+
+			if ( curFieldPubName != undefined || curFieldPubPublisher != undefined || curFieldPubDate != undefined || curFieldPubLink != undefined )
+			{
+%>
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+				for (_elem in arrPublications)
+				{
+%>	
+					<tr>
+<%
+					if (curFieldPubDate != undefined)
+					{
+%>
+						<td width="20%" valign="top">
+<%
+						if (_elem.date.HasValue)
+						{
+%>
+							<table width="100%" border="0">
+								<tr>
+									<td width="40%"><strong><%=tools_web.get_web_str('datapublikacii')%>:</strong></td>
+									<td align="left" valign="top"><%=HtmlEncode(StrDate( _elem.date, false,false ))%></td>
+								</tr>
+							</table>
+<%
+						}
+%>
+						</td>
+<%
+					}
+
+					if ( curFieldPubName != undefined || curFieldPubPublisher != undefined || curFieldPubLink != undefined )
+					{
+%>
+						<td width="80%" valign="top">
+							<table width="100%" border="0">
+<%
+						if ( curFieldPubName != undefined && _elem.name.HasValue )
+						{
+%>
+							<tr>
+								<td width="20%"><strong><%=tools_web.get_web_str('c_name')%>:</strong></td>
+								<td align="left" valign="top" width="100%">
+									<%=HtmlEncode(_elem.name)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldPubPublisher != undefined && _elem.publisher.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('izdanie')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.publisher)%>
+								</td>
+							</tr>
+<%
+						}
+						if ( curFieldPubLink != undefined && _elem.link.HasValue )
+						{
+%>
+							<tr>
+								<td><strong><%=tools_web.get_web_str('q0laxmdm5w')%>:</strong></td>
+								<td align="left" valign="top">
+									<%=HtmlEncode(_elem.link)%>
+								</td>
+							</tr>
+<%
+						}
+%>
+							</table>
+						</td>
+<%
+					}
+%>
+					</tr>
+<%
+				}
+%>
+				</table>
+<%
+			}
+%>
+			</div>
+			<br/>
+<%
+		}
+
+		if (fnGetBlockVisibility("skills"))
+		{
+			function fnBuildSkillHRReadOnlyStyleLevel(fldSkillParam)
+			{
+				strResponse = '';
+				
+				if (fldSkillParam.skill_id_with_levels.HasValue)
+				{
+					bHasDoc = true;
+					try
+					{
+						skillLevelDoc = OpenDoc( UrlFromDocID( fldSkillParam.skill_id_with_levels) ).TopElem;
+					}
+					catch(ex)
+					{
+						bHasDoc = false;
+					}
+					
+					if (bHasDoc)
+					{
+						try
+						{
+							fldElem = ArrayOptFind( skillLevelDoc.levels, "This.id == '" + fldSkillParam.level_id + "'" );
+						}
+						catch(ex)
+						{
+							fldElem = undefined;
+						}
+					
+						if (fldElem != undefined)
+						{
+							strResponse = fldElem.name;
+						}
+					}
+				}
+%>
+				<%=HtmlEncode(strResponse)%>	
+<%
+			}
+
+			function fnBuildSkillHRReadOnlyStyle(iParentIDParam)
+			{
+				var iParentID    = null;
+				var bHasChildren = false;
+
+				try
+				{
+					iParentID = OptInt(iParentIDParam, null);
+				}
+				catch(ex)
+				{
+				}
+
+				var arrBuildSkills = ArraySelect( arrSkills, 'This.skill_parent_id == ' + ( iParentID == null ? 'null' : iParentID ) );
+
+				for (fldSkill in arrBuildSkills)
+				{
+					bHasChildren = false;
+					arrChildren = ArraySelect( arrSkills, 'This.skill_parent_id == ' + fldSkill.skill_id );
+					try
+					{
+						if ( ArrayOptFirstElem(arrChildren) == undefined && fldSkill.level_id.HasValue )
+						{
+							bHasChildren = false;
+						}
+						else if (ArrayOptFirstElem(arrChildren) != undefined)
+						{
+							bHasChildren = true;
+						}
+						else if ( ArrayOptFirstElem(arrChildren) == undefined && ArrayOptFirstElem(XQuery('for $elem in skills where $elem/parent_id = ' + fldSkill.skill_id + ' return $elem')) != undefined )
+						{
+							bHasChildren = true;
+						}
+					}
+					catch(ex)
+					{
+						alert(ex)
+					}
+
+					if (bHasChildren)
+					{
+%>
+						<tr VALIGN="top">	
+							<td width="100%" colspan="2" valign="left">
+<%
+						if (fldSkill.skill_parent_id == null)
+						{
+%>
+							<font size="+1"><u>
+<%
+						}
+						else
+						{
+%>
+							<br/>
+							<strong>
+<%
+						}
+%>	
+						<%=HtmlEncode(fldSkill.skill_name)%>
+<%
+						if (fldSkill.skill_parent_id == null)
+						{
+%>
+							</u></font>
+<%
+						}
+						else
+						{
+%>
+							</strong>
+<%
+						}
+%>
+							<br/><br/>
+							<div style="margin-left:10px">
+								<table class="resume-main-table" width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+								fnBuildSkillHRReadOnlyStyle(fldSkill.skill_id);
+%>    
+								</table>
+							</div>
+							<br/>
+							</td>
+						</tr>
+<%
+					}
+					else
+					{
+						if (fldSkill.skill_parent_id==null)
+						{
+%>
+							<tr>
+								<td width="20%" valign="top">
+									<font size="+1"><u><%=HtmlEncode(fldSkill.skill_name)%></u></font><br/><br/>	
+								</td>
+								<td width="80%" align="left" valign="middle">
+<%
+								fnBuildSkillHRReadOnlyStyleLevel(fldSkill);
+%>
+								</td>
+							</tr>
+<%
+						}
+						else
+						{
+%>
+							<tr>
+								<td class="resume-grid-simple-name" width="20%"><%=tools_web.get_web_str('navyk')%>:</td>
+								<td class="resume-grid-simple-name"><%=tools_web.get_web_str('urovenvladeniya')%>:</td>
+							</tr>
+							<tr>
+								<td valign="top">
+									<%=HtmlEncode(fldSkill.skill_name)%>
+								</td>
+								<td>
+<%	
+								fnBuildSkillHRReadOnlyStyleLevel(fldSkill)
+%>
+								</td>
+							</tr>
+<%
+						}
+					}
+				}
+			}
+%>
+			<table class="resume-main-table" width="100%" border="0" cellpadding="0" cellspacing="0">
+
+<%
+				fnBuildSkillHRReadOnlyStyle(null);
+%>
+
+			</table>
+<%
+}
+%>
+			]]>
+			</HTMLBox>
+		</StackPanel>
+<%
+
+	//--hr sites view end
+	}
+
+	if (!bInsert)
+	{
+%>
+		<Toolbar Class="XAML-nomargin" Adapt="true">
+<%
+		if (!bReadOnly)
+		{
+%>
+			<Button Class="XAML-button XAML-button-save" Click="<%=sSaveAction%>"><%=HtmlEncode(tools.get_web_str("c_save"))%></Button>
+<%
+			if (!NewDoc)
+			{
+				if (!curObject.forbid_portal_delete && bShowDeleteResumeButton)
+				{
+%>
+					<Button Class="XAML-button XAML-button-save" Click="SET=ResumeAction/sAction,delete;Set=CONTEXT,;SET=ResumeAction/iObjectId,<%=curObjectID%>;SET=ResumeSuccessAction,<%=UrlEncode("OPENURL="+sReturnUrl)%>;SET=ResumeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;SET=sFieldNames,;SET=sRequiredFieldNames,;Action=ResumeAction;"><%=HtmlEncode(tools.get_web_str("c_delete"))%></Button>
+<%
+				}
+%>
+					<Button Class="XAML-button XAML-button-save" Click="SET=is_archive,<%=(curObject.is_archive ? false : true)%>;SET=ResumeAction/sAction,save;CONTEXT=ResumeObjectContextGroup;SET=ResumeAction/CONTEXT,{CONTEXT};SET=ResumeAction/iObjectId,<%=curObjectID%>;SET=ResumeSuccessAction,<%=UrlEncode(sDefaultSuccessAction)%>;SET=ResumeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;SET=sFieldNames,<%=UrlEncode("is_archive")%>;SET=sRequiredFieldNames,;Action=ResumeAction;"><%=HtmlEncode((curObject.is_archive ? tools_web.get_web_str('vrb_activate_resume') : tools_web.get_web_str('vrb_in_archive')))%></Button>
+<%
+			}
+		}
+
+		if (!NewDoc)
+		{
+			arrPrintForms = XQuery("for $elem in print_forms where $elem/object_name = '" + curObject.Name + "' return $elem");
+			fldPrintForm  = ArrayOptFirstElem(arrPrintForms);
+			if (fldPrintForm != undefined)
+			{
+				sPrintButtonClick = "SET=ResumePrintAction/iObjectId," + fldPrintForm.id + ";Action=ResumePrintAction;";
+				if (ArrayCount(arrPrintForms) != 1)
+				{
+					sPrintButtonClick = "SET=ResumeSelectDialogCloseAction," + UrlEncode("SET=ResumePrintAction/iObjectId,{CatalogListDataGridFullList:^/id};Action=ResumePrintAction;") + ";OPENDIALOG=ResumeSelectDialog";
+				}
+%>
+				<Button Class="XAML-button XAML-button-save" Click="<%=sPrintButtonClick%>"><%=HtmlEncode(tools.get_web_str("vib_print"))%></Button>
+<%
+			}
+		}
+
+%>
+			<Button Class="XAML-button XAML-button-save" Click="OPENURL=<%=sReturnUrl%>"><%=HtmlEncode(tools.get_web_str("c_cancel"))%></Button>
+		</Toolbar>
+<%
+	}
+
+%>
+	</SPXMLScreen>

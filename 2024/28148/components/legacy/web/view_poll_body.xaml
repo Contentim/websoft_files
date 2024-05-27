@@ -1,0 +1,177 @@
+﻿<SPXMLScreen>
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+sMessage = '';
+bDispStart = false;
+catFirstPollResult = undefined;
+try
+{
+	curUserID;
+}
+catch ( err )
+{
+	curUserID = null;
+}
+if ( curUserID != null )
+	catFirstPollResult = ArrayOptFirstElem( XQuery( "for $elem in poll_results where $elem/person_id = " + curUserID + " and $elem/poll_id = " + curObjectID + " and $elem/status > 1 return $elem/Fields('id')" ) );
+bDispDelete = curObject.allow_delete_poll_result && catFirstPollResult != undefined;
+
+if ( curObject.completed )
+{
+	sMessage = tools_web.get_web_const( '4p62srusxe', curLngWeb );
+}
+else if ( curObject.start_date > CurDate || ( curObject.end_date.HasValue && curObject.end_date < CurDate ) )
+{
+	sMessage = tools_web.get_web_const( 'vpb_start_message', curLngWeb );
+}
+else if ( ! curObject.is_anonymous && curObject.is_one_time && catFirstPollResult != undefined )
+{
+	sMessage = tools_web.get_web_const( 'vpollb_message1', curLngWeb );
+}
+else
+{
+	bDispStart = true;
+}
+
+if ( sMessage != '' )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": sMessage
+	};
+	if ( bDispDelete )
+	{
+		curMessageBox.buttons = [ {
+			"title": tools_web.get_web_const( 'vpb_clear_results', curLngWeb ),
+			"click": "SET=PollChange/action,delete_poll_results;ACTION=PollChange;"
+		} ];
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	bDispDelete = false;
+}
+%>
+<Action Name="PageRefreshFinish" Initialize="REFRESH"/>
+<Action Name="PollChange" Source="poll_change" Success="REFRESH" Failure="Alert={messageText}">
+	<Param Name="action" Value=""/>
+	<Param Name="poll_id" Value="<%=curObjectID%>"/>
+</Action>
+<StackPanel Name="ToolBarPanel">
+<Toolbar Class="XAML-toolbar-actions" Adapt="true">
+<%
+if ( bDispStart )
+{
+	bOpenUrl = tools_web.is_true( tools_web.get_web_param( curParams, "poll_body.open_url", true, false ) );
+%>
+	<Button Class="XAML-button XAML-button-important" Click="HIDE=ToolBarPanel;<%=( bOpenUrl ? 'OPENURL' : 'OPENWINDOW' )%>=poll_launch.html?object_id=<%=curObjectID%><%=( ( bOpenUrl ? '&redirect=1' : ',CloseAction=PageRefreshFinish' ) )%>"><%=tools_web.get_web_const( 'vlpb_start', curLngWeb )%></Button>
+<%
+}
+if ( bDispDelete )
+{
+%>
+	<Button Class="XAML-button" Click="SET=PollChange/action,delete_poll_results;ACTION=PollChange;"><%=tools_web.get_web_const( 'vpb_clear_results', curLngWeb )%></Button>
+<%
+}
+%>
+</Toolbar>
+</StackPanel>
+<%
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'PollBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'poll_body.tab_list', 'main;result', true ) ).split( ';' );
+%>
+<TabControl Name="PollBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'poll_body.tab_list.main_tab.block_list', 'desc;info', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "poll_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' )
+		{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Label><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+				</GridRow>
+			</Grid>
+<%
+		}
+
+		if ( sTabElem == 'desc' )
+		{
+            Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+
+///////////////////////////////////////////////   RESULT TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'result' && curObject.show_report && curUserID != null )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'poll_body.tab_list.result_tab.block_list', 'results', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "poll_body.tab_list.result_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "pu7nmyly91", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'results' )
+		{
+			sPersonCondition = curObject.report_viewers.ChildByKeyExists( curUserID ) ? "" : ( " and $elem/person_id = " + curUserID );
+			curView = {
+				"id": "LastPoll",
+				"title": tools_web.get_web_const( 'vashaistoriyaizu', curLngWeb ),
+				"height": "",
+				"catalog_name": "poll_result",
+				"xquery_qual": ( "$elem/poll_id = " + curObjectID + sPersonCondition ),
+				"disp_link": "true",
+				"link_mode": "poll_result_report",
+				"disp_filter": "false",
+				"disp_search": "false",
+				//"disp_type": "grid",
+				"list_columns": "create_date;person_fullname;status",
+				"secid": tools_web.get_secid( Session.sid )
+				//"hide_empty": true,
+				//"hide_action": "SHOW=LearningsEmptyMess;"
+			};
+			if ( curObject.report_viewers.ChildByKeyExists( curUserID ) )
+			{
+				curView.SetProperty( "xquery_qual", ( "$elem/poll_id = " + curObjectID ) );
+				//curView.SetProperty( "list_columns", "create_date;person_fullname;status" );
+			}
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

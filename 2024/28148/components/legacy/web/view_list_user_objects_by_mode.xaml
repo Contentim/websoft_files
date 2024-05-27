@@ -1,0 +1,29 @@
+﻿<%
+sListColumns = '';
+sFilterItems = [];
+
+sModeParam = tools_web.get_web_param( curParams, 'list_user_objects_by_mode.mode', curMode, true );
+switch ( sModeParam )
+{
+	case 'education_plans':
+	case 'education_plan':
+		sListColumns = 'name;state_id;create_date';
+		sFilterItems = ([
+				{ "field": "state_id", "name": tools_web.get_web_const( 'vppb_state', curLngWeb ) }
+			])
+		break;
+}
+
+curView = {
+	"id": ( "Mode" + sModeParam ),
+	"catalog_name": ( StrEnds( sModeParam, "s" ) ? StrRangePos( sModeParam, 0, StrLen( sModeParam ) - 1 ) : sModeParam ),
+	"xquery_qual": ( '$elem/person_id = ' + curUserID ),
+	"disp_link": "true",
+	"disp_filter": "true",
+	"filter_mode": ( ArrayCount( sFilterItems ) == 0 ? "standart" : "custom" ),
+	"filter_items": sFilterItems,
+	"list_columns": sListColumns
+};
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>

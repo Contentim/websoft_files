@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" WIDTH="1024vpx" HEIGHT="500vpx" BORDER-WIDTH="0" BORDER-RADIUS="16vpx" STD-MARGINS="0" CUSTOM-FRAME="1" MAXIMIZED="0"  BEFORE-INIT-ACTION="
+    var teApplication = tools_app.get_cur_application();
+	TopElem.options.Clear();
+    _cSet = TopElem.options.AddChild();
+    _cSet.wvars.AssignElem(teApplication.wvars);
+" OK-ACTION="
+    var _curApplication = tools_app.get_cur_application();
+    bSaveRes = tools_app.save_application_settings( _curApplication.id.Value, TopElem);
+    if ( !bSaveRes )
+    {
+        Screen.MsgBox( 'Вы не имеете права на сохранение настроек приложения, обратитесь к администратору', ms_tools.get_const('c_error'), 'error', 'ok' );
+        Cancel();
+    }
+    else
+    {
+        ActiveScreen.MsgBox('Настройки сохранены.',ms_tools.get_const('c_info'), 'info', 'ok' );
+    }
+    tools_app.clear_application_cache();
+">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/app_general.xms"/>
+
+<PANEL STD-MARGINS="0" WIDTH="100%" PADDING="16vpx 16vpx 0vpx 16vpx">
+	<LINE WIDTH="100%">
+		<PrimaryActionImage IMAGE-URL="//app_ui/theme/pict/close.svg" ALIGN="right" ACTION="Screen.Close()" PASSIVE="1"/>
+	</LINE>
+</PANEL>
+
+<PANEL VERT-SCROLL="1" WIDTH="100%" HEIGHT="-80vpx" STD-MARGINS="1" PADDING="0vpx 24vpx 16vpx 24vpx">
+	<LABEL TITLE-EXPR="Ps.name" FONT-WEIGHT="800" FONT-SIZE="14"/>
+	<BR/>
+    <WITH EXPR="ArrayOptFind(ArrayOptFirstElem(TopElem.options).wvars, 'This.name == \'response_types\'')" VAR="_wvar">
+        <ITEM TYPE="ms_list_edit_base" SOURCE="_wvar.value" titleExpr="( _wvar.required ? '* ': '' ) + ( (_wvar.title.HasValue &amp;&amp; _wvar.title != '') ? _wvar.title : _wvar.description )" heightExpr="'8gr'" dataAllExpr="true" columnsExpr="
+        var arr = [];
+        for (_elem in _wvar.entries)
+        {
+            obj = {
+                name:_elem.id.Value,
+                title:_elem.name.Value,
+                type:_elem.type.Value,
+                catalog:_elem.catalog.Value,
+                width: (_elem.type == 'bool' || _elem.type == 'integer' ? '15zr' : '35zr')
+            };
+            arr.push(obj)
+        }
+        return arr
+        " addButtonEnableExpr="ArrayCount( _wvar.entries ) != 0"/>
+    </WITH>
+</PANEL>
+
+
+<PanelDlgBottom/>
+</SPXML-SCREEN>

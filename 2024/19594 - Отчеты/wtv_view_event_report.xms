@@ -1,0 +1,275 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="-32vpx" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" LOOP-EXPR="
+						try
+						{
+							arrColumnsInfo = StrReplace( List.GetCurCodeSortInfo(), '\'', '' ).split( ',' );
+							sColumnName = Trim( arrColumnsInfo[0] );
+							sSortDir = Trim( arrColumnsInfo[1] );
+
+							Ps.events.Sort( sColumnName, sSortDir )
+							return Ps.events;
+						}
+						catch( ex )
+						{
+							return Ps.events;
+						}
+			" ON-SEL-CHANGE="
+					if ( TopElem.ChildExists( 'count_sel' ) )
+					{
+						TopElem.set_sel_action( List );
+					}
+			" WEB-ID-EXPR="TopElem.Name + '_grid'">
+			<ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.id ) )" IMAGE-URL="ico/event.ico" WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id">
+				<COL WIDTH="30zr" COL-TITLE-EXPR="ms_tools.get_const('c_event')" 			TITLE-EXPR="ListElem.name" 					ORDER="name"					WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_name'"/>	
+				<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const('9il1vjwtjw')" 		TITLE-EXPR="ListElem.type_name"				ORDER="type_name"				WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_type_name'"/>
+				<COL WIDTH="25zr" COL-TITLE-EXPR="ms_tools.get_const('c_edu_method')" 		TITLE-EXPR="ListElem.education_method_name" ORDER="education_method_name"	WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_education_method_name'"/>	
+				<COL WIDTH="20zr" COL-TITLE-EXPR="ms_tools.get_const('8ep5fzi6uu')" 		TITLE-EXPR="ListElem.education_org_name" 	ORDER="education_org_name"	 	WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_education_org_name'"/>	
+				<COL WIDTH="10zr" COL-TITLE-EXPR="ms_tools.get_const('c_person_num')" 		TITLE-EXPR="ListElem.person_num" 			ORDER="person_num"	 			WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_person_num'"/>
+				<COL WIDTH="10zr" COL-TITLE-EXPR="ms_tools.get_const('fakticheskoekol_2')" 	TITLE-EXPR="ListElem.fact_person_num" 		ORDER="fact_person_num"	 		WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_fact_person_num'"/>
+				<COL WIDTH="16zr" COL-TITLE-EXPR="ms_tools.get_const('c_begin')" 			TITLE-EXPR="ListElem.start_date"			ORDER="start_date"	 			WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_start_date'"/>
+				<COL WIDTH="16zr" COL-TITLE-EXPR="ms_tools.get_const('vlpb_finish_date')" 	TITLE-EXPR="ListElem.finish_date"			ORDER="finish_date"	 			WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_finish_date'"/>
+				<COL WIDTH="10zr" COL-TITLE-EXPR="ms_tools.get_const('c_status')" 			TITLE-EXPR="ListElem.status_name"			ORDER="status_name"	 			WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_status_name'"/>
+				<COL WIDTH="16zr" COL-TITLE-EXPR="ms_tools.get_const('c_cost')" 			TITLE-EXPR="ListElem.total_cost" 			ORDER="total_cost"	 			WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_total_cost'"/>
+				<COL WIDTH="16zr" COL-TITLE-EXPR="ms_tools.get_const('vllec_title')" 		TITLE-EXPR="ListElem.lector_names" 			ORDER="lector_names"	 		WEB-ID-EXPR="TopElem.Name + '_grid_row_' + ListElem.id + '_lector_names'"/>
+			</ROW>
+			<MENU>
+				 <IF EXPR="MainScreen.AuxData.GetOptProperty( 'curApplication', null ) == null">
+					<ITEM TYPE="std_grid_menu_items_base"/>
+				 </IF>
+			</MENU>
+		</LIST>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.lector_id" catalogExpr="'lector'" WIDTH="100%"/>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.education_method_id" catalogExpr="'education_method'" WIDTH="100%"/>
+
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.education_org_id" catalogExpr="'education_org'" foreignTitleExpr="disp_name" WIDTH="100%"/>
+
+				<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( 'dzchcxrigp' )">
+					<COMBO WIDTH="316vpx" SOURCE="Ps.disp_type_id">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'f0j4vfoxrb' )" VALUE="all"/>
+						<LOOP EXPR="common.event_types" VAR="_event_type">
+							<COMBO-ENTRY TITLE-EXPR="_event_type.name" VALUE-EXPR="_event_type.id"/>
+						</LOOP>
+					</COMBO>
+				</TitleLabel>
+
+				<TitleLabel ALIGN="left" TITLE-EXPR="ms_tools.get_const( '7j1zul1bjg' )">
+					<COMBO WIDTH="316vpx" SOURCE="Ps.disp_status_id">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const( 'f0j4vfoxrb' )" VALUE="all"/>
+						<LOOP EXPR="common.event_status_types" VAR="_event_type">
+							<COMBO-ENTRY TITLE-EXPR="_event_type.name" VALUE-EXPR="_event_type.id"/>
+						</LOOP>
+					</COMBO>
+				</TitleLabel>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	arrSettings = [
+					{ 'name' : 'lector_id', 'value' : TopElem.lector_id.Value },
+					{ 'name' : 'education_method_id', 'value' : TopElem.education_method_id.Value },
+					{ 'name' : 'education_org_id', 'value' : TopElem.education_org_id.Value },
+					{ 'name' : 'disp_type_id', 'value' : TopElem.disp_type_id.Value },
+					{ 'name' : 'disp_status_id', 'value' : TopElem.disp_status_id.Value },
+					{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+					{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value }
+				];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	Ps.events.Clear();
+
+	oParams = new Object();
+
+	for ( param in arrSettings )
+	{
+		oParams.SetProperty( param.name, param.value )
+	}
+
+	iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+	
+	oParams.SetProperty( 'max_visible_rows', iMaxReportVisibleRows );
+	oParams.SetProperty( 'report_name', TopElem.report_name );
+	oParams.SetProperty( 'bIsWebClient', System.IsWebClient );
+
+	arrColumns = [
+		{ 'name': 'name', 'title': ms_tools.get_const('c_event') },
+		{ 'name': 'type_name', 'title': ms_tools.get_const('9il1vjwtjw') },
+		{ 'name': 'education_method_name', 'title': ms_tools.get_const('c_edu_method') },
+		{ 'name': 'education_org_name', 'title': ms_tools.get_const('8ep5fzi6uu') },
+		{ 'name': 'person_num', 'title': ms_tools.get_const('c_person_num') },
+		{ 'name': 'fact_person_num', 'title': ms_tools.get_const('fakticheskoekol_2') },
+		{ 'name': 'start_date', 'title': ms_tools.get_const('c_begin') },
+		{ 'name': 'finish_date', 'title': ms_tools.get_const('vlpb_finish_date') },
+		{ 'name': 'status_name', 'title': ms_tools.get_const('c_status') },
+		{ 'name': 'total_cost', 'title': ms_tools.get_const('c_cost') },
+		{ 'name': 'lector_names', 'title': ms_tools.get_const('vllec_title') }
+	];
+
+	oParams.SetProperty( 'columns', EncodeJson( arrColumns ) );
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	curUser = tools.get_cur_user();
+
+
+	oResult = task.CallMethod( 'tools_report', 'events_report', [ oParams ] );
+	//oResult = tools_report.events_report( oParams, curUser );
+
+	if ( oResult.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+
+		TopElem.count_arr = ArrayCount( oResult.events );
+		TopElem.exported_file_link = oResult.exported_file_link;
+
+		function getReport(Ps, oResult)
+		{
+			for ( oEvent in oResult.events )
+			{
+				_child = Ps.events.AddChild();
+				_child.id 					 = oEvent.id;
+				_child.name 				 = oEvent.name;
+				_child.type_id 				 = oEvent.type_id;
+				_child.type_name 			 = oEvent.type_name;
+				_child.education_method_name = oEvent.education_method_name;
+				_child.education_org_name 	 = oEvent.education_org_name;
+				_child.person_num 			 = oEvent.person_num;
+				_child.fact_person_num 		 = oEvent.fact_person_num;
+				_child.start_date 			 = oEvent.start_date;
+				_child.finish_date 			 = oEvent.finish_date;
+				_child.status_id 			 = oEvent.status_id;
+				_child.status_name 			 = oEvent.status_name;
+				_child.total_cost 			 = oEvent.total_cost;
+				_child.lector_names 		 = oEvent.lector_names;
+			}
+
+			Ps.events.Sort( 'name', '+' );
+			return Ps;
+		}
+
+		if ( oResult.immediate_export )
+		{
+			if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', oResult.rows_count), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+			{ // Выгрузка отчета в Excel
+				if ( ! System.IsWebClient )
+				{
+					sReportUrl = ObtainSessionTempFile( UrlPathSuffix( oResult.exported_file_link ) );
+					CopyUrl( sReportUrl, oResult.exported_file_link );
+					sReportFilePath = UrlToFilePath( sReportUrl );
+				}
+				else
+				{
+					sReportFilePath = oResult.exported_file_link;
+				}
+
+				ShellExecute( 'open', sReportFilePath );
+			} else {
+				getReport(Ps, oResult);
+			}
+		}
+		else
+		{
+			getReport(Ps, oResult);	
+		}
+	}
+
+"/>
+
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	arrColumns = [
+		{ 'name': 'name', 'title': ms_tools.get_const('c_event') },
+		{ 'name': 'type_name', 'title': ms_tools.get_const('9il1vjwtjw') },
+		{ 'name': 'education_method_name', 'title': ms_tools.get_const('c_edu_method') },
+		{ 'name': 'education_org_name', 'title': ms_tools.get_const('8ep5fzi6uu') },
+		{ 'name': 'person_num', 'title': ms_tools.get_const('c_person_num') },
+		{ 'name': 'fact_person_num', 'title': ms_tools.get_const('fakticheskoekol_2') },
+		{ 'name': 'start_date', 'title': ms_tools.get_const('c_begin') },
+		{ 'name': 'finish_date', 'title': ms_tools.get_const('vlpb_finish_date') },
+		{ 'name': 'status_name', 'title': ms_tools.get_const('c_status') },
+		{ 'name': 'total_cost', 'title': ms_tools.get_const('c_cost') },
+		{ 'name': 'lector_names', 'title': ms_tools.get_const('vllec_title') }
+	];
+
+	if ( TopElem.exported_file_link.HasValue )
+	{
+		if ( TopElem.export_type == 'xlsx' )
+		{
+			sReportFilePath = TopElem.exported_file_link;
+		}
+		else
+		{
+			sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ '', TopElem.report_name, TopElem.export_type, '', System.IsWebClient, EncodeJson( arrColumns ), TopElem.events ] );
+		}
+
+		if ( ! System.IsWebClient )
+		{
+			sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+			CopyUrl( sReportUrl, sReportFilePath );
+			sReportFilePath = UrlToFilePath( sReportUrl );
+		}
+	
+		ShellExecute( 'open', sReportFilePath );
+	}
+	else
+	{
+		Screen.MsgBox( 'Нет данных для экспорта.', ms_tools.get_const( 'c_info' ), 'info', 'ok' );
+	}
+"/>
+
+</SPXML-SCREEN>

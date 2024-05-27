@@ -1,0 +1,167 @@
+﻿<SPXMLScreen>
+	<Action Name="AcquaintAssignAction" Source="acquaint_assign_action" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="object_id" Value="<%=curObjectID%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="acquaint_id" Value="{AcquaintId}"/>
+		<Param Name="action" Value="{EditAction}"/>
+	</Action>
+	<Edit Name="EditAction" Hidden="1"></Edit>
+	<Edit Name="ListCollaboratorAssign" Hidden="1"></Edit>
+	<Edit Name="EditDialogContext" Hidden="1"></Edit>
+<%
+bIsBoss = tools_web.is_true( tools_web.get_web_param( curParams, "create_update_acquaint.is_boss", "false", true ) );
+bCanCreate = tools_web.is_true( tools_web.get_web_param( curParams, "create_update_acquaint.can_create", "false", true ) );
+bCanUpdate = tools_web.is_true( tools_web.get_web_param( curParams, "create_update_acquaint.can_update", "false", true ) );
+
+sAssignColor = tools_web.get_web_param( curParams,"create_update_acquaint.status_colors.assign", "rgba(150,150,250,0.7)", true );
+sActiveColor = tools_web.get_web_param( curParams,"create_update_acquaint.status_colors.active", "rgba(150,250,150,0.7)", true );
+sFamiliarColor = tools_web.get_web_param( curParams,"create_update_acquaint.status_colors.familiar", "rgba(150,150,250,0.7)", true );
+
+if( curObjectID == null )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+bAccess = false;
+if( curObject.ChildExists( "experts" ) || curObject.ChildExists( "expert_id" ) )
+{
+	arrExperts = new Array();
+	if( curObject.ChildExists( "experts" ) )
+		arrExperts = ArrayExtract( curObject.experts, "This.PrimaryKey" );
+	if( curObject.ChildExists( "expert_id" ) && curObject.expert_id.HasValue )
+		arrExperts.push( curObject.expert_id );
+	xarrExperts = XQuery( "for $i in experts where $i/type = 'collaborator' and $i/person_id = " + curUserID + " return $i" );
+	if( ArrayOptFirstElem( ArrayIntersect(  arrExperts, xarrExperts, "This", "This.id" ) ) != undefined )
+		bAccess = true
+}
+if( !bAccess && bIsBoss )
+{
+	conds = new Array();
+	conds.push( "$i/person_id = " + curUserID )
+	arrBossTypes = new Array();
+	sBossType = tools_web.get_web_param( curParams, "create_update_acquaint.boss_type_id", "false", true );
+	if( sBossType != "" )
+	{
+		if( OptInt( sBossType ) != undefined )
+			arrBossTypes.push( sBossType );
+		else if( StrBegins( sBossType, "[" ) )
+			arrBossTypes = ArrayExtract( tools.read_object( sBossType ), "This.__value" );
+		if( ArrayOptFirstElem( arrBossTypes ) != undefined )
+			conds.push( "MatchSome( $i/boss_type_id, ( " + ArrayMerge( arrBossTypes, "This", "," ) + " ) )" )
+	}
+	if( ArrayOptFirstElem( XQuery( "for $i in func_managers where " + ArrayMerge( conds, "This", " and " ) + " return $i" ) ) != undefined )
+		bAccess = true;
+}
+if( bAccess )
+{
+	catAcquaint = ArrayOptFirstElem( XQuery( "for $i in acquaints where $i/object_id = " + curObjectID + " and $i/status = true() return $i" ) );
+	if( catAcquaint == undefined )
+	{
+		if( bCanCreate )
+		{
+%>
+	<Dialog Name="DialogAcquaintParam" Source="dlg_acquaint_params" Title="<%=XmlAttrEncode( "Настройки параметров" )%>" Close="SET=EditDialogContext,{EditContext};ACTION=AcquaintAssignAction">
+		<Param Name="acquaint_id" Value=""/>
+	</Dialog>
+	<Dialog Name="SelectDialogCollaborators" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите сотрудников для назначения ознакомления" )%>" Close="SET=ListCollaboratorAssign,{CatalogListDataGridSelList:*/id};OPENDIALOG=DialogAcquaintParam">
+		<Param Name="catalog_name" Value="collaborator"/>
+		<Param Name="multi_select" Value="true"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+	<Button Click="SET=EditAction,create_acquaint;OPENDIALOG=SelectDialogCollaborators;"><%="Создать ознакомление"%></Button>
+<%
+		}
+	}
+	else
+	{
+		teAcquaint = OpenDoc( UrlFromDocID( catAcquaint.id ) ).TopElem;
+		xarrAcquaintAssigns = XQuery( "for $i in acquaint_assigns where $i/acquaint_id = " + catAcquaint.id + " return $i" );
+		dCreate = "";
+		if( teAcquaint.doc_info.creation.date.HasValue )
+			dCreate = StrDate( teAcquaint.doc_info.creation.date, false );
+		sCreateUser = "";
+		if( teAcquaint.doc_info.creation.user_id.HasValue )
+		{
+			feCreateUser = teAcquaint.doc_info.creation.user_id.OptForeignElem;
+			if( feCreateUser != undefined )
+				sCreateUser = feCreateUser.fullname;
+		}
+%>
+	<Edit Name="AcquaintId" Hidden="1"><%=catAcquaint.id%></Edit>
+	<Grid Width="100%" Class="XAML-Grid-Informer" Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+		<GridRow>
+			<StackPanel Class="XAML-stack-container">
+				<Label Class="XAML-label-header-3"><%=StrReplace( StrReplace( "{PARAM1} пользователем {PARAM2} создано ознакомление с данным документом", "{PARAM1}", dCreate ), "{PARAM2}", sCreateUser )%></Label>
+				<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+					<GridColumns>
+						<GridColumn Width="20%"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%="Срок ознакомления"%></Label>
+						<Label><%=teAcquaint.normative_date.HasValue ? StrDate( teAcquaint.normative_date, false ) : ""%></Label>
+					</GridRow>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%="Назначенных ознакомлений"%></Label>
+						<Label><%=ArrayCount( xarrAcquaintAssigns )%></Label>
+					</GridRow>
+				</Grid>
+			</StackPanel>
+<%
+		curInformers = ({
+			"informers": []
+		});
+		iCount = ArrayCount( xarrAcquaintAssigns );
+		iFamiliarCount = ArrayCount( ArraySelect( xarrAcquaintAssigns, "This.state_id == 'familiar'" ) );
+		curInformers.informers.push({
+			"type": "scale_number",
+			"title": "Процент ознакомленных",
+			"count": iFamiliarCount,
+			"max_count": iCount,
+			"disp_desc": false
+		});
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+		</GridRow>
+	</Grid>
+	<Collection Name="AcquaintAssignCollection" Source="acquaint_assign_collection">
+		<Param Name="acquaint_id" Value="<%=catAcquaint.id%>"/>
+		<Param Name="sAssignColor" Value="<%=sAssignColor%>"/>
+		<Param Name="sActiveColor" Value="<%=sActiveColor%>"/>
+		<Param Name="sFamiliarColor" Value="<%=sFamiliarColor%>"/>
+	</Collection>
+	<DataGrid Name="AcquaintAssignDataGrid" Source="{AcquaintAssignCollection}" Title="" PageSize="100" Width="100%">
+		<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_fio", curLngWeb ) )%>" Width="100%" Type="string"/>
+		<DataGridColumn Value="position_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_position", curLngWeb ) )%>" Width="200" Type="string"/>
+		<DataGridColumn Value="state" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>" Width="250" Type="string" ColorSource="color"/>
+	</DataGrid>
+<%
+		if( bCanUpdate )
+		{
+%>
+	<Dialog Name="SelectDialogCollaborators" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите сотрудников для назначения ознакомления" )%>" Close="SET=ListCollaboratorAssign,{CatalogListDataGridSelList:*/id};ACTION=AcquaintAssignAction">
+		<Param Name="catalog_name" Value="collaborator"/>
+		<Param Name="multi_select" Value="true"/>
+		<Param Name="selected_object_ids" Value="<%=ArrayMerge( xarrAcquaintAssigns, "This.person_id", ";" )%>"/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+	<Dialog Name="DialogAcquaintParam" Source="dlg_acquaint_params" Title="<%=XmlAttrEncode( "Настройки параметров" )%>" Close="SET=EditDialogContext,{EditContext};ACTION=AcquaintAssignAction">
+		<Param Name="acquaint_id" Value="<%=catAcquaint.id%>"/>
+	</Dialog>
+	<Toolbar>
+		<Button Click="SET=EditAction,update_collaborators_acquaint;OPENDIALOG=SelectDialogCollaborators;"><%=XmlAttrEncode( "Изменить состав" )%></Button>
+		<Button Click="SET=EditAction,update_params_acquaint;OPENDIALOG=DialogAcquaintParam;"><%=XmlAttrEncode( tools_web.get_web_const( "changeparams", curLngWeb ) )%></Button>
+	</Toolbar>
+<%
+		}
+	}
+}
+%>
+</SPXMLScreen>

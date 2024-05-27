@@ -1,0 +1,170 @@
+﻿<SPXMLScreen>
+
+<%
+
+try
+{
+	curPersonID=curQualificationTemplate.GetProperty( 'person_id', '' );
+}
+catch(ex)
+{
+	curPersonID=curUserID
+}
+Env = Request.Session.Env;
+curUrlQuery = UrlQuery( PAGEURL );
+
+strTabList=String( tools_web.get_web_param( curParams, "my_qualifications.tab_list", "current;in_action;archive", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'MyQualificationsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+sSearchList=String( tools_web.get_web_param( curParams, "my_qualifications.tab_list.current.block_list.required.sSearchList", 'subdivision_group;position_common;group;position_family', true ) )
+%>
+<Edit Name="SelectDialogCloseActionQualification" Hidden="1"></Edit>
+<Dialog Name="SelectDialogQualification" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="{!SelectDialogCloseActionQualification}">
+	<Param Name="catalog_name" Value=""/>
+	<Param Name="multi_select" Value=""/>
+	<Param Name="view_type" Value=""/>
+	<Param Name="xquery_qual" Value="$elem/yourself_start=true()"/>
+	<Param Name="check_access" Value="true"/>
+	<Param Name="selected_object_ids" Value=""/>
+	<Param Name="display_object_ids" Value=""/>
+	<Param Name="disp_filter" Value=""/>
+	<Param Name="filter_id" Value=""/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+
+<Action Name="QualificationAction2" Initialize="{!SelectDialogAssignQualificationTypeSuccessAction}">
+</Action>
+
+<Action Name="QualificationAction1" Initialize="SET=SelectDialogCloseActionQualification,<%=UrlEncode('SET=QualificationAction/sSelectedData,{CatalogListDataGridSelList};ACTION=QualificationAction;')%>;SET=SelectDialogQualification/catalog_name,qualification;SET=SelectDialogQualification/multi_select,true;OPENDIALOG=SelectDialogQualification;">
+</Action>
+
+<Action Name="QualificationAction" Source="assign_qualifiction" Success="ALERT={messageText};UPDATE=MyQualificationsInProcessdDataGrid;UPDATE=MyQualificationsRequiredDataGrid" Failure="ALERT={messageText}">
+	<Param Name="iUserID" Value="<%=curUserID%>"/>
+	<Param Name="bUsePositionCommon" Value=""/>
+	<Param Name="bAssignNew" Value=""/>
+	<Param Name="sSelectedData" Value=""/>
+	<Param Name="sSearchList" Value="<%=sSearchList%>"/>
+</Action>
+<Edit Name="SelectDialogAssignQualificationTypeSuccessAction" Hidden="1"></Edit>
+
+<Dialog Name="SelectDialogAssignQualificationType" Source="dlg_assign_qualification" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vcrb_parameters', curLngWeb ) )%>" Close="SET=QualificationAction/bUsePositionCommon,{use_position_common};SET=QualificationAction/bAssignNew,{assign_new};Set=SelectDialogAssignQualificationTypeSuccessAction,<%=UrlEncode('ACTION=')%>QualificationAction{ParamDialogCloseAction};ACTION=QualificationAction2">
+</Dialog>
+<TabControl Name="MyQualificationsBodyTab" ActiveTab="0" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+	switch(sTabListParam)
+	{
+		case "current":
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'uf_current_state', curLngWeb ))%>">
+<%
+		arrBlockListParam = String( tools_web.get_web_param( curParams, "my_qualifications.tab_list.current.block_list", "required;in_process", true ) ).split( ";" );
+
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == "required" )
+			{
+				iGridHeight = Int( tools_web.get_web_param( curParams, "my_qualifications.tab_list.current.block_list.required.iGridHeight", 200, true ));
+%>
+				<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( '1uiriherzp', curLngWeb ) )%>" Expanded="true" Width="100%">
+					<Collection Name="MyQualificationsRequiredCollection" Source="my_qualifications_required">
+						<Param Name="sSearchList" Value="<%=sSearchList%>"/>
+						<Param Name="iUserID" Value="<%=curPersonID%>"/>
+					</Collection>
+					<DataGrid Name="MyQualificationsRequiredDataGrid" Source="{MyQualificationsRequiredCollection}"
+						Height="<%=iGridHeight%>">
+						<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>" Value="name" Width="200" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id: curDocID } )%>" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_status', curLngWeb )%>" Value="status" Width="200" Type="string" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'srokdeystviya', curLngWeb )%>" Value="expiration_date" Width="200" Type="date" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'kc32vvfwg2', curLngWeb )%>" Value="base" Width="300" Type="string" Sortable="True"/>
+					</DataGrid>
+					<Button Class="XAML-button XAML-button-new" Click="OPENDIALOG=SelectDialogAssignQualificationType;"><%=HtmlEncode(tools_web.get_web_const( 'xbdbhrguf9', curLngWeb ))%></Button>
+				</Panel>
+
+<%
+			}
+			if ( sTabElem == "in_process" )
+			{
+				iGridHeight = Int( tools_web.get_web_param( curParams, "my_qualifications.tab_list.current.block_list.in_process.iGridHeight", 200, true ));
+%>
+				<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'kvalifikaciivp', curLngWeb ) )%>" Expanded="true" Width="100%">
+					<Collection Name="MyQualificationsInProcessCollection" Source="my_qualifications_in_process">
+						<Param Name="iUserID" Value="<%=curPersonID%>"/>
+					</Collection>
+					<DataGrid Name="MyQualificationsInProcessdDataGrid" Source="{MyQualificationsInProcessCollection}"
+						Height="<%=iGridHeight%>">
+						<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>" Value="name" Width="200" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id: curDocID } )%>" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_start_date', curLngWeb )%>" Value="start_date" Width="100" Type="date" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'gotovnosti', curLngWeb )%>" Value="percent" Width="100" Type="string" Sortable="True"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'elkursy', curLngWeb )%>" Value="courses" Width="150" Type="string" Sortable="false"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'c_tests', curLngWeb )%>" Value="tests" Width="150" Type="string" Sortable="false"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const( 'vepb_edu_methods', curLngWeb )%>" Value="edu_methods" Width="150" Type="string" Sortable="false"/>
+					</DataGrid>
+				</Panel>
+<%
+			}
+		}
+%>
+	</TabItem>
+<%
+			break;
+		}
+		case "archive":
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vmkpb_archive', curLngWeb ))%>">
+<%
+		curView = {
+			"id": "QualificationAssignmentArchive",
+			"height": "400",
+			"catalog_name": "qualification_assignment",
+			"disp_search": "false",
+			"link_object_field": "qualification_id",
+			"disp_filter": "false",
+			"list_columns": "qualification_id.ForeignElem.name;assignment_date;expiration_date;status",
+			"sort_direct": "-",
+			"disp_array": "false",
+			"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, '%7Bid%7D', { doc_id: curDocID } ) ),
+		};
+		curView.SetProperty("xquery_qual","$elem/person_id="+curPersonID+" and $elem/status='expired'")
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+	</TabItem>
+<%
+			break;
+		}
+		case "in_action":
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'deystvuyushie', curLngWeb ))%>">
+<%
+		curView = {
+			"id": "QualificationAssignmentInAction",
+			"height": "400",
+			"catalog_name": "qualification_assignment",
+			"disp_search": "false",
+			"disp_filter": "false",
+			"link_object_field": "qualification_id",
+			"list_columns": "qualification_id.ForeignElem.name;assignment_date;expiration_date;status",
+			"sort_direct": "-",
+			"disp_array": "false",
+			"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, '%7Bid%7D', { doc_id: curDocID } ) ),
+		};
+		curView.SetProperty("xquery_qual","$elem/person_id="+curPersonID+" and $elem/status='assigned'")
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+	</TabItem>
+<%
+			break;
+		}
+	}
+}
+%>
+</TabControl>
+</SPXMLScreen>

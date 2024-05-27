@@ -1,0 +1,255 @@
+﻿<SPXMLScreen>
+<%
+	function get_last_user_photo( user_id )
+	{
+		oImage = new Object();
+		oImage.date = "";
+		oImage.url = "";
+		catObjectDataType = ArrayOptFirstElem( XQuery( "for $i in object_data_types where $i/code = 'user_photo' and $i/object_type = 'collaborator' return $i/Fields( 'id' )" ) );
+		if( catObjectDataType != undefined )
+		{
+			catObjectData = ArrayOptFirstElem( XQuery( "for $i in object_datas where $i/object_data_type_id = " + catObjectDataType.id + " and $i/object_id = " + user_id + " return $i/Fields( 'id' )" ) );
+			if( catObjectData != undefined )
+			{
+				teObjectData = OpenDoc( UrlFromDocID( catObjectData.id ) ).TopElem;
+				oImage.url = tools_web.get_object_source_url( "resource", teObjectData.custom_elems.ObtainChildByKey( "resource_id" ).value, { Session: Session } );
+				oImage.date = teObjectData.custom_elems.ObtainChildByKey( "resource_date" ).value;
+			}
+		}
+		if( oImage.url == "" )
+			oImage.url = tools_web.get_object_source_url( "person", user_id, "150x150" );
+			
+		return oImage;
+	}
+	
+	function is_boss()
+	{
+		iGroupID = OptInt( tools_web.get_web_param( curParams, "command_body.group_id", "", true ) );
+		if( iGroupID != undefined )
+		{
+			return ArrayOptFirstElem( XQuery( "for $i in func_managers where $i/object_id = " + iGroupID + " and $i/person_id = " + curUserID + " return $i/Fields( 'id' )" ) ) != undefined;
+		}
+		else
+		{
+			if( curUser.position_id.HasValue )
+			{
+				fePosition = curUser.position_id.OptForeignElem;
+				if( fePosition.is_boss )
+					return true;
+			}
+			if( curUser.position_parent_id.HasValue )
+			{
+				catFm = ArrayOptFirstElem( XQuery( "for $i in func_managers where $i/object_id = " + curUser.position_parent_id + " and $i/person_id = " + curUserID + " return $i/Fields( 'id' )" ) )
+				if( catFm != undefined )
+				{
+					return true;
+				}
+			}
+			if( curUser.org_id.HasValue )
+			{
+				return ArrayOptFirstElem( XQuery( "for $i in func_managers where $i/object_id = " + curUser.org_id + " and $i/person_id = " + curUserID + " return $i/Fields( 'id' )" ) ) != undefined;
+			}
+		}
+		return false;
+	}
+	iCollaboratorID = OptInt( tools_web.get_web_param( PARAMETERS, "collaborator_id", "", true ) );
+	bCanEditPict = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_edit_pict", "", true ) );
+	bCanChangeState = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_change_state", "", true ) );
+	bCanChangeFoto = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_change_foto", "", true ) );
+	bCanChangeCurrentTask = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_change_current_task", "", true ) );
+	bCanAddTask = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "can_add_task", "", true ) );
+	bShowOpenChat = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "show_open_chat", "", true ) );
+	bUseTaskTile = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "use_task_tile", "", true ) );
+	
+	isBoss = ( bCanChangeFoto && iCollaboratorID == curUserID ) || is_boss();
+	catTask = undefined;
+	if( iCollaboratorID != undefined )
+	{
+		sPanelID = tools.random_string( 10 );
+		teCollaborator = OpenDoc( UrlFromDocID( iCollaboratorID ) ).TopElem;
+		oObjectImageUrl = get_last_user_photo( iCollaboratorID );
+		sClickAction = "";
+		sDesc = "";
+		iTaskTypeID = OptInt( tools_web.get_web_param( curParams, "command_body.task_type_id", "", true ) );
+		catTask = ArrayOptFirstElem( XQuery( "for $i in tasks where $i/executor_id = " + iCollaboratorID + ( iTaskTypeID != undefined ? " and $i/task_type_id = " + iTaskTypeID : "" ) + " and $i/status = '0' return $i/Fields( 'id', 'name' )" ) );
+		if( catTask != undefined )
+		{
+			//teTask = OpenDoc( UrlFromDocID( catTask.id ) ).TopElem;
+			sDesc =  catTask.name;
+		}
+
+%>
+	<Edit Hidden="1" Name="EditActionPanel<%=sPanelID%>"/>
+	<Edit Hidden="1" Name="EditValuePanel<%=sPanelID%>"/>
+	<Edit Hidden="1" Name="EditTaskIDPanel<%=sPanelID%>"/>
+	<Action Name="CommandCollaboratorActionPanel<%=sPanelID%>" Source="command_action" Success="{!messageText};REFRESH;">
+	    <Param Name="collaborator_id" Value="<%=iCollaboratorID%>"/>
+		<Param Name="action" Value="{EditActionPanel<%=sPanelID%>}"/>
+		<Param Name="value" Value="{EditValuePanel<%=sPanelID%>}"/>
+	</Action>
+	<Dialog Name="SelectTask<%=sPanelID%>" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите задачу" )%>" Close="SET=EditActionPanel<%=sPanelID%>,change_task;SET=EditAction,add_select_item;SET=EditValuePanel<%=sPanelID%>,{CatalogListDataGridFullList:^/id};ACTION=CommandCollaboratorActionPanel<%=sPanelID%>;">
+		<Param Name="catalog_name" Value="task"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="list_columns" Value="date_plan;name;status.ForeignElem.name;assigner_id.ForeignElem.fullname"/>
+		<Param Name="xquery_qual" Value="<%=UrlEncode( "$elem/executor_id = " + iCollaboratorID + ( iTaskTypeID != undefined ? " and $elem/task_type_id = " + iTaskTypeID : "" ) )%>"/>
+	</Dialog>
+	<Dialog Name="DialogSelectPersonStates<%=sPanelID%>" Source="dlg_select_from_lists" Title="<%=XmlAttrEncode( "Выберите состояние сотрудника" )%>" Close="SET=EditActionPanel<%=sPanelID%>,change_state;SET=EditValuePanel<%=sPanelID%>,{DataGridListsElem:^/id};ACTION=CommandCollaboratorActionPanel<%=sPanelID%>;">
+		<Param Name="title" Value=""/>
+		<Param Name="catalog_name" Value="person_states"/>
+	</Dialog>
+	<Dialog Name="DialogCreateTask<%=sPanelID%>" Source="dlg_command_task" Title="<%=XmlAttrEncode( "Новая задача" )%>" Close="REFRESH;">
+		<Param Name="collaborator_id" Value="<%=iCollaboratorID%>"/>
+	</Dialog>
+	<Dialog Name="DialogCreateTask<%=sPanelID%>" Source="dlg_command_task" Title="<%=XmlAttrEncode( "Задача" )%>" Close="REFRESH;">
+		<Param Name="collaborator_id" Value="<%=iCollaboratorID%>"/>
+		<Param Name="task_id" Value="{EditTaskIDPanel<%=sPanelID%>}"/>
+		<Param Name="task_type_id" Value="<%=tools_web.get_web_param( curParams, "command_body.task_type_id", "", true )%>"/>
+	</Dialog>
+
+	
+	<Grid>
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="150"/>
+		</GridColumns> 	
+		<GridRow>
+<!--			<StackPanel Class="XAML-stack-object-title-container">
+				<Label Class="XAML-label-header-3"><![CDATA[<%=tools_web.get_cur_lng_name( teCollaborator.fullname, curLng.short_id ) + ( teCollaborator.position_name.HasValue ? ", " + tools_web.get_cur_lng_name( teCollaborator.position_name, curLng.short_id ) : "" )%>]]></Label>
+			</StackPanel>
+-->	
+			<StackPanel Class="XAML-stack-object-title-container" Orientation="Vertical">
+				<Label Class="XAML-label-header-2"><![CDATA[<%=tools_web.get_cur_lng_name( teCollaborator.fullname, curLng.short_id )%>]]></Label>
+				<Label Class="XAML-label-header-6"><![CDATA[<%=( teCollaborator.position_name.HasValue ? tools_web.get_cur_lng_name( teCollaborator.position_name, curLng.short_id ) : "" )%>]]></Label>
+				<Label Class="XAML-label-header-6"><![CDATA[<%=( teCollaborator.email.HasValue ? tools_web.get_cur_lng_name( "E-mail: " + teCollaborator.email, curLng.short_id ) : "" )%>]]></Label>
+				<Label Class="XAML-label-header-6"><![CDATA[<%=( teCollaborator.mobile_phone.HasValue ? tools_web.get_cur_lng_name( "Телефон: " + teCollaborator.mobile_phone, curLng.short_id ) : "" )%>]]></Label>
+				
+			</StackPanel>
+			<StackPanel Class="XAML-stack-container">
+				<Image Click="<%=sClickAction%>" Class="XAML-command-person-photo" Width="150" Source="pics/1blank.gif">
+					<BackgroundImage Source="<%=XmlAttrEncode( oObjectImageUrl.url )%>"/>
+				</Image>
+				<Label><%=oObjectImageUrl.date%></Label>
+<%
+		if( bCanChangeFoto )
+		{
+%>
+				<Button Class="XAML-button" Width="150" Click="OPENWINDOW=create_foto.html,Width=600,Height=600,CloseAction=PageRefreshFinish"><%=XmlAttrEncode( "Снять фото" )%></Button>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+	
+	<Toolbar Class="XAML-toolbar">
+<%
+		if( isBoss &&  bCanChangeState )
+		{
+%>
+		<Button Class="XAML-button" Width="150" Click="OPENDIALOG=DialogSelectPersonStates<%=sPanelID%>"><%=XmlAttrEncode( tools_web.get_web_const( "izmenitstatus", curLngWeb ) )%></Button>
+<%
+		}
+		if( isBoss && bCanChangeCurrentTask )
+		{
+%>
+		<Button Class="XAML-button" Width="220" Click="OPENDIALOG=SelectTask<%=sPanelID%>;"><%=XmlAttrEncode( "Изменить текущую задачу" )%></Button>
+<%
+		}
+		if( isBoss && bCanAddTask )
+		{
+%>
+		<Button Class="XAML-button" Width="150" Click="SET=EditTaskIDPanel<%=sPanelID%>,;OPENDIALOG=DialogCreateTask<%=sPanelID%>"><%=XmlAttrEncode( tools_web.get_web_const( "dobavitzadachu", curLngWeb ) )%></Button>
+<%
+		}
+		if( bShowOpenChat )
+		{
+			if( curUserID == iCollaboratorID )
+			{
+%>
+		<!-- <Button Class="XAML-button" Width="200" Click="OPENWINDOW=/chat/default.html?mode=conversations"><%=XmlAttrEncode( "Мои разговоры" )%></Button> -->
+		<Button Class="XAML-button" Width="200" Click="OPENWINDOW=/vchat/conversation"><%=XmlAttrEncode( "Мои разговоры" )%></Button>
+<%
+			}
+			else
+			{
+%>
+		<Button Class="XAML-button" Width="200" Click="SET=EditActionPanel<%=sPanelID%>,open_conversation;ACTION=CommandCollaboratorActionPanel<%=sPanelID%>"><%=XmlAttrEncode( "Открыть разговор" )%></Button>
+<%
+			}
+		}
+
+%>
+	</Toolbar>
+	<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="200" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="100"><%=tools_web.get_web_const( "rjhm4kmkjj", curLngWeb )%>:</Label>
+			<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="1">
+				<Label><%=teCollaborator.current_state%></Label>
+			</StackPanel>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="100"><%="Текущая задача"%>:</Label>
+			<Link Click="SET=EditTaskIDPanel<%=sPanelID%>,<%=catTask != undefined ? catTask.id : ""%>;OPENDIALOG=DialogCreateTask<%=sPanelID%>">
+				<![CDATA[<%=sDesc%>]]>
+			</Link>
+		</GridRow>
+	</Grid>
+<%
+		curView = {
+				"id": "TasksCollaboratorPanel" + sPanelID,
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "task",
+				"disp_search": false,
+				"disp_filter": false,
+				"tile_template": "command_task_tile",
+				"tile_columns": 1,
+				"tile_class": "XAML-tileview-list",
+				"disp_type": ( bUseTaskTile ? "tile" : "data_grid" ),
+				"collection": { "name" : "command_tasks_collection", "params": [ { name: "collaborator_id", "value": iCollaboratorID }, { name: "status", value: "{status_id_task" + sPanelID + "}" }, { name: "task_type_id", value: tools_web.get_web_param( curParams, "command_body.task_type_id", "", true ) } ] },
+			};
+			arr_filters = new Array()
+			obj_filter = new Object();
+			function get_status_name( catElem )
+			{
+				if( catElem.id == "0" )
+					return "Выполняется";
+				return catElem.name.Value;
+			}
+			aResultArray = common.task_statuses;
+			obj_filter.type = "combo";
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: "Все задачи" } );
+			obj_filter.items.push( { value: "in_job", title: "Планируется и выполняется " } );
+			for ( catElem in aResultArray )
+				obj_filter.items.push( { value: catElem.id.Value, title: get_status_name( catElem ) } );
+			
+			obj_filter.name = "status_id_task" + sPanelID;
+			obj_filter.SetProperty( "default", "in_job" );
+			arr_filters.push( obj_filter )
+			curFilter = {
+						'disp_search': false,
+						'search_action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel" + sPanelID,
+						'selectors_action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel" + sPanelID,
+						'action': "UPDATE=CatalogListDataGrid" + "TasksCollaboratorPanel" + sPanelID,
+						'filters': arr_filters,
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+	}
+	else
+	{
+%>
+	<StackPanel Class="XAML-command-select">
+			<Label><%="Выберите сотрудника слева"%></Label>
+	</StackPanel>
+<%
+	}
+	
+%>
+</SPXMLScreen>

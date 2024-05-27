@@ -1,0 +1,146 @@
+﻿<SPXMLScreen>
+<!---------------------------------------- Variables -------------------------------------------->
+<%
+arrItems = new Array();
+sHeader = tools_web.get_web_param( curParams, "new_persons.sHeader", tools_web.get_web_const( 'doc_new_persons', curLngWeb ), true );
+iDaysToShow = Int( tools_web.get_web_param( curParams, "new_persons.iDaysToShow", "1", true ));
+iItemsToShow = Int( tools_web.get_web_param( curParams, "new_persons.iItemsToShow", "1", true ));
+bShowPhoto = ( tools_web.get_web_param( curParams, "new_persons.bShowPhoto", "1", true ) == "1");
+bShowCompany = ( tools_web.get_web_param( curParams, "new_persons.bShowCompany", "1", true ) == "1");
+bShowSub = ( tools_web.get_web_param( curParams, "new_persons.bShowSub", "1", true ) == "1");
+bShowPos = ( tools_web.get_web_param( curParams, "new_persons.bShowPos", "1", true ) == "1");
+bShowPhoto = ( tools_web.get_web_param( curParams, "new_persons.bShowPhoto", "1", true ) == "1");
+
+dDateToShow = RawSecondsToDate(DateToRawSeconds(Date()) -  86400 * iDaysToShow);
+
+xarrPersons = XQuery("for $elem in collaborators where $elem/is_dismiss = false() and $elem/hire_date != null() and $elem/hire_date > date('" + dDateToShow + "') and $elem/hire_date < date('" + Date() + "') order by $elem/hire_date descending return $elem");
+if(ArrayOptFirstElem(xarrPersons) != undefined)
+{
+	i=0;
+	for(catPerson in xarrPersons)
+	{			
+		oItem = new Object();
+		oItem.userId = catPerson.PrimaryKey;
+		oItem.pic = catPerson.pict_url;
+		oItem.type = "hired";
+		oItem.username = catPerson.fullname;
+		oItem.name = catPerson.fullname;
+		try {
+			oItem.orgname = catPerson.org_name;
+			oItem.psubname = catPerson.position_parent_name;
+			oItem.pname = catPerson.position_name;
+		}
+		catch (zxc)
+		{
+			oItem.orgname = '';
+			oItem.psubname = '';
+			oItem.pname = '';
+		}
+		oItem.date = catPerson.hire_date;
+		oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+		oItem.itemAction = tools_web.get_mode_clean_url( 'collaborator', catPerson.PrimaryKey, {} );
+		arrItems[ArrayCount(arrItems)] = oItem;
+		
+		i++;
+		if(i==iItemsToShow)
+			break;
+	}
+}
+arrItems = ArrayRange(arrItems, 0, iItemsToShow)	
+if (ArrayCount(arrItems)>0)
+{
+%> 
+<StackPanel Width="100%" Orientation="Vertical" Class="XAML-stack-block">
+<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header"><Label Class="XAML-label-block-header"><%=sHeader%></Label></StackPanel>
+<%
+	for(oItem in arrItems)
+	{
+		sActionLabel = "";
+		sIcon = "";
+		switch(oItem.type)
+		{
+			case "hired":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( 'prinyatnarabotu', curLngWeb ) );
+				sIcon = "/icons/16png/collaborator.png";
+				break;
+		}
+		
+		sDays = "";
+		iDays = oItem.rest + 10;
+		switch(iDays % 10)
+		{
+			case 1:
+			{
+				if( iDays < 20 || iDays > 30) sDays = StrNonTitleCase( tools_web.get_web_const( 'w6n76t3f75', curLngWeb ) );
+				break;
+			}
+			case 2:
+			case 3:
+			case 4:
+			{
+				if( iDays < 20 || iDays > 30) sDays = StrNonTitleCase( tools_web.get_web_const( 'dnya', curLngWeb ) );
+				break;
+			}
+			default:
+			{
+				sDays = StrNonTitleCase( tools_web.get_web_const( '2kaidfx9na', curLngWeb ) );
+				break;
+			}
+		}
+		sDays = (oItem.type != "birthday") ? tools_web.get_date_passed_string(oItem.date, curLngWeb) : (Day(oItem.date) + "." + Month(oItem.date) + "." + Year(new Date()));		
+		sActionLabel = sDays + " " + sActionLabel;
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-card">
+<%
+			if(bShowPhoto)
+			{
+%>
+				<Image Width="38" Class="XAML-stack-card-photo" Source="<%=(oItem.pic == "" ? "/pics/nophoto.png" : oItem.pic)%>"></Image>
+<%
+			}
+%>
+			<HTMLBox Width="100%">
+<%
+// since ExtJS cannot detect width of nested stackpanels correctly, HTML box is used instead of a lot of panels - TO FIX IN FUTURE
+				sUrl = tools_web.get_mode_clean_url( 'collaborator', oItem.userId, {} );
+				sHTML = '<div class="XAML-stack-no-spacing"><a href="' + sUrl + '" class="XAML-stack-card-user-link">' + oItem.username + '</a>';
+				sHTML = sHTML + '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%; vertical-align: top;"><tr><td style="vertical-align: top;"><img src="' + sIcon + '" class="XAML-stack-card-activity-icon"/></td>';
+				sHTML = sHTML + '<td style="width: 100%; vertical-align: top;" class="XAML-stack-card-activity"><span>' + sActionLabel + '</span>';
+				sHTML = sHTML + '</td></tr></table></div>';
+%>		
+				<%=HtmlEncode( sHTML )%>
+<%
+	if ( bShowCompany || bShowSub || bShowPos )
+	{
+%>					
+	<HTMLTip>
+<%	
+				tipHTML = '';
+				if (bShowCompany)
+				{
+					tipHTML = '<p align="left">' + tools_web.get_web_const( 'c_org', curLngWeb ) + ': <b>' + oItem.orgname + '</b></p>';
+				}
+				if (bShowSub)
+				{
+					tipHTML += '<p align="left">' + tools_web.get_web_const( 'c_subd', curLngWeb ) + ': <b/>' + oItem.psubname + '</b></p>';
+				}
+				if (bShowPos)
+				{
+					tipHTML += '<p align="left">' + tools_web.get_web_const( 'c_position', curLngWeb ) + ': <b>' + oItem.pname + '</b></p>';
+				}	
+%>
+				<%=HtmlEncode( tipHTML )%>
+	</HTMLTip>
+<%
+	}
+%>	
+			</HTMLBox>
+		</StackPanel>
+<%	
+	}
+%>
+</StackPanel>	
+<%
+}
+%>
+</SPXMLScreen>

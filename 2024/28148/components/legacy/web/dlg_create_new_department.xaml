@@ -1,0 +1,166 @@
+﻿<SPXMLScreen>
+
+<%
+sSelectData = PARAMETERS.GetOptProperty( "select_data", "" );
+//alert(sSelectData);
+sSelectObj = StrRangePos(sSelectData,sSelectData.indexOf('{')+1,sSelectData.indexOf('}'));
+
+iOrgId = undefined;
+iSubdivisionId = undefined;
+xarrOrg = undefined;
+xarrSubdiv = undefined;
+selectObject = new Object;
+
+selectObject = tools.read_selected_date( sSelectObj );
+
+//alert("id: " + selectObject.id);
+//alert("type: " + selectObject.type);
+
+if (selectObject != undefined)
+{
+    if (selectObject.type == "org")
+    {
+        iOrgId = Int(selectObject.id) ;
+    }
+	if (selectObject.type == "subdivision")
+	{
+	    iSubdivisionId = Int(selectObject.id);
+        xarrSubdiv = ArrayOptFirstElem(XQuery("for $elem in subdivisions where $elem/id=" + iSubdivisionId + " return $elem"));
+     	iOrgId = xarrSubdiv.org_id;
+	}
+	xarrOrg = ArrayOptFirstElem(XQuery("for $elem in orgs where $elem/id=" + iOrgId + " return $elem"));
+}
+%>
+	<Action Name="CheckDepartmentAction" Source="check_new_department" Success="ACTION=CreateDepartmentAction;" Failure="CONFIRM=<%=tools_web.get_web_const( "podrazdelenies_1", curLngWeb )%>;ACTION=CreateDepartmentAction;">
+		<Param Name="SubdivCode" Value="{dlg_department_code}"/>
+	</Action>
+
+	<Action Name="CreateDepartmentAction" Source="create_new_department" Success="ALERT={messageText};CLOSEDIALOG;REFRESH;">
+	    <Param Name="OrgId" Value="<%=iOrgId%>"/>
+		<Param Name="ParentSubdivId" Value="{dlg_parent_subdiv_id}"/>
+		<Param Name="SubdivCode" Value="{dlg_department_code}"/>
+		<Param Name="SubdivName" Value="{dlg_department_name}"/>
+	</Action>
+
+    <Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="150" Align="Right"/>
+			<GridColumn Width="100%" Align="Left"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>
+			<Label Width="100%" Name="dlg_department_org" ><%=xarrOrg.name%></Label>
+		</GridRow>
+		
+<%
+    intLevel = 4;
+	arrSubdivs = Array();
+	arrParentIds = Array();
+
+	if (xarrSubdiv != undefined)
+	{
+        arrParentIds[0] = iSubdivisionId;
+
+		teCurSubdiv = OpenDoc(UrlFromDocID(iSubdivisionId)).TopElem;
+		j = 1 ;
+		if (teCurSubdiv != undefined)
+		{
+			/*if (teCurSubdiv.parent_object_id != null)
+			{
+				arrParentIds[j] = teCurSubdiv.parent_object_id ;
+				j++;
+				for (i=ArrayCount(arrParentIds); i < intLevel; i++)
+				{
+					teParent = OpenDoc(UrlFromDocID(arrParentIds[i-1])).TopElem ;
+					if (teParent.parent_object_id != null)
+					{
+						arrParentIds[j] = teParent.parent_object_id;
+						j++;
+					}
+					else
+						break;
+				}
+			}*/
+			//else
+			//{
+				iCnt = ArrayCount(arrParentIds);
+				for (i=1; i < iCnt+1; i++)
+				{
+					//alert("i=" + i + ": " + i + " < " + iCnt);
+					xarrSubordSubdiv = XQuery("for $elem in subdivisions where $elem/parent_object_id=" + arrParentIds[i-1] + " return $elem");
+					if (ArrayOptFirstElem(xarrSubordSubdiv) != undefined)
+					{
+						for (catSubSubdiv in xarrSubordSubdiv)
+						{
+							arrParentIds[j] = catSubSubdiv.id;
+							//alert("arrParentIds[" + j + "] = " + arrParentIds[j]);
+							j++;
+							iCnt++;
+						}
+					}
+
+				}
+			//}
+		}
+	}
+
+    alert("ParentIds: " + ArrayCount(arrParentIds));
+	if (ArrayOptFirstElem(arrParentIds) != undefined)
+	{
+	    arrSubdivs = ArraySort(QueryCatalogByKeys( "subdivisions", "id", arrParentIds ),"name","+");
+
+%>
+        <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "uf_s_depart", curLngWeb )%>:</Label>
+			<ComboBox Width="100%" Name="dlg_parent_subdiv_id">
+<%
+                for ( catSubdiv in arrSubdivs )
+				{
+				    sSelect = "";
+				    if (catSubdiv.id == iSubdivisionId)
+					{
+					    sSelect = "Selected='true'";
+                    }
+%>
+					<ComboBoxItem  Value="<%=catSubdiv.id%>" <%=sSelect%>><%=tools_web.get_cur_lng_name( catSubdiv.name, curLng.short_id )%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow>
+<%
+	}
+	else
+    {
+%>
+	    <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "uf_s_depart", curLngWeb )%>:</Label>
+			<Label Width="100%"/>
+		</GridRow>
+<%
+    }
+%>
+        <GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+			<Edit Name="dlg_department_code" Width="100%"></Edit>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="150"><%=tools_web.get_web_const( "c_name", curLngWeb )%>*:</Label>
+			<Edit Name="dlg_department_name" Width="100%"></Edit>
+		</GridRow>
+
+    </Grid>
+
+<%
+	sCreateAction = "ACTION=CheckDepartmentAction;";
+%>
+	<Label/>
+	<Toolbar Width="">
+			<Button Class="XAML-button XAML-button-save" Click="<%=sCreateAction%>"><%=tools_web.get_web_const( "c_create", curLngWeb )%></Button>
+			<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</Toolbar>	
+
+
+</SPXMLScreen>

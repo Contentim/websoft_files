@@ -1,0 +1,75 @@
+﻿<SPXMLScreen>
+<%
+sLinkAction = "";
+sMode = "";
+curModeSession = tools_web.get_web_param( curParams, 'list_learnings.catalog_name', curMode, true );
+curLearningTile = tools_web.get_web_param( curParams, "list_learnings.tile_template", "learning_tile", true );
+sDefaultViewParam = tools_web.get_web_param( curParams,"list_learnings.default_view", "data_grid", true );
+bShowSelector = tools_web.is_true( tools_web.get_web_param( curParams, "list_learnings.show_selector", "1", true ) );
+
+switch ( curModeSession )
+{
+	case 'learning':
+		sMode = 'learning_stat';
+		sListColumns = curDevice.disp_type == "" ? 'course_id.ForeignElem.name;start_usage_date;start_learning_date;last_usage_date;score;state_id' : 'course_id.ForeignElem.name;last_usage_date';
+		break;
+
+	case 'active_test_learning':
+		sMode = 'test_learning_proc';
+		sListColumns = curDevice.disp_type == "" ? 'assessment_name;start_usage_date;start_learning_date;last_usage_date;score;state_id' : 'assessment_name;last_usage_date';
+		break;
+
+	case 'test_learning':
+		sMode = 'test_learning_stat';
+		sListColumns = curDevice.disp_type == "" ? 'assessment_name;start_usage_date;start_learning_date;last_usage_date;score;state_id' : 'assessment_name;last_usage_date';
+		break;
+
+	default:
+		dStartLaunch = tools_web.is_true( tools_web.get_web_param( curParams, 'list_learnings.start_launch', false, true ) );
+		if ( dStartLaunch )
+			sLinkAction = "OPENWINDOW=course_launch_person.html?doc_id=" + curDocID + "&object_id=%7Bid%7D";
+		else
+			sMode = 'learning_proc';
+		curModeSession = 'active_learning';
+		sListColumns = curDevice.disp_type == "" ? 'course_id.ForeignElem.name;start_usage_date;start_learning_date;last_usage_date;score;state_id' : 'course_id.ForeignElem.name;last_usage_date';
+		break;
+}
+
+
+sFilterFieldName = 'LearningListFilter_' + sMode;
+sDefaultViewParam = CONTEXT.GetOptProperty( 'sDefaultViewParam', sDefaultViewParam );
+
+curView = {
+	"id": sMode,
+	"height": "",
+	"disp_paging": true,
+	"paging_size": 100,
+	"catalog_name": curModeSession,
+	"xquery_qual": ( "$elem/person_id = " + curUserID ),// + " and $elem/state_id = {" + sFilterFieldName + "}" ),
+	"disp_link": "true",
+	"link_mode": sMode,
+	"link_action": sLinkAction,
+	"disp_filter": "true",
+	"disp_selectors": bShowSelector,
+	"disp_type": sDefaultViewParam,
+	"tile_template": tools_web.get_web_param( curParams, "list_learnings.tile_template", "learning_tile", true ),
+	"tile_columns": tools_web.get_web_param( curParams, "list_learnings.tile_columns", "", true ),
+	"tile_rows": tools_web.get_web_param( curParams, "list_learnings.tile_rows", "", true ),
+	"tile_height": tools_web.get_web_param( curParams, "list_learnings.tile_height", "", true ),	
+	"filter_mode": "custom",
+	"disp_search": ( (tools.sys_db_capability & tools.UNI_CAP_BASIC) == 0 ),
+	"sort_index": "1",
+	"sort_direct": "-",
+	"selectors": "data_grid;tile",
+	"selectors_field": "sDefaultViewParam",
+	"selectors_value": sDefaultViewParam,		
+	"filter_items": [
+		{ "id": sFilterFieldName, "field":"state_id", "name": tools_web.get_web_const( 'vppb_state', curLngWeb ), "default": "#empty#", "type": "integer" }
+	],
+	"list_columns": sListColumns,
+	"data_fields": "person_id",
+	"id_field_name": "person_id"
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</SPXMLScreen>

@@ -1,0 +1,103 @@
+﻿<SPXMLScreen>
+<%
+	iCollaboratorID = OptInt( PARAMETERS.GetOptProperty( "collaborator_id", "" ) );
+	iTaskID = OptInt( PARAMETERS.GetOptProperty( "task_id", "" ) );
+	if( iTaskID != undefined )
+		teTask = OpenDoc( UrlFromDocID( iTaskID ) ).TopElem;
+	else
+	{
+		teTask = OpenNewDoc( 'x-local://wtv/wtv_task.xmd' ).TopElem;
+		teTask.status = "p";
+	}
+		
+	bEdit = iTaskID == undefined || teTask.assigner_id == curUserID || ( teTask.executor_id == curUserID && tools_web.is_true( tools_web.get_web_param( curParams, "command_body.tabs.my_tasks.can_change_boss_task", "false", true ) ) )
+%>
+	<Action Name="CommandAddTaskAction" Source="command_action" Success="{!messageText};CLOSEDIALOG;">
+	    <Param Name="collaborator_id" Value="<%=iCollaboratorID%>"/>
+		<Param Name="action" Value="create_task"/>
+		<Param Name="value" Value="{CONTEXT}"/>
+	</Action>
+
+	<Edit Hidden="1" Name="iTaskID"><%=iTaskID%></Edit>	
+	<Edit Hidden="1" Name="iTaskTypeID"><%=PARAMETERS.GetOptProperty( "task_type_id", "" )%></Edit>	
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>	
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_name', curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal">
+				<Edit Width="100%" Editable="<%=bEdit%>" Name="field_name"><%=XmlAttrEncode( teTask.name )%></Edit>
+				<ComboBox Enabled="<%=bEdit%>" Name="field_status" Width="250" SelectedItem="<%=teTask.status%>">
+<%
+		function get_status_name( catElem )
+		{
+				if( catElem.id == "0" )
+					return "Выполняется";
+				return catElem.name.Value;
+		}
+		for ( _elem in common.task_statuses )
+		{
+%>			
+					<ComboBoxItem Value="<%=_elem.PrimaryKey%>"><%=HtmlEncode( get_status_name( _elem ) )%></ComboBoxItem>
+<%
+		}
+%>
+				</ComboBox>
+			</StackPanel>
+		</GridRow>
+		<GridRow>
+			
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vllb_dates', curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal">
+				<DatePicker Enabled="<%=bEdit%>" Name="field_date_plan"><%=teTask.date_plan.HasValue ? StrDate( teTask.date_plan, false ) : ""%></DatePicker>
+				<Label>-</Label>
+				<DatePicker Enabled="<%=bEdit%>" Name="field_end_date_plan"><%=teTask.end_date_plan.HasValue ? StrDate( teTask.end_date_plan, false ) : ""%></DatePicker>
+			</StackPanel>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vdb_aim_task', curLngWeb )%>:</Label>
+			<EditBox Enabled="<%=bEdit%>" Name="field_plan" Width="100%" Height="150"><%=XmlAttrEncode( teTask.plan )%></EditBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_result', curLngWeb )%>:</Label>
+			<EditBox Enabled="<%=teTask.executor_id == curUserID%>" Name="field_fact" Width="100%" Height="150"><%=XmlAttrEncode( teTask.fact )%></EditBox>
+		</GridRow>
+	</Grid>
+<%
+if( ISDIALOG )
+{
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+<%
+if( bEdit || teTask.executor_id == curUserID )
+{
+%>
+			<GridColumn Width="150"/>
+<%
+}
+%>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+<%
+if( bEdit || teTask.executor_id == curUserID )
+{
+%>
+			<Button Class="XAML-button" Width="150" Click="ACTION=CommandAddTaskAction;"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+}
+%>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

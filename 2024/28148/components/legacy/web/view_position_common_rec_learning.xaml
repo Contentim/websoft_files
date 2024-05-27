@@ -1,0 +1,205 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if ( ISDIALOG )
+{
+	curObjectID = OptInt( oParamSource.GetOptProperty( 'object_id' ), null );
+	if ( curObjectID == null )
+	{
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neukazanidobek', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+	
+	curPersonID = OptInt( oParamSource.GetOptProperty( 'person_id' ), null );
+	if ( curPersonID == null )
+	{
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neukazanidsotr', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+	
+	try
+	{
+		curObject = OpenDoc( UrlFromDocID( curObjectID ) ).TopElem;
+	}
+	catch(ex)
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+}
+
+strGoodColor=String(oParamSource.GetOptProperty( 'good_color' )!=undefined?oParamSource.GetOptProperty( 'good_color' ):tools_web.get_web_param( curParams, 'career_reserve_body.competence_good_color', '150,250,150', true ));
+if (Trim(strGoodColor)=='')
+{
+	strGoodColor=String(tools_web.get_web_param( curParams, 'position_common_rec_learning.competence_good_color', '150,250,150', true ));
+}
+
+if (Trim(strGoodColor)!='')
+{
+	strGoodColor='#'+StrHexColor(strGoodColor)
+}
+
+strBadColor=String(oParamSource.GetOptProperty( 'bad_color' )!=undefined?oParamSource.GetOptProperty( 'bad_color' ):tools_web.get_web_param( curParams, 'career_reserve_body.competence_bad_color', '250,150,150', true ));
+if (Trim(strBadColor)=='')
+{
+	strBadColor=String(tools_web.get_web_param( curParams, 'position_common_rec_learning.competence_bad_color', '250,150,150', true ));
+}
+
+if (Trim(strBadColor)!='')
+{
+	strBadColor='#'+StrHexColor(strBadColor)
+}
+%>
+
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'rekomendaciiko', curLngWeb ) )%>" Expanded="1" Width="100%" Class="XAML-panel-info">
+<%
+	arrEduSets=QueryCatalogByKeys("education_methods", "id",ArrayExtract(QueryCatalogByKeys("compound_program_education_methods", "compound_program_id",ArrayExtract(curObject.compound_programs,"This.compound_program_id")),"This.education_method_id"))			
+	arrEduMethods=QueryCatalogByKeys("education_methods", "id", ArrayExtract(curObject.education_methods,"education_method_id"))
+				
+	arrEduProgs=ArraySort(ArraySelectDistinct(ArrayUnion(arrEduSets,arrEduMethods),"id"),'This.name','+')
+	
+	curView = {
+				"id": "EducationFullList",
+				"height": 180,
+				"catalog_name": "education_method",	
+				"disp_array": "true",
+				"check_access": "false",
+				"disp_filter": "true",
+				"disp_search": "true",
+				"disp_link": "true",
+				"is_data_grid": "true",
+			};
+			
+		curView.SetProperty( "array", ArrayMerge( arrEduProgs, 'id', ';' ));
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</Panel>
+<%
+if (curObject.competence_profile_id.HasValue)
+{
+%>
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ass_competences', curLngWeb ) )%>" Expanded="1" Width="100%" Class="XAML-panel-info">
+	<Collection Name="CompetenceListCollection">
+		<Data>
+<%
+
+	try
+	{
+		teProfile=OpenDoc( UrlFromDocID (curObject.competence_profile_id)).TopElem;
+		arrComp=teProfile.competences
+	}
+	catch(ex)
+	{
+		arrComp=Array();
+	}
+	for ( iCompElem in arrComp )
+	{
+		sUrl=''
+		try
+		{
+			target_competence_name = iCompElem.competence_id.ForeignElem.name
+			sUrl= tools_web.get_mode_clean_url( "competence_info", iCompElem.competence_id, ({"doc_id": curDocID}));
+		}
+		catch(err)
+		{
+			target_competence_name = tools.get_web_str("c_deleted");
+		}
+		
+		
+		strCurrentLevel=''
+		strTargetLevel=''
+		strDataColor=''
+
+		if ( iCompElem.plan.HasValue )
+		{
+			try
+			{
+				competenceDoc = OpenDoc( UrlFromDocID (iCompElem.competence_id)).TopElem;
+				strTargetLevel = competenceDoc.scales.GetChildByKey(iCompElem.plan).name;
+			}
+			catch(ex)
+			{
+				continue;
+			}
+		}
+		
+		xarrPAs = XQuery("for $elem in pas where $elem/is_done=true() and $elem/person_id=" + curPersonID  + " order by $elem/modification_date descending return $elem");
+		for(catPA in xarrPAs)
+		{
+			try
+			{
+				tePA = OpenDoc(UrlFromDocID(catPA.PrimaryKey)).TopElem;
+			}
+			catch(ex)
+			{
+				continue;
+			}
+
+			if(tePA.competences.ChildByKeyExists(iCompElem.competence_id))
+			{
+				fldCurrentLevel = tePA.competences.GetChildByKey(iCompElem.competence_id);
+				strCurrentLevel = competenceDoc.scales.GetChildByKey(fldCurrentLevel.mark).name;
+				if(strCurrentLevel != "")
+				{
+					try
+					{
+						strDataColor = (competenceDoc.scales.GetChildByKey(fldCurrentLevel.plan).ChildIndex > competenceDoc.scales.GetChildByKey(fldCurrentLevel.mark).ChildIndex) ? strBadColor: strGoodColor;
+					}
+					catch(x)
+					{
+					}
+					
+					break;
+				}
+			}
+		}
+%>
+<Row>
+	<Cell Id="target_competence_name" Value="<%=XmlAttrEncode( tools_web.get_cur_lng_name( target_competence_name, curLng.short_id ) )%>"/>
+	<Cell Id="current_level" Value="<%=XmlAttrEncode( strCurrentLevel )%>"/>
+	<Cell Id="target_level" Value="<%=XmlAttrEncode( strTargetLevel )%>"/>
+	<Cell Id="url" Value="<%=sUrl%>"/>
+	<Cell Id="color" Value="<%=XmlAttrEncode( strDataColor)%>"/>
+</Row>
+<%
+	}
+%>
+		</Data>
+	</Collection>
+	<DataGrid Name="CompetenceListGrid" Source="{CompetenceListCollection}" Height="200">
+		<DataGridColumn Value="target_competence_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ass_competence', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={url}"/>
+		<DataGridColumn Value="current_level" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ib4f868k39', curLngWeb ) )%>" Width="100" Type="string" ColorSource="color"/>
+		<DataGridColumn Value="target_level" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'suznb72uoa', curLngWeb ) )%>" Width="100" Type="string" ColorSource="color"/>
+	</DataGrid>
+</Panel>
+<%
+}
+if ( ISDIALOG )
+{
+%>
+	<Button Click="CANCELDIALOG"><%=tools_web.get_web_const( 'c_cancel', curLngWeb )%></Button>
+<%
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,158 @@
+﻿function ResponseChangeState()
+{
+
+	function getParam(_oFormFields, _sName)
+	{
+		result = "";
+		try
+		{
+			_tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+			result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+		}
+		catch (_err)
+		{
+			result = "";
+			return result;
+		}
+		return result;
+	}
+	function get_objects_id()
+	{
+		var sObjectIDs = "";
+		if ( getParam( oFormFields, "selected_objects_id" ) == undefined || getParam( oFormFields, "selected_objects_id" ) == "" )
+		{
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = SELECTED_OBJECT_IDS + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = OBJECT_ID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if ( sObjectIDs == "" )
+			{
+				try
+				{
+					sObjectIDs = curObjectID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+		}
+		else
+		{
+			sObjectIDs = getParam(oFormFields, "selected_objects_id");
+		}
+
+		return ( sObjectIDs != "" ? String( sObjectIDs ).split( ";" ) : [] );
+	}
+	function getFormMessage(_sMessage)
+	{
+		var oForm;
+		oForm = {
+			command: "alert",
+			msg: _sMessage,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+
+		return oForm;
+	}
+
+	function merge_form_fields()
+	{
+		switch ( oResAction.command )
+		{
+			case "confirm":
+				_form_fields = oResAction.confirm_result.form_fields;
+				break;
+			default:
+				_form_fields = oResAction.form_fields
+				break;
+		}
+		try
+		{
+			for( _field in oFormFields )
+			{
+				if( ArrayOptFind( _form_fields, "This.name == _field.name" ) == undefined && !(oResAction.command == "select_object" && oResAction.field_name == _field.name ) )
+				{
+					_form_fields.push( { name: _field.name, type: "hidden", value: _field.value } );
+				}
+			}
+		}
+		catch( err ){}
+	}
+
+
+	var arrObjectIDs = get_objects_id();
+	if( ArrayOptFirstElem( arrObjectIDs ) == undefined )
+	{
+		oResAction = getFormMessage( i18n.t( 'snachalavyberiteotzyv' ) );
+		return oResAction;
+	}
+
+	var iResponseAllCount = ArrayCount( arrObjectIDs );
+
+	oRes = tools.call_code_library_method("libContinuousFeedback", "ResponseChangeState", [ arrObjectIDs, sState ]);
+
+	if ( oRes.error != 0 )
+	{
+		oResAction = getFormMessage(oRes.errorText);
+	}
+	else
+	{
+		if (iResponseAllCount == 1)
+		{
+			sMsg = i18n.t( 'statusotzyvaizmenen' );
+		}
+		else
+		{
+			sMsg = i18n.t( 'statusyotzyvovizmeneny' );
+		}
+		oResAction = {
+			command: "close_form",
+			msg: sMsg,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+
+	return oResAction;
+}
+
+var oResAction = new Object();
+try
+{
+	oFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch ( _err )
+{
+	try
+	{
+		oFormFields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+	}
+	catch ( _err )
+	{
+		oFormFields = [];
+	}
+}
+
+RESULT = ResponseChangeState();

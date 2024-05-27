@@ -1,0 +1,129 @@
+﻿<HTML>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+<BODY>
+
+<%
+	bData = (ArrayOptFirstElem(Ps.data.rs) != undefined)
+%>
+
+<!-- если отчет не создан, выводим пустую страницу -->
+<% if(bData == true){ %> 
+
+<%
+	_item = ArrayOptFirstElem(Ps.data.rs);
+
+	//_count = ArrayCount(Ps.data.rs);
+
+	columns = [];
+
+	for(oItem in _item.cs)
+	{ 
+		columns.push(oItem.name);
+	}
+%>
+
+<TABLE BORDER="1" CELLPADDING="2" CELLSPACING="0">
+  <tr VALIGN="top">
+
+  	<% if(Ps.disp_aggregated_list == true){ %>
+
+	  	<% for(column in columns) {%>
+	  		<% if(column == 'object_name'){ %>
+					<td WIDTH="300" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_object')%></td>
+				<% } %>
+				<% if(column == 'subdivision_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+				<% } %>
+				<% if(column == 'org_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+				<% } %>
+				<% if(column == 'finished_count'){ %>
+					<td WIDTH="200" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c5ka40wa3a')%></td>
+				<% } %>
+				<% if(column == 'average_score'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('oiy3763cg8')%></td>
+				<% } %>
+				<% if(column == 'unfinished_count'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('un4mn07c9e')%></td>
+				<% } %>
+				<% if(column == 'assigned_count'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('bjq31bl8ew')%></td>
+				<% } %>
+				<% if(column == 'in_process'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_active')%></td>
+				<% } %>
+				<% if(column == 'completed_count'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('5k81hevno6')%></td>
+				<% } %>
+				<% if(column == 'missed_count'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('9ma3i4xm0w')%></td>
+				<% } %>
+				<% if(column == 'views_count'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('w7ye8w897s')%></td>
+				<% } %>
+				<% if(column == 'completed_incomplete_total'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('8i19ycouw4')%></td>
+				<% } %>
+			<% } %>
+		<% } else { %>
+
+			<% for(column in columns) {%>
+	  		<% if(column == 'person_fullname'){ %>
+					<td WIDTH="300" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_coll')%></td>
+				<% } %>
+				<% if(column == 'person_code'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_code')%></td>
+				<% } %>
+				<% if(column == 'person_subdivision_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+				<% } %>
+				<% if(column == 'org_name'){ %>
+					<td WIDTH="200" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+				<% } %>
+				<% if(column == 'person_position_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+				<% } %>
+				<% if(column == 'hire_date'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('9zrvsdt5a5')%></td>
+				<% } %>
+				<% if(column == 'dismiss_date'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_dismiss_date')%></td>
+				<% } %>
+				<% if(column == 'course_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('mak5wn2e6o')%></td>
+				<% } %>
+				<% if(column == 'start_usage_date'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('3rr6dy1wal')%></td>
+				<% } %>
+				<% if(column == 'last_usage_date'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('vlpb_finish_date')%></td>
+				<% } %>
+				<% if(column == 'max_end_date'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('vkmb_max_end_date')%></td>
+				<% } %>
+				<% if(column == 'score'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('c_score')%></td>
+				<% } %>
+				<% if(column == 'status_name'){ %>
+					<td WIDTH="100" BGCOLOR="#FFCC99"><%=ms_tools.get_const('vppb_state')%></td>
+				<% } %>
+			<% } %>
+		<% } %>
+	</tr>
+
+	<%  for(i=0; ArrayCount(Ps.data.rs) > i; i++) { %>
+	<tr>
+		<% for(oItem in Ps.data.rs[i].cs) { %>
+			<% if(oItem.name != 'id') { %>
+					<TD WIDTH="100"><%=oItem.t%></TD>
+			<% } %>
+		<% } %>
+	</tr>	
+	<% } %>
+
+<% } else { %>
+	
+<% } %>
+</TABLE>
+</BODY>
+</HTML>

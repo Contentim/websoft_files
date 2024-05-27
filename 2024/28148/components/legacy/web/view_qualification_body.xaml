@@ -1,0 +1,359 @@
+﻿<SPXMLScreen>
+<%
+	Env         = Request.Session.Env;
+	curUrlQuery = UrlQuery( PAGEURL );
+	
+	bOpenQualification   = tools_web.is_true( tools_web.get_web_param( curParams, "qualification.open_qualification", "0", true ) );
+	iRowQty              = OptInt( tools_web.get_web_param( curParams, "qualification.iRowQty", "6", true ), 6 );
+	strTabList           = String( tools_web.get_web_param( curParams, "qualification.tab_list", "general;history;subordinates;additional;desc", true ) );
+	arrTabListParam      = strTabList.split( ";" );
+	var paramListViewTab = ArrayOptFind( PARAMETERS, "key == \"ListViewTab\"" );
+	paramListViewTab     = ( paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'QualificationBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+	
+	xarrQualificationAssigns  = XQuery( 'for $elem in qualification_assignments where $elem/person_id = ' + curUserID + ' and $elem/qualification_id = ' + curObjectID + ' order by $elem/modification_date descending return $elem' );
+	fldQualificationInProcess = ArrayOptFind( ArraySort( xarrQualificationAssigns, "This.modification_date", "-" ), "This.status == 'in_process'" );
+	fldAssignedQualification  = ArrayOptFind( ArraySort( xarrQualificationAssigns, "This.assignment_date", "-" ), "This.status == 'assign'" );
+	//fldAssignedQualification = ArrayOptFind( ArraySort( xarrQualificationAssigns, "This.expiration_date", "-" ), "This.status == 'in_process'" ) 
+	
+	sDispType = curDevice.disp_type;
+	bDesctop  = sDispType != "mobile";
+
+	function title_block()
+	{
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	}
+	
+	title_block();
+	
+%>
+	<Action Name="QualificationAction1" Initialize="SET=SelectDialogCloseActionQualification,<%=UrlEncode('SET=QualificationAction/sSelectedData,{CatalogListDataGridSelList};ACTION=QualificationAction;')%>;SET=SelectDialogQualification/catalog_name,qualification;SET=SelectDialogQualification/multi_select,true;OPENDIALOG=SelectDialogQualification;">
+	</Action>
+
+	<Action Name="QualificationAction" Source="assign_qualifiction" Success="ALERT={messageText};SHOW=QualificationProcessPanel;UPDATE=QualificationProcessDataGrid;REFRESH" Failure="ALERT={messageText}">
+		<Param Name="iUserID" Value="<%=curUserID%>"/>
+		<Param Name="bUsePositionCommon" Value="false"/>
+		<Param Name="bAssignNew" Value=""/>
+		<Param Name="sSelectedData" Value="<%=curObjectID%>"/>
+		<Param Name="sSearchList" Value=""/>
+	</Action>
+
+	<Dialog Name="SelectDialogAssignQualificationType" Source="dlg_assign_qualification" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vcrb_parameters', curLngWeb ) )%>" Close="SET=QualificationAction/bUsePositionCommon,false;SET=QualificationAction/bAssignNew,{assign_new};ACTION=QualificationAction">
+		<Param Name="bShowAssignmentType" Value="false"/>
+	</Dialog>
+<%
+	if ( curObject.yourself_start && fldQualificationInProcess == undefined )
+	{
+%>
+		<Button Class="XAML-button XAML-button-new" Click="OPENDIALOG=SelectDialogAssignQualificationType;"><%=HtmlEncode( tools_web.get_web_const( 'xbdbhrguf9', curLngWeb ) )%></Button>
+<%
+	}
+%>
+	<TabControl Name="QualificationBodyTab" ActiveTab="<%=paramListViewTab%>" TabsLocation="w"  TabsWidth="216" Preservable="1" Adapt="true">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{		
+		switch( sTabListParam )
+		{
+			case "general":
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+<%
+				arrBlockListParam = String( tools_web.get_web_param( curParams, "qualification.tab_list.general.block_list", "info;process", true ) ).split( ";" );
+			
+				for ( sTabElem in arrBlockListParam )
+				{
+					if ( sTabElem == "info" )
+					{
+%>	
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn Width="200"/>
+							<GridColumn/>
+						</GridColumns>
+<%
+						if (curObject.parent_id.HasValue)
+						{
+							fldParent = curObject.parent_id.OptForeignElem
+							if (fldParent != undefined)
+							{
+%>
+								<GridRow>
+									<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vhoditvgruppu', curLngWeb ))%>:</Label>
+									<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldParent.id, { doc_id: curDocID } )%>">
+										<%=HtmlEncode(tools_web.get_cur_lng_name( fldParent.name, curLng.short_id ))%>
+									</Link>
+								</GridRow>
+<%
+							}
+						}
+						if (curObject.comment != '')
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'dmrmhi36f3', curLngWeb ))%>:</Label>
+								<Label><%=HtmlEncode(curObject.comment)%></Label>
+							</GridRow>
+<%
+						}
+%>	
+						<GridRow>
+							<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools.get_web_str("c_status"))%>:</Label>
+							<Label><%=HtmlEncode(curObject.status?tools_web.get_web_const( 'eitdobs0sm', curLngWeb ):tools_web.get_web_const( 'vmkpb_archive', curLngWeb ))%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'periodichnostna_4', curLngWeb ))%>:</Label>
+							<Label><%=HtmlEncode(curObject.test_on_hire?tools_web.get_web_const( 'bessrochnaya', curLngWeb ):StrReplace( tools_web.get_web_const( 'razvparamdney', curLngWeb ), '{PARAM1}', curObject.days_for_check ))%></Label>
+						</GridRow>
+<%
+						if ( fldAssignedQualification != undefined )
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'deystvitelnado', curLngWeb ))%>:</Label>
+								<Label><%=HtmlEncode( StrDate( fldAssignedQualification.expiration_date, false, false ) )%></Label>
+							</GridRow>
+<%
+						}
+						if ( fldQualificationInProcess != undefined )
+						{
+							iScaledProgress = Math.round( curObject.get_scaled_progress( curUserID ) );
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "tekushiyprogres", curLngWeb )%>:</Label>
+								<StackPanel Class="XAML-stack-container" Orientation="Horizontal">
+									<ProgressBar FullScale="100" Aspect="0.05" Size="200" Value="<%=iScaledProgress%>"  Vertical="false" FitContainer="false" Class="wt-progress-plain wt-progress-hidden"/>
+									<Label><![CDATA[<%=iScaledProgress%> %]]></Label>
+								</StackPanel>
+							</GridRow>
+<%
+						}
+%>
+					</Grid>
+<%
+					}
+
+					if ( sTabElem == "process" )
+					{
+						bHasInProcess = false;
+						iGridHeight = Int( tools_web.get_web_param( curParams, "qualification.tab_list.general.block_list.process.iGridHeight", 200, true ) );
+
+						if ( fldAssignedQualification != undefined && fldQualificationInProcess != undefined )
+						{
+							if ( !( fldAssignedQualification.assignment_date.HasValue && ( DateNewTime( fldAssignedQualification.assignment_date, 00, 00, 00 ) > DateNewTime( fldQualificationInProcess.modification_date, 00, 00, 00 ) ) ) )
+							{
+								bHasInProcess = true
+							}
+						}
+						else if ( fldQualificationInProcess != undefined && fldAssignedQualification == undefined )
+						{
+							bHasInProcess = true
+						}
+				
+%>
+						<StackPanel Name="QualificationProcessPanel" Class="XAML-stack-container" Width="100%" Hidden="<%=!bHasInProcess%>">
+<%
+						arr_filters = new Array();
+						obj_filter  = new Object();
+						obj_filter.name  = "SelectTaskType";
+						obj_filter.type  = "combo";
+						obj_filter.width = 180;
+						obj_filter.items = new Array();
+
+						obj_filter.items.push( { value: "assessment;course;education_method", title: tools_web.get_web_const( "vseispytaniya", curLngWeb ) } );
+						obj_filter.items.push( { value: "assessment", title: tools_web.get_web_const( "c_tests", curLngWeb ) } );
+						obj_filter.items.push( { value: "course", title: tools_web.get_web_const( "c_courses", curLngWeb ) } );
+						obj_filter.items.push( { value: "education_method", title: tools_web.get_web_const( "vepb_edu_methods", curLngWeb ) } );
+						
+						arr_filters.push( obj_filter );
+						curFilter = {
+							'id': "",
+							'disp_search': false,
+							'search_action': ( "UPDATE=" ),
+							'action': ( "UPDATE=QualificationProcessDataGrid" ),
+							'filters': arr_filters,
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+						<Collection Name="QualificationProcessCollection" Source="qualification_process">
+							<Param Name="sSearchList" Value="{SelectTaskType}"/>
+							<Param Name="iUserID" Value="<%=curUserID%>"/>
+							<Param Name="iQualificationID" Value="<%=curObjectID%>"/>
+						</Collection>
+
+						<DataGrid Name="QualificationProcessDataGrid" Source="{QualificationProcessCollection}" Height="<%=iGridHeight%>">
+							<DataGridColumn Title="ID" Value="id" Width="50" Type="string" Hidden="true" Ghost="false"/>
+							<DataGridColumn DataID="mode" Value="mode" Width="50" Type="string" Hidden="true" Ghost="true"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>" Value="name" Width="200" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id: curDocID } )%>" Sortable="True"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_type', curLngWeb )%>" Value="type" Width="100" Type="string" Sortable="True"/>
+<%
+						if ( bDesctop )
+						{
+%>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'c_status', curLngWeb )%>" Value="status" Width="100" Type="string" Sortable="True"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'veresb_score', curLngWeb )%>" Value="score" Width="200" Type="string" Sortable="True"/>
+							<DataGridColumn Title="<%=tools_web.get_web_const( 'vllb_dates', curLngWeb )%>" Value="dates" Width="200" Type="string" Sortable="False"/>
+<%
+						}
+%>
+						</DataGrid>
+						</StackPanel>
+<%	
+					}
+				}
+%>
+				<Collection Name="AllQualificationCollection" Source="game_qualification_collection">
+					<Param Name="type" Value="open"/>
+				</Collection>
+
+				<Collection Name="AssignedQualificationUsersCollection" Source="game_qualification_collection">
+					<Param Name="type" Value="assigned_qualification_users"/>
+					<Param Name="object_id" Value="<%=curObjectID%>"/>
+				</Collection>
+				
+				<StackPanel Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+					<Grid Width="100%" Class="XAML-grid-filter">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+						</GridColumns>
+
+						<GridRow>
+							<Label Class="XAML-label-filters-title"><![CDATA[<%=XmlAttrEncode( "Эту награду уже получили" )%>]]></Label>
+						</GridRow>
+					</Grid>
+				</StackPanel>
+
+				<TileView Name="AssignedQualificationUsers" TileWidth="110" Class="" Width="100%" DataSource="{AssignedQualificationUsersCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+					<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+				</TileView>
+
+				<StackPanel Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+					<Grid Width="100%" Class="XAML-grid-filter">
+						<GridColumns>
+							<GridColumn Width="100%"/>
+						</GridColumns>
+
+						<GridRow>
+							<Label Class="XAML-label-filters-title"><![CDATA[<%=XmlAttrEncode( "Возможно, тебя заинтересует" )%>]]></Label>
+						</GridRow>
+					</Grid>
+				</StackPanel>
+
+				<StackPanel Class="XAML-game-panel">
+
+					<TileView Name="AllQualificationTile" Class="XAML-tileview-list" Width="100%" DataSource="{AllQualificationCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+						<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+						<Param Name="type" Value="list"/>
+					</TileView>
+				</StackPanel>
+				
+				</TabItem>
+<%
+				break;
+			}
+			case "history":
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'istoriya', curLngWeb ))%>">
+<%
+				curView = {
+					"id": "QualificationAssignmentArchive",
+					"height": "400",
+					"catalog_name": "qualification_assignment",
+					"disp_search": "false",
+					"disp_filter": "false",
+					"list_columns": (bDesctop?"assignment_date;expiration_date;status":"assignment_date;status"),
+					"sort_direct": "-",
+					"disp_link": "false",
+					"disp_array": "false"
+				};
+				curView.SetProperty("xquery_qual","$elem/person_id=" + curUserID + " and $elem/qualification_id=" + curObjectID);
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+				</TabItem>
+<%
+				break;
+			}
+			case "subordinates":
+			{
+%>
+				<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'podchinennye', curLngWeb ))%>">
+<%
+				curCollectionMenu = {
+					"id": "SubPerson",
+					"catalog_name": "collaborator",
+					"data_grid_id": "SubUsersDataGrid"
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+				<Collection Name="QualificationSubUsersCollection" Source="qualification_sub_users">
+					<Param Name="iUserID" Value="<%=curUserID%>"/>
+					<Param Name="iQualificationID" Value="<%=curObjectID%>"/>
+				</Collection>
+
+				<DataGrid Name="SubUsersDataGrid" Source="{QualificationSubUsersCollection}" Height="500" PageSize="25" Selection="single" Hidden="false">
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_fio', curLngWeb )%>" Value="fullname" Width="40%" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { doc_id: curDocID } )%>"/>
+<%
+				if (bDesctop)
+				{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_subd', curLngWeb )%>" Value="subdivision" Width="30%" Type="string" Sortable="True"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_position', curLngWeb )%>" Value="position" Width="30%" Type="string" Sortable="True"/>	
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_qualification', curLngWeb )%>" Value="qualification" Width="100" Type="string"  ColorSource="color" Sortable="True"/>
+<%
+				}
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_qualif_ass_date', curLngWeb )%>" Value="assignment_date" Width="100" Type="string" Sortable="True"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( 'c_qualif_end_date', curLngWeb )%>" Value="expiration_date" Width="100" Type="string" Sortable="True"/>
+					<DataGridColumn Value="id" Hidden="1" Ghost="0"/>
+					<Menu Source="{CatalogListMenuSubPerson}"/>
+				</DataGrid>
+%>
+				</TabItem>
+<%
+				break;
+			}
+			case "additional":
+			{
+				arrCustomFieldNames = Array();
+				arrCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				arrCustomElems = ArraySelectByKey( arrCustomElems.fields, true, 'disp_web' );
+
+				if ( arrCustomElems != null && ArrayOptFirstElem( arrCustomElems ) != undefined )
+				{
+%>
+					<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'wlcwah2eod', curLngWeb ))%>">
+<%
+					curCustomFields = {
+						"fields": arrCustomElems,
+						"source": curObject.custom_elems,
+						"modify_eval": false
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+					</TabItem>
+<%
+				}
+				break;
+			}	
+			case "desc":
+			{
+				if ( curObject.desc != '' )
+				{
+%>
+					<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'podrobnoeopisa', curLngWeb ))%>">
+<%
+					curDescObject = curObject;
+					curDescObjectID = curObjectID;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+					</TabItem>
+<%
+				}
+				break;
+			}
+		}
+	}
+%>
+	</TabControl>
+</SPXMLScreen>

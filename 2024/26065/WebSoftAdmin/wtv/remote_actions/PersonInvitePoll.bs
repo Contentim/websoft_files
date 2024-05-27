@@ -1,0 +1,469 @@
+﻿// ***********************************************************
+function getValue(sNameParam, arrParam)
+{
+	var oValue, sValue;
+
+	oValue = ArrayOptFind(arrParam, " This.name == " + CodeLiteral(sNameParam));
+	if (oValue != undefined)
+	{
+		sValue = oValue.value;
+	}
+	else
+	{
+		sValue = "";
+	}
+
+	return sValue;
+}
+
+// ***********************************************************
+function getParam(sName, sDefault)
+{
+	var sValue;
+
+	sValue = PARAMETERS.GetOptProperty(sName);
+	if (
+		sDefault != undefined
+		&&
+		(sValue == undefined || sValue == "")
+	)
+	{
+		sValue = sDefault;
+	}
+
+	return sValue;
+}
+
+// ***********************************************************
+function getActionParam()
+{
+	var oRemoteActionParam = new Object();
+
+	oRemoteActionParam.send_mail = getParam("send_mail", "only_no_poll_result");
+	oRemoteActionParam.use_additional_message_text = getParam("use_additional_message_text", "no");
+
+	return oRemoteActionParam;
+}
+
+// ***********************************************************
+function getFormMessage(sMessageParam)
+{
+	var oForm;
+
+	oForm = {
+        command: "close_form",
+        msg: sMessageParam,
+        confirm_result: {
+            command: "reload_page"
+        }
+    }
+
+	return oForm;
+}
+
+// ***********************************************************
+function getCollaboratorID()
+{
+	var iCollaboratorID = undefined;
+
+	try
+	{
+		iCollaboratorID = OptInt(OBJECT_ID);
+	}
+	catch (e)
+	{
+		sSelect_collaborator_ids = getValue("select_collaborator_ids", arrForm_fields);
+		if (sSelect_collaborator_ids != "")
+		{
+			arrSelect_collaborator_ids = String(sSelect_collaborator_ids).split(";");
+			iCollaboratorID = OptInt(ArrayOptFirstElem(arrSelect_collaborator_ids));
+		}
+		else
+		{
+			iCollaboratorID = undefined;
+		}
+	}
+
+	return iCollaboratorID;
+}
+
+// ***********************************************************
+function checkRun()
+{
+	var sError = "";
+
+	if (iCollaboratorID != undefined)
+	{
+		docCollaborator = tools.open_doc(iCollaboratorID);
+		if (docCollaborator == undefined)
+		{
+			sError = "Не удалось открыть карточку объекта, над которым запущено удаленное действие (id = " + iCollaboratorID + ")";
+			return sError;
+		}
+		else
+		{
+			if (docCollaborator.TopElem.Name != "collaborator")
+			{
+				sError = "Данное удаленное действие можно запускать только над сотрудниками.";
+				return sError;
+			}
+		}
+	}
+
+	return sError;
+}
+
+// ***********************************************************
+function getFormSelect_collaborator()
+{
+	var oForm;
+
+	sQuery_qual = " $elem/is_candidate = false() and $elem/is_outstaff = false() and $elem/web_banned = false() ";
+
+	oForm = {
+		command: "display_form",
+		title: "Выбор сотрудников для заполнинения опроса",
+		message: "Выберите сотрудников для заполнинения опроса:",
+		form_fields: [
+			{
+				name: "step_next",
+				type: "hidden",
+				value: "select_poll"
+			},
+			{
+				name: "select_collaborator_ids",
+				type: "foreign_elem",
+				catalog: "collaborator",
+				label: "Сотрудники",
+				mandatory: true,
+				multiple: true,
+				query_qual: sQuery_qual,
+			},
+		],
+		buttons: [
+			{name: "submit", label: "Ок", type: "submit"},
+			{name: "cancel", label: "Отменить", type: "cancel"}
+		],
+		no_buttons: false
+	};
+
+	return oForm;
+}
+
+// ***********************************************************
+function getFormSelect_poll()
+{
+	var oForm;
+
+	if (oRemoteActionParam.send_mail == "admin_choice"
+		|| oRemoteActionParam.use_additional_message_text == "yes")
+	{
+		sStep_next = "select_option";
+	}
+	else
+	{
+		sStep_next = "invite_fill_poll";
+	}
+
+	sQuery_qual = " $elem/completed = false() ";
+
+	oForm = {
+		command: "display_form",
+		title: "Выбор сотрудников для заполнинения опроса",
+		message: "Выберите сотрудников для заполнинения опроса:",
+		form_fields: [
+			{
+				name: "step_next",
+				type: "hidden",
+				value: sStep_next
+			},
+			{
+				name: "select_collaborator_ids",
+				type: "hidden",
+				value: getValue("select_collaborator_ids", arrForm_fields)
+			},
+			{
+				name: "select_poll_ids",
+				type: "foreign_elem",
+				catalog: "poll",
+				label: "Опросы",
+				mandatory: true,
+				multiple: true,
+				query_qual: sQuery_qual,
+			},
+		],
+		buttons: [
+			{name: "submit", label: "Ок", type: "submit"},
+			{name: "cancel", label: "Отменить", type: "cancel"}
+		],
+		no_buttons: false
+	};
+
+	return oForm;
+}
+
+// ***********************************************************
+function getFormSelect_option()
+{
+	var oForm;
+
+	oForm = {
+		command: "display_form",
+		title: "Опции по приглашению заполнить опрос",
+		message: "",
+		form_fields: [
+			{
+				name: "step_next",
+				type: "hidden",
+				value: "invite_fill_poll"
+			},
+			{
+				name: "select_collaborator_ids",
+				type: "hidden",
+				value: getValue("select_collaborator_ids", arrForm_fields)
+			},
+			{
+				name: "select_poll_ids",
+				type: "hidden",
+				value: getValue("select_poll_ids", arrForm_fields)
+			},
+		],
+		buttons: [
+			{name: "submit", label: "Ок", type: "submit"},
+			{name: "cancel", label: "Отменить", type: "cancel"}
+		],
+		no_buttons: false
+	};
+
+	if (oRemoteActionParam.send_mail == "admin_choice")
+	{
+		oForm.form_fields.push(
+			{
+				name: "send_mail",
+				type: "select",
+				label: "Отправлять уведомление пользователям",
+				mandatory: true,
+				value: "only_no_poll_result",
+				entries: [
+					{value: "only_no_poll_result", name: "Только тем, кто еще не заполнил анкету"},
+					{value: "all", name: "Всем выбранным"},
+				],
+			}
+		);
+	}
+
+	if (oRemoteActionParam.use_additional_message_text == "yes")
+	{
+		oForm.form_fields.push(
+			{
+				name: "additional_message_text",
+				label: "Дополнительный текст сообщения",
+				type: "text",
+				value: "",
+				richtext: true,
+				mandatory: true,
+				validation: "nonempty"
+			}
+		);
+	}
+
+	return oForm;
+}
+
+// ***********************************************************
+function getCollaborator()
+{
+	var arrCollaborator = new Array();
+
+	try
+	{
+		SELECTED_OBJECT_IDS
+	}
+	catch (e)
+	{
+		SELECTED_OBJECT_IDS = undefined;
+	}
+
+	if (SELECTED_OBJECT_IDS != undefined)
+	{
+		arrCollaboratorTemp = String(SELECTED_OBJECT_IDS).split(";")
+	}
+	else
+	{
+		arrCollaboratorTemp = String(getValue("select_collaborator_ids", arrForm_fields)).split(";");
+	}
+
+	for (sCollaboratorTempElem in arrCollaboratorTemp)
+	{
+		arrCollaborator.push(OptInt(sCollaboratorTempElem, 0));
+	}
+
+	return arrCollaborator;
+}
+
+
+// ***********************************************************
+function getArrFromForm(sNameParam)
+{
+	var arrFromForm = new Array();
+
+	arrSelect_ids = String(getValue(sNameParam, arrForm_fields)).split(";");
+	for (sSelect_idsElem in arrSelect_ids)
+	{
+		if (OptInt(sSelect_idsElem) == undefined)
+		{
+			continue;
+		}
+		arrFromForm.push(OptInt(sSelect_idsElem));
+	}
+
+	return arrFromForm;
+}
+
+// ***********************************************************
+function getFormInvite_fill_poll()
+{
+	var oForm, sMessage, sText;
+
+	arrPoll = getArrFromForm("select_poll_ids");
+	arrCollaborator = getCollaborator();
+
+	arrMailPoll = new Array();
+	arrMailCollaborator = new Array();
+
+	sText = "";
+	if (oRemoteActionParam.use_additional_message_text == "yes")
+	{
+		sText = getValue("additional_message_text", arrForm_fields);
+	}
+
+	sSend_mail = getValue("send_mail", arrForm_fields);
+
+
+	for (iPollElem in arrPoll)
+	{
+		for (iCollaboratorElem in arrCollaborator)
+		{
+			bSendMail = false;
+			if (
+				oRemoteActionParam.send_mail == "only_no_poll_result"
+				||
+				(oRemoteActionParam.send_mail == "admin_choice"
+					&& sSend_mail == "only_no_poll_result")
+			)
+			{
+				oPoll_result = ArrayOptFirstElem(XQuery("for $elem in poll_results " +
+					" where $elem/poll_id = " + iPollElem +
+					" and $elem/person_id = " + iCollaboratorElem +
+					" and $elem/status != 2 " +
+					" return $elem"));
+				if (oPoll_result == undefined)
+				{
+					bSendMail = true;
+				}
+			}
+			else if (
+				oRemoteActionParam.send_mail == "all"
+				||
+				(oRemoteActionParam.send_mail == "admin_choice"
+					&& sSend_mail == "all")
+			)
+			{
+				bSendMail = true;
+			}
+
+			if (bSendMail == true)
+			{
+				tools.create_notification("46", iCollaboratorElem, sText, iPollElem);
+				arrMailPoll.push(iPollElem);
+				arrMailCollaborator.push(iCollaboratorElem);
+			}
+		}
+	}
+
+	arrMailPoll = ArraySelectDistinct(arrMailPoll);
+	arrMailCollaborator = ArraySelectDistinct(arrMailCollaborator);
+
+	arrCollaboratorModTypes = new Array();
+	arrCollaboratorModTypes[0] = "сотрудникам";
+	arrCollaboratorModTypes[1] = "сотруднику";
+	arrCollaboratorModTypes[2] = "сотрудникам";
+
+	arrPollModTypes = new Array();
+	arrPollModTypes[0] = "опросам";
+	arrPollModTypes[1] = "опросу";
+	arrPollModTypes[2] = "опросам";
+
+	sMessage = "Отправлено приглашение " +
+		ArrayCount(arrMailCollaborator) + " " + arrCollaboratorModTypes[IntModType(ArrayCount(arrMailCollaborator))] +
+		" по " + ArrayCount(arrMailPoll) + " " + arrPollModTypes[IntModType(ArrayCount(arrMailPoll))];
+
+	oForm = getFormMessage(sMessage);
+
+	return oForm;
+}
+
+// ***********************************************************
+function getStepCurrent()
+{
+	var sStepCurrent = "";
+
+	if (iCollaboratorID == undefined)
+	{
+		sStepCurrent = "select_collaborator";
+		return sStepCurrent;
+	}
+
+	if (ArrayOptFirstElem(arrForm_fields) == undefined)
+	{
+		sStepCurrent = "select_poll";
+		return sStepCurrent;
+	}
+	else
+	{
+		sStepCurrent = getValue("step_next", arrForm_fields);
+		return sStepCurrent;
+	}
+}
+
+// ***********************************************************
+function run()
+{
+	var sError;
+
+	// LogEvent("", "PARAMETERS = " + tools.object_to_text(PARAMETERS, "json"));
+
+	oRemoteActionParam = getActionParam();
+	arrForm_fields = ParseJson(PARAMETERS.GetOptProperty("form_fields", "[]"));
+
+	iCollaboratorID = getCollaboratorID();
+
+	sError = checkRun();
+	if (sError != "")
+	{
+		return getFormMessage(sError);
+	}
+
+	sStepCurrent = getStepCurrent();
+
+	if (sStepCurrent == "select_collaborator")
+	{
+		return getFormSelect_collaborator();
+	}
+	else if (sStepCurrent == "select_poll")
+	{
+		return getFormSelect_poll();
+	}
+	else if (sStepCurrent == "select_option")
+	{
+		return getFormSelect_option();
+	}
+	else if (sStepCurrent == "invite_fill_poll")
+	{
+		return getFormInvite_fill_poll();
+	}
+}
+
+// ******************ОСНОВНАЯ ОБЛАСТЬ*************************
+
+RESULT = run();

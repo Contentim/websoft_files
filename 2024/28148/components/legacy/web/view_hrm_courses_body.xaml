@@ -1,0 +1,28 @@
+﻿<SPXMLScreen>
+<%
+sEducationOrgIDs = ArrayMerge( XQuery( "for $elem in education_org_lectors where $elem/person_id = " + curUserID + " return $elem" ), "education_org_id", "," );
+sCourseIDs = ArrayMerge( XQuery( "for $elem in object_experts where $elem/person_id = " + curUserID + " and $elem/object_type = 'course' return $elem/Fields('object_id')" ), "object_id", "," );
+
+if ( sEducationOrgIDs == "" && sCourseIDs == "" )
+{
+}
+else
+{
+	sXQueryQual = sCourseIDs == "" ? "" : "MatchSome( $elem/id, (" + sCourseIDs + ") )";
+	sXQueryQual +=  sEducationOrgIDs == "" ? "" : ( sXQueryQual == "" ? "" : " or " ) + "MatchSome( $elem/education_org_id, (" + sEducationOrgIDs + ") )";
+	curView = {
+		"id": "PersonCourses",
+		"catalog_name": "course",
+		"xquery_qual": sXQueryQual,
+		"disp_link": true,
+		"link_mode": "course_expert",
+		"height": "400",
+		"disp_filter": false,
+		"disp_search": false,
+		"disp_menu": true
+	};
+
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+}
+%>
+</SPXMLScreen>

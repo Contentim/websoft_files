@@ -1,0 +1,99 @@
+﻿<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+acquaint_id = OptInt( oParamSource.GetOptProperty( 'acquaint_id' ) );
+teAcquaint = null;
+if( acquaint_id != undefined )
+	teAcquaint = OpenDoc( UrlFromDocID( acquaint_id ) ).TopElem;
+	
+bShowQuestions = tools_web.is_true( oParamSource.GetOptProperty( 'show_questions', 1 ) );
+%>
+<SPXMLScreen>
+<%
+if( bShowQuestions )
+{
+%>
+	<TabControl Width="100%" TabsLocation="n">
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_info", curLngWeb ) )%>">
+<%
+}
+%>
+	<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="20%"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "trebuemayadatao", curLngWeb ) )%>:</Label>	
+			<DatePicker Name="normative_date"><%=teAcquaint != null && teAcquaint.normative_date.HasValue ? StrDate( teAcquaint.normative_date, false ) : ""%></DatePicker>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>:</Label>	
+			<ComboBox Name="status" Width="250" SelectedItem="<%=teAcquaint != null ? teAcquaint.status : "true"%>">
+				<ComboBoxItem Value="true"><%=XmlAttrEncode( tools_web.get_web_const( "7je8z5lelv", curLngWeb ) )%></ComboBoxItem>		
+				<ComboBoxItem Value="false"><%=XmlAttrEncode( tools_web.get_web_const( "vmkpb_archive", curLngWeb ) )%></ComboBoxItem>	
+			</ComboBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_comment", curLngWeb ) )%>:</Label>	
+			<EditBox Name="comment" Width="100%"><%=teAcquaint != null ? teAcquaint.comment : ""%></EditBox>
+		</GridRow>	
+	</Grid>	
+<%
+if( bShowQuestions )
+{
+%>
+		</TabItem>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_questions", curLngWeb ) )%>">
+			<Edit Name="QuestionXml" Hidden="1"><%=UrlEncode( teAcquaint != null ? teAcquaint.questions.Xml : "<questions/>" )%></Edit>
+			<Edit Name="EditAction" Hidden="1"></Edit>
+			<Edit Name="iItemID" Hidden="1"></Edit>
+			<Edit Name="sQuestionID" Hidden="1"></Edit>
+			<Action Name="CreateUpdateQuestionsAction" Source="acquaint_assign_action" Success="{!messageText}" Failure="ALERT={messageText}">
+				<Param Name="CONTEXT" Value="{CONTEXT}"/>
+				<Param Name="action" Value="{EditAction}"/>
+				<Param Name="object_id" Value="{iItemID}"/>
+				<Param Name="question_id" Value="{sQuestionID}"/>
+			</Action>
+			
+			<Dialog Name="SelectAcquaintItem" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите вопрос" )%>" Close="SET=EditAction,add_select_item;SET=iItemID,{CatalogListDataGridFullList:^/id};ACTION=CreateUpdateQuestionsAction;">
+				<Param Name="catalog_name" Value="item"/>
+				<Param Name="multi_select" Value="false"/>
+				<Param Name="xquery_qual" Value="<%=UrlEncode( "MatchSome( $elem/type_id, ('multiple_choice','multiple_response','gap_fill','numerical_fill_in_blank') ) and $elem/status = 'active'" )%>"/>
+			</Dialog>
+			
+			<Dialog Name="DialogEditQuestion" Source="dlg_question_edit" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_question", curLngWeb ) )%>" Close="SET=QuestionXml,{EditQuestionsXml};UPDATE=PanelQuestions">
+				<Param Name="questions_xml" Value="{QuestionXml}"/>
+				<Param Name="question_id" Value=""/>
+			</Dialog>
+			
+			<Toolbar>
+				<Button Class="XAML-button" Width="200" Click="OPENDIALOG=DialogEditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "vhvkmjgt8a", curLngWeb ) )%></Button>
+				<Button Class="XAML-button" Width="200" Click="SET=sQuestionID,;OPENDIALOG=SelectAcquaintItem;"><%=XmlAttrEncode( "Добавить из списка" )%></Button>
+			</Toolbar>
+			
+			<Panel Name="PanelQuestions" Source="panel_edit_questions" ShowHeader="false">
+				<Param Name="questions_xml" Value="{QuestionXml}"/>
+				<Param Name="can_edit" Value="1"/>
+				<Param Name="can_delete" Value="1"/>
+			</Panel>
+		</TabItem>
+	</TabControl>
+
+<%
+}
+%>
+	<Edit Name="EditContext" Hidden="1"></Edit>	
+	<Grid Width="100%" Class="XAML-grid-dialog-buttons" Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="SET=EditContext,{CONTEXT};CLOSEDIALOG">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

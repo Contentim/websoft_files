@@ -1,0 +1,310 @@
+﻿<SPXMLScreen>
+<%
+curUrlQuery = UrlQuery( tools_web.transform_fancy_url(PAGEURL) );
+
+strTabList=String( tools_web.get_web_param( curParams, "contract.tab_list", "main;participants;tasks;files;desc;responses;custom;attributes", true ) )
+arrTabListParam = strTabList.split( ";" );
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'ContractBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+sDefaultSuccessAction='SET=ContractChangeAction/sSelectedObjects,#empty#;REFRESH'
+sDefaultFailureAction='SET=ContractChangeAction/CONTEXT,#empty#;SET=ContractChangeAction/sSelectedObjects,#empty#;ALERT={!messageText}'
+%>
+<Edit Name="ContractChangeSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+<Edit Name="ContractChangeFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+<Action Name="ContractChangeAction" Source="contract_change" Success="{!ContractChangeSuccessAction}" Failure="{!ContractChangeFailureAction}">
+	<Param Name="sAction" Value=""/>
+	<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+	<Param Name="sSelectedObjects" Value="#empty#"/>
+	<Param Name="CONTEXT" Value="#empty#"/>
+</Action>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<TabControl Name="ContractBodyTab" ActiveTab="<%=paramListViewTab%>" Width="100%">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{		
+		switch(sTabListParam)
+		{
+			case "main":
+			{
+				arrBlocksListParam = String( tools_web.get_web_param( curParams, "contract.tab_list.main_tab.blocks_list", "general;managers", true ) ).split( ";" );
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+<%
+				for ( sTabElem in arrBlocksListParam )
+				{
+					if ( sTabElem == "general" )
+					{
+%>
+				<Grid Width="100%" Class="XAML-grid-info-table">
+					<GridColumns>
+						<GridColumn Width="50%" Align="right"/>
+						<GridColumn/>
+					</GridColumns>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8vx1rruccx", curLngWeb )%>:</Label>
+						<Label><%=curObject.number%></Label>
+					</GridRow>
+<%						
+						if(curObject.cost.HasValue)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "i54k7or4xf", curLngWeb )%>:</Label>
+						<Label><%=tools_web.get_cur_lng_name( curObject.cost, curLng.short_id )%></Label>
+					</GridRow>
+<%
+						}
+					
+						if (curObject.currency.HasValue)
+						{
+							strCurrency=''
+							fldCurrency=lists.currency_types.GetOptChildByKey(curObject.currency)
+							if (fldCurrency!=undefined)
+							{
+								strCurrency=fldCurrency.name
+							}
+							
+							if (strCurrency!='')
+							{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_currency_type", curLngWeb )%>:</Label>												
+						<Label><%=tools_web.get_cur_lng_name( strCurrency, curLng.short_id )%></Label>
+					</GridRow>
+<%
+							}
+						}
+						if(curObject.contract_type_id.HasValue && curObject.contract_type_id.OptForeignElem != undefined)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "169scjwqby", curLngWeb )%>:</Label>
+						<Label><%=tools_web.get_cur_lng_name( curObject.contract_type_id.ForeignElem.name, curLng.short_id )%></Label>
+					</GridRow>
+<%
+						}
+						if(curObject.date.HasValue)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "udv11xdjbz", curLngWeb )%>:</Label>
+						<Label><%=StrDate(curObject.date, false, false)%></Label>
+					</GridRow>
+<%
+						}							
+						if(curObject.start_date.HasValue)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vkmb_start_action_date", curLngWeb )%>:</Label>
+						<Label><%=StrDate(curObject.start_date, false, false)%></Label>
+					</GridRow>
+<%
+						}
+						if(curObject.finish_date.HasValue)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "j87phjbjvh", curLngWeb )%>:</Label>
+						<Label><%=StrDate(curObject.finish_date, false, false)%></Label>
+					</GridRow>
+<%
+						}
+						if (curObject.comment.HasValue)
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vkpb_comment', curLngWeb ))%></Label>
+						<HTMLBox>
+							<![CDATA[<%=HtmlEncode( tools_web.get_web_desc( curObject.comment, UrlFromDocID( curObjectID ), curObject.Name + ".comment" ) )%>]]>	
+						</HTMLBox>
+					</GridRow>
+<%
+						}
+					}
+%>			
+				</Grid>
+<%
+				}
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "files":
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+<%
+					allowChangeFiles = true;
+					bStaticCollection = false;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "desc":
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'podrobnoeopisa', curLngWeb ))%>">
+<%
+					curDescObject = curObject;
+					curDescObjectID = curObjectID;
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "custom":
+			{
+				arrCustomFieldNames = Array();
+				fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				if ( fldCustomElems != null )
+				{
+%>
+<TabItem Title="<%=tools_web.get_web_const( "wlcwah2eod", curLngWeb )%>">
+<%
+				curCustomFields = {
+					"id": "customFieldsViewGrid",
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+					"source": curObject.custom_elems,
+					"modify_eval": false
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+	</TabItem>
+<%
+				}
+				break;
+			}
+			case "attributes":
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'kjwesxtn5m', curLngWeb ))%>">
+	<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-save" Click="SET=ContractChangeAction/sAction,save;SET=ContractChangeAction/sSelectedObjects,plan;SET=ContractChangeAction/CONTEXT,{CONTEXT};SET=ContractChangeSuccessAction,<%=UrlEncode(sDefaultSuccessAction)%>;SET=ContractChangeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;Action=ContractChangeAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+	</Toolbar>
+		<Panel Title="<%=tools_web.get_web_const( "osnovnyeatribu", curLngWeb )%>" Expanded="1" Width="100%">
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="50%" Align="right"/>
+					<GridColumn Width="50%" Align="left"/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Edit Name="code" Width="350"><%=HtmlEncode(curObject.code)%></Edit>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Edit Name="name" Width="350"><%=HtmlEncode(curObject.name)%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8vx1rruccx", curLngWeb )%>:</Label>
+					<Edit Name="number" Width="350"><%=HtmlEncode(curObject.number)%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( '169scjwqby', curLngWeb ))%>:</Label>
+					<StackPanel Orientation="Horizontal" >
+<%
+							curSelector = {
+							"id": "contract_type_id",
+							"object_id": curObject.contract_type_id,
+							"object_id_item_name": curObject.contract_type_id.Name,
+							"object_name":  (curObject.contract_type_id.HasValue && curObject.contract_type_id.OptForeignElem != undefined ? curObject.contract_type_id.ForeignElem.name : ""),
+							"multi_select": "false",
+							"catalog_name": "contract_type",
+							"selected_object_ids": curObject.contract_type_id
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "i54k7or4xf", curLngWeb )%>:</Label>
+					<Edit Name="cost" Width="350"><%=HtmlEncode(curObject.cost)%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_currency_type", curLngWeb )%>:</Label>
+					<StackPanel Orientation="Horizontal" Align="right" Class="XAML-stack-simple">
+						<ComboBox Name="currency" Width="100%">
+<%
+						for(fldCurrency in lists.currency_types)
+						{
+							try
+							{
+								strSelected=''
+								if (fldCurrency.id==curObject.currency)
+								{
+									strSelected=' Selected="True"'
+								}
+		
+%>
+							<ComboBoxItem Value="<%=fldCurrency.id%>" <%=strSelected%>><%=XmlAttrEncode(tools_web.get_cur_lng_name( fldCurrency.name, curLng.short_id ))%></ComboBoxItem>
+<%
+							}
+							catch(ex)
+							{
+							}
+						}
+%>
+						</ComboBox>
+					</StackPanel>												
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "udv11xdjbz", curLngWeb )%>:</Label>
+					<DatePicker Name="date" Format="d.m.Y" Width="130"><%=StrDate(curObject.date, false, false)%></DatePicker>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vkmb_start_action_date", curLngWeb )%>:</Label>
+					<DatePicker Name="start_date" Format="d.m.Y" Width="130"><%=StrDate(curObject.start_date, false, false)%></DatePicker>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "j87phjbjvh", curLngWeb )%>:</Label>
+					<DatePicker Name="finish_date" Format="d.m.Y" Width="130"><%=StrDate(curObject.finish_date, false, false)%></DatePicker>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+					<EditBox Name="comment" Height="100"  Width="100%"><%=curObject.comment%></EditBox>
+				</GridRow>
+			</Grid>
+			</Panel>		
+<%
+					arrCustomFieldNames = Array();
+					fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+					if ( fldCustomElems != null )
+					{
+%>
+	<Panel Title="<%=tools_web.get_web_const( "c_additional", curLngWeb )%>" Name="Panel_add" Expanded="1" Width="100%">
+<%
+						curCustomFields = {
+							"id": "customFieldsEditGrid",
+							"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+							"source": curObject.custom_elems,
+							"width": "50%",
+							"modify_eval": true
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+		</Panel>
+<%
+					}
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="true" Width="100%">
+			<RichEdit Name="desc" Width="100%" Height="500">
+				<![CDATA[<%=curObject.desc%>]]>
+			</RichEdit>
+		</Panel>
+	</TabItem>
+<%
+				break;
+			}
+		}
+	}
+%>
+</TabControl>
+</SPXMLScreen>

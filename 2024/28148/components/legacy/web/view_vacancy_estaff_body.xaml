@@ -1,0 +1,1611 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+	sCheckedGroups   = "";
+	strRequiredFilds = "";
+
+	strCardStyleType = String( tools_web.get_web_param( curParams, 'vacancy_estaff.card_style', 'tabs', true ) );
+	arrParts         = String( tools_web.get_web_param( curParams,'vacancy_estaff.block_list', 'main;vacancy_responses;recommendations;custom_fields', true ) ).split( ';' );
+	iDefaultTab      = OptInt( CONTEXT.GetOptProperty( 'VacancyEstaffBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+
+	arrVacancyListParam         = String( tools_web.get_web_param( curParams, 'vacancy_tab_list', 'name,prof_area,currency_type,region,pub_date,edit_date,schedule_work,schedule_id,employment_type,exp_years,wage,description,educ_type,age,contact_fullname,contact_phone,contact_email,assessments,visibility_status,org,subdivision', true ) ).split( ';' );
+	arrRequiredFieldsParam      = String( tools_web.get_web_param( curParams, 'required_fields', 'name,profession_area_id,min_wage,region_id,pub_date,edit_date,schedule_work_id,schedule_id,employment_type_id,min_exp_years,min_wage,desc,educ_type_id,min_age,contact_fullname,contact_phone,contact_email,SelectAssessment,visibility_status,OrgId,SubId', true ) ).split( ';' );
+	sPositionCommonCodes        = Trim( String(tools_web.get_web_param(curParams, "vacancy_estaff.position_common_codes", "", true)));
+	sGroupsCodes                = tools_web.get_web_param(curParams, "access_groups", "", true);
+	sStatusResponse             = tools_web.get_web_param(curParams, "status_response", "list", true);
+	is_cur_user_org             = tools_web.get_web_param( curParams, "is_cur_user_org", "0", true ) == "1";
+	bShowFillFromPosition       = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_estaff.bShowFillFromPosition", "0", true ) );
+	bAllowFilledVacancyNameEdit = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_estaff.bAllowFilledVacancyNameEdit", "0", true ) );
+	bShowBtnResume              = tools_web.get_web_param( curParams, "is_show_btn_resume", "0", true ) == "1";
+	bShowBtnFavorites           = tools_web.get_web_param( curParams, "is_show_btn_favorites", "0", true ) == "1";
+	bShowBtnFriend              = tools_web.get_web_param( curParams, "is_show_btn_friend", "0", true ) == "1";
+	bShowBtnResponse            = tools_web.get_web_param( curParams, "is_show_btn_response", "0", true ) == "1";
+	bCurUserContacts            = tools_web.get_web_param( curParams, "is_cur_user_contacts", "0", true ) == "1";
+	bShowBtnCloseVacancy        = tools_web.get_web_param( curParams, "is_show_btn_close_vacancy", "0", true ) == "1";
+	bShowBtnDeleteVacancy       = tools_web.get_web_param( curParams, "vacancy_estaff.is_show_btn_delete_vacancy", "0", true ) == "1";
+	bShowBtnCancelVacancy       = tools_web.get_web_param( curParams, "vacancy_estaff.is_show_btn_cancel_vacancy", "0", true ) == "1";
+	strPersonLinkType           = tools_web.get_web_param( curParams, "vacancy_estaff.person_link_type", "collaborator", true );
+	strDescType                 = tools_web.get_web_param( curParams, "vacancy_estaff.desc_type", "rich_edit", true );
+	bShowBtnChangeOwner         = tools_web.get_web_param( curParams, "vacancy_estaff.show_btn_change_owner", "0", true ) == "1";
+	strChangeOwnerType          = tools_web.get_web_param( curParams, "vacancy_estaff.show_btn_change_owner.change_owner_type", "all", true );
+	iFirstColWidth              = 250;
+
+	sDefaultMode      = tools_web.get_web_param(curParams, "default_mode", "", true);
+	bParamCheckAccess = tools_web.get_web_param( curParams, "check_access", "0", true ) == "1";
+
+	bCanSelectOthers      = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_estaff.bCanSelectOthers", "0", true ) );
+	bCanSelectAll         = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_estaff.bCanSelectAll", "0", true ) );
+	bCanSelectFromArchive = tools_web.is_true( tools_web.get_web_param( curParams, "vacancy_estaff.bCanSelectFromArchive", "0", true ) );
+
+	arrDispFields = [];
+
+	function html_desc( ParamText )
+	{
+		sDesc = String( ParamText );
+		arrFilesData = [];
+		
+		if ( StrContains( sDesc, 'compound-attc' ) )
+		{
+			destStream = new BufStream;
+			reader = new TagReader( sDesc );
+
+			reader = new TagReader( sDesc );
+			while ( reader.ReadNext() )
+			{
+				tagName = StrLowerCase( reader.TagName );
+				if ( tagName == 'compound-attc'  )
+				{
+					attr = Trim( reader.GetAttr( 'path' ) );
+					if ( ! StrContains( attr, '/' ) )
+					{
+						sStyleAttr = Trim( reader.GetAttr( 'style' ) );
+						sData = Trim( reader.GetAttr( 'data' ) );
+						fldFile = ArrayOptFind( arrFilesData, "This.id == '" + attr + "'" );
+						if ( fldFile == undefined )
+						{
+							arrFilesData.push({"id":attr,"sStyleAttr":sStyleAttr,"data":sData})
+						}
+					}
+				}
+			}
+
+			reader = new TagReader( sDesc );
+			while ( reader.ReadNext() )
+			{
+				tagName = StrLowerCase( reader.TagName );
+				if ( tagName == 'img' )
+				{
+					attr = Trim( reader.GetAttr( 'src' ) );
+					if ( ! StrContains( attr, '/' ) )
+					{
+						sStyleAttr = Trim( reader.GetAttr( 'style' ) );
+						fldFile=ArrayOptFind(arrFilesData,"This.id=='"+attr+"'")
+						if (fldFile!=undefined)
+						{
+							reader.SetAttr( 'src', 'data:'+fldFile.id+';base64, '+fldFile.data );
+						}
+					}
+				}
+				else if ( tagName == 'compound-attc' )
+				{
+					continue;
+				}
+				reader.ExportTag( destStream );
+			}
+			sDesc=destStream.DetachStr();
+
+		}
+		return sDesc;
+	}
+
+
+	if ( ArrayOptFind( arrParts, "This == 'custom_fields'") != undefined )
+	{
+		if ( curObjectID != null )
+		{
+			arrCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+		}
+		else
+		{
+			arrCustomElems = tools.get_custom_template( 'vacancy' );
+		}
+		if ( arrCustomElems != null )
+		{
+			arrDispFields = ArraySelectByKey( arrCustomElems.fields, true, 'disp_web' );
+			arrRequiredFieldsParam = ArrayUnion( arrRequiredFieldsParam, ArrayExtract( ArraySelectByKey( arrDispFields, true, 'is_required' ), "This.name") );
+		}
+	}
+
+	if ( ArrayOptFirstElem( arrRequiredFieldsParam ) != undefined )
+	{
+		strRequiredFilds = ArrayMerge( arrRequiredFieldsParam, "This", "," );
+	}
+
+	function fnGetPartName( sPartCode )
+	{
+		var sReturn = '';
+		sReturn = Trim( String( tools_web.get_web_param( curParams, 'vacancy_estaff.block_list.' + sPartCode, '', true ) ) );
+		
+		if ( sReturn == "" )
+		{
+			if ( sPartCode == 'main' )
+			{
+				sReturn = tools_web.get_web_const( 'vrb_basic_info', curLngWeb )
+			}
+			else if ( sPartCode == 'custom_fields' )
+			{
+				sReturn = tools_web.get_web_const( 'wlcwah2eod', curLngWeb )
+			}
+			else if ( sPartCode == 'vacancy_responses' )
+			{
+				sReturn=tools_web.get_web_const( 'istoriyazakryti', curLngWeb )
+			}
+			else if ( sPartCode == 'recommendations' )
+			{
+				sReturn = tools_web.get_web_const( 'ass_recommendations', curLngWeb )
+			}
+			else
+			{
+				sReturn = tools_web.get_web_const( 'vrb_not_specified', curLngWeb )
+			}
+		}
+		else
+		{
+			sReturn = tools_web.get_cur_lng_name( sReturn, curLng.short_id )
+		}
+		return sReturn
+	}
+
+	is_anonymous = false;
+	if ( curUserID == null )
+		is_anonymous = true;
+	is_access = false;
+	create_new_vacancy = false;
+	is_new = false;
+
+	iPositionCommonID = OptInt( CONTEXT.GetOptProperty( "position_common_id", null ), null );
+	strPositionCommonName = '';
+	bFillFromPositionCommon = tools_web.is_true( OptInt( CONTEXT.GetOptProperty( "fill_from_position_common" ), 0 ) );
+
+	try
+	{
+		docVacancy = OpenDoc( UrlFromDocID( curObjectID ) );
+		curVacancyDoc = docVacancy.TopElem;
+		
+		bCheckAccess = true;
+		if ( bParamCheckAccess )
+		{
+			bCheckAccess = tools_web.check_access( curVacancyDoc, curUserID, curUser, Request.Session );
+		}
+		else
+		{
+			if ( global_settings.settings.check_access_on_lists == true )
+			{
+				bCheckAccess = tools_web.check_access( curVacancyDoc, curUserID, curUser, Request.Session );
+			}
+		}
+
+		if ( bCheckAccess )
+		{
+			try
+			{
+				is_access = true;
+				if (curVacancyDoc.collaborator_id == curUserID)
+				{
+					create_new_vacancy = true;
+				}
+				
+			}
+			catch( err )
+			{
+				alert(err);
+			}
+		}
+	}
+	catch(err)
+	{
+		docVacancy = OpenNewDoc( "x-local://wtv/wtv_vacancy.xmd" );
+		curVacancyDoc = docVacancy.TopElem;
+		create_new_vacancy = true;
+		is_access = true;
+		is_new = true;
+	}
+
+	arrGroups = new Array();
+	if ( sGroupsCodes != "" )
+	{
+		arrVacancyAccessGroups = curVacancyDoc.access.access_groups;
+		strVacancyGroupsIds = ( ArrayOptFirstElem( arrVacancyAccessGroups ) != undefined ? ArrayMerge( ArrayExtract( arrVacancyAccessGroups, "This.group_id" ), "This", ";") : "" );
+		arrGroupsCodes = sGroupsCodes.split( ";" );
+		arrGroups = QueryCatalogByKeys( "groups", "code", arrGroupsCodes );
+	}
+%>
+
+	<SPXMLScreen>
+	<HTMLBox>
+			<![CDATA[
+				<style>
+					.XAML-edit-label-vacancy { width: 70 !important; }
+				</style>
+			]]>
+	</HTMLBox>
+<%
+
+	if ( is_access == true )
+	{
+		if ( create_new_vacancy && iPositionCommonID != null && bFillFromPositionCommon )
+		{
+			try
+			{
+				tePositionCommon = OpenDoc( UrlFromDocID( iPositionCommonID ) ).TopElem;
+				strPositionCommonName = tePositionCommon.name;
+				curVacancyDoc.name = strPositionCommonName;
+				strLongDesc = '';
+
+				for ( fldRequirement in tePositionCommon.requirements )
+				{
+					strLongDesc = strLongDesc + '<tr><td>' + fldRequirement.name + '</td><td>' + fldRequirement.comment + '</td></tr>';
+				}
+				if ( strLongDesc != '' )
+				{
+					strLongDesc = '<table width="100%" border="1">' + strLongDesc + '</table>';
+				}
+				strLongDesc = strLongDesc + ( strLongDesc != '' ? '</br>' : '' ) + tePositionCommon.desc;
+				curVacancyDoc.desc = strLongDesc;
+			}
+			catch( err )
+			{
+			}
+		}
+		else if ( create_new_vacancy && ! bAllowFilledVacancyNameEdit && ! is_new && ( ( curVacancyDoc.position_common_id.HasValue && curVacancyDoc.position_common_id.OptForeignElem != undefined ) == false ) )
+		{
+			bShowFillFromPosition = false;
+		}
+		
+		if ( iPositionCommonID == null && curVacancyDoc.position_common_id.HasValue )
+		{
+			iPositionCommonID = curVacancyDoc.position_common_id;
+			strPositionCommonName = ( curVacancyDoc.position_common_id.HasValue && curVacancyDoc.position_common_id.OptForeignElem != undefined ? curVacancyDoc.position_common_id.ForeignElem.name : " ");
+		}
+%>
+		<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%></Label>
+		<Edit Name="DialogCloseAction" Width="200" Hidden="1"></Edit>
+		<Dialog Name="SelectDialogVacancy" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!DialogCloseAction}">
+			<Param Name="catalog_name" Value=""/>
+			<Param Name="multi_select" Value=""/>
+			<Param Name="view_type" Value=""/>
+			<Param Name="xquery_qual" Value=""/>
+			<Param Name="selected_object_ids" Value=""/>
+			<Param Name="display_object_ids" Value=""/>
+			<Param Name="disp_filter" Value=""/>
+			<Param Name="filter_id" Value=""/>
+			<Param Name="show_all" Value="<%=global_settings.settings.show_all_persons%>"/>
+			<Param Name="typein" Value=""/>
+		</Dialog>
+		<Dialog Name="SelectDialogCollaborator" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_collaborators", curLngWeb ) )%>" Close="Set=SaveVacancy/sSelectedObjects,{CatalogListDataGridFullList:^/id};SET=SaveVacancy/action,change_owner;ACTION=SaveVacancy;REFRESH">
+			<Param Name="catalog_name" Value="collaborator"/>
+			<Param Name="multi_select" Value="false"/>
+			<Param Name="view_type" Value=""/>
+			<Param Name="xquery_qual" Value=""/>
+			<Param Name="check_access" Value="false"/>
+			<Param Name="selected_object_ids" Value=""/>
+			<Param Name="display_object_ids" Value=""/>
+			<Param Name="disp_filter" Value=""/>
+			<Param Name="filter_id" Value=""/>
+			<Param Name="show_all" Value="<%=(strChangeOwnerType=="all"||strChangeOwnerType=="bosses"||strChangeOwnerType=="bosses_sub"?"true":"false")%>"/>
+		</Dialog>
+		<Action Name="AddInSelected" Source="AddInSelected" Success="ALERT={messageText};REFRESH">
+			<Param Name="VacancyID" Value="<%=(curObjectID)%>"/>
+			<Param Name="VacancyName" Value="<%=XmlAttrEncode( curVacancyDoc.name )%>"/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+		<Action Name="PrintVacancyAction" Source="PrintVacancyAction" Success="OPENWINDOW={sUrl}" Failure="ALERT={!messageText}">
+			<Param Name="iPrinFormID" Value=""/>
+			<Param Name="iObjectID" Value="<%=(curObjectID)%>"/>
+		</Action>
+		<Action Name="DeleteObject" Source="DeleteObject" Success="{!successActionStr}">
+			<Param Name="object_id" Value=""/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		</Action>
+		<Action Name="SaveVacancy" Source="SaveVacancy" Success="{!successActionStr}" Failure="{!messageText}">
+			<Param Name="sSelectedObjects" Value=""/>
+			<Param Name="VacancyID" Value="<%=(curObjectID)%>"/>
+			<Param Name="curSiteID" Value="<%=curSiteID%>"/>
+			<Param Name="curUserID" Value="<%=curUserID%>"/>
+			<Param Name="curUrl" Value="<%=PAGEURL%>"/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			<Param Name="GroupsCodes" Value="<%=XmlAttrEncode(sGroupsCodes)%>"/>
+			<Param Name="action" Value=""/>
+			<Param Name="sRequiredFilds" Value="<%=strRequiredFilds%>"/>
+<%
+		for (catGroup in arrGroups)
+		{
+%>
+			<Param Name="<%=XmlAttrEncode(catGroup.code)%>" Value="{<%=XmlAttrEncode(catGroup.code)%>}"/>
+<%
+		}
+%>
+		</Action>
+		<Collection Name="MyVacancyRecommendationCollection" Source="MyVacancyRecommendationCollection">
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="vacancy_id" Value="<%=curObjectID%>"/>
+		</Collection>
+		<Collection Name="VacancyResponsesCollection" Source="VacancyResponsesCollection">
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="vacancy_id" Value="<%=curObjectID%>"/>
+			<Param Name="response_status" Value="<%=sStatusResponse%>"/>
+			<Param Name="strPersonLinkType" Value="<%=strPersonLinkType%>"/>
+		</Collection>
+<%
+		if ( ! is_new && ( ! curVacancyDoc.is_closed ) )
+		{
+%>	
+			<Toolbar Class="XAML-toolbar" Width="100%" Adapt="true">
+<%
+			_is_ready = true;
+			
+			if ( ( ! curVacancyDoc.is_closed ) )
+			{
+				if ( is_anonymous )
+				{
+%>
+					<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( "register", null, { doc_id : curDocID } )%>"><%=tools_web.get_web_const( "uf_submit", curLngWeb )%></Button>
+<%
+				}
+				else
+				{
+					arrResponses = XQuery( "for $elem in vacancy_responses where $elem/vacancy_id=" + curObjectID + " and ($elem/person_id=" + curUserID + " or $elem/recruiter_person_id=" + curUserID + " or $elem/response_author_person_id=" + curUserID + ") return $elem" )
+					_response_array = ArrayOptFirstElem( arrResponses );
+
+					if ( _response_array != undefined )
+					{
+						if (bShowBtnResponse)
+						{
+							strClick = "OPENURL=" + tools_web.get_mode_clean_url( null, _response_array.id, { doc_id : curDocID } )
+							if ( ArrayCount( arrResponses ) > 1 )
+							{
+								sQueryQual = 'MatchSome( $elem/id, (' + ArrayMerge(arrResponses,"This.id",",") + ') )';
+								strClick = "SET=DialogCloseAction," + UrlEncode("OPENURL=" + tools_web.get_mode_clean_url( null, "{CatalogListDataGridFullList:^/id}", { doc_id: curDocID } ) ) + ";SET=SelectDialogVacancy/catalog_name,vacancy_response;SET=SelectDialogVacancy/xquery_qual,"+UrlEncode(sQueryQual)+";OPENDIALOG=SelectDialogVacancy"
+							}
+%>
+							<Button Class="XAML-button XAML-button-proceed" Click="<%=strClick%>"><%=tools_web.get_web_const( "posmotretotkli", curLngWeb )%></Button>
+<%
+						}
+					}
+				
+					arrPersonResumes = XQuery( "for $elem in resumes where $elem/person_id=" + curUserID + ( ! bCanSelectFromArchive ? " and $elem/is_archive=false()" : "" ) + " return $elem" );
+					iPersonResumeCount = ArrayCount( arrPersonResumes );
+					strXQuery = '';
+
+					if ( ! bCanSelectAll )
+					{
+						strXQuery = "$elem/person_id=" + curUserID;
+						
+						if ( bCanSelectOthers )
+						{
+							strXQuery = "(" + strXQuery + " or $elem/creator_person_id=" + curUserID + ")";
+						}
+					}
+
+					if ( ! bCanSelectFromArchive )
+					{
+						strXQuery = strXQuery + ( strXQuery != '' ? ' and' : '' ) + " $elem/is_archive=false()";
+					}
+		
+					arrResumes = XQuery( "for $elem in resumes" + ( strXQuery != '' ? ' where ' : '' ) + strXQuery + " return $elem" );
+					iResumeCount = ArrayCount( arrResumes );
+					
+					bShowButton = true;
+					if ( iPersonResumeCount > 0 && iPersonResumeCount == iResumeCount )
+					{
+						for ( _test in curVacancyDoc.assessments )
+						{
+							person_learning = ArrayOptFirstElem( XQuery("for $elem in test_learnings where $elem/assessment_id=" + _test.assessment_id + " and $elem/person_id=" + curUserID + " return $elem" ) );
+							if ( person_learning == undefined )
+							{
+								_is_ready = false;
+								break;
+							}
+						}
+						
+						bShowButton = _is_ready;
+						bShowButton = ( bShowButton ? ArrayOptFirstElem( XQuery( "for $elem in vacancy_responses where $elem/vacancy_id=" + curObjectID + " and ($elem/person_id=" + curUserID + ") return $elem") ) == undefined : bShowButton )
+					}
+
+					if ( bShowButton )
+					{
+						if ( bShowBtnResume )
+						{
+							if ( ( ( iPersonResumeCount + iResumeCount ) > 0 ) )
+							{
+								strResponseUrl = tools_web.get_mode_clean_url( 'vacancy_response', null, { vacancy_id : curObjectID, doc_id : curDocID } );
+%>
+								<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=strResponseUrl%>"><%=tools_web.get_web_const( "otpravitrezyume", curLngWeb )%></Button>
+<%						
+							}
+							if ( iPersonResumeCount == 0 || ( bCanSelectAll || bCanSelectOthers ) )
+							{
+%>
+								<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( "resume", null, { doc_id : curDocID } )%>"><%=tools_web.get_web_const( "sozdatrezyume", curLngWeb )%></Button>
+<%
+							}
+						}
+					}
+				}
+			}
+
+			_in_selected = false;
+
+			if ( ! curVacancyDoc.is_closed )
+			{
+				if ( ArrayOptFirstElem( XQuery("for $elem in selected_vacancys where $elem/person_id=" + curUserID + " and $elem/vacancy_id=" + curObjectID + " return $elem") ) == undefined )
+				{
+					if ( bShowBtnFavorites )
+					{
+%>
+						<Button Class="XAML-button XAML-button-proceed" Click="ACTION=AddInSelected"><%=tools_web.get_web_const( "vlmb_add_fav", curLngWeb )%></Button>
+<%		
+					}
+				}
+				else
+				{
+					_in_selected = true;
+
+				}
+			}
+
+			if ( ( ! curVacancyDoc.is_closed ) )
+			{
+				if ( bShowBtnFriend )
+				{
+%>
+					<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'recommendation', null, { vacancy_id : curObjectID, doc_id : curDocID } )%>"><%=tools_web.get_web_const( "porekomendovat", curLngWeb )%></Button>
+<%
+				}
+			}
+%>
+			</Toolbar>
+<%
+
+			if ( _in_selected || ! _is_ready || curVacancyDoc.is_closed )
+			{
+%>
+				<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "7ey6j94yku", curLngWeb ) )%>">
+<%
+			}
+			if ( _in_selected )
+			{
+%>
+				<StackPanel Orientation="Horizontal" Adapt="true"><Image Source="pics/yes.png"/><Label Class="labelItalic"><%=tools_web.get_web_const( "vakansiyadobavl", curLngWeb )%></Label></StackPanel>
+<%
+			}
+			if ( ! _is_ready )
+			{
+%>
+				<Label Class="labelItalic"><%=tools_web.get_web_const( "otkliknutsyanav", curLngWeb )%></Label>
+<%
+			}
+			if ( curVacancyDoc.is_closed )
+			{
+%>
+				<Label Class="labelItalic"><%=tools_web.get_web_const( "vnastoyashiymome", curLngWeb )%></Label>
+<%
+			}
+			if ( _in_selected || ! _is_ready || curVacancyDoc.is_closed )
+			{
+%>
+				</Panel>
+<%
+			}
+		}
+%>
+		<Edit Name="id_org" Value="" Hidden="1"/>
+<%
+		if ( strCardStyleType == 'tabs' )
+		{
+%>
+			<TabControl Name="VacancyEstaffBodyTab" ActiveTab="<%=iDefaultTab%>" TabsWidth="100%" TabsLocation="w" Adapt="true">
+<%
+		}
+		for ( sPart in arrParts )
+		{
+			if ( sPart == 'main' )
+			{
+				sTitle = XmlAttrEncode( fnGetPartName( sPart ) )
+				if ( strCardStyleType == 'tabs' )
+				{
+%>
+					<TabItem Title="<%=sTitle%>" Class="icon-info2" Width="100%" Expanded="1">
+<%
+				}
+				else
+				{
+%>
+					<Panel Title="<%=sTitle%>" Expanded="1" Width="100%">
+<%
+				}
+%>
+				<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+					<GridColumns>
+						<GridColumn Width="<%=iFirstColWidth%>"/>
+						<GridColumn/>
+					</GridColumns>
+<%
+			if ( ! create_new_vacancy && ( ! curVacancyDoc.is_closed ) )
+			{
+				if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'pub_date'" ) ) != undefined )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "datarazmesheniya", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'pub_date'")) != undefined ? "*" : "")%>:</Label>
+						<Label><%=curVacancyDoc.doc_info.creation.date%></Label>
+					</GridRow>
+<%
+				}
+				if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'edit_date'" ) ) != undefined )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "dataposlredakt", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'edit_date'")) != undefined ? "*" : "")%>:</Label>
+						<Label><%=curVacancyDoc.doc_info.modification.date%></Label>
+					</GridRow>
+<%
+				}
+			}
+			if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'name'" ) ) != undefined )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'name'")) != undefined ? "*" : "")%>:</Label>
+<%
+		
+			if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+			{
+
+%>
+				<StackPanel Orientation="Horizontal" Adapt="true">
+<%
+				if ((bShowFillFromPosition&&bAllowFilledVacancyNameEdit)||(!bShowFillFromPosition))
+				{
+%>
+					<Edit Name="name" Width="200"><%=(curVacancyDoc.name.HasValue ? tools_web.get_cur_lng_name( curVacancyDoc.name.Value,curLng.short_id ) : "")%></Edit>
+<%
+				}
+			
+				if (bShowFillFromPosition)
+				{
+					sQueryQual=''
+					if(sPositionCommonCodes!='')
+					{
+						arrPositionCommonCodes = sPositionCommonCodes.split(";");
+						arrPositionCommon = QueryCatalogByKeys( "position_commons", "code", arrPositionCommonCodes );
+						sQueryQual='MatchSome( $elem/id, ('+ArrayMerge(arrPositionCommon,"This.id",",")+') )';
+					}
+%>
+					<Edit Name="fill_from_position_common" Hidden="1">0</Edit>
+<%				
+					if (bAllowFilledVacancyNameEdit)
+					{
+%>
+						<Edit Name="position_common_id" Hidden="1"><%=iPositionCommonID%></Edit>
+						<Button Class="XAML-button XAML-button-select" Click="SET=DialogCloseAction,<%=UrlEncode("Set=fill_from_position_common,1;Set=position_common_id,{CatalogListDataGridFullList:^/id};REFRESH")%>;SET=SelectDialogVacancy/catalog_name,position_common;SET=SelectDialogVacancy/xquery_qual,<%=UrlEncode(sQueryQual)%>;OPENDIALOG=SelectDialogVacancy"><%=tools_web.get_web_const( "1fszoe2hxr", curLngWeb )%></Button>
+<%
+					}
+					else
+					{
+						curSelector = {
+						"id": "position_common_id",
+						"object_id":  iPositionCommonID,
+						"object_id_item_name": "position_common_id",
+						"multi_select": "false",
+						"object_name": strPositionCommonName,
+						"catalog_name": "position_common",
+						"xquery_qual":sQueryQual,
+						"selected_object_ids": iPositionCommonID,
+						"width":"150",
+						"close_action":"Set=fill_from_position_common,1;REFRESH"
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+					}
+				}
+%>
+				</StackPanel>
+<%	
+			}
+			else
+			{
+%>
+				<Label><![CDATA[<%=tools_web.get_cur_lng_name( curVacancyDoc.name.Value,curLng.short_id )%>]]></Label>
+<%
+			}
+%>
+				</GridRow>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'prof_area'")) != undefined)
+		{
+			if (curVacancyDoc.profession_id.HasValue || create_new_vacancy)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "vrb_professional_field", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'profession_area_id'")) != undefined ? "*" : "")%>:</Label>
+<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+					iObjectId = (curVacancyDoc.profession_id.HasValue ? curVacancyDoc.profession_id : "");
+					strObjectName = tools_web.get_cur_lng_name(( curVacancyDoc.profession_id.HasValue ? curVacancyDoc.profession_id.OptForeignElem.name : " "),curLng.short_id );
+					
+					curSelector = {
+						"id": "profession_id",
+						"width": (curDevice.disp_type != "mobile" ? "300" : "200"),
+						"catalog_name": "professional_area",
+						"object_id_item_name": "profession_id",
+						"object_id": iObjectId,
+						"object_name":  strObjectName
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );	
+				}
+				else
+				{
+					strObjectName = tools_web.get_cur_lng_name(( curVacancyDoc.profession_id.HasValue ? curVacancyDoc.profession_id.OptForeignElem.name : ""),curLng.short_id );
+%>
+					
+					<Label><![CDATA[<%=strObjectName%>]]></Label>
+<%
+				}
+%>
+				</GridRow>
+<%
+			}
+		}
+		
+		fldCurUser = ArrayOptFirstElem(XQuery("for $elem in collaborators where $elem/id=" + curUserID + " return $elem"));
+		iSelectedOrgId = "";
+		
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'org'")) != undefined)
+		{
+			if ( curVacancyDoc.org_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "c_org", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'OrgId'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+					iOrgId = undefined;
+					strOrgName = "";
+					iSelectedOrgId =undefined;
+					
+					if (is_cur_user_org)
+					{
+						if (fldCurUser != undefined)
+						{
+							iOrgId = (fldCurUser.org_id.HasValue ? fldCurUser.org_id : "");
+							//strOrgName = (fldCurUser.org_name.HasValue ? fldCurUser.org_name : "");
+						}
+					}
+					else
+					{
+						iOrgId = (curVacancyDoc.org_id.HasValue ? curVacancyDoc.org_id : "");
+						//strOrgName = (curVacancyDoc.org_name.HasValue ? curVacancyDoc.org_name : (curVacancyDoc.org_id.HasValue ? curVacancyDoc.org_id.OptForeignElem.name : ""));
+					}
+					iSelectedOrgId = OptInt(CONTEXT.GetOptProperty("org_id"),iOrgId);
+					if (iSelectedOrgId != undefined)
+					{
+						fldOrg = ArrayOptFirstElem(XQuery("for $elem in orgs where $elem/id=" + iSelectedOrgId + " return $elem"));
+						strOrgName = (fldOrg != undefined ? fldOrg.disp_name : " ");
+					}
+					
+					curSelector = {
+						"id": "OrgId",
+						"width": (curDevice.disp_type != "mobile" ? "300" : "200"),
+						"catalog_name": "org",
+						"object_id_item_name": "org_id",
+						"object_id": iSelectedOrgId,
+						"object_name": tools_web.get_cur_lng_name( strOrgName,curLng.short_id ) 
+					};
+					curSelector.SetProperty("close_action","SET=SelectDialogSubId/xquery_qual,$elem/org_id={CatalogListDataGridFullList:^/id}");
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+				}
+				else
+				{
+	%>				
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( (curVacancyDoc.org_name.HasValue ? curVacancyDoc.org_name : curVacancyDoc.org_id.OptForeignElem.name),curLng.short_id )%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'subdivision'")) != undefined)
+		{
+			if ( curVacancyDoc.sub_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "c_subd", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'SubId'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+					iSubdivId = undefined;
+					strSubdivName = "";
+					if (is_cur_user_org)
+					{
+						if (fldCurUser != undefined)
+						{
+							iSubdivId = (fldCurUser.position_parent_id.HasValue ? fldCurUser.position_parent_id : "");
+							strOrgName = (fldCurUser.position_parent_name.HasValue ? fldCurUser.position_parent_name : "");
+						}
+					}
+					else
+					{
+						iSubdivId = (curVacancyDoc.sub_id.HasValue ? curVacancyDoc.sub_id : "");
+						strSubdivName = (curVacancyDoc.sub_name.HasValue ? curVacancyDoc.sub_name : (curVacancyDoc.sub_id.HasValue ? curVacancyDoc.sub_id.OptForeignElem.name : " "));
+					}
+									
+					curSelector = {
+						"id": "SubId",
+						"width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+						"catalog_name": "subdivision",
+						"object_id_item_name": "sub_id",
+						"object_id": iSubdivId,
+						"object_name":  tools_web.get_cur_lng_name( strSubdivName,curLng.short_id ),
+						"xquery_qual":("$elem/org_id=" + iSelectedOrgId)
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+				}
+				else
+				{
+					try
+					{
+						strSubdivName = (curVacancyDoc.sub_name.HasValue ? curVacancyDoc.sub_name : (curVacancyDoc.sub_id.HasValue ? curVacancyDoc.sub_id.OptForeignElem.disp_name : ""));
+					}
+					catch (err)
+					{
+						strSubdivName = (curVacancyDoc.sub_name.HasValue ? curVacancyDoc.sub_name : (curVacancyDoc.sub_id.HasValue ? OpenDoc(UrlFromDocID(curVacancyDoc.sub_id)).TopElem.name : ""));
+					}
+	%>				
+					<Label><![CDATA[<%=strSubdivName%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'wage'")) != undefined)
+		{
+			if ( curVacancyDoc.min_wage.HasValue || curVacancyDoc.max_wage.HasValue || create_new_vacancy )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "dohod", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'min_wage'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<StackPanel Orientation="Horizontal" Adapt="true">
+						<Label><%=StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) )%></Label>
+						<Edit Name="min_wage" Width="70"><%=(curVacancyDoc.min_wage.HasValue ? curVacancyDoc.min_wage.Value : "")%></Edit>
+						<Label><%=StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) )%></Label>
+						<Edit Name="max_wage" Width="70"><%=(curVacancyDoc.max_wage.HasValue ? curVacancyDoc.max_wage.Value : "")%></Edit>
+	<%
+					if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'currency_type'")) != undefined)
+					{
+	%>
+						<ComboBox Name="currency_type_id" Width="200">
+						
+	<%
+						for ( _elem in lists.currency_types )
+						{
+							strSelCurrency = (curVacancyDoc.currency_type_id.HasValue && _elem.id == curVacancyDoc.currency_type_id ? "Selected='1'" : "");
+	%>
+							<ComboBoxItem Value="<%=XmlAttrEncode( _elem.id )%>" <%=strSelCurrency%>><![CDATA[<%=_elem.name%>]]></ComboBoxItem>
+	<%
+						}
+	%>
+						</ComboBox>
+	<%
+					}
+	%>
+					</StackPanel>
+	<%	
+				}
+				else
+				{
+	%>					
+					<Label><%=curVacancyDoc.min_wage.HasValue ? StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) ) + " " + curVacancyDoc.min_wage : ""%> <%=curVacancyDoc.max_wage.HasValue ? " " + StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) ) + " " + curVacancyDoc.max_wage : ""%>
+	<%
+					if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'currency_type'")) != undefined)
+					{
+	%>
+					<%=curVacancyDoc.currency_type_id.OptForeignElem!=undefined ? curVacancyDoc.currency_type_id.OptForeignElem.short_name : ""%>
+	<%
+					}
+	%>
+					</Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%			
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'region'")) != undefined)
+		{
+			if ( curVacancyDoc.region_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "vrb_region", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'region_id'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+					iObjectId = (curVacancyDoc.region_id.HasValue ? curVacancyDoc.region_id : "");
+					strObjectName = tools_web.get_cur_lng_name(( curVacancyDoc.region_id.HasValue ? curVacancyDoc.region_id.OptForeignElem.name : " "),curLng.short_id );
+					
+					curSelector = {
+						"id": "region_id",
+						"width": (curDevice.disp_type != "mobile" ? "300" : "200"),
+						"catalog_name": "region",
+						"object_id_item_name": "region_id",
+						"object_id": iObjectId,
+						"object_name":  strObjectName
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+				}
+				else
+				{
+	%>				
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( curVacancyDoc.region_id.OptForeignElem.name.Value,curLng.short_id )%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'employment_type'")) != undefined)
+		{
+			if ( curVacancyDoc.employment_type_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "c_employment_type", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'employment_type_id'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<ComboBox Name="employment_type_id" Width="200">
+						<ComboBoxItem Value="#empty#"><%=tools_web.get_web_const( "pusto", curLngWeb )%></ComboBoxItem>
+	<%
+									for ( _elem in curLngCommon.employment_types )
+									{
+										strSelEmploymType = (curVacancyDoc.employment_type_id.HasValue && _elem.id == curVacancyDoc.employment_type_id ? "Selected='1'" : "");
+	%>
+										<ComboBoxItem Value="<%=XmlAttrEncode( _elem.id )%>" <%=strSelEmploymType%>><![CDATA[<%=_elem.name%>]]></ComboBoxItem>
+	<%
+									}
+	%>
+					</ComboBox>
+	<%	
+				}
+				else
+				{
+					strEmploymentType = curVacancyDoc.employment_type_id.HasValue && curVacancyDoc.employment_type_id != '#empty#' ? curLngCommon.employment_types.GetChildByKey( curVacancyDoc.employment_type_id ).name.Value : '';
+	%>				
+					<Label><![CDATA[<%=strEmploymentType%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'exp_years'")) != undefined)
+		{
+			if ( curVacancyDoc.min_exp_years.HasValue || create_new_vacancy )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "minimalnyyopyt", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'min_exp_years'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<Edit Name="min_exp_years" Width="200"><%=(curVacancyDoc.min_exp_years.HasValue ? curVacancyDoc.min_exp_years.Value : "")%></Edit>
+	<%	
+				}
+				else
+				{
+	%>				
+					<Label><%=curVacancyDoc.min_exp_years%></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%		
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'schedule_work'")) != undefined)
+		{
+			if ( curVacancyDoc.schedule_work_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "ibcxjyydad", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'schedule_work_id'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<ComboBox Name="schedule_work_id" Width="200">
+						<ComboBoxItem Value="#empty#"><%=tools_web.get_web_const( "pusto", curLngWeb )%></ComboBoxItem>
+	<%
+						for ( _elem in curLngCommon.employment_kinds )
+						{
+							strSelEmploymKind = (curVacancyDoc.schedule_work_id.HasValue && _elem.id == curVacancyDoc.schedule_work_id ? "Selected='1'" : "");
+	%>
+						<ComboBoxItem Value="<%=XmlAttrEncode( _elem.id )%>" <%=strSelEmploymKind%>><![CDATA[<%=_elem.name%>]]></ComboBoxItem>
+	<%
+						}
+	%>
+					</ComboBox>
+	<%	
+				}
+				else
+				{
+					strObjectName = curVacancyDoc.schedule_work_id.HasValue && curLngCommon.employment_kinds.GetOptChildByKey( curVacancyDoc.schedule_work_id ) != undefined ? curLngCommon.employment_kinds.GetChildByKey( curVacancyDoc.schedule_work_id ).name.Value : '';
+					
+	%>				
+					<Label><![CDATA[<%=strObjectName%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'schedule_id'")) != undefined)
+		{
+			if ( curVacancyDoc.schedule_id.HasValue || create_new_vacancy )
+			{
+	%>		
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "grafikraboty", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'schedule_id'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				strObjectName = tools_web.get_cur_lng_name( (curVacancyDoc.schedule_id.HasValue ? curVacancyDoc.schedule_id.OptForeignElem.name : " "),curLng.short_id );
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+					iObjectId = (curVacancyDoc.schedule_id.HasValue ? curVacancyDoc.schedule_id : "");
+					
+					
+					curSelector = {
+						"id": "schedule_id",
+						"width": (curDevice.disp_type != "mobile" ? "300" : "200"),
+						"catalog_name": "work_schedule",
+						"object_id_item_name": "schedule_id",
+						"object_id": iObjectId,
+						"object_name":  strObjectName
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+				}
+				else
+				{
+	%>				
+					<Label><![CDATA[<%=strObjectName%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%
+			}
+		}
+		if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'educ_type'" ) ) != undefined )
+		{
+			if ( curVacancyDoc.educ_type_id.HasValue || create_new_vacancy )
+			{
+	%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "c_educ_type", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'educ_type_id'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<ComboBox Name="educ_type_id" Width="200">
+						<ComboBoxItem Value="#empty#"><%=tools_web.get_web_const( "pusto", curLngWeb )%></ComboBoxItem>
+	<%
+							for ( _elem in curLngCommon.educ_types )
+							{
+								strSelEducType = ( curVacancyDoc.educ_type_id.HasValue && _elem.id == curVacancyDoc.educ_type_id ? "Selected='1'" : "" );
+	%>
+								<ComboBoxItem Value="<%=XmlAttrEncode( _elem.id )%>" <%=strSelEducType%>><![CDATA[<%=_elem.name%>]]></ComboBoxItem>
+	<%
+							}
+	%>
+					</ComboBox>
+	<%	
+				}
+				else
+				{
+	%>
+					<Label><![CDATA[<%=curVacancyDoc.educ_type_id.HasValue && curVacancyDoc.educ_type_id != '#empty#' ? curLngCommon.educ_types.GetChildByKey( curVacancyDoc.educ_type_id ).name.Value : ""%>]]></Label>
+	<%
+				}
+	%>
+				</GridRow>
+	<%
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'age'")) != undefined)
+		{
+			if ( curVacancyDoc.min_age.HasValue || curVacancyDoc.max_age.HasValue || create_new_vacancy  )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "vrb_age", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'min_age'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<StackPanel Orientation="Horizontal" Adapt="true">
+						<Label><%=StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) )%></Label>
+						<Edit Name="min_age" Width="50"><%=(curVacancyDoc.min_age.HasValue ? curVacancyDoc.min_age.Value : "")%></Edit>
+						<Label><%=StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) )%></Label>
+						<Edit Name="max_age" Width="50"><%=(curVacancyDoc.max_age.HasValue ? curVacancyDoc.max_age.Value : "")%></Edit>
+						<Label><%=tools_web.get_web_const( "let", curLngWeb )%></Label>
+					</StackPanel>
+	<%	
+				}
+				else
+				{
+	%>				
+					<Label><%=curVacancyDoc.min_age.HasValue ? StrNonTitleCase( tools_web.get_web_const( "23bdvmp63b", curLngWeb ) ) + " " + curVacancyDoc.min_age : ""%> <%=curVacancyDoc.max_age.HasValue ? " " + StrNonTitleCase( tools_web.get_web_const( "mgbip6hh3a", curLngWeb ) ) + " " + curVacancyDoc.max_age : ""%><%=tools_web.get_web_const( "let", curLngWeb )%></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%		
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'contact_fullname'")) != undefined)
+		{
+			if ( curVacancyDoc.contact_fullname.HasValue || create_new_vacancy )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "fiokontaktnogo", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'contact_fullname'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				strFullname = "";
+				if (curVacancyDoc.contact_fullname.HasValue)
+				{
+					strFullname = curVacancyDoc.contact_fullname.Value;
+				}
+				else
+				{
+					if (create_new_vacancy && bCurUserContacts)
+					{
+						strFullname = (fldCurUser != undefined && fldCurUser.fullname.HasValue ? fldCurUser.fullname : " ");
+					}
+				}
+								
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<Edit Name="contact_fullname" Class="XAML-edit-label-title" Width="200"><%=strFullname%></Edit>
+	<%	
+				}
+				else
+				{
+	%>				
+					<Label><![CDATA[<%=strFullname%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%		
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'contact_phone'")) != undefined)
+		{
+			if ( curVacancyDoc.contact_phone.HasValue || create_new_vacancy )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "kontaktnyytele", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'contact_phone'")) != undefined ? "*" : "")%>:</Label>
+	<%
+				strPhone = "";
+				if (curVacancyDoc.contact_phone.HasValue )
+				{
+					strPhone = curVacancyDoc.contact_phone.Value;
+				}
+				else
+				{
+					if (create_new_vacancy && bCurUserContacts)
+					{
+						strPhone = (fldCurUser != undefined && fldCurUser.phone.HasValue ? fldCurUser.phone : "");
+					}
+				}
+							
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+	%>
+					<Edit Name="contact_phone" Width="150"><%=strPhone%></Edit>
+	<%	
+				}
+				else
+				{
+	%>					
+					<Label><![CDATA[<%=strPhone%>]]></Label>
+	<%
+				}
+	%>				
+				</GridRow>
+	<%		
+			}
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'contact_email'")) != undefined)
+		{
+			if ( curVacancyDoc.contact_email.HasValue || create_new_vacancy )
+			{
+	%>			
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "kontaktnyyemai", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'contact_email'")) != undefined ? "*" : "")%>:</Label>
+	<%
+					strEmail = "";
+					if (curVacancyDoc.contact_email.HasValue)
+					{
+						strEmail = curVacancyDoc.contact_email.Value;
+					}
+					else
+					{
+						if (create_new_vacancy && bCurUserContacts)
+						{
+							strEmail = (fldCurUser != undefined && fldCurUser.email.HasValue ? fldCurUser.email : "");
+						}
+					}
+										
+					if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+					{
+	%>
+					<Edit Name="contact_email" Class="XAML-edit-label-title" Width="150"><%=strEmail%></Edit>
+	<%	
+					}
+					else
+					{
+	%>					
+					<Label><![CDATA[<%=strEmail%>]]></Label>
+	<%
+					}
+	%>				
+				</GridRow>
+<%
+			}
+		}
+		if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'assessments'" ) ) != undefined )
+		{
+			if ( ArrayCount(curVacancyDoc.assessments) > 0 )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "neobhodimoproy", curLngWeb )%><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'SelectAssessment'")) != undefined ? "*" : "")%>:</Label>
+					<Label></Label>
+				</GridRow>
+<%
+				i = 0;
+				for ( _test in curVacancyDoc.assessments )
+				{
+%>
+				<GridRow>
+					<Label Class__="XAML-info-grid-title-column"><%= "&nbsp;&nbsp;&nbsp;" + _test.assessment_name%></Label>	
+<%
+					if ( !is_anonymous )
+					{
+						person_active_learning = ArrayOptFirstElem( XQuery("for $elem in active_test_learnings where $elem/assessment_id=" + _test.assessment_id + " and $elem/person_id=" + curUserID + " return $elem" ))
+						person_learning = ArrayOptFirstElem( XQuery("for $elem in test_learnings where $elem/assessment_id=" + _test.assessment_id + " and $elem/person_id=" + curUserID + " return $elem" ))
+						if ( person_learning != undefined )
+						{
+%>
+							<Image Source="pics/yes.png" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, person_learning.id, { doc_id : curDocID } )%>"/>
+<%
+						}
+						
+						if ( person_active_learning != undefined && person_learning == undefined )
+						{
+%>
+							<Image Source="pics/play_next16x16.png" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, person_active_learning.id, { assessment_id : _test.assessment_id, doc_id : curDocID } )%>"/>
+<%
+						}
+						
+						if ( person_active_learning == undefined && person_learning == undefined )
+						{
+%>
+							<Image Source="pics/play16x16.png" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, _test.assessment_id, { doc_id : curDocID } )%>"/>
+<%
+						}
+					}
+%>
+				</GridRow>
+<%
+				}
+			}
+			if ( create_new_vacancy && ( ! curVacancyDoc.is_closed ) )
+			{
+				//выбор тестов
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "neobhodimoproy", curLngWeb )%>:</Label>
+					<StackPanel>
+						<Button Class="XAML-button XAML-button-select" Click="OPENDIALOG=SelectDialogSelectAssessment"><%=tools_web.get_web_const( "izmenitsostavt", curLngWeb )%></Button>
+<%
+					curSelectorList = {
+						"id": "SelectAssessment",
+						"height": "230",
+						"catalog_name": "assessment",
+						"close_action": "SET=SaveVacancy/sSelectedObjects,{CatalogListDataGridSelList:*};",
+						"show_all": false
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+					</StackPanel>
+				</GridRow>
+<%			
+			}
+		}
+		if ( create_new_vacancy || curVacancyDoc.collaborator_id == curUserID )
+		{
+			if ( ArrayOptFirstElem( ArraySelect( arrVacancyListParam, "This == 'visibility_status'" ) ) != undefined && ArrayOptFirstElem( arrGroups ) != undefined )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%= tools_web.get_web_const( "statusvidimosti", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'visibility_status'")) != undefined ? "*" : "")%>:</Label>
+<%
+				if ((!curVacancyDoc.is_closed))
+				{
+%>
+						<StackPanel Adapt="true"> 
+							<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+								<GridColumns>
+									<GridColumn Width="120"/>
+									<GridColumn/>
+								</GridColumns>
+<%
+						arrCheckedGroupsIds = new Array();
+						for (catGroup in arrGroups)
+						{
+							teGroup = OpenDoc(UrlFromDocID(catGroup.id)).TopElem; 
+							strChecked ="";
+							strEnabled = "";
+							if (strVacancyGroupsIds != "" && StrContains(strVacancyGroupsIds,catGroup.id) == true)
+							{
+								strChecked = "Checked='1'";
+							}
+%>
+							<GridRow>
+								<Label Class="XAML-grid-label-name"><%=catGroup.name%>:</Label>
+								<CheckBox Name="<%=catGroup.code%>" <%=strChecked%> <%=(create_new_vacancy || curVacancyDoc.collaborator_id == curUserID ? "Enabled='1'" : "Enabled='0'")%>>- <%=XmlAttrEncode(teGroup.comment)%></CheckBox>
+							</GridRow>
+<%					
+						}
+%>
+							</Grid>
+						</StackPanel>
+<%
+				}
+				else
+				{
+%>
+					<Label></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+		}
+%>
+			</Grid>	
+<%
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'description'")) != undefined)
+		{
+			if ( curVacancyDoc.desc.HasValue || create_new_vacancy )
+			{
+				
+%>
+				<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+						<GridColumns>
+							<GridColumn Width="<%=iFirstColWidth%>"/>
+							<GridColumn/>
+						</GridColumns>
+						
+						<GridRow>
+							<Label Class="XAML-grid-label-name"><%= tools_web.get_web_const( "c_desc", curLngWeb ) %><%=(ArrayOptFirstElem(ArraySelect(arrRequiredFieldsParam, "This == 'desc'")) != undefined ? "*" : "")%>:</Label>
+<%
+				if ( create_new_vacancy && (!curVacancyDoc.is_closed))
+				{
+%>
+					<EditBox Name="desc2" Height="200"  <%=(curDevice.disp_type != "mobile" ? "Width='100%'" : "Width='90%'")%>><![CDATA[<%=html_desc(curVacancyDoc.desc)%>]]></EditBox>
+<%	
+				}
+				else
+				{
+					strDesc = curVacancyDoc.desc;
+					if ( strDescType != 'rich_edit' )
+					{
+						strDesc = HtmlEncode( curVacancyDoc.desc )
+					}
+%>				
+					<HTMLBox><![CDATA[<%=HtmlToPlainText(strDesc)%>]]></HTMLBox>	
+<%
+				}
+%>
+					</GridRow>
+				</Grid>
+<%				
+			}
+		}
+			if (strCardStyleType=='tabs')
+			{
+%>
+			</TabItem>
+<%
+			}
+			else if (strCardStyleType=='blocks')
+			{
+%>
+			</Panel>
+<%
+			}
+	}
+	else if (sPart=='vacancy_responses')
+	{
+		if (curVacancyDoc.collaborator_id == curUserID)
+		{
+			sTitle=XmlAttrEncode( fnGetPartName(sPart) )
+			if (strCardStyleType=='tabs')
+			{
+%>
+			<TabItem Title="<%=sTitle%>" Width="100%">
+<%
+			}
+			else
+			{
+%>
+			<Panel Title="<%=sTitle%>" Expanded="1" Width="100%">
+<%
+			}
+%>
+			<DataGrid Name="VacancyResponseGrid" Source="{VacancyResponsesCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='300'" : "Height='150'")%> Selection="multiple" <%=(curDevice.disp_type != "mobile" ? "Width='100%'" : "Width='300'")%> PageSize="4">
+<%
+				if (curDevice.disp_type != "mobile")
+				{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "dataotklika", curLngWeb )%>" Value="date" Width="120" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "datapriglasheniya", curLngWeb )%>" Value="date_invitation" Width="120" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_candidate", curLngWeb )%>" Value="person_fullname" Width="200" Type="link" Click="OPENURL={url_person}" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="status" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "kommentariyrek", curLngWeb )%>" Value="comment_recruiter" Width="200" Type="string" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_resume", curLngWeb )%>" Value="resume_name" Width="75" Type="link" Sortable="true" Click="OPENURL={url_resume}" ColorSource="color"/>
+<%
+				}
+				else
+				{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "dataotklika", curLngWeb )%>" Value="date" Width="100%" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+<%
+				}
+			if (!curVacancyDoc.is_closed && curDevice.disp_type != "mobile")
+			{
+%>			
+				<DataGridColumn Title="" Value="<%=tools_web.get_web_const( "c_delete", curLngWeb )%>" Width="75" Type="button" Sortable="true" ColorSource="color" Click="CONFIRM=<%=tools_web.get_web_const( "vyuverenychtoho_12", curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject"/>
+<%
+			}
+%>		
+		</DataGrid>
+<%
+			if (strCardStyleType=='tabs')
+			{
+%>
+			</TabItem>
+<%
+			}
+			else if (strCardStyleType=='blocks')
+			{
+%>
+			</Panel>
+<%
+			}
+		}
+	}
+	else if (sPart=='recommendations')
+	{
+
+		if ( curVacancyDoc.collaborator_id == curUserID && ArrayCount( XQuery("for $elem in recommendations where $elem/src_person_id=" + curUserID + " and $elem/vacancy_id=" + curObjectID + " return $elem") ) > 0 )
+		{
+			sTitle=XmlAttrEncode( fnGetPartName(sPart) )
+			if (strCardStyleType=='tabs')
+			{
+%>
+			<TabItem Title="<%=sTitle%>" Width="100%">
+<%
+			}
+			else
+			{
+%>
+			<Panel Title="<%=sTitle%>" Expanded="1" Width="100%">
+<%
+			}
+%>
+			<DataGrid Name="VacancyRecommendationGrid" Source="{MyVacancyRecommendationCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='300%'" : "Height='150'")%> Selection="multiple" <%=(curDevice.disp_type != "mobile" ? "Width='100%'" : "Width='200'")%>>
+<%
+				if (curDevice.disp_type != "mobile")
+				{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_create_date", curLngWeb )%>" Value="date" Width="150" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>" Value="vacancy_name" Width="100%" Type="link" Click="OPENURL={url_vacancy}" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Width="250" Type="string" Sortable="true" ColorSource="color"/>
+					<DataGridColumn Title="" Value="<%=tools_web.get_web_const( "c_delete", curLngWeb )%>" Width="150" Type="button" Sortable="true" ColorSource="color" Click="CONFIRM=<%=tools_web.get_web_const( "vyuverenychtoho_13", curLngWeb )%>;SET=DeleteObject/object_id,{id};ACTION=DeleteObject"/>
+<%
+				}
+				else
+				{
+%>
+					<DataGridColumn Title="<%=tools_web.get_web_const( "c_create_date", curLngWeb )%>" Value="date" Width="100%" Type="link" Click="OPENURL={url_date}" Sortable="true" ColorSource="color"/>
+<%
+				}
+%>
+			</DataGrid>
+<%
+			if (strCardStyleType=='tabs')
+			{
+%>
+			</TabItem>
+<%
+			}
+			else if (strCardStyleType=='blocks')
+			{
+%>
+			</Panel>
+<%
+			}
+		}
+	}
+	else if (sPart=='custom_fields')
+	{
+		if (ArrayOptFirstElem(arrDispFields)!=undefined)
+		{
+			sTitle=XmlAttrEncode( fnGetPartName(sPart))
+			if (strCardStyleType=='tabs')
+			{
+%>
+		<TabItem Title="<%=sTitle%>">
+<%
+			}
+			else
+			{
+%>
+		<Panel Title="<%=sTitle%>" Expanded="1" Width="100%">
+<%
+			}
+		
+			arrSourceElems=curVacancyDoc.custom_elems
+			curCustomFields = {
+				"id": "CollaboratorCustomFields",
+				"fields": arrDispFields,
+				"source": arrSourceElems,
+				"modify_eval": (create_new_vacancy || curVacancyDoc.collaborator_id == curUserID),
+				"draw_grid_columns": true
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );	
+			if (strCardStyleType=='tabs')
+			{
+%>
+		</TabItem>
+<%
+			}
+			else if (strCardStyleType=='blocks')
+			{
+%>
+		</Panel>
+<%
+			}
+		}
+
+	}
+	}
+
+	if ( strCardStyleType == 'tabs' )
+	{
+%>
+		</TabControl>
+<%
+	}
+%>
+		<Toolbar Class="XAML-toolbar">
+<%
+		if ( ! curVacancyDoc.is_closed )
+		{
+			if ( create_new_vacancy )
+			{
+%>	
+				<Button Click="SET=SaveVacancy/action,save;ACTION=SaveVacancy" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%	
+			}
+			
+			if ( bShowBtnCancelVacancy )
+			{
+%>	
+				<Button Click="<%=( sDefaultMode != '' ? 'OPENURL=' + tools_web.get_mode_clean_url( sDefaultMode, null, { doc_id : curDocID } ) : '')%>" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "veb_to_cancel", curLngWeb )%></Button>
+<%
+			}
+			if ( create_new_vacancy && curVacancyDoc.collaborator_id == curUserID )
+			{
+				if ( bShowBtnCloseVacancy )
+				{
+%>
+					<Button Click="SET=SaveVacancy/action,close;ACTION=SaveVacancy" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "zakrytvakansiyu", curLngWeb )%></Button>
+<%
+				}
+				if ( bShowBtnDeleteVacancy )
+				{
+%>
+					<Button Click="CONFIRM=<%=tools_web.get_web_const( "vyuverenychtoho_2", curLngWeb )%>;SET=DeleteObject/object_id,<%=curObjectID%>;ACTION=DeleteObject" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "c_delete", curLngWeb )%></Button>
+<%
+				}
+				if ( bShowBtnChangeOwner )
+				{
+					strClick = "OPENDIALOG=SelectDialogCollaborator";
+					if (strChangeOwnerType=='bosses'||strChangeOwnerType=='bosses_sub')
+					{
+						oFuncParam=new Object
+						oFuncParam.return_object_value='id'
+						arrSubIds=tools.get_uni_user_bosses(curUserID,oFuncParam)
+						if(strChangeOwnerType=='bosses_sub')
+						{
+							arrSubIds=ArrayUnion(arrSubIds,tools.get_sub_person_ids_by_func_manager_id( curUserID ))
+						}
+						strClick="SET=SelectDialogCollaborator/display_object_ids," + UrlEncode(ArrayMerge(arrSubIds,'This',';')) + ";" + strClick;
+					}
+%>
+					<Button Click="<%=strClick%>" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "smenitvladelca", curLngWeb )%></Button>	
+<%
+				}
+			}
+	}
+	
+	if ( curVacancyDoc.is_closed && curVacancyDoc.collaborator_id == curUserID )
+	{
+%>
+		<Button Click="SET=SaveVacancy/action,open;ACTION=SaveVacancy" Class="XAML-button XAML-button-proceed"><%=tools_web.get_web_const( "otkrytvakansiyu", curLngWeb )%></Button>
+<%
+	}
+	
+	try
+	{
+		arrPrintForms = XQuery( "for $elem in print_forms where $elem/object_name='" + curObject.Name + "' return $elem");
+		
+	}
+	catch( err )
+	{
+		arrPrintForms = Array();
+	}
+
+	fldPrintForm = ArrayOptFirstElem( arrPrintForms );
+	if ( fldPrintForm != undefined )
+	{
+		strClick = "Set=PrintVacancyAction/iPrinFormID," + fldPrintForm.id + ";ACTION=PrintVacancyAction";
+		if ( ArrayCount( arrPrintForms ) > 1 )
+		{
+			strClick = "SET=DialogCloseAction," + UrlEncode( 'Set=PrintVacancyAction/iPrinFormID,{CatalogListDataGridFullList:^/id};ACTION=PrintVacancyAction' ) + ";SET=SelectDialogVacancy/catalog_name,print_form;SET=SelectDialogVacancy/xquery_qual," + UrlEncode( "$elem/object_name='" + curObject.Name + "'" ) + ";OPENDIALOG=SelectDialogVacancy";
+		}
+%>	
+			<Button Class="XAML-button XAML-button-select" Click="<%=strClick%>"><%=tools_web.get_web_const( 'vib_print', curLngWeb )%></Button>
+<%
+	}
+	
+%>
+		</Toolbar>
+<%
+}
+%>
+</SPXMLScreen>

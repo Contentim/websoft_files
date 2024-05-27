@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<inst_packs>
+	<inst_pack>
+		<id>inst_ta_code_library</id>
+		<name>Управление проектной оценкой / Библиотеки программного кода</name>
+		<comment>Справочник библиотек программного кода</comment>
+		<url>inst_ta_code_library.xml</url>
+		<package_date>2023-11-22</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_ta_remote_action</id>
+		<name>Управление проектной оценкой / Удаленные действия</name>
+		<comment>Удаленные действия</comment>
+		<url>inst_ta_remote_action.xml</url>
+		<package_date>2024-02-02T18:44:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_ta_server_agent</id>
+		<name>Управление проектной оценкой / Агенты сервера</name>
+		<comment>Агенты сервера</comment>
+		<url>inst_ta_server_agent.xml</url>
+		<package_date>2024-02-02T18:44:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_ta_app_websoft_task_assessment</id>
+		<name>Управление проектной оценкой / Приложение</name>
+		<comment>Приложение</comment>
+		<url>inst_pack_app_websoft_task_assessment.xml</url>
+		<package_date>2024-02-08T18:44:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+</inst_packs>

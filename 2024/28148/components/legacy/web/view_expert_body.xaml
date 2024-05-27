@@ -1,0 +1,267 @@
+﻿<SPXMLScreen>
+<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if( curObject.type == 'collaborator' )
+{
+	try
+	{
+		curPerson = OpenDoc( UrlFromDocID( curObject.person_id ) ).TopElem;
+	}
+	catch(_hren_)
+	{
+		curPerson = undefined;
+	}
+}
+else
+	curPerson = curObject;
+	
+arrTabListParam = String( tools_web.get_web_param( curParams, 'tab_list', 'main;question_answer;desc', true ) ).split( ';' );
+
+_tab = oParamSource.GetOptProperty( 'tab' );
+_sub_tab = oParamSource.GetOptProperty( 'sub_tab' );
+_sort_type = oParamSource.GetOptProperty( 'sort_type' );
+_sort_type = ( _sort_type == undefined ? tools_web.get_web_param( curParams, 'sort_type', 'question;answer;date', true ) : _sort_type)
+_find_str = oParamSource.GetOptProperty( 'find_str' );
+
+_panel_expand = tools_web.get_web_param( curParams, 'panel_expand', '1', true );
+
+sDispFields = 'position;sub;org;sex;email;phone;birthday;photo';
+collab = curObject.person_id.HasValue ? curObject.person_id.OptForeignElem : undefined;
+photo = collab != undefined && collab.pict_url.HasValue ? collab.pict_url : "/images/expert.png";
+
+curTitle = {
+	"object": curObject,
+	"title": curObject.name,
+	"image_url": photo,
+	"disp_image": true
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+
+%>
+	<StackPanel Name="ToolBarPanel">
+		<Toolbar Name="ToolBarPanel" Class="XAML-toolbar-actions" Adapt="true">
+			<Button Class="XAML-button XAML-button-request" Click="OPENURL=<%=tools_web.get_mode_clean_url( "expert_question", null, { doc_id: curDocID, "new": 1 } )%>"><%=tools_web.get_web_const( "veb_ask_expert", curLngWeb )%></Button>
+		</Toolbar>
+	</StackPanel>
+	<TabControl Name="ExpertBodyTab" ActiveTab="<%=_tab == undefined ? "0" : _tab%>" Width="100%" DisplayMode="<%=curDevice.disp_type == "mobile" ? "accordion" : "tab"%>" TabsLocation="w" MinHeight="200">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+	if ( sTabListParam == "main" )
+	{
+%>	
+		<TabItem Class="icon-info2" Title="<%=tools_web.get_web_const( "vrb_basic_info", curLngWeb )%>">
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Align="left"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+		if ( curObject.type == 'collaborator' && curPerson.position_name.HasValue )
+		{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.person_id, { doc_id: curDocID } )%>"><%=HtmlEncode(curPerson.position_name)%></Link>
+				</GridRow>
+<%				
+		}
+		if ( curObject.type == "collaborator" && curPerson.position_parent_name.HasValue )
+		{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+					<Label><%=HtmlEncode(curPerson.position_parent_name)%></Label>
+				</GridRow>
+<%				
+		}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_email", curLngWeb )%>:</Label>
+					<Label><%=curObject.email%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "zameshayushiyeksp", curLngWeb )%>:</Label>
+<%
+		sub_expert = curObject.sub_expert_id.HasValue ? curObject.sub_expert_id.OptForeignElem : undefined;
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.sub_expert_id, { doc_id: curDocID } )%>"><%=sub_expert != undefined ? sub_expert.name : ""%></Link>
+				</GridRow>
+<%
+		if ( curObject.rating.HasValue &&  tools_web.is_true( tools_web.get_web_param( curParams, 'show_rating', '1', true ) ) )
+		{
+%>					
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_rating", curLngWeb )%>:</Label>
+					<Label><%=curObject.rating%></Label>
+				</GridRow>
+<%
+		}
+		_knowledge_parts = XQuery("for $kp in knowledge_parts where contains($kp/experts, '" + curObjectID + "' ) order by $kp/name return $kp");
+		if (ArrayOptFirstElem( _knowledge_parts ) != undefined)
+		{
+%>					
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "veb_expertise_area", curLngWeb )%>:</Label>
+					<StackPanel UsePadding="false" Class="XAML-StackPanelKnowledge">
+						<HTMLBox><![CDATA[
+							<div style="display: inline-block;">
+<%
+			first = true;
+			for (_class in _knowledge_parts)
+			{
+				if( first )
+					first = false;
+				else
+				{
+%>
+								<span style="display: inline-block;">, </span>
+<%	
+				}
+%>
+								<span style="display: inline-block;"><a href="<%=tools_web.get_mode_clean_url( "knowledge_classifier", _class.id, { doc_id: curDocID } )%>"><%=HtmlEncode( _class.name )%></a></span>
+<%	
+
+			}
+%>											
+							</div>
+						]]></HTMLBox>	
+					</StackPanel>
+				</GridRow>
+<%
+		}
+		if ( curObject.comment.HasValue )
+		{
+%>					
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_comment", curLngWeb )%>:</Label>
+					<Label><%=HtmlEncode(curObject.comment)%></Label>
+				</GridRow>
+<%
+		}
+			
+%>				
+			</Grid>
+			<StackPanel Orientation="Horizontal" Adapt="true" Class="XAML-stack-tiles-container">
+				<StackPanel Orientation="Vertical" Class="wt-informer wt-info-score XAML-stack-informer XAML-stack-informer-score">
+					<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=tools_web.get_web_const( "voprosovotveche", curLngWeb )%>]]></Label>
+					<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+						<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container circular-scale-container">
+							<ContScale Name="ScoreScale" Type="circular" FullScale="100" DiagramPart="0.3" DisplayValue="true" DisplayPercent="true">
+<%
+		allQuestion = XQuery( "for $i in expert_questions where $i/expert_id = " + curObjectID + " return $i" );
+		aQuestion = ArraySelect( allQuestion, "This.status" );
+%>	
+								<Val Value="<%=ArrayCount( allQuestion ) > 0 ? StrReal( ArrayCount( aQuestion ) * 100.0 / ArrayCount( allQuestion ), 0 ) : 0%>"/>
+							</ContScale>
+						</StackPanel>
+						<Label Class="wt-info-value-string"><%=ArrayCount( aQuestion )%> Из <%=ArrayCount( allQuestion )%></Label>
+					</StackPanel>
+				</StackPanel>
+			</StackPanel>
+		</TabItem>
+<%
+	}
+	if ( sTabListParam == 'question_answer' )
+	{
+			
+%>	
+			<TabItem Class="icon-question2" Title="<%=tools_web.get_web_const( "c_questions", curLngWeb )%>-<%=tools_web.get_web_const( "vtr_answers", curLngWeb )%>">
+				<Dialog Name="AnswerExspertDialog" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="">
+					<Param Name="iQuestionId" Value=""/>
+				</Dialog>
+				<!--<Edit Name="TypeVisible" Hidden="1"/>
+
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+
+					<Button Name="KnowledgeFilter" Class="XAML-button XAML-button-list XAML-button-view icon-filter" Toggle="1" Pressed="false" Click="Toggle=SearchPanel;" Release="Toggle=SearchPanel;"><%=tools_web.get_web_const( "c_filter", curLngWeb )%></Button>
+					<StackPanel Orientation="Horizontal" Class="XAML-panel-search">
+						<Edit Class="XAML-input-text" Name="key_word" KeyPress="#13:UPDATE=QuestionsPanelView;"><%=CONTEXT.GetOptProperty( "key_word", "" )%></Edit>
+						<Button Class="XAML-button-content icon-search" Click="UPDATE=QuestionsPanelView;"/>
+					</StackPanel>
+
+					<Label Class="XAML-label-divider"></Label>
+					<Button Class="XAML-button XAML-button-list XAML-button-view icon-list" Toggle="1" ToggleGroup="CatalogsListObjectsViewTypeSelector" Pressed="1" Click="SET=TypeVisible,spisok;UPDATE=QuestionsPanelView;"><%=tools_web.get_web_const( "icpyfe9yb6", curLngWeb )%></Button>
+					<Button Class="XAML-button XAML-button-preview XAML-button-view icon-th" Toggle="1" ToggleGroup="CatalogsListObjectsViewTypeSelector" Pressed="0" Click="SET=TypeVisible,preview;UPDATE=QuestionsPanelView;"><%=tools_web.get_web_const( "predprosmotr", curLngWeb )%></Button>
+
+				</StackPanel>
+				<StackPanel Name="SearchPanel" Hidden="1" Class="XAML-StackPanelKnowledge">
+
+					<Grid>	
+						<GridColumns>
+							<GridColumn Width="200" Align="right"/>
+							<GridColumn Width="200" Align="right"/>
+							<GridColumn Align="right"/>
+						</GridColumns>
+						<GridRow>
+
+							<ComboBox Name="expert_question_status" SelectedItem="all" Change="UPDATE=QuestionsPanelView">
+								<ComboBoxItem Value="all"><%=HtmlEncode(tools_web.get_web_const( "vsestatusy", curLngWeb ))%></ComboBoxItem>
+								<ComboBoxItem Value="false"><%=tools_web.get_web_const( "vmeq_status_not_answered", curLngWeb )%></ComboBoxItem>
+								<ComboBoxItem Value="true"><%=tools_web.get_web_const( "vmeq_status_answered", curLngWeb )%></ComboBoxItem>
+							</ComboBox>
+
+							<ComboBox Name="qtype" SelectedItem="all" Change="UPDATE=QuestionsPanelView">
+								<ComboBoxItem Value="all"><%=tools_web.get_web_const( "c_all_types", curLngWeb )%></ComboBoxItem>
+								<ComboBoxItem Value="faq"><%=tools_web.get_web_const( "veb_faq", curLngWeb )%></ComboBoxItem>
+								<ComboBoxItem Value="opened"><%=tools_web.get_web_const( "veb_open_questions", curLngWeb )%></ComboBoxItem>
+							</ComboBox>
+
+							<Button Class="icon-refresh" Click="UPDATE=QuestionsPanelView"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+						</GridRow>
+					</Grid>	
+
+				</StackPanel>-->
+<%
+				row_filters = new Array();
+				arr_filters = new Array();
+				arr_filters.push( { title: tools_web.get_web_const( "c_status", curLngWeb ), name: "expert_question_status", type: "combo", items: [ { value: "all", title: tools_web.get_web_const( "vsestatusy", curLngWeb ) }, { value: "false", title: tools_web.get_web_const( "vmeq_status_not_answered", curLngWeb ) }, { value: "true", title: tools_web.get_web_const( "vmeq_status_answered", curLngWeb ) } ] } );
+				arr_filters.push( { title: tools_web.get_web_const( "c_type", curLngWeb ), name: "qtype", type: "combo", items: [ { value: "all", title: tools_web.get_web_const( "c_all_types", curLngWeb ) }, { value: "faq", title: tools_web.get_web_const( "veb_faq", curLngWeb ) }, { value: "open", title: tools_web.get_web_const( "veb_open_questions", curLngWeb ) } ] } );
+				row_filters.push( arr_filters );
+				
+				curFilter = {
+						'search_field': "key_word",
+						'selectors': 'list',
+						'search_width': 150,
+						'disp_search': true,
+						'selectors_field': "TypeVisible",
+						'search_action': "UPDATE=QuestionsKnowledgeTile;",
+						'selectors_action': "UPDATE=QuestionsKnowledgeTile;",
+						'action': "UPDATE=QuestionsKnowledgeTile;",
+						'row_filters': row_filters,
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+				<Collection Name="QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+					<Param Name="iExpertId" Value="<%=curObjectID%>"/>
+					<Param Name="qStatus" Value="{expert_question_status}"/>
+					<Param Name="sKeyWord" Value="{key_word}"/>
+					<Param Name="QuestionType" Value="{qtype}"/>
+				</Collection>
+				<HTMLBox>
+						<![CDATA[
+							<style>
+								.XAML-image-contain { background-size: contain !important; }
+							</style>
+						]]>
+				</HTMLBox>
+				<TileView Class="XAML-tileview-list" Name="QuestionsKnowledgeTile" DataSource="{QuestionsCollection}" TemplateSource="knowledge_tile_list" Columns="1" Width="100%" PageSize="8">
+				</TileView>
+				
+			</TabItem>
+<%
+	}
+	if ( sTabListParam == 'desc' && curObject.desc.HasValue )
+	{
+%>	
+			<TabItem Class="icon-file-text22" Title="<%=tools_web.get_web_const( "c_desc", curLngWeb )%>">
+				<HTMLBox><![CDATA[<%=tools_web.get_web_desc( curObject.desc, UrlFromDocID( curObjectID ), curObject.Name + ".desc" )%>]]></HTMLBox> 	
+			</TabItem>
+<%
+	}
+}
+%>
+		</TabControl>	
+
+</SPXMLScreen>

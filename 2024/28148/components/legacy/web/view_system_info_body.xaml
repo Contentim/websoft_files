@@ -1,0 +1,294 @@
+﻿<SPXMLScreen>
+<%
+sFileUrl = PARAMETERS.GetOptProperty( "sInfo", "");
+/*-----------------------------------------------------------------------------------------------------------*/
+	if(sFileUrl != "" && FilePathExists(UrlToFilePath(sFileUrl)))
+	{
+		docInfo = OpenDoc(sFileUrl, "x-local://wtv/wtv_system_info.xmd");
+		var teInfo = docInfo.TopElem;
+		fldSystem = teInfo.system_info.system;
+		iAgentsCount = teInfo.ChildExists("server_agents") ? ArrayCount(teInfo.server_agents) : 0;
+		//fldActiveWebRequests = (teInfo.xhttp_info.HasValue) ? teInfo.xhttp_info.requests : null;
+%>
+
+	<TabControl ActiveTab="0"  Width="780">
+		<TabItem Title="<%=tools_web.get_web_const( "operacionnayasi", curLngWeb )%>">
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="50%" Align="Right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "operacionnayasi", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.os_version%> <%=fldSystem.os_bit%><%=tools_web.get_web_const( "bit", curLngWeb )%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "kolichestvoproc", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.cpu_count%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "kolichestvooper", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.total_memory%>MB</Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ispolzovaniepr", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.cpu_usage%>%</Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "svobodnayapamyat", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.available_memory%>MB</Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ispolzovanopam", curLngWeb )%>:</Label>
+					<Label><%=Int(fldSystem.total_memory) - Int(fldSystem.available_memory)%>MB</Label>
+				</GridRow>
+
+			</Grid>
+
+		</TabItem>
+
+		<TabItem Title="WebSoft HCM">
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="50%" Align="Right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "tipbazydannyh", curLngWeb )%>:</Label>
+					<Label><%=teInfo.db_type%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "nonaw4i926", curLngWeb )%>:</Label>
+					<Label><%=fldSystem.process_bit%><%=tools_web.get_web_const( "bit", curLngWeb )%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "aktivnyhagento", curLngWeb )%>:</Label>
+					<Label><%=iAgentsCount%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "neotpravlennyh", curLngWeb )%>:</Label>
+					<Label><%=teInfo.active_notifications%></Label>
+				</GridRow>
+				<%
+					if(teInfo.ChildExists("xhttp_info"))
+					{
+				%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "aktivnyhvebzap", curLngWeb )%>:</Label>
+					<Label><%=teInfo.xhttp_info.ChildExists("requests") ? ArrayCount(teInfo.xhttp_info.requests) : 0%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "zapushenopanele", curLngWeb )%>:</Label>
+					<Label><%=teInfo.xhttp_info.ChildExists("lds_sessions") ? ArrayCount(teInfo.xhttp_info.lds_sessions) : 0%></Label>
+				</GridRow>
+				<%
+					}
+				%>
+			</Grid>
+		</TabItem>
+		<%
+			if(teInfo.ChildExists("unibridge_info"))
+			{
+				fldUnibridge = teInfo.unibridge_info;
+		%>
+		<TabItem Title="MS SQL">
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="50%" Align="Right"/>
+					<GridColumn/>
+				</GridColumns>
+		<%
+				if(fldUnibridge.ChildExists("overall"))
+				{
+					fldOverall = fldUnibridge.overall;
+		%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "aktivnyhzapros", curLngWeb )%>:</Label>
+					<Label><%=fldOverall.active_requests%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vsegozaprosov", curLngWeb )%>:</Label>
+					<Label><%=fldOverall.overall_requests%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "sredneevremyaza", curLngWeb )%>:</Label>
+					<Label><%=fldOverall.average_request_time%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ispolzovanopam", curLngWeb )%>:</Label>
+					<Label><%=fldOverall.memory_occupied%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "svobodnopamyati", curLngWeb )%>:</Label>
+					<Label><%=fldOverall.memory_available%></Label>
+				</GridRow>
+		<%
+				}
+		%>
+			</Grid>
+		<%
+				if(fldUnibridge.ChildExists("threads"))
+				{
+
+		%>
+			<Panel Title="<%=tools_web.get_web_const( "zaprosy", curLngWeb ) + " (" + ArrayCount(fldUnibridge.threads) + ")"%>" Expanded="0">
+				<Collection Name="SqlThreadsCollection">
+					<Data>
+				<%
+					for(fldThread in fldUnibridge.threads)
+					{
+				%>
+						<Row>
+							<Cell Id="id" Value="<%=fldThread.id%>"/>
+							<Cell Id="xquery" Value="<%=fldThread.xquery%>"/>
+							<Cell Id="sql" Value="<%=fldThread.sql%>"/>
+							<Cell Id="count_sql" Value="<%=fldThread.count_sql%>"/>
+							<Cell Id="fetch_counter" Value="<%=fldThread.fetch_counter%>"/>
+							<Cell Id="self_connection" Value="<%=fldThread.self_connection%>"/>
+							<Cell Id="rtl" Value="<%=fldThread.rtl%>"/>
+							<Cell Id="state" Value="<%=fldThread.state%>"/>
+						</Row>
+				<%
+					}
+				%>
+					</Data>
+				</Collection>
+				<DataGrid Name="DGSqlThreads" Source="{SqlThreadsCollection}" Height="200" ShowHeader="true" Selection="single">
+					<DataGridColumn Title="id" Value="id" Width="100%" Type="string"/>
+					<DataGridColumn Title="xquery" Value="xquery" Width="100%" Type="string"/>
+					<DataGridColumn Title="sql" Value="sql" Width="100%" Type="string"/>
+					<DataGridColumn Title="count_sql" Value="count_sql" Width="100%" Type="string"/>
+					<DataGridColumn Title="fetch_counter" Value="fetch_counter" Width="100%" Type="string"/>
+					<DataGridColumn Title="self_connection" Value="self_connection" Width="100%" Type="string"/>
+					<DataGridColumn Title="rtl" Value="rtl" Width="100%" Type="string"/>
+					<DataGridColumn Title="state" Value="state" Width="100%" Type="string"/>
+				</DataGrid>
+
+			</Panel>
+		<%
+				}
+		%>
+		</TabItem>
+		<%
+			}
+			if(teInfo.ChildExists("xhttp_info"))
+			{
+				fldXhttp = teInfo.xhttp_info;
+		%>
+		<TabItem Title="xHttp">
+			<Grid Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="50%" Align="Right"/>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "komponent", curLngWeb )%>:</Label>
+					<Label><%=fldXhttp.info%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "sborka", curLngWeb )%>:</Label>
+					<Label><%=fldXhttp.build%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "uf_address", curLngWeb )%>:</Label>
+					<Label><%=fldXhttp.url%></Label>
+				</GridRow>
+			</Grid>
+		<%
+				if(fldXhttp.ChildExists("requests"))
+				{
+		%>
+			<Panel Title="<%=tools_web.get_web_const( "zaprosy", curLngWeb ) + " (" + ArrayCount(fldXhttp.requests) + ")"%>" Expanded="0">
+				<Collection Name="HttpRequestsCollection">
+					<Data>
+				<%
+					for(fldRequest in fldXhttp.requests)
+					{
+				%>
+						<Row>
+							<Cell Id="life_time" Value="<%=fldRequest.life_time%>"/>
+							<Cell Id="method" Value="<%=fldRequest.method%>"/>
+							<Cell Id="url" Value="<%=fldRequest.url%>"/>
+							<Cell Id="description" Value="<%=fldRequest.OptChild("description", "")%>"/>
+							<Cell Id="current_activity" Value="<%=fldRequest.current_activity%>"/>
+							<Cell Id="user" Value="<%=fldRequest.user%>"/>
+							<Cell Id="thread_id" Value="<%=fldRequest.thread_id%>"/>
+						</Row>
+
+				<%
+					}
+				%>
+					</Data>
+				</Collection>
+				<DataGrid Name="DGHttpThreads" Source="{HttpRequestsCollection}" Height="200" ShowHeader="true" Selection="single">
+					<DataGridColumn Title="life_time" Value="life_time" Width="100%" Type="string"/>
+					<DataGridColumn Title="method" Value="method" Width="100%" Type="string"/>
+					<DataGridColumn Title="url" Value="url" Width="100%" Type="string"/>
+					<DataGridColumn Title="description" Value="description" Width="100%" Type="string"/>
+					<DataGridColumn Title="current_activity" Value="current_activity" Width="100%" Type="string"/>
+					<DataGridColumn Title="user" Value="user" Width="100%" Type="string"/>
+					<DataGridColumn Title="thread_id" Value="thread_id" Width="100%" Type="string"/>
+				</DataGrid>
+
+			</Panel>
+		<%
+				}
+
+				if(fldXhttp.ChildExists("lds_sessions"))
+				{
+
+		%>
+			<Panel Title="<%=tools_web.get_web_const( "sessiiadminist", curLngWeb ) + " (" + ArrayCount(fldXhttp.lds_sessions) + ")"%>" Expanded="0">
+				<Collection Name="LdsSessionsCollection">
+					<Data>
+				<%
+					for(fldLdsSession in fldXhttp.lds_sessions)
+					{
+				%>
+						<Row>
+							<Cell Id="life_time" Value="<%=fldLdsSession.life_time%>"/>
+							<Cell Id="id" Value="<%=fldLdsSession.id%>"/>
+							<Cell Id="idle_time" Value="<%=fldLdsSession.idle_time%>"/>
+							<Cell Id="cursors" Value="<%=fldLdsSession.cursors%>"/>
+							<Cell Id="login" Value="<%=fldLdsSession.login%>"/>
+						</Row>
+
+				<%
+					}
+				%>
+					</Data>
+				</Collection>
+				<DataGrid Name="DGLdsSessionsThreads" Source="{LdsSessionsCollection}" Height="200" ShowHeader="true" Selection="single">
+					<DataGridColumn Title="life_time" Value="life_time" Width="100%" Type="string"/>
+					<DataGridColumn Title="id" Value="id" Width="100%" Type="string"/>
+					<DataGridColumn Title="idle_time" Value="idle_time" Width="100%" Type="string"/>
+					<DataGridColumn Title="cursors" Value="cursors" Width="100%" Type="string"/>
+					<DataGridColumn Title="login" Value="login" Width="100%" Type="string"/>
+				</DataGrid>
+
+			</Panel>
+		<%
+				}
+		%>
+		</TabItem>
+		<%
+			}
+		%>
+	</TabControl>
+<%
+
+	}
+	else
+	{
+		curMessageBox = {
+			"type": "info",
+			"text": tools_web.get_web_const( "dopolnitelnayai_3", curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+%>
+</SPXMLScreen>

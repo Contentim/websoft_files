@@ -1,0 +1,26 @@
+﻿<%
+iObjectId = Int(PARAMETERS.GetProperty( "iObjectId"));
+teObject = OpenDoc(UrlFromDocID(iObjectId)).TopElem;
+%>
+<SPXMLScreen>
+	<!--<ContextGroup Name="DlgCreateMessageContext" Items="PartnerId,MessageText"/>-->
+	<StackPanel Orientation="Vertical" Class=" XAML-stack-list-container">
+		<Label Class="XAML-label-infoblock-header"><%=tools.get_disp_name_value( teObject )%></Label>
+<%
+curDescObject = teObject;
+curDescObjectID = iObjectId;
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+	</StackPanel>
+	<Grid Width="100%" Class="XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

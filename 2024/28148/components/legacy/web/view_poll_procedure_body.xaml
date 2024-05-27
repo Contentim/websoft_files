@@ -1,0 +1,224 @@
+﻿<SPXMLScreen>
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+var arrPollObjs = curObject.get_person_poll_objs( curUserID );
+var oNextPoll = null;
+if ( ArrayCount( arrPollObjs ) == 0 )
+{
+	curMessageBox = {
+		"type": "error",
+		"text": "Доступ ограничен, вы не входите в участники опроса."
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+
+<%
+	Cancel();
+}
+else
+{
+	var bBreak = false;
+	var xarrPollResults = null;
+	var xarrCompletePollResults = null;
+	var xarrOneTimePolls = ArraySelectAll( XQuery( 'for $elem in polls where $elem/is_one_time = true() and MatchSome( $elem/id, (' + ArrayMerge( arrPollObjs, 'poll_id', ',' ) + ') ) return $elem/Fields("id")' ) );
+	function get_poll_results( bComplete )
+	{
+		if ( xarrPollResults == null )
+		{
+			xarrPollResults = ArraySelectAll( XQuery( 'for $elem in poll_results where $elem/person_id = ' + curUserID + ' and $elem/poll_procedure_id = ' + curObjectID + ' return $elem/Fields("id","poll_id","is_done")' ) );
+		}
+		if ( bComplete )
+		{
+			if ( xarrCompletePollResults == null )
+			{
+				xarrCompletePollResults = ArraySelectByKey( xarrPollResults, true, 'is_done' );
+			}
+			return xarrCompletePollResults;
+		}
+		return xarrPollResults;
+	}
+	function check_one_result( iPollIDParam )
+	{
+		var bReturn = true;
+		if ( ArrayOptFindByKey( xarrOneTimePolls, iPollIDParam, 'id' ) != undefined )
+		{
+			bReturn = ArrayOptFindByKey( get_poll_results( true ), iPollIDParam, 'poll_id' ) == undefined;
+		}
+		return bReturn;
+	}
+
+	var sNextForPollGroup = "";
+	var iLastPollID = ArrayFirstElem( arrPollObjs ).poll_id;
+	for ( oPollElem in arrPollObjs )
+	{
+		if ( oPollElem.poll_group == "" )
+		{
+			if ( check_one_result( oPollElem.poll_id ) )
+			{
+				oNextPoll = oPollElem;
+				break;
+			}
+			else
+			{
+				continue;
+			}
+		}
+		if ( sNextForPollGroup == "" || sNextForPollGroup != oPollElem.poll_group )
+		{
+			fldPollGroup = curObject.additional.poll_groups.GetChildByKey( oPollElem.poll_group );
+			bBreak = fldPollGroup.conditions.ChildNum == 0;
+			for ( fldConditionElem in fldPollGroup.conditions )
+			{
+				tePollGroup = OpenDoc( UrlFromDocID( fldConditionElem.poll_id ) ).TopElem;
+				fldQuestion = tePollGroup.questions.GetOptChildByKey( fldConditionElem.question_id );
+
+				catResultCondition = ArrayOptFindByKey( get_poll_results( false ), fldConditionElem.poll_id, 'poll_id' );
+				if ( catResultCondition == undefined )
+				{
+					continue;
+				}
+
+				teResultCondition = OpenDoc( UrlFromDocID( catResultCondition.id ) ).TopElem;
+				fldResultQuestion = teResultCondition.questions.GetOptChildByKey( fldConditionElem.question_id );
+
+				if ( fldQuestion != undefined && fldResultQuestion != undefined && ArrayOptFind( fldResultQuestion.value.Value.split( ';' ), 'This==' + CodeLiteral( String( fldConditionElem.entry_id ) ) ) != undefined )
+				{
+					bBreak = true;
+					break;
+				}
+			}
+			if ( bBreak )
+			{
+				if ( check_one_result( oPollElem.poll_id ) )
+				{
+					oNextPoll = oPollElem;
+					break;
+				}
+			}
+			else
+			{
+				sNextForPollGroup = oPollElem.poll_group;
+			}
+		}
+	}
+}
+
+
+if ( curObject.status == 1 )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": "Процедура опроса завершена."
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+else
+{
+	if ( curObject.status == 1 )
+	{
+		curMessageBox = {
+			"type": "info",
+			"text": "Процедура опроса завершена."
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	else
+	{
+		sMessageText = '';
+		if ( curObject.start_date.HasValue && curObject.end_date.HasValue )
+		{
+			if ( ! ( DateDiff( Date(), curObject.start_date ) >= 0 && DateDiff( Date(), curObject.end_date ) <= 0 ) )
+			{
+				sMessageText = 'Процедура опроса будет доступна с ' + StrDate( curObject.start_date, true, false ) + ' по ' + StrDate( curObject.end_date, true, false );
+			}
+		}
+		else if ( curObject.end_date.HasValue )
+		{
+			if ( DateDiff( Date(), curObject.end_date ) >= 0 )
+			{
+				sMessageText = 'Процедура опроса была доступна до ' + StrDate( curObject.end_date, true, false );
+			}
+		}
+		else if ( curObject.start_date.HasValue )
+		{
+			if ( DateDiff( Date(), curObject.start_date ) <= 0 )
+			{
+				sMessageText = 'Процедура опроса будет доступна с ' + StrDate( curObject.start_date, true, false );
+			}
+		}
+		if ( sMessageText == '' && oNextPoll == null )
+		{
+			sMessageText = 'Доступные опросы завершены.';
+		}
+
+		if ( sMessageText == '' )
+		{
+%>
+	<Action Name="PageRefreshFinish" Initialize="REFRESH"/>
+	<StackPanel Name="ToolBarPanel">
+		<Toolbar Class="XAML-toolbar-actions" Adapt="true">
+			<Button Class="XAML-button XAML-button-important" Click="HIDE=ToolBarPanel;OPENWINDOW=poll_launch.html?object_id=<%=curObjectID%>,CloseAction=PageRefreshFinish"><%=tools_web.get_web_const( 'vlpb_start', curLngWeb )%></Button>
+		</Toolbar>
+	</StackPanel>
+<%
+		}
+		else
+		{
+			curMessageBox = {
+				"type": "info",
+				"text": sMessageText
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+}
+
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'PollBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+	iCurTab = 0-1;
+
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'poll_body.tab_list', 'main', true ) ).split( ';' );
+%>
+	<TabControl Name="PollBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+		///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+		if ( sTabListParam == 'main' )
+		{
+			iCurTab++;
+			arrBlockListParam = String( tools_web.get_web_param( curParams, 'poll_body.tab_list.main_tab.block_list', 'info', true ) ).split( ';' );
+			sTabTitle = tools_web.get_web_param( curParams, "poll_body.tab_list.main_tab", "", true );
+%>
+			<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+				for ( sTabElem in arrBlockListParam )
+				{
+					if ( sTabElem == 'info' )
+					{
+%>
+						<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+							<GridColumns>
+								<GridColumn Width="250"/>
+								<GridColumn/>
+							</GridColumns>
+
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+								<Label><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+							</GridRow>
+						</Grid>
+<%
+					}
+				}
+%>
+			</TabItem>
+<%
+		}
+
+	}
+%>
+	</TabControl>
+
+</SPXMLScreen>

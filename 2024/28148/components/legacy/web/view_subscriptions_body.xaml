@@ -1,0 +1,201 @@
+﻿<SPXMLScreen>
+<%
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'SubscriptionsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'subscriptions_tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'subscriptions_body.tab_list', 'subscription;subscribers', true ) ).split( ';' );
+%>
+<TabControl Name="CollaboratorBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   SUBSCRIPTION TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'subscription' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'subscriptions_body.tab_list.subscription_tab.block_list', 'create_subscription;subscriptions', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "subscriptions_body.tab_list.subscription_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'podpiski', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+	<Action Name="SubscriptionCreateAction" Source="subscription_create" Success="SET=SubscriptionCreateAction/document_id,;REFRESH" Failure="SET=SubscriptionCreateAction/document_id,;ALERT={messageText}">
+		<Param Name="document_id" Value=""/>
+		<Param Name="subscription_type" Value=""/>
+		<Param Name="include_subdocs" Value=""/>
+	</Action>
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'create_subscription' )
+		{
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="250"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=( tools_web.get_web_const( 'csubscb_subscript', curLngWeb ) + ':' )%></Label>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+					<ComboBox Name="subscription_type" Change="SHOW=SubscriptionObjectPanel" Width="300">
+<%
+			for ( fldSubscriptionTypeElem in ArraySort( curLngCommon.exchange_object_types, 'title', '+' ) )
+			{
+%>
+					<ComboBoxItem Value="<%=fldSubscriptionTypeElem.name%>"><%=fldSubscriptionTypeElem.title%></ComboBoxItem>
+<%
+			}
+%>
+					</ComboBox>
+					<StackPanel Name="SubscriptionObjectPanel" Orientation="Horizontal" Class="XAML-stack-container" Hidden="true" Adapt="true">
+						<CheckBox Name="include_subdocs"><%=tools_web.get_web_const( 'vdb_subdocs', curLngWeb )%></CheckBox>
+						<Button Click="OPENDIALOG=SelectDialogSubscriptionObject;"><%=( tools_web.get_web_const( 'xy8vnti3jm', curLngWeb ) + '...' )%></Button>
+					</StackPanel>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+		<Dialog Name="SelectDialogSubscriptionObject" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="
+			SET=SubscriptionCreateAction/include_subdocs,{include_subdocs};
+			SET=SubscriptionCreateAction/subscription_type,{subscription_type};
+			SET=SubscriptionCreateAction/document_id,{CatalogListDataGridFullList:^/id};
+			ACTION=SubscriptionCreateAction;
+		">
+			<Param Name="catalog_name" Value="{subscription_type}"/>
+			<Param Name="multi_select" Value="false"/>
+			<Param Name="check_access" Value="true"/>
+			<Param Name="can_be_empty" Value="false"/>
+			<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+		</Dialog>
+<%
+		}
+
+		if ( sTabElem == 'subscriptions' )
+		{
+%>
+		<Action Name="SubscriptionDeleteAction" Source="subscription_delete" Success="SET=SubscriptionDeleteAction/subscription_id,;REFRESH" Failure="SET=SubscriptionDeleteAction/subscription_id,;ALERT={messageText}">
+			<Param Name="subscription_id" Value=""/>
+		</Action>
+<%
+			xarrAllSubscriptions = XQuery( "for $elem in subscriptions where $elem/person_id = " + curUserID + " and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) order by $elem/type return $elem" );
+			for ( catSubscriptionElem in ArraySelectDistinct( xarrAllSubscriptions, 'type' ) )
+			{
+				fldSubscriptionTypeElem = curLngCommon.exchange_object_types.GetChildByKey( catSubscriptionElem.type );
+				xarrSubscriptions = ArraySelectByKey( xarrAllSubscriptions, catSubscriptionElem.type, 'type' );
+				arrObjects = QueryCatalogByKeys( catSubscriptionElem.type + 's', 'id', ArrayExtract( xarrSubscriptions, 'document_id' ) );
+%>
+		<Label Class="XAML-label-header-4"><![CDATA[<%=fldSubscriptionTypeElem.title%>]]></Label>
+		<Grid Class="XAML-grid-list-container">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+<%
+				for ( catObjectElem in arrObjects )
+				{
+					catSubscription = ArrayOptFindByKey( xarrSubscriptions, catObjectElem.id, 'document_id' );
+					switch ( catSubscriptionElem.type )
+					{
+						case 'document':
+							sLinkUrl = tools_web.doc_link( catObjectElem );
+							break;
+						default:
+							sLinkUrl = tools_web.get_mode_clean_url( null, catObjectElem.id, { doc_id: curDocID } );
+							break;
+					}
+%>
+			<GridRow>
+				<Grid Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn Width="20"/>
+						<GridColumn Width_="100%"/>
+<%
+					if ( fldSubscriptionTypeElem.is_hier )
+					{
+%>
+						<GridColumn Width="100" Align="center"/>
+<%
+					}
+%>
+					</GridColumns>
+
+					<GridRow>
+						<CheckBox Name="SubscriptionCheckBox_<%=catObjectElem.id%>" Checked="true" Change="
+							SET=SubscriptionCheckBox_<%=catObjectElem.id%>,true;
+							CONFIRM=<%=tools_web.get_web_const( 'vrb_mess_del', curLngWeb )%>;
+							SET=SubscriptionDeleteAction/subscription_id,<%=catSubscription.id%>;
+							ACTION=SubscriptionDeleteAction;
+						"/>
+						<Link Click="OPENURL=<%=sLinkUrl%>"><![CDATA[<%=tools_web.get_cur_lng_name( catObjectElem.Child( fldSubscriptionTypeElem.disp_name ), curLng.short_id )%>]]></Link>
+<%
+					if ( fldSubscriptionTypeElem.is_hier )
+					{
+%>
+						<StackPanel>
+							<CheckBox Name="Subscription_<%=catObjectElem.id%>" Checked="<%=CONTEXT.GetOptProperty( ( "Subscription_" + catObjectElem.id ), catSubscription.include_subdocs )%>" Change="
+								SET=SubscriptionCreateAction/document_id,<%=catObjectElem.id%>;
+								SET=SubscriptionCreateAction/subscription_type,<%=fldSubscriptionTypeElem.name%>;
+								SET=SubscriptionCreateAction/include_subdocs,{Subscription_<%=catObjectElem.id%>};
+								ACTION=SubscriptionCreateAction;
+							"><![CDATA[<%=tools_web.get_web_const( 'vdb_subdocs', curLngWeb )%>]]></CheckBox>
+						</StackPanel>
+<%
+					}
+%>
+					</GridRow>
+				</Grid>
+			</GridRow>
+<%
+				}
+%>
+		</Grid>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   SUBSCRIBERS TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'subscribers' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'subscriptions_body.tab_list.subscribers_tab.block_list', 'subscribers', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "subscriptions_body.tab_list.subscribers_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'podpischiki', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'subscribers' )
+		{
+%>
+		<Action Name="SubscribersChange" Source="subscription_subscribers_change" Success="UPDATE=SubscribersGrid" Failure="ALERT={messageText}">
+			<Param Name="action" Value=""/>
+			<Param Name="selected_elems" Value="{SubscribersGrid}"/>
+		</Action>
+		<Button Class="XAML-button XAML-button-delete" Width="100" Click="
+				CONFIRM=<%=tools_web.get_web_const( 'vrb_mess_del', curLngWeb )%>;
+				SET=SubscribersChange/action,delete;
+				ACTION=SubscribersChange;
+		"><%=tools_web.get_web_const( 'c_delete', curLngWeb )%></Button>
+
+		<DataGrid Name="SubscribersGrid" Source="subscription_subscribers" Height="400">
+			<DataGridColumn Value="person_id" Hidden="1" Ghost="false"/>
+
+			<DataGridColumn Value="checked" Ghost="false" Width="50" Type="checkbox" Editable="1"/>
+			<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_fio', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={link}" Sortable="True"/>
+		</DataGrid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

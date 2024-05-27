@@ -1,0 +1,103 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+//alert('iObjectID '+iObjectID)
+bIsMobile = curDevice.disp_type == "mobile";
+bTileStyle = tools_web.is_true(tools_web.get_web_param( curParams, "global.tile_styles", "1", false ));
+bDateOnTile = tools_web.get_web_param( curParams, "category_news.bShowDate", "1", true ) == "1";
+
+if ( iObjectID != undefined )
+{
+	var teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	var sName = PARAMETERS.GetOptProperty( "title", tools.get_disp_name_value( teObject ) );
+	var sSubtitle = PARAMETERS.GetOptProperty( "subtitle", "" );
+	var sStatus = PARAMETERS.GetOptProperty( "status", "" );
+	var sObjectImageUrl = PARAMETERS.GetOptProperty( "image" );
+	var sDate = PARAMETERS.GetOptProperty( "date" );
+	var sStatusColorClass = PARAMETERS.GetOptProperty( "status_class" );	
+	var sDesc = PARAMETERS.GetOptProperty( "desc" );
+	var sCustomClass = PARAMETERS.GetOptProperty( "custom_class" );
+	var sClickAction = PARAMETERS.GetOptProperty( "click" );
+	var sAction = PARAMETERS.GetOptProperty( "action" );
+	var sLinkAction = PARAMETERS.GetOptProperty( "link_action" );
+	
+	if(sObjectImageUrl == undefined)
+	{
+		if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+			sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+		else
+			sObjectImageUrl = '/images/' + teObject.Name + '.png';
+	}
+
+	if ( sClickAction == undefined )
+	{
+		sActionName = 'OPENURL';
+		if ( teObject.ChildExists( 'attributes' ) && StrContains( teObject.attributes.link_target, 'blank', true ) )
+			sActionName = 'OPENWINDOW';
+
+		// sClickAction = sActionName + '=' + XmlAttrEncode( PARAMETERS.GetOptProperty( 'url', tools_web.get_mode_clean_url(teObject.Name, iObjectID, ({"doc_id": curDocID})) ) );
+		if( PARAMETERS.GetOptProperty( "link", "" ) != "" )
+		{
+			sClickAction = sActionName + "=" + PARAMETERS.GetOptProperty( "link", "" );
+		}
+		else
+		{
+			sClickAction = sLinkAction + iObjectID;
+		}
+	}
+
+	if ( sDesc == undefined)
+		sDesc = "Ps.comment";
+	if ( sDesc != undefined )
+	{
+		if ( StrBegins( sDesc, 'Ps.' ) )
+		{
+			sDesc = teObject.Child( StrRightRangePos( sDesc, 3 ) ).Value;
+		}
+	}
+	sDate = StrDate(teObject.create_date,false,false);
+%>
+<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%="Просмотр материала"%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="object_id" Value=""/>
+</Dialog>
+<StackPanel Orientation="Vertical" Class="XAML-stack-tile <%=sCustomClass%>">
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile-image-container" Click="<%=sClickAction%>">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Width="216" Height="160">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+<%
+	if (bDateOnTile)
+	{
+%>
+		<Label Class="XAML-label-tile-date"><%=sDate%></Label>
+<%
+	}
+%>
+	</StackPanel>
+	<StackPanel Class="XAML-stack-tile-title-container">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+	</StackPanel>
+	
+<%
+			if(sDesc!="")
+			{
+				if(StrCharCount(sDesc)>=160 && bTileStyle)
+				{
+					sDesc = StrLeftCharRange(sDesc, 160);
+				}
+%>
+	<Label Class="XAML-label-tile-desc"><![CDATA[<%=sDesc%>]]></Label>
+<% 
+if (bTileStyle) {
+%>	
+	<Label Class="XAML-label-tile-fader"></Label>
+<%
+				}
+			}
+%>	
+</StackPanel>
+
+<%
+}
+%>
+</SPXMLScreen>

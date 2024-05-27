@@ -1,0 +1,31 @@
+<%
+	//Server.Execute( "include/user_init.html" );
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+_knowledge_part_id = oParamSource.GetOptProperty( 'knowledge_part_id' );
+_expert_id = oParamSource.GetOptProperty( 'expert_id' );
+curUserID
+
+%>
+<SPXMLScreen>
+<Grid>	
+	<GridColumns>
+		<GridColumn Width="100" Align="right"/>
+		<GridColumn/>
+	</GridColumns>
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_question', curLngWeb )%>:</Label>
+		<EditBox Name="question_text" Width="300">		</EditBox>
+	</GridRow>	
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vfb_subject', curLngWeb )%>:</Label>
+<%
+		curSelector = {
+			"id": "knowledge_part_id",
+			"multi_select": "false",
+			"catalog_name": "knowledge_part"
+		};
+		Response.Write( EvalCodePageUrl( (global_settings.web_path + "view_selector.xaml") ) );
+%>	
+	</GridRow>	
+</Grid>		
+</SPXMLScreen>

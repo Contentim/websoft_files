@@ -1,0 +1,148 @@
+﻿<%
+// const_start
+var sConstOnlyCollaboratorHasContacts = tools_web.get_web_const( 'kontaktnyedann', curLngWeb );
+// const_end
+%>
+<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if (ISDIALOG)
+{
+	iSourceObjectId = OptInt(oParamSource.GetOptProperty( 'Param0' , null ),null);
+}
+else
+{
+	iSourceObjectId = OptInt(oParamSource.GetOptProperty( 'object_id' , null ),null);
+}
+sDispFields = tools_web.get_web_param( curParams, 'project_participant_contacts.disp_field_list', 'email;phone;mobile_phone;address;system_email', false );
+strError=''
+bHasError=false
+if (iSourceObjectId!=null)
+{
+	fldProjectParticipant=ArrayOptFirstElem(XQuery("for $elem in project_participants where $elem/id="+iSourceObjectId+" and $elem/object_id!=null() and ( $elem/status_id = \'active\' or $elem/status_id = null() ) return $elem"))
+	if (fldProjectParticipant!=undefined)
+	{
+		if (fldProjectParticipant.catalog=='collaborator')
+		{
+			try
+			{
+				tePerson=OpenDoc( UrlFromDocID( fldProjectParticipant.object_id ) ).TopElem
+			}
+			catch(ex)
+			{
+				bHasError=true
+				strError=tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			}
+		}
+		else
+		{
+			bHasError=true
+			strError=sConstOnlyCollaboratorHasContacts;
+		}
+	}
+	else
+	{
+		bHasError=true
+		strError=tools_web.get_web_const( 'obektnenayden', curLngWeb )
+	}
+}
+else
+{
+	bHasError=true
+	strError=tools_web.get_web_const( 'neukazanidobek', curLngWeb )
+}
+
+if (bHasError)
+{
+	curMessageBox = {
+			"type": "error",
+			"text": strError
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+}
+
+if (tePerson.fullname!='')
+{
+%>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name(tePerson.fullname, curLng.short_id )%></Label>
+<%
+}
+%>
+	<Panel Title="<%=tools_web.get_web_const( 'vrb_contacts', curLngWeb )%>">
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn Width="50%" Align="right"/>
+				<GridColumn Width="50%" Align="left"/>
+			</GridColumns>
+<%
+		if ( StrContains( sDispFields, 'email' ) )
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_email', curLngWeb )%>:</Label>
+				<Label><![CDATA[<%=tePerson.email%>]]></Label>
+			</GridRow>
+<%
+		}
+		if ( StrContains( sDispFields, 'system_email' ) && tePerson.system_email.HasValue)
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( '45pihp0u4f', curLngWeb )%>:</Label>
+				<Label><![CDATA[<%=tePerson.system_email%>]]></Label>
+			</GridRow>
+<%
+		}
+		if ( StrContains( sDispFields, 'phone' ) )
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_phone', curLngWeb )%>:</Label>
+				<Label><![CDATA[<%=tePerson.phone%>]]></Label>
+			</GridRow>
+<%
+		}
+		if ( StrContains( sDispFields, 'mobile_phone' ) && tePerson.mobile_phone.HasValue)
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'emoqzexw7p', curLngWeb )%>:</Label>
+				<Label><![CDATA[<%=tePerson.mobile_phone%>]]></Label>
+			</GridRow>
+<%
+		}
+		if ( StrContains( sDispFields, 'address' )&& tePerson.address.HasValue )
+		{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_address', curLngWeb )%>:</Label>
+				<Label><![CDATA[<%=tePerson.address%>]]></Label>
+			</GridRow>
+<%
+		}
+%>						
+		</Grid>
+	</Panel>
+<%
+if (ISDIALOG)
+{
+%>
+		<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button XAML-button-cancel" Width="100" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_cancel', curLngWeb ))%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

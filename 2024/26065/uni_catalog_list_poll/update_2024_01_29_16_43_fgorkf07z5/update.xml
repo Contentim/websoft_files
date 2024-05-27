@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>fgorkf07z5</id>
+		<create_date>2024-01-29T16:43:00+00:00</create_date>
+		<server_version>2023.2.820 (2024-01-17)</server_version>
+	</basic>
+	<remote_collections>
+		<remote_collection>
+			<id>0x60FAE100BED734C7</id>
+			<code>uni_catalog_list_poll</code>
+			<name>Универсальный список объектов / Выборка объектов Опросы</name>
+			<cache_vars>{"catalog_name":{"name":"catalog_name","value":"poll","type":"string","xquery_qual":"","title":"","silent":false,"required":false}}</cache_vars>
+			<exec_code>
+				<code_url>uni_catalog_list.bs</code_url>
+			</exec_code>
+			<url>uni_catalog_list.bs</url>
+			<catalog_name>poll</catalog_name>
+			<wvars>
+				<wvar>
+					<name>catalog_name</name>
+					<value>poll</value>
+					<type>string</type>
+					<silent>false</silent>
+					<position>1</position>
+					<required>false</required>
+				</wvar>
+			</wvars>
+			<api_ver>0</api_ver>
+			<api_search>
+				<has_fulltext>true</has_fulltext>
+			</api_search>
+			<ready_to_analytics>false</ready_to_analytics>
+			<constructor>
+				<use>false</use>
+			</constructor>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>false</is_std>
+			<changed>false</changed>
+		</remote_collection>
+	</remote_collections>
+</data>

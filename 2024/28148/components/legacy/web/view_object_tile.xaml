@@ -1,0 +1,239 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+//alert('iObjectID '+iObjectID)
+bIsMobile = curDevice.disp_type == "mobile";
+bTileStyle = tools_web.is_true(tools_web.get_web_param( curParams, "global.tile_styles", "1", false ));
+
+if ( iObjectID != undefined )
+{
+	var sStatusColor = '';
+	var teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	var sName = PARAMETERS.GetOptProperty( "title", tools.get_disp_name_value( teObject ) );
+	var sSubtitle = PARAMETERS.GetOptProperty( "subtitle", "" );
+	var sStatus = PARAMETERS.GetOptProperty( "status", "" );
+	var sObjectImageUrl = PARAMETERS.GetOptProperty( "image" );
+	var sStatusColorClass = PARAMETERS.GetOptProperty( "status_class" );
+	var sDesc = PARAMETERS.GetOptProperty( "desc" );
+	var sCustomClass = PARAMETERS.GetOptProperty( "custom_class" );
+	var sClickAction = PARAMETERS.GetOptProperty( "click" );
+	var sLinkAction = PARAMETERS.GetOptProperty( "link_action", "" );
+	var linkProp = Trim( PARAMETERS.GetOptProperty( 'link_prop', '' ) );
+	var linkPropFlag = StrBegins( linkProp, '=' );
+	linkProp = linkPropFlag ? linkProp.slice( 1 ) : linkProp;
+
+	var sWidthImg = ( OptInt( PARAMETERS.GetOptProperty( "width_img" ) ) != undefined ) ? PARAMETERS.GetOptProperty( "width_img" ) : '216';
+	var sHeightImg = ( OptInt( PARAMETERS.GetOptProperty( "height_img" ) ) != undefined ) ? PARAMETERS.GetOptProperty( "height_img" ) : '160';
+	var sSizeImg = ( teObject.Name != 'good' ) ? "Width='"+ sWidthImg +"'" + " Height='"+ sHeightImg +"'" : "Height='" + sHeightImg + "'";
+
+	var learningObject;
+	var curModeUrl = "";
+	switch ( teObject.Name )
+	{
+		case 'learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.course_id ) ).TopElem;
+				sName = teObject.course_name;
+				if(StrCharCount(teObject.course_name)>=60 )
+				{
+					sName = StrLeftCharRange(teObject.course_name, 60) + '...';
+				}
+				curModeUrl = 'learning_stat';
+			break;
+
+		case 'active_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.course_id ) ).TopElem;
+				sName = teObject.course_name;
+				if(StrCharCount(teObject.course_name)>=60 )
+				{
+					sName = StrLeftCharRange(teObject.course_name, 60) + '...';
+				}
+				curModeUrl = 'learning_proc';
+			break;
+
+		case 'test_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.assessment_id ) ).TopElem;
+				sName = teObject.assessment_name;
+				if(StrCharCount(teObject.assessment_name)>=60 )
+				{
+					sName = StrLeftCharRange(teObject.assessment_name, 60) + '...';
+				}
+				curModeUrl = 'test_learning_stat';
+			break;
+
+		case 'active_test_learning':
+				learningObject = OpenDoc( UrlFromDocID( teObject.assessment_id ) ).TopElem;
+				sName = teObject.assessment_name;
+				if(StrCharCount(teObject.assessment_name)>=60 )
+				{
+					sName = StrLeftCharRange(teObject.assessment_name, 60) + '...';
+				}
+				curModeUrl = 'test_learning_proc';
+			break;
+	}
+
+	if(sObjectImageUrl == undefined && learningObject != undefined)
+	{
+		if ( learningObject.ChildExists( 'resource_id' ) && learningObject.resource_id.HasValue )
+			sObjectImageUrl = tools_web.get_object_source_url( 'resource', learningObject.resource_id );
+		else
+			sObjectImageUrl = '/images/' + learningObject.Name + '.png';
+	}
+	else if(sObjectImageUrl == undefined)
+	{
+		switch( teObject.Name )
+		{
+			case "collaborator":
+				{
+					sObjectImageUrl = tools_web.get_object_source_url( "person", iObjectID, "216x216" );
+					break;
+				}
+			case "lector":
+				if( teObject.type == "collaborator" && teObject.person_id.HasValue )
+				{
+					sObjectImageUrl = tools_web.get_object_source_url( "person", teObject.person_id, "216x216" );
+					break;
+				}
+			
+
+			default:
+				if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+					sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+				else
+					sObjectImageUrl = '/images/' + teObject.Name + '.png';
+				break;
+		}
+	}
+
+	try {
+		sStatus = teObject.state_id.ForeignElem.name.Value;
+	}
+	catch (nostatus)
+	{
+		sStatus = '';
+	}
+
+	if ( sStatus != '' )
+	{
+		switch ( teObject.state_id )
+		{
+			case 0:
+				sStatusColor = 'color-plan';
+				break;
+			case 1:
+				sStatusColor = 'color-process';
+				break;
+			case 2:
+				sStatusColor = 'color-viewed';
+				break;
+			case 3:
+				sStatusColor = 'color-failed';
+				break;
+			case 4:
+				sStatusColor = 'color-finish';
+				break;
+		}
+	}
+
+	if ( sClickAction == undefined )
+	{
+		if ( sLinkAction == "" )
+		{
+			sActionName = 'OPENURL';
+			if ( teObject.ChildExists( 'attributes' ) && StrContains( teObject.attributes.link_target, 'blank', true ) )
+			{
+				sActionName = 'OPENWINDOW';
+			}
+			sClickAction = sActionName + '=' + XmlAttrEncode( PARAMETERS.GetOptProperty( 'url', tools_web.get_mode_clean_url( curModeUrl, iObjectID, { doc_id: curDocID } ) ) );
+		}
+		else
+		{
+			sClickAction = sLinkAction;
+
+			if ( linkPropFlag )
+			{
+				try
+				{
+					linkProp = SafeEval( linkProp, [ { 'Env': Env } ] );
+				}
+				catch( e )
+				{
+					linkProp = '';
+				}
+			}
+			sClickAction += linkProp;
+		}
+	}
+
+	sClickAction = UrlDecode( sClickAction );
+	if ( StrContains( sClickAction, "{id}" ) )
+	{
+		sClickAction = StrReplace( sClickAction, "{id}", iObjectID );
+	}
+
+	if ( sDesc == undefined)
+		sDesc = "Ps.comment";
+	if ( sDesc != undefined )
+	{
+		if ( StrBegins( sDesc, 'Ps.' ) )
+		{
+			sDesc = teObject.OptChild( StrRightRangePos( sDesc, 3 ) );
+			if ( sDesc == undefined )
+			{
+				sDesc = '';
+			}
+			else
+			{
+				sDesc = sDesc.Value;
+			}
+		}
+	}
+%>
+<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%="Просмотр материала"%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="object_id" Value=""/>
+</Dialog>
+<Dialog Name="EventResultDialog" Source="event_result_body" Width="800" Close="REFRESH">
+	<Param Name="iPersonId" Value=""/>
+	<Param Name="iEventId" Value=""/>
+</Dialog>
+<StackPanel Orientation="Vertical" Class="XAML-stack-tile <%=sCustomClass%>">
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile-image-container" Click="<%=sClickAction%>">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" <%=sSizeImg%> >
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+	</StackPanel>
+	<StackPanel Class="XAML-stack-tile-title-container">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title"><![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]></Link>
+	</StackPanel>
+<%
+	if (sStatus != '')
+	{
+%>
+	<Label Class="XAML-label-tile-status <%=sStatusColor%>"><%=sStatus%></Label>
+<%
+	}
+	if(sDesc!="")
+	{
+		if(StrCharCount(sDesc)>=90 && bTileStyle)
+		{
+			sDesc = StrLeftCharRange(sDesc, 90) + '...';
+		}
+		else if (StrCharCount(sDesc)>=120 && !bTileStyle)
+		{
+			sDesc = StrLeftCharRange(sDesc, 120) + '...';
+		}
+%>
+	<Label Class="XAML-label-tile-desc"><![CDATA[<%=sDesc%>]]></Label>
+<%
+if (bTileStyle) {
+%>
+	<Label Class="XAML-label-tile-fader"></Label>
+<%
+		}
+	}
+%>
+</StackPanel>
+
+<%
+}
+%>
+</SPXMLScreen>

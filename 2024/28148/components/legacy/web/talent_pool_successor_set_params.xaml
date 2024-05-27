@@ -1,0 +1,59 @@
+﻿try
+{
+   //alert(Context);
+   arrStrings=StrReplace(StrReplace(StrReplace(Context,'"',''),'{',''),'}','').split(',');
+	arrStrSuccessors = ArraySelect(arrStrings, "StrContains(This, 'Successor_') == true");
+	
+	for(fldElem in arrStrSuccessors)
+   {
+	   iSuccessorId = OptInt(StrReplace(StrReplace(fldElem,':',''),'Successor_',''),null); 
+		xarrCurSuccessor = ArrayOptFirstElem(XQuery("for $elem in successors where $elem/id=" + iSuccessorId + " return $elem"));
+		if (xarrCurSuccessor != undefined)
+      {		
+			docSuccessor = OpenDoc(UrlFromDocID(iSuccessorId));	
+			
+			strReadinesLevelCurSucces = ArrayOptFirstElem(ArraySelect(arrStrings, "StrContains(This, 'succes_' + iSuccessorId + '_readiness_level_id') == true"));
+			if (strReadinesLevelCurSucces != undefined)
+			{
+			   strReadinesLevelId = StrReplace(strReadinesLevelCurSucces, 'succes_' + iSuccessorId + '_readiness_level_id:', '');
+            if (strReadinesLevelId != "")
+            {				
+					iReadinesLevelId = OptInt(strReadinesLevelId);
+					docSuccessor.TopElem.readiness_level_id = iReadinesLevelId;	
+            }					
+			}
+			
+			strDevelopPotentSucces = ArrayOptFirstElem(ArraySelect(arrStrings, "StrContains(This, 'succes_' + iSuccessorId + '_development_potential_id') == true"));
+			if (strDevelopPotentSucces != undefined)
+			{
+			   strDevelopPotentId = StrReplace(strDevelopPotentSucces, 'succes_' + iSuccessorId + '_development_potential_id:', '');
+            if (strDevelopPotentId != "")
+            {				
+					iDevelopPotentId = OptInt(StrReplace(strDevelopPotentSucces, 'succes_' + iSuccessorId + '_development_potential_id:', ''));
+					docSuccessor.TopElem.development_potential_id = iDevelopPotentId;		
+            }					
+			}
+			
+			docSuccessor.Save();
+			
+			docKeyPosition = OpenDoc(UrlFromDocID(docSuccessor.TopElem.key_position_id));
+			docKeyPosition.Save();
+		}	
+		
+	}	
+	
+   /*docSelectSuccessor = OpenDoc(UrlFromDocID(Int(SuccessorId)));
+   docSelectSuccessor.TopElem.readiness_level_id = Int(ReadLevelId);	
+   docSelectSuccessor.TopElem.development_potential_id = Int(DevPotentialId);*/	
+	
+	
+	
+	MESSAGE = tools_web.get_web_const( 'parametrypreem', curLngWeb );
+   
+}
+catch ( err )
+{
+	tools.log("talent_pool_successor_set_params: " + err, "error");
+	ERROR = 1;
+	MESSAGE = tools_web.get_web_const( 'c_error', curLngWeb )+': '+err;
+}

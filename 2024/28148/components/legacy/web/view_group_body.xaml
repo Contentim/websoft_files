@@ -1,0 +1,403 @@
+﻿<%
+sReadyAction = '';
+sRefreshMessage = CONTEXT.GetOptProperty( 'RefreshMessage', '' );
+if ( sRefreshMessage != '' )
+{
+	sReadyAction += 'ALERT=' + sRefreshMessage + ';SET=RefreshMessage,;';
+}
+%>
+<SPXMLScreen Ready="<%=XmlAttrEncode( sReadyAction )%>">
+<Edit Name="RefreshMessage" Hidden="true"></Edit>
+<%
+	if (curObjectID == null || curObject.Name != "group")
+	{
+		try
+		{
+			curObjectID = Int(tools_web.get_web_param( curParams, 'group_body.default_group_id', null, false ));
+			curObject = OpenDoc(UrlFromDocID(curObjectID)).TopElem;
+		}
+		catch(_X_)
+		{
+			curObjectID = null;
+		}
+		if (curObjectID == null)
+		{
+			curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'zaprashivaemogo', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+		}
+	}
+
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+xarrOperations = tools.get_object_relative_operations( curUserID, curObjectID, curObject.Name );
+xarrOperationsActions = ArraySelectByKey( xarrOperations, 0, 'operation_type' );
+
+if ( ArrayOptFirstElem( xarrOperationsActions ) != undefined )
+{
+	curCollectionMenu = {
+		"id": "GroupOpertion",
+		"catalog_name": "group",
+		"selected_data": UrlEncode( '[{"id":' + curObjectID + '}]' )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+}
+
+isManager = curUser.access.access_role == 'admin' || curObject.func_managers.ChildByKeyExists( curUserID );
+isMember = curObject.collaborators.ChildByKeyExists( curUserID );
+isChanger = tools.check_operation_rights( xarrOperations, curUser, 'group_change_right' ) || tools.check_operation_rights( xarrOperations, curUser, 'edit_group_info' );
+
+
+catHost = undefined;
+if ( isManager || isMember )
+{
+	xarrSiteOwner = XQuery( "for $elem in site_owner_objects where $elem/object_id = " + curObjectID + " return $elem" );
+	for ( catSiteOwnerElem in xarrSiteOwner )
+		if ( ArrayOptFirstElem( XQuery( "for $elem in site_owner_objects where $elem/site_id = " + catSiteOwnerElem.site_id + " and $elem/object_id != " + curObjectID + " return $elem" ) ) == undefined )
+		{
+			catHost = ArrayOptFirstElem( XQuery( "for $elem in hosts where $elem/site_id = " + catSiteOwnerElem.site_id + " and $elem/hostname != '' return $elem" ) );
+			if ( catHost != undefined )
+				break;
+		}
+}
+%>
+<Action Name="GroupChangeAction" Source="group_change" Success="SET=GroupChangeAction/selected_object_ids,#empty#;SET=RefreshMessage,{messageText};REFRESH" Failure="SET=GroupChangeAction/selected_object_ids,#empty#;ALERT={messageText}">
+	<Param Name="action_id" Value=""/>
+	<Param Name="sid" Value="<%=curDocSid%>"/>
+	<Param Name="selected_object_ids" Value="#empty#"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+
+<StackPanel Name="ToolBarPanel">
+<Toolbar Class="XAML-toolbar-actions" Adapt="true">
+<%
+	if ( isChanger )
+	{
+%>
+	<Button Class="XAML-button XAML-button-important" Click="SET=GroupChangeAction/action_id,save;ACTION=GroupChangeAction;"><![CDATA[<%=tools_web.get_web_const( "c_save", curLngWeb )%>]]></Button>
+<%
+	}
+	if ( curObject.join_mode == 'open' && ! isMember )
+	{
+%>
+	<Button Class="XAML-button XAML-button-important" Click="CONTEXT=NULL;SET=GroupChangeAction/action_id,add_user;ACTION=GroupChangeAction"><![CDATA[<%=tools_web.get_web_const( 'vstupitvsostav', curLngWeb )%>]]></Button>
+<%
+	}
+	if ( curObject.join_mode == 'request' && ! isMember )
+	{
+		if ( curObject.default_request_type_id.HasValue )
+		{
+			iRequestTypeID = curObject.default_request_type_id;
+		}
+		else
+		{
+			iRequestTypeID = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/object_type = 'group' return $elem" ) );
+			if ( iRequestTypeID != undefined )
+				iRequestTypeID = iRequestTypeID.id;
+		}
+		if ( iRequestTypeID != undefined )
+		{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=tools_web.get_mode_clean_url( "request", null, { request_type_id: iRequestTypeID, request_object_id: curObjectID, "new": 1, doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_web_const( 'podatzayavkunav', curLngWeb )%>]]></Button>
+<%
+		}
+	}
+	if ( isMember && ( curObject.join_mode == 'open' || curObject.join_mode == 'request' ) )
+	{
+%>
+	<Button Class="XAML-button" Click="CONTEXT=NULL;SET=GroupChangeAction/action_id,del_user;ACTION=GroupChangeAction"><![CDATA[<%=tools_web.get_web_const( 'vyytiizsostava', curLngWeb )%>]]></Button>
+<%
+	}
+	if ( isManager )
+	{
+%>
+	<Button Class="XAML-button" Click="OPENURL=/event_create.html?doc_id=<%=curDocID%>&group_id=<%=curObjectID%>&sid=<%=curDocSid%>"><![CDATA[<%=tools_web.get_web_const( "vmpb_create_event", curLngWeb )%>]]></Button>
+<%
+	}
+	if ( curObject.forum_id.HasValue )
+	{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.forum_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_web_const( "vgb_go_forum", curLngWeb )%>]]></Button>
+<%
+	}
+	if ( catHost != undefined )
+	{
+%>
+	<Button Class="XAML-button" Click="OPENURL=http://<%=catHost.host%>"><![CDATA[<%=tools_web.get_web_const( 'saytgruppy', curLngWeb )%>]]></Button>
+<%
+	}
+
+	if( ArrayCount( xarrOperationsActions ) != 0 )
+	{
+%>
+
+	<ComboBox Name="OperationId" Change="SET=RunAction/sSelectedObjects,{OperationId};SET=RunAction/sAction,run_operation;ACTION=RunAction;" Width="200">
+		<ComboBoxItem Value="" Selected="True" Change="STOP"><![CDATA[<%=tools_web.get_web_const( "vypolnitoperac", curLngWeb )%>]]></ComboBoxItem>
+<%
+	oParam = {
+		"name_id": "GroupOpertion",
+		"action": "RunAction",
+		"curUserID": curUserID,
+		"curUser": curUser,
+		"first_object_id": curObjectID
+	};
+	for( catActionElem in xarrOperationsActions )
+	{
+		sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+		<ComboBoxItem Value="<%=catActionElem.PrimaryKey%>" Change="<%=XmlAttrEncode( sClick )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%>]]></ComboBoxItem>
+<%
+	}
+%>
+	</ComboBox>
+<%
+	}
+%>
+</Toolbar>
+</StackPanel>
+<%
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'GroupBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+if ( curDevice.disp_type != "" )
+{
+	arrTabListParam = ["main"];
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'group_body.tab_list', 'main;attributes', true ) ).split( ';' );
+}
+%>
+<TabControl Name="GroupBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'group_body.tab_list.main_tab.block_list', 'desc;managers;persons', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "group_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'desc' )
+		{
+			Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+
+		if ( sTabElem == 'managers' && curObject.show_detailed )
+		{
+			curPersonsList = ({
+				"id": "General",
+				"type": "func_managers",
+				"selected": tools.check_operation_rights( xarrOperations, curUser, 'group_change_users_right' ),
+				"dialog_close_action": "SET=GroupChangeAction/action_id,change_managers;Set=GroupChangeAction/selected_object_ids,{CatalogListDataGridSelList};CONTEXT=NULL;ACTION=GroupChangeAction;"
+			});
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+		}
+
+		if ( sTabElem == 'persons' && ( isMember || isManager ) )
+		{
+			bDispChangeButton = curDevice.disp_type == "" && tools.check_operation_rights( xarrOperations, curUser, 'group_change_users_right' );
+
+			sDlgCloseAction = "SET=GroupChangeAction/action_id,change_persons;Set=GroupChangeAction/selected_object_ids,{CatalogListDataGridSelList};CONTEXT=NULL;ACTION=GroupChangeAction;";
+			sViewType = tools_web.get_web_param( curParams, "group_body.tab_list.persons_tab.block_list.persons_block.view_type", "grid", true );
+			iHeight = OptInt( tools_web.get_web_param( curParams, "group_body.tab_list.persons_tab.block_list.persons_block.height", 400, true ), 400 );
+			bShowAll = tools_web.is_true( tools_web.get_web_param( curParams, "group_body.tab_list.persons_tab.block_list.persons_block.show_all", false, true ) );
+			if ( sViewType == "tile" )
+			{
+				if ( bDispChangeButton )
+				{
+%>
+		<Toolbar Class="XAML-toolbar">
+			<Button Class="XAML-button XAML-button-user-move" Click="OPENDIALOG=SelectDialogGroupPersons"><%=tools_web.get_web_const( "veb_b7", curLngWeb )%></Button>
+		</Toolbar>
+<%
+				}
+
+				sColumns = tools_web.get_web_param( curParams, 'group_body.tab_list.persons_tab.block_list.persons_block.columns_list', 'person_url;fullname;position;subdivision;email;phone', true );
+				bDispLink = tools_web.is_true( tools_web.get_web_param( curParams, 'group_body.tab_list.persons_tab.block_list.persons_block.disp_link', true, true ) );
+				iColumnsNum = tools_web.get_web_param( curParams, 'group_body.tab_list.persons_tab.block_list.persons_block.columns_num', 2, true );
+				iRowsNum = tools_web.get_web_param( curParams, 'group_body.tab_list.persons_tab.block_list.persons_block.rows_num', 2, true );
+
+				iPicHeight = OptInt( tools_web.get_web_param( curParams, "group_body.tab_list.persons_tab.block_list.persons_block.pic_height", 150, true ), 150 );
+				iPicWidth = OptInt( tools_web.get_web_param( curParams, "group_body.tab_list.persons_tab.block_list.persons_block.pic_width", 150, true ), 150 );
+%>
+				<Dialog Name="SelectDialogGroupPersons" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="<%=sDlgCloseAction%>" Height="90%">
+					<Param Name="catalog_name" Value="collaborator"/>
+					<Param Name="multi_select" Value="true"/>
+					<Param Name="selected_object_ids" Value="<%=ArrayMerge( curObject.collaborators, 'PrimaryKey', ';' )%>"/>
+					<Param Name="selected_from_data" Value="false"/>
+					<Param Name="disp_filter" Value="false"/>
+					<Param Name="show_all" Value="<%=bShowAll%>"/>
+					<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+				</Dialog>
+
+				<Collection Name="CatalogListCollectionPersonsTile" Source="group_member_tile">
+					<Param Name="iGroupId" Value="<%=curObjectID%>"/>
+				</Collection>
+				<TileView Name="PersonsTile" Width="100%" Height="<%=iHeight%>" DataSource="{CatalogListCollectionPersonsTile}" TemplateSource="group_member_tile" PageSize="6" Columns="<%=iColumnsNum%>" Rows="<%=iRowsNum%>">
+					<Param Name="columns_list" Value="<%=XmlAttrEncode( sColumns )%>"/>
+					<Param Name="disp_link" Value="<%=bDispLink%>"/>
+					<Param Name="pic_height" Value="<%=iPicHeight%>"/>
+					<Param Name="pic_width" Value="<%=iPicWidth%>"/>
+				</TileView>
+<%
+			}
+			else
+			{
+				curSelectorList = {
+					"id": "GroupPersons",
+					"title": tools_web.get_web_const( "c_members", curLngWeb ),
+					"height": "",
+					"catalog_name": "collaborator",
+					"selected_object_ids": '=curObject.collaborators', //ArrayMerge( curObject.collaborators, 'PrimaryKey', ';' )
+					"close_action": sDlgCloseAction,
+					"show_all": bShowAll,
+
+					"disp_link": true,
+					"disp_filter": false,
+					"disp_search": true,
+					"disp_paging": true
+				};
+				if ( bDispChangeButton )
+				{
+					curSelectorList.SetProperty( 'buttons', [
+						{ 'title': tools_web.get_web_const( "veb_b7", curLngWeb ), 'click': 'OPENDIALOG=SelectDialogGroupPersons' }
+					] )
+				}
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   ATTRIBUTES TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'attributes' && isChanger )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'group_body.tab_list.attributes_tab.block_list', 'main', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "group_body.tab_list.attributes_tab", "", true );
+%>
+	<TabItem Class="icon-pencil" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'vj2v1bhf5z', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'main' )
+		{
+%>
+<Dialog Name="SelectDialogGroupTags" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="SET=tags,{CatalogListDataGridSelList};SET=GroupChangeAction/action_id,save;ACTION=GroupChangeAction;">
+	<Param Name="catalog_name" Value="tag"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="selected_object_ids" Value="<%=ArrayMerge( curObject.tags, 'PrimaryKey', ';' )%>"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<Edit Name="tags" Hidden="true">#empty#</Edit>
+
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Edit Name="name" Width="100%"><![CDATA[<%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%>]]></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vstuplenievgru", curLngWeb )%>:</Label>
+					<ComboBox Name="join_mode" Class="XAML-input-medium">
+<%
+				for ( fldJoinStatusElem in curLngCommon.join_mode_types )
+				{
+%>
+						<ComboBoxItem Selected="<%=( fldJoinStatusElem.PrimaryKey == curObject.join_mode )%>" Value="<%=fldJoinStatusElem.PrimaryKey%>"><![CDATA[<%=fldJoinStatusElem.name%>]]></ComboBoxItem>
+<%
+				}
+%>
+					</ComboBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vozmozhnoostavl', curLngWeb )%>:</Label>
+					<CheckBox Name="allow_social_post" Checked="<%=curObject.allow_social_post%>">
+						<HTMLTip><![CDATA[<%=tools_web.get_web_const( 'vozmozhnoostavl', curLngWeb )%>]]></HTMLTip>
+					</CheckBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_forum", curLngWeb )%>:</Label>
+<%
+				curSelector = {
+					"id": 'GroupForum',
+					"catalog_name": 'forum',
+					"object_id": curObject.forum_id,
+					"object_id_item_name": 'forum_id',
+					"can_be_empty": true
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "pe82k7en9s", curLngWeb )%>:</Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+						<Button Click="OPENDIALOG=SelectDialogGroupTags" Class="XAML-button-selector">...</Button>
+<%
+				for ( fldTagElem in curObject.tags )
+				{
+					catTag = fldTagElem.PrimaryKey.OptForeignElem;
+					if ( catTag == undefined )
+						continue;
+%>
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldTagElem.PrimaryKey, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catTag.name, curLng.short_id )%>]]></Link>
+<%
+				}
+%>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_desc", curLngWeb )%>:</Label>
+					<RichEdit Name="desc" Width="100%" Height="500"><![CDATA[<%=tools_web.get_web_desc( curObject.desc, UrlFromDocID( curObjectID ), "group.desc" )%>]]></RichEdit>
+				</GridRow>
+<%
+				fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				if ( fldCustomElems != null )
+				{
+					curCustomFields = {
+						"id": "GroupCustomFields",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+						"source": curObject.custom_elems,
+						"modify_eval": isChanger,
+						"draw_grid_columns": false
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+				}
+%>
+
+			</Grid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

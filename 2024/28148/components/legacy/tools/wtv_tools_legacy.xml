@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<tools_legacy>
+
+	<place_xaml_player PROPERTY="1" PARAM="iCustomWebTemplatePARAM" PARAM="curWebDesignPARAM" PARAM="Request" PARAM="oPlaceXamlParams_PARAM" EXPR="
+			try
+			{
+				oPlaceXamlParams_PARAM;
+			}
+			catch( err )
+			{
+				oPlaceXamlParams_PARAM = new Object;
+			}
+			var _fldPlayer = null;
+			var CCSS_URL = null;
+			if (curWebDesignPARAM != null)
+			{
+				try
+				{
+					if (curWebDesignPARAM.xaml_interpreter_css_template_id.HasValue)
+						CCSS_URL = tools_web.get_object_source_url( 'custom_web_template', curWebDesignPARAM.xaml_interpreter_css_template_id );
+
+					_fldPlayer = common.xaml_interpreters.GetChildByKey(curWebDesignPARAM.xaml_interpreter_id.Value);
+				}
+				catch(_X_)
+				{}
+			}
+
+			if (_fldPlayer == null)
+				_fldPlayer = ArrayFirstElem(common.xaml_interpreters);
+
+			var NO_CACHE = oPlaceXamlParams_PARAM.GetOptProperty( 'bNoCache', false ) == true;
+			var IS_HARDCORE_SOURCE = oPlaceXamlParams_PARAM.GetOptProperty( 'bHardSource', false ) == true;
+			var X_LITE_DATAGRID = oPlaceXamlParams_PARAM.GetOptProperty( 'bXLiteDataGrid', false ) == true;
+			var XAML_TEMPLATE_ID = OptInt(iCustomWebTemplatePARAM);
+			var PARENT_TEMPLATE_ID = OptInt( oPlaceXamlParams_PARAM.GetOptProperty( 'iParentTemplateID' ), null );
+			var PLAYER_ID = _fldPlayer.id.Value;
+			return EvalCodePageUrl(_fldPlayer.url.Value);
+	"/>
+
+</tools_legacy>
+
+</SPXML-INLINE-FORM>

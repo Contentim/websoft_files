@@ -1,0 +1,88 @@
+﻿<SPXMLScreen>
+<%
+arrRecommendation = tools.get_mandatory_learnings( curUserID, curObjectID, curUser, curObject );
+if ( ArrayCount( arrRecommendation ) != 0 )
+{
+	switch ( curObject.Name )
+	{
+		case "course":
+			sText = tools_web.get_web_const( "etotelektronny", curLngWeb );
+			break;
+
+		default:
+			sText = tools_web.get_web_const( "etaprogrammare", curLngWeb );
+			break;
+	}
+	sHtml = "";
+%>
+
+<Panel Title="<%=sText%>" Expanded="0" Width="100%" Class="XAML-panel-info " Hidden="1">
+<StackPanel Orientation="Vertical">
+	<Label><%=tools_web.get_web_const( "osnovaniyadlyare", curLngWeb )%>:</Label>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn/>
+		</GridColumns>
+<%
+	oRecommendation = ArrayOptFind( arrRecommendation, "source_object_type=='position_common'||source_object_type=='position_family'" );
+	if ( oRecommendation != undefined )
+	{
+		sHtml += "<p>" + tools_web.get_web_const( "vashadolzhnost", curLngWeb ) + ": " + tools_web.get_cur_lng_name( curUser.position_name, curLng.short_id ) + "</p>";
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-column"><%=tools_web.get_web_const( "vashadolzhnost", curLngWeb )%>:</Label>
+			<Label Class="XAML-info-grid-column"><%=tools_web.get_cur_lng_name( curUser.position_name, curLng.short_id )%></Label>
+		</GridRow>
+<%
+	}
+	oRecommendation = ArrayOptFindByKey( arrRecommendation, "position_family", "source_object_type" );
+	if ( oRecommendation != undefined )
+	{
+		sHtml += "<p>" + tools_web.get_web_const( "vashepodrazdele", curLngWeb ) + ": " + tools_web.get_cur_lng_name( curUser.position_parent_name, curLng.short_id ) + "</p>";
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-column"><%=tools_web.get_web_const( "vashepodrazdele", curLngWeb )%>:</Label>
+			<Label Class="XAML-info-grid-column"><%=tools_web.get_cur_lng_name( curUser.position_parent_name, curLng.short_id )%></Label>
+		</GridRow>
+<%
+	}
+	arrRecommendation = ArraySelectByKey( arrRecommendation, "group", "source_object_type" );
+	if ( ArrayCount( arrRecommendation ) != 0 )
+	{
+		//sHtml += "<p>" + tools_web.get_web_const( "chlenstvovgrupp", curLngWeb ) + ": " + tools_web.get_cur_lng_name( curUser.position_parent_name, curLng.short_id ) + "</p>";
+		sRecomendations = "";
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-column"><%=tools_web.get_web_const( "chlenstvovgrupp", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Vertical">
+<%
+		for ( oRecommendationElem in arrRecommendation )
+		{
+			sRecomendations += '<a href="' + tools_web.get_mode_clean_url( null, oRecommendationElem.source_object_id, { doc_id: curDocID } ) + '">' + tools_web.get_cur_lng_name( oRecommendationElem.source_object_name, curLng.short_id ) + '</a>, ';
+%>
+				<Link Class="XAML-info-grid-column" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, oRecommendationElem.source_object_id, { doc_id: curDocID } )%>"><%=tools_web.get_cur_lng_name( oRecommendationElem.source_object_name, curLng.short_id )%></Link>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+		sHtml += "<p>" + tools_web.get_web_const( "chlenstvovgrupp", curLngWeb ) + ": " + StrLeftRange(sRecomendations,String(sRecomendations).length - 2) + "</p>";
+	}
+%>
+	</Grid>
+</StackPanel>
+</Panel>
+<%
+
+
+	curMessageBox = {
+		"type": "info",
+		"text": sText,
+		"html_add": (sHtml)
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

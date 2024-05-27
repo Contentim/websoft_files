@@ -1,0 +1,254 @@
+﻿<%
+	function check_boss( name )
+	{
+			return curUser.access.access_role == name || curUser.access.access_role == "admin";
+	}
+	function is_upr()
+	{
+		aRoles = String( tools_web.get_web_param( curParams, "outstaff_requests_body.upr_roles", "upr", true ) ).split( ";" );
+		return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+	}
+	function is_hr()
+	{
+		aRoles = String( tools_web.get_web_param( curParams, "outstaff_requests_body.hr_roles", "hr", true ) ).split( ";" );
+		return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+	}
+	
+	function week_day (date)
+	{
+		strDay = "";
+						
+			switch (WeekDay(date))
+			{
+				case 0:
+					strDay = "Вс.";
+					break;
+				case 1:
+					strDay = "Пн.";
+					break;
+				case 2:
+					strDay = "Вт.";
+					break;
+				case 3:
+					strDay = "Ср.";
+					break;
+				case 4:
+					strDay = "Чт.";
+					break;
+				case 5:
+					strDay = "Пт.";
+					break;
+				case 6:
+					strDay = "Сб.";
+					break;
+			}
+			
+		return strDay;
+	}
+	function get_time_arr( sTime )
+	{
+		sTime = String( sTime );
+		var arr = sTime.split( ":" );
+		return [ OptInt( arr[ 0 ], 0 ), ( ArrayCount( arr ) > 1 ? OptInt( arr[ 1 ], 0 ) : 0 ) ]
+	}
+
+	isWTcollaborator = OptInt( tools_web.get_web_param( PARAMETERS, "isWTcollaborator", 1, true ) );
+	iMaxCnt = OptInt( tools_web.get_web_param( PARAMETERS, "max_cnt", "", true ) );
+	aExtTime = get_time_arr( tools_web.get_web_param( PARAMETERS, "ext_time", "00:00", true ) );
+	//dDate = DateNewTime( Date(), aExtTime[ 0 ], aExtTime[ 1 ] );
+	isHr = is_hr();
+	isOutsorcing = check_boss( "outsorcing" );
+	isUpr = is_upr();
+	aDaysLength = String( tools_web.get_web_param( PARAMETERS, "days_length", "8;9;10;11", true ) ).split( ";" )
+	TypeUslug = UrlDecode( tools_web.get_web_param( PARAMETERS, "TypeUslug", "", true ) );
+	stageXml = tools_web.get_web_param( PARAMETERS, "stageXml", UrlEncode( UrlEncode( "<outstaff_order_execution><stages/></outstaff_order_execution>" ) ), true );
+	stageDoc = OpenDocFromStr( UrlDecode( UrlDecode( stageXml ) ), 'form=x-local://wtv/wtv_outstaff_order_execution.xmd' ).TopElem;
+%>
+<SPXMLScreen Class="XAML-without-padding-and-margin">
+	<Grid Class="XAML-without-padding-and-margin XAML-grid-outstaff-hours">
+		<GridColumns>
+			<GridColumn Width="100" Align="center"/>
+			<GridColumn Width="100" Align="center"/>
+			<GridColumn Width="120" Align="center"/>
+			<GridColumn Width="80" Align="center"/>
+			<GridColumn Width="80" Align="center"/>
+			<GridColumn Width="100" Align="center"/>
+<%
+	if( !isUpr )
+	{
+%>
+			<GridColumn Width="200" Align="center"/>
+<%
+	}
+%>
+		</GridColumns>
+		<GridRow Class="XAML-grid-outstaff-hours-header" Height="50">
+			<Label Width="98"><%="Дата"%></Label>
+			<Label Width="98"><%="Вид услуг"%></Label>
+			<Label Width="78"><%="Время начала"%></Label>
+			<Label Width="78"><%="Объем услуг"%></Label>
+			<Label Width="78"><%="Время завершения"%></Label>
+
+			<Label Width="98">+/-</Label>
+<%
+	if( !isUpr )
+	{
+%>
+			<Label Width="198"><%="ФИО"%></Label>
+<%
+	}
+%>
+		</GridRow>
+		
+<%
+	i = 0;
+	lastDate = null;
+	for( elem in stageDoc.stages )
+	{
+		nName = elem.id;
+		fTime = "";
+		tDate = Date( elem.date );
+		dDate = DateNewTime( tDate, aExtTime[ 0 ], aExtTime[ 1 ] );
+		fDate = "";
+		if( OptInt( elem.hour_num, "" ) != "" && OptInt( Hour( elem.date ), "" ) != "" )
+		{
+			fDate = DateOffset( tDate, ( OptInt( elem.hour_num, 0 ) + 1 )*3600 )
+			fDate = StrInt( OptInt( Hour( fDate ), 0 ), 2 ) + ":" + StrInt( OptInt( Minute( fDate ), 0 ), 2 )
+		}
+%>
+		<GridRow>
+			<Label><%=StrDate( tDate, false ) + " (" + week_day ( tDate ) + ")"%></Label>
+			<Label><%=TypeUslug%></Label>
+<%
+			if( ( isUpr || isHr ) && ( stageDoc.status == "forming" ) )
+			{
+%>
+			<StackPanel Class="XAML-without-padding-and-margin-top-end" Height="40" Orientation="Horizontal">
+				<ComboBox Name="StartTimeHour<%=nName%>" SelectedItem="<%=OptInt( Hour( tDate ), "" )%>" Width="60" Change="SET=tmp,<%=nName%>;SET=OutStaffAction/action,set_edit_value;ACTION=OutStaffAction;">
+<%
+				for( j = 0; j <= 23; j++ )
+				{
+%>
+					<ComboBoxItem Value="<%=j%>"><%=StrInt( j, 2 )%></ComboBoxItem>
+<%
+				}
+%>
+				</ComboBox>
+				<Label><%=" : "%></Label>
+				<ComboBox Name="StartTimeMinute<%=nName%>" SelectedItem="<%=OptInt( Minute( tDate ), "" )%>" Width="60" Change="SET=tmp,<%=nName%>;SET=OutStaffAction/action,set_edit_value;ACTION=OutStaffAction;">
+<%
+				for( j = 0; j < 60; j+=10 )
+				{
+%>
+					<ComboBoxItem Value="<%=j%>"><%=StrInt( j, 2 )%></ComboBoxItem>
+<%
+				}
+%>
+				</ComboBox>
+			</StackPanel>
+			<ComboBox Name="LongTime<%=nName%>" SelectedItem="<%=OptInt( elem.hour_num, "" )%>" Width="60" Change="SET=tmp,<%=nName%>;SET=OutStaffAction/action,set_edit_value;ACTION=OutStaffAction;">
+				<ComboBoxItem Value="0">0</ComboBoxItem>
+<%
+				for( j in ArraySort( aDaysLength, "OptInt( This )", "+" ) )
+				{
+%>
+				<ComboBoxItem Value="<%=j%>"><%=j%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+			<Edit Editable="false" Name="OutStaffHour<%=nName%>" Width="60"><%=fDate%></Edit>
+<%
+			}
+			else
+			{
+%>
+			<Label><%=OptInt( Hour( tDate ), "" ) != "" ? ( StrInt( OptInt( Hour( tDate ), 0 ), 2 ) + ":" + StrInt( OptInt( Minute( tDate ), 0 ), 2 ) ) : ""%></Label>
+			<Label><%=OptInt( elem.hour_num, "" )%></Label>
+			<Label><%=fDate%></Label>
+<%
+			}
+
+%>
+			<StackPanel Class="XAML-without-padding-and-margin XAML-stack-container" Orientation="Horizontal">
+<%
+			if( ( isUpr || isHr ) && stageDoc.status == "forming" )
+			{
+
+				if( DateNewTime( lastDate, 0,0,0 ) != DateNewTime( tDate, 0,0,0 ) )
+				{
+					nNewDate = DateNewTime( tDate, 0,0,0 );
+					iCnt = iMaxCnt - ArrayCount( ArraySelect( stageDoc.stages, "DateNewTime( This.date, 0,0,0 ) == nNewDate" ) )
+					if( iCnt > 0 )
+					{
+%>
+				<Button Class="XAML-button" Width="45" Click="SET=tmp,<%=nName%>;SET=OutStaffAction/cnt,1;SET=OutStaffAction/action,add_row;ACTION=OutStaffAction;">+</Button>
+<%
+					}
+					if( iCnt > 1 )
+					{
+%>
+				<Button Class="XAML-button" Width="60" Click="SET=tmp,<%=nName%>;OPENDIALOG=SelectCnt;">+#</Button>
+<%
+					}
+				}
+				else
+				{
+%>
+				<Button Class="XAML-button" Width="40" Click="SET=tmp,<%=nName%>;SET=OutStaffAction/action,delete_row;ACTION=OutStaffAction;">-</Button>
+<%
+				}
+			}
+%>
+			</StackPanel>
+<%
+		if( !isUpr )
+		{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+<%
+			pers = "";
+			if( elem.collaborator_id.HasValue )
+			{
+				pers = elem.collaborator_id.OptForeignElem;
+				if( pers != undefined )
+					pers = pers.fullname;
+				else	
+					pers = "";
+			}
+			if( Date() < dDate  && isOutsorcing && ( elem.date.HasValue && elem.hour_num.HasValue && elem.hour_num > 0 ) )
+			{
+				
+%>
+				<Edit Name="PersonID<%=nName%>" Hidden="1"><%=elem.collaborator_id%></Edit>
+				<Edit Name="FIO<%=nName%>" Class="XAML-input-selector" Editable="<%=isWTcollaborator == 1 ? "false" : "true"%>" Width="100%"><%=isWTcollaborator == 0 ? elem.provider_person_fullname : pers%></Edit>
+<%
+				if( isWTcollaborator == 1 )
+				{
+%>
+				<Button Class="XAML-button-content XAML-button-selector icon-folder-open-o"  Click="SET=ActionSelectObject,<%=UrlEncode( "SET=tmpSelectCollaboratorID,{CatalogListDataGridFullList:^/id};SET=tmp," + nName + ";SET=OutStaffAction/action,check_collaborator;ACTION=OutStaffAction;" )%>;SET=SelectObject/catalog_name,collaborator;SET=SelectObject/xquery_qual,<%=UrlEncode( "$elem/is_outstaff = true() and $elem/is_dismiss != true()" )%>;OPENDIALOG=SelectObject;"></Button>
+<%
+				}
+
+			}
+			else
+			{
+%>
+				<Label><%=isWTcollaborator == 1 ? pers : elem.provider_person_fullname%></Label>
+<%
+			}
+			
+%>
+			</StackPanel>
+<%
+		}
+		lastDate = tDate;
+%>
+		</GridRow>
+		
+<%
+	}
+%>
+	</Grid>
+</SPXMLScreen>
+

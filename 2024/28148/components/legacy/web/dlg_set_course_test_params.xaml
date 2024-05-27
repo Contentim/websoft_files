@@ -1,0 +1,110 @@
+﻿<SPXMLScreen>
+<%
+sID = UrlDecode(PARAMETERS.GetOptProperty( "name_id", "" ));
+sElementsData = UrlDecode(PARAMETERS.GetOptProperty( "elements_data", "" ));
+bMultiSelect = UrlDecode(PARAMETERS.GetOptProperty( "multi_select", "0" )) == "1";
+sLastActionLine = UrlDecode(PARAMETERS.GetOptProperty( "last_action_line", "" ));
+
+arrElements = [];
+if ( sElementsData != "" )
+	arrElements = tools.read_object( sElementsData );
+arrElementsCount = ArrayCount( arrElements );
+
+
+if ( arrElementsCount < 2 )
+	bMultiSelect = false;
+
+iCurIndex = OptInt(PARAMETERS.GetOptProperty( "cur_index" ), 0 );
+if ( iCurIndex == 0 )
+	sLastActionLine = "";
+else if ( sLastActionLine != "" )
+	sLastActionLine = UrlEncode( sLastActionLine + ";" );
+
+
+sParamDlgLastCloseAction = "SET=LearningParamsDialog" + sID + "/cur_index,0;SET=CatalogListMenuAction" + sID + "/values_data," + sLastActionLine + "{duration_days}|{start_learning_date}|{last_learning_date}|{comment};ACTION=CatalogListMenuAction" + sID;
+
+sTitle = UrlDecode(PARAMETERS.GetOptProperty( "title", "" ));
+
+if ( sTitle == "" && arrElementsCount != 0 )
+{
+	try
+	{
+		iObjectID = Int( arrElements[ iCurIndex ].id );
+
+		teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+		sTitle = tools_web.get_cur_lng_name( ( teObject.ChildExists( "name" ) ? teObject.name : teObject.title ), curLng.short_id );
+		sTitle = curLngCommon.exchange_object_types.GetChildByKey( teObject.Name ).title + " &quot;" + sTitle + "&quot;";
+	}
+	catch ( err )
+	{
+
+	}
+}
+%>
+<Edit Name="ParamDlgNextIndex" Hidden="1"><%=( iCurIndex + 1 )%></Edit>
+<Edit Name="ParamDlgCloseAction" Hidden="1"><%=( iCurIndex >= ( arrElementsCount - 1 ) ? sParamDlgLastCloseAction : "SET=LearningParamsDialog" + sID + "/last_action_line," + sLastActionLine + "{duration_days}|{start_learning_date}|{last_learning_date}|{comment};SET=LearningParamsDialog" + sID + "/cur_index,{ParamDlgNextIndex};OPENDIALOG=LearningParamsDialog" + sID )%></Edit>
+
+<Label Class="XAML-object-title-label"><%=sTitle%></Label>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="250"/>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_start_learning_date", curLngWeb )%>:</Label>
+		<DatePicker Name="start_learning_date"></DatePicker>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_duration", curLngWeb )%>:</Label>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+			<RadioButton Name="duration_type" Value="from_learning" Checked="1" Change="SET=duration_days,"><%=tools_web.get_web_const( "vtpz5x2dzi", curLngWeb )%></RadioButton>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+				<RadioButton Name="duration_type" Value="days" Width="10"/>
+				<Edit Name="duration_days" Width="50"></Edit>
+				<Label><%=tools_web.get_web_const( "vtlpb_message2", curLngWeb )%></Label>
+			</StackPanel>
+			<RadioButton Name="duration_type" Value="not_specified" Change="SET=duration_days,0"><%=tools_web.get_web_const( "d8ed1y4k76", curLngWeb )%></RadioButton>
+		</StackPanel>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"></Label>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+			<CheckBox Name="miss_last_learning_date" Change="SET=last_learning_date,;TOGGLE=LastLearningDatePanel"><%=tools_web.get_web_const( "wrgenti9gr", curLngWeb )%></CheckBox>
+			<StackPanel Orientation="Horizontal" Name="LastLearningDatePanel" Hidden="1">
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_start_learning_date", curLngWeb )%>:</Label>
+				<DatePicker Name="last_learning_date"></DatePicker>
+			</StackPanel>
+		</StackPanel>
+	</GridRow>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_comment", curLngWeb )%>:</Label>
+		<EditBox Name="comment" Width="600" Height="150"> </EditBox>
+	</GridRow>
+</Grid>
+<%
+if ( bMultiSelect )
+{
+%>
+<CheckBox Name="apply_for_all_learnings" Change="SET=ParamDlgCloseAction,<%=UrlEncode( sParamDlgLastCloseAction )%>"><%=tools_web.get_web_const( "fn8zlh5ntq", curLngWeb )%></CheckBox>
+<%
+}
+%>
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" Adapt="true">
+	<GridColumns>
+		<GridColumn/>
+		<GridColumn Width="100"/>
+		<GridColumn Width="100"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+		<Button Class="XAML-button" Width="100" Click="CLOSEDIALOG">OK</Button>
+		<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</GridRow>
+</Grid>
+
+</SPXMLScreen>

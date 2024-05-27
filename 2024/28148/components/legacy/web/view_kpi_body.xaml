@@ -1,0 +1,880 @@
+﻿<%
+// const_start
+var sConstPeriodType = tools_web.get_web_const( 'periodichnostoc', curLngWeb );
+// const_end
+%>
+<SPXMLScreen>
+<%
+
+bHideTypeSelector=(curUrlQuery.GetOptProperty( 'is_kpi',null )!=null);
+bIsKpi=tools_web.is_true( curUrlQuery.GetOptProperty( 'is_kpi',1 ), 1 );
+bAllowSee=tools_web.is_true(tools_web.get_web_param( curParams, "kpi.bAllowSeeAdditionalInfo", 'true', false )) 
+strTabList=String( tools_web.get_web_param( curParams, "kpi.tab_list", "main;add;files;desc;custom", true ) )
+arrTabListParam = strTabList.split( ";" );
+strAddTabBlockList=String( tools_web.get_web_param( curParams, "kpi.tab_list.add_tab.blocks", "", true ) )
+arrAddTabBlockListParam = ArraySelect(strAddTabBlockList.split( ";" ),"This!=''");
+
+var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : OptInt( CONTEXT.GetOptProperty( 'KpiBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+
+
+bIsNew=false;
+if (curObjectID==null)
+{
+	bIsNew=true
+	try
+	{
+		docKpi=OpenNewDoc('x-local://wtv/wtv_kpi.xmd' )
+	}
+	catch(ex)
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+}
+else
+{
+	docKpi=OpenDoc( UrlFromDocID( OptInt(curObjectID,null) ) )
+}
+
+/*for (elem in CONTEXT)
+{
+	alert(elem+"="+CONTEXT.GetOptProperty(elem))
+}*/
+teKpi=docKpi.TopElem
+//--fill from Context--
+fieldArray = Array( "name","code","comment","is_kpi","unit_of_measurement","period_type","is_global","type","range_max","range_min","auto_formula");
+tools_web.update_object_from_context(docKpi, CONTEXT, fieldArray);
+
+if ( CONTEXT.HasProperty( "desc" ) )
+	teKpi.desc = tools_web.convert_xhttp_res( CONTEXT.desc, teKpi.desc );
+
+try
+{
+	teCustomFieldsTemlate = tools.get_custom_template( teKpi.Name, curObjectID, teKpi );
+	if(CONTEXT.HasProperty("sheet_id") && CONTEXT.sheet_id != "")
+	{
+		tools_web.web_custom_elems_filling( "kpi", curObjectID, teKpi, CONTEXT,null,null,ArraySelect( teCustomFieldsTemlate.fields, "disp_web==true && sheet_id==" + CodeLiteral( CONTEXT.sheet_id ) ));
+	}
+	else
+	{
+		tools_web.web_custom_elems_filling( "kpi", curObjectID, teKpi, CONTEXT,null,null,ArraySelect( teCustomFieldsTemlate.fields, "disp_web==true && ! sheet_id.HasValue"));
+	}
+}
+catch ( e )
+{
+	alert( e );
+}
+
+if (teKpi.type != 'auto'&&teKpi.type != 'input')
+{
+	teKpi.auto_formula.Clear();
+}
+if (teKpi.auto_formula.HasValue)
+{
+	sExpr = StrReplace(teKpi.auto_formula, ';', '');
+	sExpr = StrReplace(sExpr, '==', '$$$$');
+	sExpr = StrReplace(sExpr, '=', '==');
+	sExpr = StrReplace(sExpr, '$$$$' ,'==');
+	teKpi.auto_formula = sExpr;
+}
+
+arrOwnersFieldNames=String("TempDestinationEditKpiOwners;TempDestinationEditKpiResponsible").split(";")
+for (strFieldName in arrOwnersFieldNames)
+{
+	if (CONTEXT.HasProperty( strFieldName ))
+	{
+		strProperty=CONTEXT.GetProperty( strFieldName )
+		s1stChar = strProperty.charAt(0);
+		if (s1stChar == "{" || s1stChar == "[")
+		{
+			arrOwners= ArrayExtract(tools.read_object( CONTEXT.GetProperty( strFieldName ) ),"This.id");
+		}
+		else
+		{
+			arrOwners=strProperty.split(';')
+		}
+		
+		for (sOwner in arrOwners)
+		{
+			iOwnerID=OptInt(sOwner,null)
+			if (iOwnerID!=null)
+			{
+				if (strFieldName=="TempDestinationEditKpiOwners")
+				{
+					newOwner=teKpi.owners.ObtainChildByKey( iOwnerID );
+				}
+				else
+				{
+					newOwner=teKpi.responsible_persons.ObtainChildByKey( iOwnerID );
+				}
+				tools.common_filling( 'collaborator', newOwner, iOwnerID );
+			}
+		}
+		
+		if (strFieldName=="TempDestinationEditKpiOwners")
+		{
+			arrKpiOwners=ArraySelectAll(teKpi.owners)
+		}
+		else
+		{
+			arrKpiOwners=ArraySelectAll(teKpi.responsible_persons)
+		}
+		
+		for (fldOwner in arrKpiOwners)
+		{
+			if (ArrayOptFind(arrOwners,"This=='"+fldOwner.person_id+"'")==undefined)
+			{
+				fldOwner.Delete();
+			}
+		}
+	}
+}
+
+iDeleteScaleIndex=OptInt(CONTEXT.GetOptProperty( "delete_scale_index",null ),null)
+strFieldName="scales_count"
+if (CONTEXT.HasProperty( strFieldName ))
+{
+	iScaleCount=OptInt(CONTEXT.GetProperty( strFieldName ),0)
+	
+	for (i=0;i<iScaleCount;i++)
+	{
+		fldScale=null
+		try
+		{
+			fldScale=docKpi.TopElem.scales.Child(i);
+		}
+		catch(ex)
+		{
+		}
+		if (fldScale==null)
+		{
+			fldScale=docKpi.TopElem.scales.AddChild();
+		}
+		
+		if (iDeleteScaleIndex!=null&&fldScale!=null&&iDeleteScaleIndex==i)
+		{
+			fldScale.Delete();
+			continue;
+		}
+		if (fldScale!=null)
+		{
+			fldScale.name=CONTEXT.GetOptProperty( "name_"+i,fldScale.name );
+			fldScale.percent=null;
+			try
+			{
+				fldScale.percent=Real(CONTEXT.GetOptProperty( "percent_"+i,fldScale.percent ))
+			}
+			catch(ex)
+			{
+			}
+			fldScale.desc=CONTEXT.GetOptProperty( "desc_"+i,fldScale.desc );
+		}
+	}
+}
+//--		
+
+			
+bAllowEdit=false
+if (teKpi.owners.GetOptChildByKey(curUserID) != undefined||ArrayOptFirstElem(teKpi.owners)==undefined)
+{
+	bAllowEdit=true;
+}
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+bMoveData=bDesctop?false:(!bDesctop&&bAllowEdit)
+iDefaultWidth=bMoveData?"100%":"300"
+
+arrKPITypes=[]
+arrKPITypes.push({"id":"true","name":tools_web.get_web_const( 'vkb_kpi', curLngWeb )})
+arrKPITypes.push({"id":"false","name":tools_web.get_web_const( 'jhiqp0ac7f', curLngWeb )})
+
+sDefaultSuccessAction='SET=KpiChangeAction/sSelectedObjects,#empty#;REFRESH'
+sDefaultFailureAction='SET=KpiChangeAction/CONTEXT,#empty#;SET=KpiChangeAction/sSelectedObjects,#empty#;ALERT={!messageText}'
+
+if ( bIsNew && !curUrlQuery.HasProperty("object_id") )
+{
+	sKpiChangeAction = 'OPENURL=' + ( StrContains(PAGEURL, '&') ? ( PAGEURL+'&object_id={kpi_id}' ) : ( StrContains(PAGEURL, '_wt/kpi') ? ( StrReplace(PAGEURL, '_wt/kpi', '_wt/{kpi_id}') ) : ( PAGEURL+'&object_id={kpi_id}' ) ) );
+}
+else
+{
+	sKpiChangeAction = '{!KpiChangeSuccessAction}';
+}
+
+%>
+<Edit Name="KpiChangeSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+<Edit Name="KpiChangeFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+<Action Name="KpiChangeAction" Source="kpi_change" Success="<%=sKpiChangeAction%>" Failure="{!KpiChangeFailureAction}">
+	<Param Name="sAction" Value=""/>
+	<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+	<Param Name="sSelectedObjects" Value="#empty#"/>
+	<Param Name="CONTEXT" Value="#empty#"/>
+</Action>
+<%
+if (teKpi.name.HasValue)
+{
+%>
+<Label Class="XAML-object-title-label"><%=XmlAttrEncode(tools_web.get_cur_lng_name(teKpi.name, curLng.short_id ))%></Label>
+<%
+}
+if (bAllowEdit)
+{
+%>
+<Toolbar Class="XAML-toolbar">
+		<Button Class="XAML-button XAML-button-save" Click="SET=KpiChangeAction/sAction,save;SET=KpiChangeAction/CONTEXT,{CONTEXT};SET=KpiChangeSuccessAction,<%=UrlEncode(sDefaultSuccessAction)%>;SET=KpiChangeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;Action=KpiChangeAction"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+</Toolbar>
+<%
+}
+if (bHideTypeSelector)
+{
+%>
+	<Edit Name="is_kpi" Hidden="1"><%=String(bIsKpi)%></Edit>
+<%
+}
+%>
+<TabControl Name="KpiBodyTab" ActiveTab="<%=paramListViewTab%>" Width="100%">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{		
+		switch(sTabListParam)
+		{
+			case "main":
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn Width="50%" Align="right"/>
+				<GridColumn Width="50%" Align="left"/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_code', curLngWeb ))%>:</Label>
+<%
+				if (bAllowEdit)
+				{
+%>
+				<Edit Name="code" Width="<%=iDefaultWidth%>"><%=teKpi.code%></Edit>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(teKpi.code)%></Label>
+<%
+				}
+%>
+
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_name', curLngWeb ))%>:</Label>
+<%
+				if (bAllowEdit)
+				{
+%>
+				<Edit Name="name" Width="<%=iDefaultWidth%>"><%=teKpi.name%></Edit>
+<%
+				}
+				else
+				{
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(teKpi.name, curLng.short_id ))%></Label>
+<%
+				}
+%>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_type', curLngWeb ))%>:</Label>
+<%
+			if (bAllowEdit)
+			{
+%>
+				<StackPanel>
+				<ComboBox Name="type" Change="REFRESH" Width="<%=iDefaultWidth%>">
+<%
+				for(fldType in curLngCommon.kpi_types)
+				{
+					try
+					{
+						strSelected=''
+						if (fldType.id==teKpi.type)
+						{
+							strSelected=' Selected="True"'
+						}
+
+%>
+					<ComboBoxItem Value="<%=fldType.id%>" <%=strSelected%>><%=XmlAttrEncode(curLngCommon.kpi_types.GetChildByKey(fldType.id).name)%></ComboBoxItem>
+<%
+					}
+					catch(ex)
+					{
+					}
+				}
+%>
+				</ComboBox>
+				</StackPanel>
+<%
+			}
+			else
+			{
+%>
+				<Label><%=HtmlEncode((teKpi.type.HasValue ? curLngCommon.kpi_types.GetChildByKey( teKpi.type).name.Value : ""))%></Label>
+<%
+			}
+%>
+			</GridRow>
+<%
+			if (!bHideTypeSelector)
+			{
+				if (bAllowEdit||bAllowSee)
+				{	
+%>	
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_type', curLngWeb ))%>:</Label>
+<%
+					if (bAllowEdit)
+					{
+%>
+				<ComboBox Name="is_kpi" Width="<%=iDefaultWidth%>">
+<%
+						for( fldKPIType in arrKPITypes)
+						{
+							strSelected=''
+							if (fldKPIType.id==String(teKpi.is_kpi))
+							{
+								strSelected=' Selected="True"'
+							}
+
+							try
+							{
+%>
+						<ComboBoxItem Value="<%=fldKPIType.id%>" <%=strSelected%>><%=XmlAttrEncode(fldKPIType.name)%></ComboBoxItem>
+<%
+							}
+							catch(ex)
+							{
+							}
+						}
+%>
+				</ComboBox>
+<%
+					}
+					else
+					{
+						strKPIType=''
+
+						fldKPIType=ArrayOptFind(arrKPITypes,"This.id=='"+String(teKpi.is_kpi)+"'")
+						if (fldKPIType!=undefined)
+						{
+							strKPIType=fldKPIType.name
+						}
+%>
+				<Label><%=HtmlEncode(strKPIType)%></Label>
+<%
+					}
+%>
+			</GridRow>
+<%	
+				}
+			}
+			if (teKpi.type == 'auto' || teKpi.type == 'input')
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'dank_inter', curLngWeb ))%>:</Label>
+<%
+				if (bAllowEdit)
+				{
+%>
+				<StackPanel Orientation="<%=bDesctop?'Horizontal':'Vertical'%>">
+					<Edit Name="range_min"><%=teKpi.range_min%></Edit><Label>-</Label><Edit Name="range_max"><%=teKpi.range_max%></Edit>
+				</StackPanel>
+<%
+				}
+				else
+				{
+					strRange=Trim(teKpi.range_min)
+					if (strRange!='')
+					{
+						if (teKpi.range_max.HasValue)
+						{
+							strRange=(strRange+" - "+teKpi.range_max)
+						}
+					}
+					else
+					{
+						strRange=teKpi.range_max
+					}
+%>
+				<Label><%=HtmlEncode(strRange)%></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+				if (teKpi.type == 'auto')
+				{
+					if (bAllowSee)
+					{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'lh7epyfugc', curLngWeb ))%>:</Label>
+				<StackPanel>
+<%
+						if (bAllowEdit)
+						{
+%>
+					<Edit Name="auto_formula" Width="<%=iDefaultWidth%>"><%=teKpi.auto_formula%><HTMLTip>
+							<![CDATA[
+								<%=tools_web.get_web_const( "cbhygjw8b6", curLngWeb )%>
+							]]>
+						</HTMLTip></Edit>
+<%
+						}
+
+						strFormula=Trim(teKpi.auto_formula)
+						strClass="XAML-grid-label-name"
+						if (strFormula== '')
+							strFormula='FACT / PLAN';
+							
+						strTestEvalText = 'FACT=1; PLAN=1; WEIGHT=1; return ' + strFormula + ';';
+						try
+						{
+							tools.safe_execution(strTestEvalText);
+						}
+						catch(ex)
+						{
+							strClass="XAML-alert-text"
+						}
+						strFormula=tools_web.get_web_const( "us60iap9mi", curLngWeb )+strFormula
+					
+%>
+					<Label Class="<%=strClass%>"><%=HtmlEncode(strFormula)%></Label>
+				</StackPanel>
+			</GridRow>
+<%
+					}
+				}
+			}
+			if (bAllowEdit)
+			{
+%>			
+			<GridRow>
+				<Label></Label>
+				<CheckBox Width="<%=iDefaultWidth%>" Name="is_global" Class="XAML-grid-checkbox-name" <%=(teKpi.is_global ? "Checked=\"true\"" : "")%>><%=tools_web.get_web_const( "kqbkknvomw", curLngWeb )%></CheckBox>
+			</GridRow>
+<%
+			}
+			else if (teKpi.is_global)
+			{
+%>
+			<GridRow>
+				<Label></Label>
+				<Label><%=tools_web.get_web_const( "kqbkknvomw", curLngWeb )%></Label>
+			</GridRow>
+<%
+			}
+%>	
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'dank_unit', curLngWeb ))%>:</Label>
+<%
+			if (bAllowEdit)
+			{
+%>
+				<Edit Name="unit_of_measurement" Width="<%=iDefaultWidth%>"><%=teKpi.unit_of_measurement%></Edit>
+<%
+			}
+			else
+			{
+%>
+				<Label><%=HtmlEncode(tools_web.get_cur_lng_name(teKpi.unit_of_measurement, curLng.short_id ))%></Label>
+<%
+			}
+%>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstPeriodType)%>:</Label>
+<%
+			if (bAllowEdit)
+			{
+%>
+				<ComboBox Name="period_type" Width="<%=iDefaultWidth%>">
+<%
+				for(fldType in curLngCommon.perioditys)
+				{
+					try
+					{
+						strSelected=''
+						if (fldType.id==teKpi.period_type)
+						{
+							strSelected=' Selected="True"'
+						}
+
+%>
+					<ComboBoxItem Value="<%=fldType.id%>" <%=strSelected%>><%=XmlAttrEncode(curLngCommon.perioditys.GetChildByKey(fldType.id).name)%></ComboBoxItem>
+<%
+					}
+					catch(ex)
+					{
+					}
+				}
+%>
+				</ComboBox>
+<%
+			}
+			else
+			{
+%>
+				<Label><%=HtmlEncode((teKpi.period_type.HasValue ? curLngCommon.perioditys.GetChildByKey( teKpi.period_type).name.Value : ""))%></Label>
+<%
+			}
+%>
+			</GridRow>
+<%
+			if (bAllowEdit||bAllowSee)
+			{	
+%>		
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_comment', curLngWeb ))%>:</Label>
+<%
+				if (bAllowEdit)
+				{
+%>
+				<EditBox Name="comment" Height="100"  Width="100%"><%=XmlAttrEncode(teKpi.comment)%></EditBox>
+<%
+				}
+				else
+				{ 
+%>
+				<HTMLBox>
+							<![CDATA[<%=HtmlEncode( tools_web.get_web_desc( teKpi.comment, UrlFromDocID(curObjectID), teKpi.Name + ".comment" ) )%>]]>	
+				</HTMLBox>
+<%
+				}
+%>
+			</GridRow>				
+<%
+			}
+%>
+		</Grid>
+<%
+		if (teKpi.type == 'scale')
+		{
+			iScalesCount=ArrayCount(teKpi.scales)
+%>
+		<Panel Title="<%=XmlAttrEncode(tools_web.get_web_const( "vci_scale", curLngWeb ))%>" Expanded="1" Width="100%">
+<%
+					if (bAllowEdit)
+					{
+%>
+					<Button Class="XAML-button XAML-button-plus" Click="SET=scales_count,<%=(iScalesCount+1)%>;REFRESH"><%=tools_web.get_web_const( "z8bnjrgxx7", curLngWeb )%></Button>
+<%
+					}
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table XAML-grid-content-hor-container">
+				<GridColumns>
+					<GridColumn Width="4" Align="left"/>
+					<GridColumn Width="30%" Align="left"/>
+					<GridColumn Width="20" Align="left"/>
+					<GridColumn Width="70%" Align="left"/>
+<%
+					if (bAllowEdit&&bDesctop)
+					{
+%>
+					<GridColumn Width="40" Align="left"/>
+<%
+					}
+%>
+				</GridColumns>	
+				<GridRow Class="XAML-grid-header-row" CellClass="XAML-grid-header-cell">
+					<Label Class="XAML-grid-header-label"></Label>
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_name", curLngWeb ))%></Label>
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_percent", curLngWeb ))%></Label>
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( "c_desc", curLngWeb ))%></Label>
+<%
+					if (bAllowEdit)
+					{
+%>
+					<Label Class="XAML-grid-header-label"></Label>
+<%
+					}
+%>					
+				</GridRow>
+<%
+				for (fldScale in teKpi.scales)
+				{
+					strFieldPrefix='_'+fldScale.ChildIndex
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=HtmlEncode(fldScale.ChildIndex+1)%></Label>
+<%
+					strFieldName='name'+strFieldPrefix
+					if (bAllowEdit)
+					{
+%>
+						<StackPanel Orientation="<%=bDesctop?'Horizontal':'Vertical'%>" Class="XAML-stack-container">
+							<Edit Name="<%=strFieldName%>" Width="100%"><%=fldScale.name%></Edit>
+<%
+						if (!bDesctop)
+						{
+%>
+					<Button Class="XAML-button XAML-button-delete" Click="SET=delete_scale_index,<%=fldScale.ChildIndex%>;REFRESH"><%=tools_web.get_web_const( "c_delete", curLngWeb )%></Button>
+<%
+						}
+%>
+						</StackPanel>
+<%
+					}
+					else
+					{
+%>
+					<Label><%=HtmlEncode(tools_web.get_cur_lng_name(fldScale.name, curLng.short_id ))%></Label>
+<%
+					}
+					strFieldName='percent'+strFieldPrefix
+					if (bAllowEdit)
+					{
+%>
+					<Edit Name="<%=strFieldName%>" Width="100%"><%=fldScale.percent%></Edit>
+<%
+					}
+					else
+					{
+%>
+					<Label><%=HtmlEncode(tools_web.get_cur_lng_name(fldScale.percent, curLng.short_id ))%></Label>
+<%
+					}
+					strFieldName='desc'+strFieldPrefix
+					if (bAllowEdit)
+					{
+%>
+					<EditBox Name="<%=strFieldName%>" Height="100"  Width="100%"><%=XmlAttrEncode(fldScale.desc)%></EditBox>
+<%
+					}
+					else
+					{ 
+%>
+					<HTMLBox>
+								<![CDATA[<%=HtmlEncode( fldScale.desc ) %>]]>	
+					</HTMLBox>
+<%
+					}
+					if (bDesctop)
+					{
+						if (bAllowEdit)
+						{
+%>
+					<Button Class="XAML-button XAML-button-delete" Click="SET=delete_scale_index,<%=fldScale.ChildIndex%>;REFRESH"><%=tools_web.get_web_const( "c_delete", curLngWeb )%></Button>
+<%
+						}
+						else
+						{ 
+%>
+						<Label></Label>
+<%
+						}
+					}
+%>
+				</GridRow>
+<%
+				}
+%>
+			</Grid>
+			<Edit Name="scales_count" Hidden="1"><%=iScalesCount%></Edit>
+			<Edit Name="delete_scale_index" Hidden="1"></Edit>
+		</Panel>
+<%
+		}
+%>
+	</TabItem>
+<%
+				break;
+			}
+			case "add":
+			{
+				if (ArrayOptFirstElem(arrAddTabBlockListParam)!=undefined)
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'c_additional', curLngWeb ))%>">
+<%
+					for (strAddTabBlock in arrAddTabBlockListParam)
+					{
+						switch(strAddTabBlock)
+						{
+							case "owners":
+							{
+								if (bAllowEdit||bAllowSee)
+								{
+%>			
+			<Panel Title="<%=XmlAttrEncode(tools_web.get_web_const( "dank_owners", curLngWeb ))%>" Expanded="1" Width="100%">
+<%		
+									sID = "KpiOwners";
+					
+									sDispNameEditName = "TempDestinationEdit" + sID;
+
+									curSelectorList = {
+										"id": sID,
+										"selected_object_ids": ArrayMerge( ArrayExtract( teKpi.owners, "PrimaryKey" ), "This", ";" ),
+										"height": "350",
+										"catalog_name": "collaborator",
+										"disp_search": "true",
+										"disp_filter": "false",
+										"sort_direct": "-",
+										"disp_array": "true",
+										"list_columns": (bDesctop?"fullname;position_parent_name;position_name;org_name":"fullname;position_name"),
+										"array": ( "{" + sDispNameEditName + "}" ),									
+										"is_data_grid": "true"
+									};
+									
+									if(bAllowEdit)
+									{
+										curSelectorList.SetProperty( "buttons", [
+										{ "title": tools_web.get_web_const( "c_choose", curLngWeb ), "click": "OPENDIALOG=SelectDialog"+sID },
+										])
+									}
+									Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+				</Panel>
+<%
+								}
+								break;
+							}
+							case "responsible":
+							{
+								if (bAllowEdit||bAllowSee)
+								{
+%>			
+			<Panel Title="<%=XmlAttrEncode(tools_web.get_web_const( "dank_responsibles", curLngWeb ))%>" Expanded="1" Width="100%">
+<%		
+									sID = "KpiResponsible";
+					
+									sDispNameEditName = "TempDestinationEdit" + sID;
+
+									curSelectorList = {
+										"id": sID,
+										"selected_object_ids": ArrayMerge( ArrayExtract( teKpi.responsible_persons, "PrimaryKey" ), "This", ";" ),
+										"height": "350",
+										"catalog_name": "collaborator",
+										"disp_search": "true",
+										"disp_filter": "false",
+										"sort_direct": "-",
+										"disp_array": "true",
+										"list_columns": (bDesctop?"fullname;position_parent_name;position_name;org_name":"fullname;position_name"),
+										"array": ( "{" + sDispNameEditName + "}" ),									
+										"is_data_grid": "true"
+									};
+									
+									if(bAllowEdit)
+									{
+										curSelectorList.SetProperty( "buttons", [
+										{ "title": tools_web.get_web_const( "c_choose", curLngWeb ), "click": "OPENDIALOG=SelectDialog"+sID },
+										])
+									}
+									
+									Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+				</Panel>
+<%
+								}
+								break;
+							}
+						}
+					}
+%>
+	</TabItem>
+<%
+				}
+				break;
+			}
+			case "files":
+			{
+				if (teKpi.ChildExists('files')&&!bIsNew)
+				{
+					if (bAllowEdit||bAllowSee)
+					{
+						dummyObjectID=curObjectID
+						dummyObject=teKpi
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+<%
+						if(bAllowEdit)
+						{
+							allowChangeFiles = true;
+							bStaticCollection = false;
+						}
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+					}
+				}
+				break;
+			}
+			case "desc":
+			{
+
+				if(bAllowEdit||bAllowSee)
+				{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'podrobnoeopisa', curLngWeb ))%>">
+<%
+					if (bAllowEdit)
+					{
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Expanded="1" Width="100%">			
+			<RichEdit Name="desc" Height="500" Width="100%">
+				<![CDATA[<%=teKpi.desc%>]]>
+			</RichEdit>
+		</Panel>
+<%
+					}
+					else
+					{
+						curDescObject = teKpi;
+						curDescObjectID = curObjectID;
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+					}
+%>
+	</TabItem>
+<%
+				}
+				break;
+			}
+			case "custom":
+			{
+				if(bAllowEdit||bAllowSee)
+				{
+					arrCustomFieldNames = Array();
+					fldCustomElems = tools.get_custom_template( teKpi.Name, curObjectID, teKpi );
+					if ( fldCustomElems != null )
+					{
+%>
+	<TabItem Title="<%=tools_web.get_web_const( "wlcwah2eod", curLngWeb )%>">
+<%
+					curCustomFields = {
+						"id": "customFieldsViewGrid",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+						"source": teKpi.custom_elems,
+						"modify_eval": bAllowEdit
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+	</TabItem>
+<%
+					}
+				}
+				break;
+			}
+		}
+	}
+%>
+</TabControl>
+
+</SPXMLScreen>

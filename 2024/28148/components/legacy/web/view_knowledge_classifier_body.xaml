@@ -1,0 +1,72 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+		
+	showUnconfirmedObjects = tools_web.get_web_param( curParams, 'show_unconfirmed_objects', '0', true );
+	searchPanelExpanded = tools_web.get_web_param( curParams, 'search_panel_expanded', 'false', true );
+	search_exist = ( oParamSource.GetOptProperty("search") != undefined && tools_web.is_true( oParamSource.GetOptProperty("search") ) );
+	cur_classifier_id = oParamSource.GetOptProperty("object_id");
+	iTreeWeight = Int( tools_web.get_web_param( curParams, "tree_wight", 300, true ));
+	
+	sShowExpertQuestionBtn = tools_web.get_web_param( curParams, 'show_expert_question_button', '0', true );
+	iTreeWeight = Int( tools_web.get_web_param( curParams, "tree_wight", 300, true ));
+	
+	if ( search_exist )
+		searchPanelExpanded = true;
+	searchParam = String( tools_web.get_web_param( curParams, 'search_panel_param', 'classifier;create_date;action_date;key_word;tag;expert;status', true ) ).split( ';' );
+	
+	fieldArray = Array( "knowledge_classifier_id", "start_create_date", "finish_create_date", "start_action_date", "finish_action_date", "key_word", "tag_id", "expert_id", "status" );
+	urlFieldArray = Array( "kc_id", "from_cdate", "to_cdate", "from_adate", "to_adate", "keyword", "tag_id", "expert_id", "status" )
+	i = 0;
+		
+	knowledge_classifier_id = (oParamSource.GetOptProperty( "kc_id") != undefined ? oParamSource.GetOptProperty( "kc_id" ) : "");
+	start_create_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "from_cdate" ) : "");
+	finish_create_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "to_cdate" ) : "");
+	start_action_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "from_adate" ) : "");
+	finish_action_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "to_adate" ) : "");
+	key_word = (oParamSource.GetOptProperty( "keyword") != undefined ? oParamSource.GetOptProperty( "keyword" ) : "");
+	tag_id = (oParamSource.GetOptProperty( "tag_id") != undefined ? oParamSource.GetOptProperty( "tag_id" ) : "");
+	expert_id = (oParamSource.GetOptProperty( "expert_id") != undefined ? oParamSource.GetOptProperty( "expert_id" ) : "");
+	status = (oParamSource.GetOptProperty( "status") != undefined ? oParamSource.GetOptProperty( "status" ) : "");
+	if( curObject != null )
+	{
+		if( curObject.Name == 'knowledge_part' )
+		{
+			oParamSource.SetProperty( "kc_id", curObject.knowledge_classifier_id );
+			oParamSource.SetProperty( "kp_id", curObjectID );
+		}
+		else
+		{
+			oParamSource.SetProperty( "kc_id", curObjectID );
+			oParamSource.SetProperty( "kp_id", "" );
+		}
+	}
+	else
+	{
+		oParamSource.SetProperty( "kc_id", "" );
+		oParamSource.SetProperty( "kp_id", "" );
+	}
+	curElemUrlName = "elem_id";
+	
+	_use_hier = tools_web.get_web_param( curParams, "full_list_question_by_hier", "0", true );	
+	
+%>
+
+<SPXMLScreen>
+
+	<Dialog Name="AnswerExspertDialog" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'veqb_expert_answer', curLngWeb ))%>" Close="">
+		<Param Name="iQuestionId" Value=""/>
+	</Dialog>
+	
+	<Collection Name="QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+		<Param Name="iExpertId" Value="{expert_id}"/>
+		<Param Name="iObjectKC" Value="{KnowledgeClassifierID}"/>
+		<Param Name="iObjectKP" Value="{KnowledgePartID}"/>
+		<Param Name="sKeyWord" Value="{questionskey_word}"/>
+		<Param Name="iTagId" Value="{tag_id}"/>
+		<Param Name="bUseHier" Value="<%=_use_hier%>"/>
+	</Collection>
+<%
+	treeCollectionName =  "KnowledgeClassifierTree";
+	Response.Write( (EvalCodePageUrl( (global_settings.web_path + "view_knowledge_map_tree_template.xaml") ) ));
+%>	
+</SPXMLScreen>

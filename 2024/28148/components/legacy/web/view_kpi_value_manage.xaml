@@ -1,0 +1,342 @@
+﻿<SPXMLScreen>
+<%
+	// const_start
+	var oConstKPIValueManage = ({
+		"windowtitle": tools_web.get_web_const( 'upravlenieznach_1', curLngWeb ),
+		"ass": tools_web.get_web_const( 'vppb_procedure', curLngWeb ),
+		"budgetperiod": tools_web.get_web_const( 'c_budget_period', curLngWeb ),
+		"kpi": tools_web.get_web_const( 'kpe', curLngWeb ),
+		"fio": tools_web.get_web_const( 'c_fio', curLngWeb ),
+		"value": tools_web.get_web_const( 'c_value', curLngWeb ),
+		"save": tools_web.get_web_const( 'c_save', curLngWeb ),
+		"assessed": tools_web.get_web_const( 'qivz9ssdlx', curLngWeb )
+	});
+	// const_end
+	
+	var bThinMode = curDevice.disp_type == "mobile";
+	var catAssessmentElem, xarrAssessments = tools.xquery("for $elem in assessment_appraises where $elem/status = '0' return $elem/id,$elem/name");
+	var bOk = false;
+%>
+	<Label Class="XAML-object-title-label"><%=oConstKPIValueManage.windowtitle%></Label>
+	
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+<%
+	if (!bThinMode)
+	{
+%>
+			<GridColumn Width="250" Align="right"/>
+<%
+	}
+%>
+			<GridColumn/>
+		</GridColumns>
+		
+		<GridRow>
+<%
+	if (bThinMode)
+	{
+%>
+		<StackPanel>
+<%
+	}
+%>
+			<Label Class="XAML-info-grid-title-column"><%=HtmlEncode(oConstKPIValueManage.ass)%></Label>
+
+			<ComboBox Name="AssessmentList" Change="REFRESH" SelectedItem="<%=CONTEXT.GetOptProperty("AssessmentList", "")%>" Width="<%=(bThinMode ? "100%":"600")%>">
+<%
+	for (catAssessmentElem in xarrAssessments)
+	{
+%>
+		<ComboBoxItem Value="<%=catAssessmentElem.PrimaryKey%>"><%=HtmlEncode(catAssessmentElem.name)%></ComboBoxItem>
+<%
+	}
+%>
+			</ComboBox>
+<%
+	if (bThinMode)
+	{
+%>
+		</StackPanel>
+<%
+	}
+%>
+		</GridRow>
+<%
+	var teAssessmentAppraise, iCurAssessmentAppraise = OptInt(CONTEXT.GetOptProperty("AssessmentList"), null);
+	
+	var iCurBudgetPeriod = OptInt(CONTEXT.GetOptProperty("BudgetPeriodList"), null);
+	var teCurrentKPI, iCurrentKPI = OptInt(CONTEXT.GetOptProperty("KPIList"),null);
+	
+	try
+	{
+		teCurrentKPI = OpenDoc(UrlFromDocID(iCurrentKPI)).TopElem;
+	}
+	catch(_x_)
+	{
+		teCurrentKPI = null;
+		iCurrentKPI = null;
+	}
+	
+	try
+	{
+		teAssessmentAppraise = OpenDoc(UrlFromDocID(iCurAssessmentAppraise)).TopElem;
+		if (teAssessmentAppraise.Name != "assessment_appraise")
+			throw "";
+	}
+	catch(_x_)
+	{
+		teAssessmentAppraise = null;
+	}
+	if (teAssessmentAppraise != null)
+	{
+%>
+		<GridRow>
+<%
+	if (bThinMode)
+	{
+%>
+		<StackPanel>
+<%
+	}
+%>
+			<Label Class="XAML-info-grid-title-column"><%=HtmlEncode(oConstKPIValueManage.budgetperiod)%></Label>
+<%
+		var fldParticipant, fldAAT, xarrBudgetPeriod = new Array();
+		for (fldParticipant in teAssessmentAppraise.participants)
+			for (fldAAT in ArraySelect(fldParticipant.assessment_appraise_types, "This.PrimaryKey == 'activity_appraisal' && This.budget_period_id.HasValue"))
+			{
+				xarrBudgetPeriod.push(fldAAT.budget_period_id.Value);
+			}
+		
+		if (ArrayOptFirstElem(xarrBudgetPeriod) != undefined)
+			xarrBudgetPeriod = QueryCatalogByKeys("budget_periods", "id", xarrBudgetPeriod);
+		bOk = (ArrayOptFirstElem(xarrBudgetPeriod) != undefined);
+		if (bOk)
+		{
+%>
+			<ComboBox Name="BudgetPeriodList" Change="REFRESH" SelectedItem="<%=(iCurBudgetPeriod != null ? iCurBudgetPeriod : "")%>" Width="<%=(bThinMode ? "100%":"600")%>">
+<%
+		var catBudgetPeriod;
+		for (catBudgetPeriod in xarrBudgetPeriod)
+		{
+%>
+				<ComboBoxItem Value="<%=catBudgetPeriod.PrimaryKey%>"><%=HtmlEncode(catBudgetPeriod.name)%></ComboBoxItem>
+<%
+		}
+%>
+			</ComboBox>
+<%
+		}
+		else
+		{
+%>
+			<Label>-</Label>
+<%
+		}
+
+		if (bThinMode)
+		{
+%>
+		</StackPanel>
+<%
+		}
+%>
+		</GridRow>
+<%
+		if (bOk)
+		{
+			
+			var xarrMyKPIs = tools.xquery("for $elem in kpis where ($elem/type = 'calc' or $elem/type = 'input') and contains($elem/owners_ids, '" + curUserID + "') return $elem/id,$elem/name");
+			
+			
+			
+			
+			xarrMyKPIs = ArrayUnion(xarrMyKPIs, tools.xquery("for $elem in kpis where some $e in kpi_values satisfies ($elem/id = $e/kpi_id and $e/responsible_id = " + curUserID + ") and ($elem/type = 'calc' or $elem/type = 'input') return $elem/id,$elem/name")); // to xquery's because of lazy Eugen
+			
+			//xarrMyKPIs = ArrayUnion(xarrMyKPIs, tools.xquery("for $elem in kpi_values where some $e in kpis satisfies ($elem/kpi_id = $e/id and ($e/type = 'calc' or $e/type = 'input')) and $elem/responsible_id = " + curUserID + " return $elem/id,$elem/kpi_id,$elem/object_name")); //old way
+			
+			xarrMyKPIs = ArraySelectDistinct(xarrMyKPIs, "This.id.Value");
+			
+			
+			bOk = (ArrayOptFirstElem(xarrMyKPIs) != undefined);
+%>
+		<GridRow>
+<%
+	if (bThinMode)
+	{
+%>
+		<StackPanel>
+<%
+	}
+%>
+			<Label Class="XAML-info-grid-title-column"><%=HtmlEncode(oConstKPIValueManage.kpi)%></Label>
+<%
+			if (bOk)
+			{
+				var catKPI;
+%>
+				<ComboBox Name="KPIList" Change="REFRESH" SelectedItem="<%=(iCurrentKPI != null ? iCurrentKPI : "")%>" Width="<%=(bThinMode ? "100%":"600")%>">
+<%
+				for (catKPI in xarrMyKPIs)
+				{
+					if (catKPI.Name == "kpi")
+					{
+%>
+					<ComboBoxItem Value="<%=catKPI.PrimaryKey%>"><%=HtmlEncode(catKPI.name)%></ComboBoxItem>
+<%
+					}
+					else //old way of placing kpi_values into this combobox (uncommen apper xarrKPIValues selector)
+					{
+%>
+					<ComboBoxItem Value="<%=catKPI.PrimaryKey%>"><%=HtmlEncode("[" + tools_web.get_web_const("c_value", curLngWeb) + "]: " + catKPI.kpi_id.ForeignElem.name + " - " + catKPI.object_name.Value)%></ComboBoxItem>
+<%
+					}
+				}
+%>
+				</ComboBox>
+<%
+			}
+			else
+			{
+%>
+		<Label>-</Label>
+<%
+			}
+			if (bThinMode)
+			{
+%>
+		</StackPanel>
+<%
+			}
+%>
+		</GridRow>
+<%			
+			
+		}
+	}
+%>
+	</Grid>
+<%
+	if (iCurrentKPI != null && iCurBudgetPeriod != null)
+	{
+		var sFldTarget = tools_web.get_web_param(curParams, "kpi_value_manage.value_target", "value", true);
+		if (teCurrentKPI.Name == "kpi_value")
+		{
+%>
+			<Action Name="KPIValuesSave" Source="kpi_value_manage" Success="ALERT={messageText}" Failure="ALERT={messageText}">
+				<Param Name="mode" Value="save"/>
+				<Param Name="kpi_id" Value="<%=iCurrentKPI%>"/>
+				<Param Name="budget_period_id" Value="<%=iCurBudgetPeriod%>"/>
+				<Param Name="global_value" Value="{EditedValue}"/>
+				<Param Name="value_target" Value="<%=sFldTarget%>"/>
+			</Action>
+			
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=oConstKPIValueManage.assessed%>:</Label>
+					<Label><%=teCurrentKPI.object_name.Value%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=oConstKPIValueManage.value%>:</Label>
+					<Edit Name="EditedValue" Width="100"><%=teCurrentKPI.Child(sFldTarget).Value%></Edit>
+				</GridRow>
+			</Grid>
+			<Button Click="ACTION=KPIValuesSave"><%=oConstKPIValueManage.save%></Button>
+<%
+		}
+		else
+		{
+			var aWantedProfiles = ArrayExtract(tools.xquery("for $elem in kpi_profiles where MatchSome($elem/kpi_id, (" +iCurrentKPI+ ")) return $elem/id"), "This.id");
+
+			var aPAs = tools.xquery("for $elem in pas where MatchSome($elem/kpi_profile_id, (" +ArrayMerge(aWantedProfiles, "This", ",")+ ")) and $elem/assessment_appraise_id = " + iCurAssessmentAppraise + " and $elem/assessment_appraise_type = 'activity_appraisal' return $elem/id,$elem/person_id,$elem/person_fullname,$elem/department_id,$elem/department_name,$elem/flag_appraise_department");
+			
+			
+			var bOwner = teCurrentKPI.owners.GetOptChildByKey(curUserID) != undefined;
+%>
+			<Action Name="KPIValuesSave" Source="kpi_value_manage" Success="ALERT={messageText}" Failure="ALERT={messageText}">
+				<Param Name="KPIData" Value="{KPIValuesGrid}"/>
+				<Param Name="mode" Value="save"/>
+				<Param Name="global_value" Value="{GlobalValue}"/>
+				<Param Name="kpi_id" Value="<%=iCurrentKPI%>"/>
+				<Param Name="budget_period_id" Value="<%=iCurBudgetPeriod%>"/>
+				<Param Name="value_target" Value="<%=sFldTarget%>"/>
+			</Action>
+<%
+			
+			if (teCurrentKPI.is_global.Value && bOwner)
+			{
+				var catKPIValue = ArrayOptFirstElem(tools.xquery("for $elem in kpi_values where $elem/kpi_id = " + iCurrentKPI + " return $elem/id,$elem/value"));
+%>
+				<Label><%=oConstKPIValueManage.value%></Label>
+				<Edit Name="GlobalValue"><%=(catKPIValue != undefined ? catKPIValue.Child(sFldTarget).Value : "")%></Edit>
+				<Button Click="ACTION=KPIValuesSave"><%=oConstKPIValueManage.save%></Button>
+<%
+			}
+			else
+			{
+			
+%>
+			<Collection Name="KPIValuesGridData">
+				<Data>
+<%
+				var catPA, iAssessed, bIsHuman, catKPIValue, xarrKPIValues;
+				
+				if (bOwner)
+				{
+					xarrKPIValues = tools.xquery("for $elem in kpi_values where $elem/kpi_id = " + iCurrentKPI + " and $elem/budget_period_id = " + iCurBudgetPeriod + " return $elem/id,$elem/value,$elem/object_id");
+					
+					for (catPA in ArraySelectDistinct(aPAs, "This.person_id + '' + This.department_id"))
+					{
+						iAssessed = (catPA.flag_appraise_department.Value ? catPA.department_id.Value : catPA.person_id.Value);
+						catKPIValue = (iAssessed != null ? ArrayOptFindByKey(xarrKPIValues, iAssessed, "object_id") : undefined);
+%>
+					<Row>
+						<Cell Id="id" Value="<%=iAssessed%>"/>
+						<Cell Id="fullname" Value="<%=XmlAttrEncode(catPA.person_fullname)%>"/>
+						<Cell Id="is_human" Value="<%=(catPA.flag_appraise_department.Value ? 0 : 1)%>"/>
+						<Cell Id="value" Value="<%=(catKPIValue != undefined ? catKPIValue.Child(sFldTarget).Value : "")%>"/>
+					</Row>
+<%
+					}
+					
+					
+				}
+				else
+				{
+					xarrKPIValues = tools.xquery("for $elem in kpi_values where $elem/kpi_id = " + iCurrentKPI + " and $elem/responsible_id = " + curUserID + " return $elem/id,$elem/value,$elem/object_name");
+					for (catKPIValue in xarrKPIValues)
+					{
+%>
+						<Row>
+							<Cell Id="id" Value="<%=catKPIValue.PrimaryKey%>"/>
+							<Cell Id="fullname" Value="<%=XmlAttrEncode(catKPIValue.object_name)%>"/>
+							<Cell Id="is_human" Value="2"/>
+							<Cell Id="value" Value="<%=(catKPIValue != undefined ? catKPIValue.Child(sFldTarget).Value : "")%>"/>
+						</Row>
+<%
+					}
+					
+				}
+%>
+				</Data>
+			</Collection>
+			<Button Click="ACTION=KPIValuesSave"><%=oConstKPIValueManage.save%></Button>
+			<DataGrid Name="KPIValuesGrid" Title="" Source="{KPIValuesGridData}">
+				<DataGridColumn Title="ID" Value="id" Type="Label" Hidden="true" Ghost="false"/>
+				<DataGridColumn Title="Is Human" Value="is_human" Type="Label" Hidden="true" Ghost="false"/>
+				<DataGridColumn Title="<%=oConstKPIValueManage.assessed%>" Value="fullname" MinWidth="400" Type="Label" Ghost="true"/>
+				<DataGridColumn Title="<%=oConstKPIValueManage.value%>" Value="value" Width="200" Type="string" Editable="true" Ghost="false"/>
+			</DataGrid>
+<%
+			}
+		}
+	}
+%>
+</SPXMLScreen>

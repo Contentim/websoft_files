@@ -1,0 +1,331 @@
+﻿<SPXMLScreen>
+<%
+/*
+	объект curKnowledge
+	параметры
+		block_list 		- список отображаемых блоков ( "knowledge_parts;tags;experts;settings" ),
+		button_place 	- расположение кнопок ( "up;down" ) внизу и/или вверху ( над каждым списком ),
+		height 			- высота для списков,
+		show_type 		- тип отображения на закладка или последовательно блоками ( block или tab ),
+		cur_object_id 	- ID объекта, если не указан то берется curObjectID, если он не указан берется curDocID,
+		show_title 		- отображать title для объекта,
+		editable		- редактируемо или нет
+*/
+function get_tab_name( name )
+{
+	switch( blockElem )
+	{
+		case "knowledge_parts":
+			return tools_web.get_web_const( "vkpb_knowledge_parts_title", curLngWeb );
+		case "tags":
+			return tools_web.get_web_const( "tegi", curLngWeb );
+		case "experts":
+			return tools_web.get_web_const( "vkpb_experts", curLngWeb );
+		case "settings":
+			return tools_web.get_web_const( "5mrwmycid9", curLngWeb );
+	}
+}
+
+function knowledge_parts_block()
+{
+%>
+	<Edit Hidden="1" Name="SelectedKnowledgePartIds"><%=ArrayMerge( teKnowledgePatrsObject.knowledge_parts, "This.PrimaryKey", ";" )%></Edit>
+	<Collection Name="KnowledgePartsBlockCollection" Source="knowledge_parts_block_collection">
+		<Param Name="cur_object_id" Value="<%=iKnowledgePatrsObjectID%>"/>
+		<Param Name="data_str" Value="{KnowledgePartsBlockData}"/>
+		<Param Name="type" Value="knowledge_parts"/>
+		<Param Name="editable" Value="<%=bEditable%>"/>
+	</Collection>
+	<DataGrid Height="<%=sHeight%>" Name="KnowledgePartsBlock" Title="" Source="{KnowledgePartsBlockCollection}" PageSize="100" Categorized="knowledge_part_id:parent_knowledge_part_id"/>
+<%
+}
+
+function tags_block()
+{
+%>
+	<Edit Hidden="1" Name="SelectedTagIds"><%=ArrayMerge( teKnowledgePatrsObject.tags, "This.PrimaryKey", ";" )%></Edit>
+	<Collection Name="TagsBlockCollection" Source="knowledge_parts_block_collection">
+		<Param Name="cur_object_id" Value="<%=iKnowledgePatrsObjectID%>"/>
+		<Param Name="data_str" Value="{KnowledgePartsBlockData}"/>
+		<Param Name="type" Value="tags"/>
+		<Param Name="editable" Value="<%=bEditable%>"/>
+	</Collection>
+	<DataGrid Height="<%=sHeight%>" Name="TagsBlock" Title="" Source="{TagsBlockCollection}" PageSize="100"/>
+<%
+}
+
+function experts_block()
+{
+%>
+	<Edit Hidden="1" Name="SelectedExpertIds"><%=ArrayMerge( teKnowledgePatrsObject.experts, "This.PrimaryKey", ";" )%></Edit>
+	<Collection Name="ExpertsBlockCollection" Source="knowledge_parts_block_collection">
+		<Param Name="cur_object_id" Value="<%=iKnowledgePatrsObjectID%>"/>
+		<Param Name="data_str" Value="{KnowledgePartsBlockData}"/>bEditable
+		<Param Name="type" Value="experts"/>
+	</Collection>
+	<DataGrid Height="<%=sHeight%>" Name="ExpertsBlock" Title="" Source="{ExpertsBlockCollection}" PageSize="100"/>
+<%
+}
+
+function settings_block()
+{
+%>
+	<ContextGroup Name="KnowledgePartSettings" Items="StartActionDate,FinishActionDate,AcquaintTime,StatusInKnowledgeMap"/>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="25%"/>
+			<GridColumn/>
+			<GridColumn Width="25%"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkmb_start_action_date", curLngWeb )%>:</Label>
+			<DatePicker Enabled="<%=bEditable%>" Width="200" Name="StartActionDate"><%=teKnowledgePatrsObject.kp_start_date.HasValue ? StrDate( teKnowledgePatrsObject.kp_start_date, false ) : ""%></DatePicker>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "j87phjbjvh", curLngWeb )%>:</Label>
+			<DatePicker Enabled="<%=bEditable%>" Width="200" Name="FinishActionDate"><%=teKnowledgePatrsObject.kp_end_date.HasValue ? StrDate( teKnowledgePatrsObject.kp_end_date, false ) : ""%></DatePicker>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Время на ознакомление (мин.)"%>:</Label>
+			<Edit Editable="<%=bEditable%>" Name="AcquaintTime" Width="50" KeyPress="#!1-31:STOP;#!33-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-39:STOP;#!S42:STOP;#!S44-47:STOP;#!S58-10000:STOP;"><%=teKnowledgePatrsObject.acquaint_time%></Edit>
+			<Label/>
+			<Label/>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<ComboBox Enabled="<%=bEditable%>" Name="StatusInKnowledgeMap" SelectedItem="<%=teKnowledgePatrsObject.status_in_knowledge_map%>" Width="200">
+<%
+	for( _status in curLngCommon.status_in_knowledge_map_types )
+	{
+%>
+					<ComboBoxItem Value="<%=_status.id%>"><%=_status.name%></ComboBoxItem>
+<%
+	}
+%>
+			</ComboBox>
+			<Label/>
+			<Label/>
+		</GridRow>
+	</Grid>
+<%
+}
+
+try{
+	curKnowledge
+}
+catch( ex )
+{
+	curKnowledge = {
+		"block_list": tools_web.get_web_param( curParams, "knowledge_parts_block.block_list", "knowledge_parts;tags;experts;settings", true ),
+		"button_place": tools_web.get_web_param( curParams, "knowledge_parts_block.button_place", "down", true ),
+		"height": tools_web.get_web_param( curParams, "knowledge_parts_block.height", "", true ),
+		"show_type": tools_web.get_web_param( curParams, "knowledge_parts_block.show_type", "block", true ),
+		"cur_object_id": tools_web.get_web_param( curParams, "knowledge_parts_block.cur_object_id", "", true ),
+		"show_title": tools_web.get_web_param( curParams, "knowledge_parts_block.show_title", false, true ),
+	}
+	
+}
+
+arrBlockListParam = String( curKnowledge.GetOptProperty( "block_list", "knowledge_parts;tags;experts;settings" ) ).split( ";" );
+arrButtonPlace = String( curKnowledge.GetOptProperty( "button_place", "down" ) ).split( ";" );
+sHeight = curKnowledge.GetOptProperty( "height", "" );
+if( sHeight == "" )
+	sHeight = 300;
+sShowType = curKnowledge.GetOptProperty( "show_type", "block" );
+if( ArrayOptFirstElem( arrBlockListParam ) != undefined )
+{
+	sObjectType = "";
+	teKnowledgePatrsObject = null;
+	iKnowledgePatrsObjectID = OptInt( curKnowledge.GetOptProperty( "cur_object_id", "" ) );
+	if( iKnowledgePatrsObjectID == undefined )
+	{
+		if( curObject != null )
+		{
+			iKnowledgePatrsObjectID = curObjectID;
+			teKnowledgePatrsObject = curObject;
+			sObjectType = "cur_object";
+		}
+		else if( curDoc != undefined && curMode == "doc" )
+		{
+			iKnowledgePatrsObjectID = curDocID;
+			teKnowledgePatrsObject = curDoc;
+			sObjectType = "cur_doc";
+		}
+	}
+	else
+		try
+		{
+			teKnowledgePatrsObject = OpenDoc( UrlFromDocID( iKnowledgePatrsObjectID ) ).TopElem;
+		}
+		catch( ex ){}
+		
+	if( teKnowledgePatrsObject != null && teKnowledgePatrsObject.ChildExists( "status_in_knowledge_map" ) )
+	{
+		if( curKnowledge.GetOptProperty( "editable" ) != undefined )
+			bEditable = tools_web.is_true( curKnowledge.GetOptProperty( "editable" ) );
+		else
+		{
+			bEditable = false;
+			xarrExperts = XQuery( "for $i in experts where $i/type = 'collaborator' and $i/person_id = " + curUserID + " return $i" );
+			bEditable = ArrayOptFirstElem( ArrayIntersect( xarrExperts, teKnowledgePatrsObject.experts, "This.PrimaryKey", "This.PrimaryKey" ) ) != undefined
+		}
+		bShowTitle = tools_web.is_true( curKnowledge.GetOptProperty( "show_title", false ) );
+		if( bShowTitle )
+		{
+			curTitle = {
+				"object": teKnowledgePatrsObject
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+		}
+%>
+	<Action Name="KnowledgePartsBlockAction" Source="knowledge_parts_action" Success="{!messageText}">
+		<Param Name="action" Value="{ActionType}"/>
+		<Param Name="cur_object_id" Value="<%=iKnowledgePatrsObjectID%>"/>
+		<Param Name="data_str" Value="{KnowledgePartsBlockData}"/>
+		<Param Name="context_settings" Value="{CONTEXT}"/>
+		<Param Name="tmp_str" Value=""/>
+		<Param Name="object_type" Value="<%=sObjectType%>"/>
+	</Action>
+	<Edit Name="ActionType" Hidden="1"/>
+	<Dialog Name="SelectObjects" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const("0isplvair0", curLngWeb ) )%>" Close="SET=KnowledgePartsBlockAction/tmp_str,{CatalogListDataGridSelList};ACTION=KnowledgePartsBlockAction;">
+		<Param Name="catalog_name" Value=""/>
+		<Param Name="multi_select" Value="true"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="can_be_empty" Value="true"/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+	<Dialog Name="ElemEdit" Source="dlg_knowledge_parts_block_edit" Title="<%=XmlAttrEncode( tools_web.get_web_const( "5mrwmycid9", curLngWeb ) )%>" Close="{!EditCloseAction}">
+		<Param Name="type" Value=""/>
+		<Param Name="data_str" Value="{KnowledgePartsBlockData}"/>
+		<Param Name="elem_id" Value=""/>
+	</Dialog>
+	<Edit Hidden="1" Name="KnowledgePartsBlockData"><![CDATA[<%=OpenDoc( UrlFromDocID( iKnowledgePatrsObjectID ), "form=x-local://wtv/wtv_knowledge_parts_base.xmd;ignore-top-elem-name=1" ).TopElem.Xml%>]]></Edit>
+	
+<%
+		if( sShowType == "tab" )
+		{
+%>
+	<TabControl Class="<%=( ArrayOptFind( arrButtonPlace, "This == 'up'" ) != undefined ? "XAML-tabcontrol-filter  XAML-tabcontrol-knowledge" : "" )%>">
+<%
+		}
+		for( blockElem in arrBlockListParam )
+		{
+			if( sShowType == "tab" )
+			{
+%>
+		<TabItem Title="<%=get_tab_name( blockElem )%>">
+<%
+			}
+			if( ArrayOptFind( arrButtonPlace, "This == 'up'" ) != undefined )
+			{
+%>
+			<StackPanel Class="XAML-stack-filters-container" Height="54" Orientation="Vertical" Adapt="1">
+				<Grid Width="100%" Class="XAML-grid-filter">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+						<GridColumn/>
+
+					</GridColumns>
+
+					<GridRow>
+
+						<Label Class="XAML-label-filters-title"><![CDATA[<%=sShowType == "block" ? get_tab_name( blockElem ) : ""%>]]></Label>
+
+						<StackPanel Orientation="Horizontal" Class="XAML-panel-search" Adapt="true">
+	
+<%
+				if( bEditable )
+					switch( blockElem )
+					{
+						case "knowledge_parts":
+%>
+							<Button Class="XAML-button  XAML-button-view" Click="CONTEXT=NULL;SET=ActionType,select_knowledge_part;SET=SelectObjects/catalog_name,knowledge_part;SET=SelectObjects/selected_object_ids,{SelectedKnowledgePartIds};OPENDIALOG=SelectObjects;"><%="Добавить значение карты знаний"%></Button>
+<%
+							break;
+						case "tags":
+%>
+							<Button Class="XAML-button  XAML-button-view" Click="CONTEXT=NULL;SET=ActionType,select_tag;SET=SelectObjects/catalog_name,tag;SET=SelectObjects/selected_object_ids,{SelectedTagIds};OPENDIALOG=SelectObjects;"><%="Добавить тег"%></Button>
+<%
+							break;
+						case "experts":
+%>
+							<Button Class="XAML-button  XAML-button-view" Click="CONTEXT=NULL;SET=ActionType,select_expert;SET=SelectObjects/catalog_name,expert;SET=SelectObjects/selected_object_ids,{SelectedExpertIds};OPENDIALOG=SelectObjects;"><%="Добавить эксперта"%></Button>
+<%
+							break;
+					}
+%>
+						</StackPanel>
+					</GridRow>
+				</Grid>
+			</StackPanel>
+<%
+			}
+			switch( blockElem )
+			{
+				case "knowledge_parts":
+					knowledge_parts_block();
+					break;
+				case "tags":
+					tags_block();
+					break;
+				case "experts":
+					experts_block();
+					break;
+				case "settings":
+					settings_block();
+					break;
+			}
+			if( sShowType == "tab" )
+			{
+%>
+		</TabItem>
+<%
+			}
+		}
+		if( sShowType == "tab" )
+		{
+%>
+	</TabControl>
+<%
+		}
+		if( ArrayOptFind( arrButtonPlace, "This == 'down'" ) != undefined && bEditable )
+		{
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn Widht="100%" Align="center"/>
+		</GridColumns>
+		<GridRow>
+			<Toolbar>
+<%
+			for( blockElem in arrBlockListParam )
+			{
+				switch( blockElem )
+				{
+					case "knowledge_parts":
+%>
+				<Button Class="XAML-button" Click="CONTEXT=NULL;SET=ActionType,select_knowledge_part;SET=SelectObjects/catalog_name,knowledge_part;SET=SelectObjects/selected_object_ids,{SelectedKnowledgePartIds};OPENDIALOG=SelectObjects;"><%="Добавить значение карты знаний"%></Button>
+<%
+						break;
+					case "tags":
+%>
+				<Button Class="XAML-button" Click="CONTEXT=NULL;SET=ActionType,select_tag;SET=SelectObjects/catalog_name,tag;SET=SelectObjects/selected_object_ids,{SelectedTagIds};OPENDIALOG=SelectObjects;"><%="Добавить тег"%></Button>
+<%
+						break;
+					case "experts":
+%>
+				<Button Class="XAML-button" Click="CONTEXT=NULL;SET=ActionType,select_expert;SET=SelectObjects/catalog_name,expert;SET=SelectObjects/selected_object_ids,{SelectedExpertIds};OPENDIALOG=SelectObjects;"><%="Добавить эксперта"%></Button>
+<%
+						break;
+				}
+			}
+%>
+				<Button Class="XAML-button" Click="SET=ActionType,save_knowledge;CONTEXT=<%=ArrayOptFind( arrBlockListParam, "This == 'settings'" ) != undefined ? "KnowledgePartSettings" : "NULL"%>;ACTION=KnowledgePartsBlockAction;"><%="Сохранить"%></Button>
+			</Toolbar>
+		</GridRow>
+	</Grid>
+<%
+		}
+	}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,38 @@
+﻿<%
+try
+{
+	curTitle
+}
+catch ( err_curTitle )
+{
+	curTitle = new Object();
+}
+curTitle_sDefaultTitle = curTitle.GetOptProperty("default_title", "");
+curTitle_sObjectTitle = curTitle.GetOptProperty( "title",  (curDoc != null) ? tools_web.get_cur_lng_name( curDoc.name, curLng.short_id ) : curTitle_sDefaultTitle );
+curTitle_sImageUrl = curTitle.GetOptProperty( "image_url", "" );
+if(curTitle_sObjectTitle != "")
+{
+	if ( curTitle_sImageUrl == "" )
+	{
+%>
+<Label Class="XAML-label-template-title"><![CDATA[<%=curTitle_sObjectTitle%>]]></Label>
+<%
+	}
+	else
+	{
+%>
+<Grid Width="100%" Class="XAML-grid-template-title-container">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100%"/>
+		</GridColumns>
+
+		<GridRow>
+				<Image Source="/images/org.png" Width="32" Height="32"/>
+				<Label Class="XAML-label-template-title"><![CDATA[<%=curTitle_sObjectTitle%>]]></Label>
+		</GridRow>
+</Grid>
+<%
+	}
+}
+%>

@@ -1,0 +1,405 @@
+﻿<SPXMLScreen>
+<%
+function check_access()
+{
+	if( isNew || ( objectDoc.person_id == curUserID && objectDoc.status == "forming" ) )
+		return true;
+	else
+		return false;
+}
+
+function check_boss( name )
+{
+		return curUser.access.access_role == name;
+}
+function get_time_arr( sTime )
+{
+	sTime = String( sTime );
+	var arr = sTime.split( ":" );
+	return [ OptInt( arr[ 0 ], 0 ), ( ArrayCount( arr ) > 1 ? OptInt( arr[ 1 ], 0 ) : 0 ) ]
+}
+
+function create_new()
+{
+	docOOE = OpenNewDoc( 'x-local://wtv/wtv_outstaff_order_execution.xmd' );
+	st = dBudget.start_date;
+	aTime = get_time_arr( arrRes.start_time )
+	stHour = aTime[ 0 ];
+	stMinute = aTime[ 1 ];
+	while( st <= dBudget.finish_date )
+	{
+		_ch = docOOE.TopElem.stages.AddChild();
+		//_ch.date = Date( Year( st ), Month( st ), Day( st ), stHour, stMinute );
+		_ch.date = Date( Year( st ), Month( st ), Day( st ) );
+		st = DateOffset( st, 86400 );
+	}
+	return docOOE.TopElem;
+}
+function is_upr()
+{
+	aRoles = String( oParamSource.GetOptProperty( "upr_roles", "upr" ) ).split( ";" );
+	return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+}
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+if( ISDIALOG )
+	objectID = OptInt( oParamSource.GetOptProperty( "object_id" ) );
+else
+	objectID = curObjectID;
+subdivisionID = OptInt( oParamSource.GetOptProperty( "subdivision_id" ), "" );
+isNew = objectID == undefined;
+
+isHr = check_boss( "hr" );
+isOutsorcing = check_boss( "outsorcing" );
+isUpr = is_upr();
+
+isWTcollaborator = OptInt( oParamSource.GetOptProperty( "isWTcollaborator" ), 1 );
+onlyOneRequestForPeriod = OptInt( oParamSource.GetOptProperty( "onlyOneRequestForPeriod" ), 1 ) == 1;
+deductHourFromSub = OptInt( oParamSource.GetOptProperty( "deductHourFromSub" ), 1 );
+
+objectDoc = null;
+if( objectID != undefined )
+	objectDoc = OpenDoc( UrlFromDocID( objectID ) ).TopElem;
+if( !ISDIALOG )
+	objectDoc = curObject;
+if( objectDoc != null )
+objectDoc.stages.Sort( 'This.date', '+' );
+
+dBudget = null;
+dPositionCommon = null;
+positionCommonID = isNew ? OptInt( oParamSource.GetOptProperty( "position_common_id" ), "" ) : objectDoc.position_common_id;
+if( isNew )
+	budgetID = OptInt( oParamSource.GetOptProperty( "budget_period_id" ), "" );
+else
+	budgetID = objectDoc.budget_period_id;
+
+if( isNew )
+{
+	try
+	{
+		dBudget = OpenDoc( UrlFromDocID( budgetID ) ).TopElem;
+	}
+	catch( ex )
+	{}
+	try
+	{
+		dPositionCommon = OpenDoc( UrlFromDocID( OptInt( positionCommonID, "" ) ) ).TopElem;
+	}
+	catch( ex )
+	{}
+	
+}
+
+
+if( !isNew && objectID == undefined )
+{
+%>
+	<Label>Not Parent Object</Label>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+if( onlyOneRequestForPeriod && isNew && ArrayOptFirstElem( XQuery( "for $i in outstaff_order_executions where $i/subdivision_id = " + subdivisionID + " and $i/position_common_id = " + positionCommonID + " and $i/budget_period_id = " + budgetID + " return $i" ) ) != undefined )
+{
+%>
+	<Label><%="В данном подразделении уже подана заявка на данный период"%></Label>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+OutStaffContractId = "";
+pHour = 0;
+arrRes = undefined;
+dSub = null;
+if( ( !isNew && objectDoc.subdivision_id.HasValue && objectDoc.position_common_id.HasValue && objectDoc.start_date.HasValue && objectDoc.finish_date.HasValue ) || ( isNew && dPositionCommon != null && dBudget != null && subdivisionID != "" ) )
+{
+	dSub = OpenDoc( UrlFromDocID( !isNew ? objectDoc.subdivision_id : subdivisionID ) ).TopElem;
+	arrRes = ArrayOptFind( dSub.outstaff.periods, "This.position_common_id == positionCommonID && This.budget_period_id == budgetID" );
+
+	if( arrRes != undefined )
+		pHour = arrRes.hour_num;
+}
+if( arrRes == undefined  )
+{
+%>
+	<Label><%="В выбранном подразделении на данный период нет записи по выбранной должности"%></Label>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+else if( isNew && dBudget != null )
+{
+	
+	cnt_contract = 0;
+	for( elem in XQuery( "for $i in outstaff_contracts where $i/status = 'formed' and $i/type_id = 'outstaff_persons' and $i/start_date <= date( '" + dBudget.start_date + "' ) and $i/finish_date > date( '" + dBudget.start_date + "' ) return $i" ) )
+	{
+		teOutstaffContract = OpenDoc( UrlFromDocID( elem.id ) ).TopElem;
+		for( sub in ArraySelect( teOutstaffContract.regions, "This.subdivision_id == subdivisionID" ) )
+			if( !( sub.all_period || ( sub.start_date <= dBudget.start_date && sub.finish_date > dBudget.start_date ) ) )
+				continue;
+			else if( ArrayOptFind( sub.position_commons, "This.position_common_id == positionCommonID" ) != undefined )
+			{
+				OutStaffContractId = elem.id;
+				cnt_contract++;
+				break;
+			}
+	}
+	if( cnt_contract == 0 )
+	{
+%>
+	<Label><%="Для выбранного подразделения на данный период нет контракта по выбранной должности"%></Label>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+	else if( cnt_contract > 1 )
+	{
+%>
+	<Label><%="В текущем бюджетном периоде существует 2 контракта с одной типовой должностью"%></Label>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+%>
+	<HTMLBox>
+		<![CDATA[
+			<style>
+				.XAML-grid-outstaff-hours>table,.XAML-grid-outstaff-hours-header>table {/*border-collapse: collapse;*/}
+				.XAML-grid-outstaff-hours>table>tbody>tr>td{/*border: 1px #000000 solid;*/}
+				.XAML-grid-outstaff-hours-header>td{/*border: 1px #000000 solid;*/ background: #f2f4f7;}
+				.XAML-without-padding-and-margin-top-end { padding-top: 0px !important; padding-bottom: 0px !important; margin: 0px !important; width: 100%; top: 0px !important }
+				.XAML-outstaff-text-red>div>div>div>input {color: #FF0000 }
+				.XAML-PanelKnowledge .x-panel-header { display: none; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%;  }
+				.XAML-PanelKnowledge .x-panel-body { top: 0px !important; padding: 0px !important; border: 0px; margin: 0px !important; }
+				.XAML-PanelKnowledge-with-top .x-panel-header { display: none; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%;  }
+				.XAML-PanelKnowledge-with-header .x-panel-header { display: block ; padding: 0px !important; border: 0px; margin: 0px !important; width: 100%; }
+				.XAML-without-padding-and-margin { padding: 0px !important; margin: 0px !important; width: 100%; top: 0px !important }
+				.XAML-without-padding-and-margin-right { padding: 0px !important; margin: 0px !important; text-align: right; }
+				.XAML-stack-background-border { background-color: #F5F5F5; border-width: 1px; border-style:solid; border-color: #dbdbdb; padding: 5px; margin: 5px;}
+			</style>
+		]]>
+	</HTMLBox>
+	<Edit Name="CloseAction" Hidden="1"></Edit>
+	<Edit Name="MoreHour" Hidden="1"><%="Превышен размер доступных часов"%></Edit>
+	<Edit Name="ShopID" Hidden="1"></Edit>
+	<Edit Name="ObjectID" Hidden="1"><%=objectID%></Edit>
+	<Edit Name="tmp" Hidden="1"></Edit>
+	<Edit Name="tmpSelectCollaboratorID" Hidden="1"></Edit>
+	<Edit Name="ClassPanelEdit" Hidden="1"><%=(!isNew && pHour < ArraySum( objectDoc.stages, "This.hour_num") ? "XAML-outstaff-text-red" : "")%></Edit>
+	<Edit Name="budgetPeriodID" Hidden="1"><%=budgetID%></Edit>
+	<Edit Name="FormSave" Hidden="1"><%="Форма сохранена"%></Edit>
+	<Edit Name="NotPeriod" Hidden="1"><%="В данный период в подразделении нет запланированных интервалов работы временного персонала"%></Edit>
+	<Edit Name="SubdivisionID" Hidden="1"><%=!isNew ? objectDoc.subdivision_id : subdivisionID%></Edit>
+	<Edit Name="PositionCommonID" Hidden="1"><%=!isNew ? objectDoc.position_common_id : ( dPositionCommon != null ? OptInt( oParamSource.GetOptProperty( "position_common_id" ), "" ) : "" )%></Edit>
+	<Edit Name="ActionSelectObject" Hidden="1"></Edit>
+	<Edit Name="bCreate" Hidden="1"><%=isNew && ( dPositionCommon == null || dBudget == null || subdivisionID == "" ) ? 0 : 1%></Edit>
+	<Edit Name="ContractID" Hidden="1"><%=!isNew ? objectDoc.outstaff_contract_id : OutStaffContractId%></Edit>
+	<Edit Name="ConfirmLabel" Hidden="1"></Edit>
+	<Edit Name="ShowCancel" Hidden="1"></Edit>
+	<Edit Name="ActionCancel" Hidden="1"></Edit>
+	<Edit Name="stageXml" Hidden="1"><%=UrlEncode( isNew ? create_new().Xml : objectDoc.Xml )%></Edit>
+	<Dialog Name="ConfirmObject" Width="400" Source="dlg_show_confirm" Title="Выберите" Close="{!ActionSelectObjectTemp}">
+		<Param Name="label" Value="{ConfirmLabel}"/>
+		<Param Name="show_cancel" Value="{ShowCancel}"/>
+		<Param Name="action_cancel" Value="{ActionCancel}"/>
+		<Param Name="action_ok" Value="{ActionSelectObject}"/>
+	</Dialog>
+	<Dialog Name="SelectCnt" Width="230" Source="dlg_select_cnt_outstaff" Title="Введите число строк" Close="SET=OutStaffAction/cnt,{CntValue};SET=OutStaffAction/action,add_row;ACTION=OutStaffAction;">
+	</Dialog>
+	<Dialog Name="SetPhone" Width="300" Source="dlg_set_phone_outstaff" Title="Введите телефон" Close="SET=Phone,{dlg_phone};UPDATE=PanelPhone;">
+		<Param Name="dlg_phone" Value="{Phone}"/>
+	</Dialog>
+	<Dialog Name="SelectObject" Source="dlg_select" Title="Выберите" Close="{!ActionSelectObject}">
+		<Param Name="catalog_name" Value=""/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="xquery_qual" Value=""/>
+	</Dialog>
+	<Action Name="OutStaffAction" Source="outstaff_plan_request_action" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="tmp" Value="{tmp}"/>
+		<Param Name="action" Value=""/>
+		<Param Name="cnt" Value=""/>
+		<Param Name="max_cnt" Value="<%=arrRes.max_cnt%>"/>
+		<Param Name="object_id" Value="{ObjectID}"/>
+		<Param Name="deduct_hour_from_sub" Value="<%=deductHourFromSub%>"/>
+		<Param Name="default_value_custom_fields" Value="<%=UrlEncode( oParamSource.GetOptProperty( "default_value_custom_fields", "{}" ) )%>"/>
+	</Action>
+	
+	<Toolbar>
+<%
+	if( ISDIALOG )
+	{
+%>
+		<Button Class="XAML-button" Width="100" Click="SET=CloseAction,;CLOSEDIALOG">Закрыть</Button>
+<%
+	}
+	if( ( ( isUpr || isHr ) && ( isNew || objectDoc.status == "forming" ) ) || ( isOutsorcing && ( isNew || objectDoc.status == "formed" ) ) )
+	{
+%>
+		<Button Class="XAML-button" Width="100" Click="SET=OutStaffAction/action,save_object;ACTION=OutStaffAction;">Сохранить</Button>
+<%
+	}
+	if( ( isUpr || isHr ) && ( isNew || objectDoc.status == "forming" ) )
+	{
+%>
+		<Button Class="XAML-button"  Click="SET=OutStaffAction/action,check_formed_object;ACTION=OutStaffAction;">Сформировать и отправить поставщику</Button>
+<%
+	}
+	printForm = ArrayOptFirstElem( XQuery( "for $i in print_forms where $i/code = 'outstaff' return $i" ) );
+	if( !isNew && objectDoc.status == "formed" && printForm != undefined )
+	{
+%>
+		<Button Class="XAML-button"  Click="OPENWINDOW=/view_print_form.html?print_form_id=<%=printForm.id%>&object_id=<%=objectID%>&sid=<%=tools_web.get_sum_sid( printForm.id, Request.Session.sid )%>">Печатная форма Excel</Button>
+<%
+	}
+%>
+	</Toolbar>
+	<TabControl ActiveTab="0">
+		<TabItem Title="Основные сведения">
+			<Grid Class="XAML-info-grid-table">
+				<GridColumns>
+					<GridColumn Align="right"/>
+					<GridColumn Align="left"/>
+				</GridColumns>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name">Вид услуги: </Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin">
+						<Edit Name="TypeUslug" Editable="false"><%=!isNew && objectDoc.position_common_id.HasValue ? objectDoc.position_common_id.ForeignElem.name : ( dPositionCommon != null ? dPositionCommon.name : "" )%></Edit>
+<%
+			if( isNew && dPositionCommon == null )
+			{
+%>
+						<Button Class="XAML-button" Width="30" Click="SET=ActionSelectObject,<%=UrlEncode( "SET=TypeUslug,{CatalogListDataGridFullList:^/disp};SET=PositionCommonID,{CatalogListDataGridFullList:^/id};SET=OutStaffAction/action,check_plan_hours_s;ACTION=OutStaffAction;" )%>;SET=SelectObject/catalog_name,position_common;OPENDIALOG=SelectObject;">...</Button>
+<%
+			}
+%>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Период выполнения заявки" + ":"%></Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin XAML-stack-container">
+						<DatePicker Enabled="<%=isNew && dBudget == null%>" Name="StartDate" Change="SET=OutStaffAction/action,check_plan_hours;ACTION=OutStaffAction;UPDATE=PanelHours"><%=!isNew && objectDoc.start_date.HasValue ? objectDoc.start_date : ( dBudget != null ? dBudget.start_date : "" )%></DatePicker>
+						<Label>-</Label>
+						<DatePicker Enabled="<%=isNew && dBudget == null%>" Name="FinishDate" Change="SET=OutStaffAction/action,check_plan_hours;ACTION=OutStaffAction;UPDATE=PanelHours"><%=!isNew && objectDoc.finish_date.HasValue ? objectDoc.finish_date : ( dBudget != null ? dBudget.finish_date : "" )%></DatePicker>
+					</StackPanel>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Магазин: "%></Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin">
+						<Edit Name="SubdivisionName" Editable="false"><%=!isNew && objectDoc.subdivision_id.HasValue ? objectDoc.subdivision_id.ForeignElem.name : ( dSub != null ? dSub.name : "" )%></Edit>
+<%
+			if( isNew && subdivisionID == "" )
+			{
+%>
+						<Button Class="XAML-button" Width="30" Click="SET=ActionSelectObject,<%=UrlEncode( "SET=SubdivisionName,{CatalogListDataGridFullList:^/disp};SET=SubdivisionID,{CatalogListDataGridFullList:^/id};SET=OutStaffAction/action,check_plan_hours_s;ACTION=OutStaffAction;" )%>;SET=SelectObject/catalog_name,subdivision;OPENDIALOG=SelectObject;">...</Button>
+<%
+			}
+%>
+					</StackPanel>
+				</GridRow>
+<%
+			if (isUpr || isHr)
+			{		
+%>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name">Плановые часы: </Label>
+					<Edit Editable="false" Name="PlanHour"><%=pHour%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name">Остаток часов: </Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin">
+						<Edit Editable="false" Hidden="1" Name="RemainHour"><%=isNew ? pHour : ( pHour >= ArraySum( objectDoc.stages, "This.hour_num" ) ? pHour - ArraySum( objectDoc.stages, "This.hour_num" ) : "-" + ( ArraySum( objectDoc.stages, "This.hour_num" ) - pHour ) )%></Edit>
+						<Panel Name="RemainHourPanel" Source="panel_edit_outstaff" Class="XAML-PanelKnowledge XAML-without-padding-and-margin">
+							<Param Name="text" Value="{RemainHour}"/>
+							<Param Name="class" Value="{ClassPanelEdit}"/>
+						</Panel>
+						<StackPanel Height="50">
+						</StackPanel>
+					</StackPanel>
+			
+				</GridRow>
+<%
+			}
+%>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Телефон магазина для оперативной связи:"%></Label>
+					<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin">
+						<Edit Editable="true" Hidden="1" Name="Phone" KeyPress="#!1-31:STOP;#!33-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-39:STOP;#!S42:STOP;#!S44-47:STOP;#!S58-10000:STOP;"><%=!isNew && objectDoc.custom_elems.GetOptChildByKey( "phone" ) != undefined ? objectDoc.custom_elems.GetOptChildByKey( "phone" ).value : ""%></Edit>
+						<Panel Name="PanelPhone" Width="200" Source="panel_phone_outstaff" Class="XAML-PanelKnowledge XAML-without-padding-and-margin">
+							<Param Name="phone" Value="{Phone}"/>
+						</Panel>
+<%
+			if ( !isOutsorcing )
+			{		
+%>
+						<Button Class="XAML-button" Click="OPENDIALOG=SetPhone;"><%="Редактировать"%></Button>
+<%
+			}	
+%>
+					</StackPanel>
+					
+				</GridRow>
+			</Grid>
+			<Panel Name="PanelHours" Source="panel_hours_outstaff" Class="XAML-PanelKnowledge XAML-without-padding-and-margin">
+				<Param Name="ThisDate" Value="{StartDate}"/>
+				<Param Name="FinishDate" Value="{FinishDate}"/>
+				<Param Name="TypeUslug" Value="{TypeUslug}"/>
+				<Param Name="bCreate" Value="{bCreate}"/>
+				<Param Name="ObjectID" Value="<%=!isNew ? objectID : ""%>"/>
+				<Param Name="stageXml" Value="{stageXml}"/>
+				<Param Name="isWTcollaborator" Value="<%=isWTcollaborator%>"/>
+				<Param Name="days_length" Value="<%=arrRes.days_length.HasValue ? arrRes.days_length : "8;9;10;11"%>"/>
+				<Param Name="max_cnt" Value="<%=arrRes.max_cnt%>"/>
+				<Param Name="ext_time" Value="<%=arrRes.ext_time%>"/>
+			</Panel>
+		</TabItem>
+		<TabItem Title="<%="Дополнительные сведения"%>">
+			<Grid Class="XAML-info-grid-table">
+				<GridColumns>
+					<GridColumn  Align="right"/>
+					<GridColumn Align="left"/>
+				</GridColumns>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Номер заявки:"%></Label>
+					<Edit Width="90%" Editable="false"><%=objectDoc != null ? objectDoc.code : ""%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Название заявки:"%></Label>
+					<Edit Width="90%" Editable="false"><%=objectDoc != null ? objectDoc.name : ""%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Статус заявки:"%></Label>
+					<Edit Width="90%" Editable="false"><%=objectDoc != null ? objectDoc.status.ForeignElem.name : ""%></Edit>
+				</GridRow>
+<%
+			OutstaffContract = undefined;
+			outstaffProvider = undefined;
+			if( objectDoc != null )
+			{
+				OutstaffContract = objectDoc.outstaff_contract_id.OptForeignElem;
+				try
+				{
+					outstaffProvider = OpenDoc( UrlFromDocID( objectDoc.outstaff_provider_id ) ).TopElem;
+				}
+				catch( ex ){}
+			}
+%>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Поставщик:"%></Label>
+					<Edit Width="90%" Editable="false"><%=outstaffProvider != undefined ? outstaffProvider.name : ""%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label  Class="XAML-grid-label-name"><%="Контракт поставщика:"%></Label>
+					<Edit Width="90%" Editable="false"><%=OutstaffContract != undefined ? OutstaffContract.name : ""%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%="Контактный телефон заказчика:"%></Label>
+					<Edit Width="90%" Editable="false"><%=outstaffProvider != undefined ? outstaffProvider.phone : ""%></Edit>
+				</GridRow>
+			</Grid>
+		</TabItem>
+	</TabControl>
+</SPXMLScreen>

@@ -1,0 +1,99 @@
+﻿<%
+docEventResult = OpenDoc( UrlFromDocID( Int( curUrlQuery.GetOptProperty( "event_result_id", "" ) ) ) );
+teEventResult = docEventResult.TopElem;
+if( teEventResult.person_id != curUserID )
+{
+%>
+<SPXMLScreen>
+<%
+	curMessageBox = {
+		"type": "info",
+		"text": "У вас нет прав на выполнение действия",
+	};
+
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+bShowPreConfirm = tools_web.is_true( tools_web.get_web_param( curParams, "event_action.show_pre_confirm", "1", true ) );
+
+sAction = curUrlQuery.GetOptProperty( "action", "" );
+sActionReady = "";
+
+sPostAction = "";
+aPostActionParams = String( tools_web.get_web_param( curParams, "event_action.post_action", "confirm;redirect", true ) ).split( ";" );
+if( ArrayOptFind( aPostActionParams, "This == 'confirm'" ) )
+{
+	sPostAction += "ALERT={messageText};";
+}
+sRedirectAction = ""
+if( ArrayOptFind( aPostActionParams, "This == 'redirect'" ) )
+{
+	sRedirectType = String( tools_web.get_web_param( curParams, "event_action.post_action.redirect.type", "event", true ) )
+	if( sRedirectType != "" )
+	{
+		sRedirectAction += "OPENURL=";
+		switch( sRedirectType )
+		{
+			case "event":
+				sRedirectAction += tools_web.get_mode_clean_url( null, teEventResult.event_id );
+				break;
+			case "event_calendar":
+			case "home":
+			case "my_account":
+				sRedirectAction += tools_web.get_mode_clean_url( sRedirectType );
+				break;
+			case "url":
+				sRedirectAction += tools_web.get_web_param( curParams, "event_action.post_action.redirect.type.url", "", true );
+				break;
+			case "in_url":
+				sRedirectAction += UrlDecode( curUrlQuery.GetOptProperty( "redirect_url", "" ) );
+				break;
+		}
+		sRedirectAction += ";"
+	}
+	sPostAction += sRedirectAction;
+}
+
+if( bShowPreConfirm )
+{
+	sActionReady += "CONFIRM=";
+	switch( sAction )
+	{
+		case "confirm_participation":
+			sActionReady += UrlEncode( "Вы уверены что хотите подтвердить участие в мероприятии?" );
+			break;
+		case "refused_participation":
+			sActionReady += UrlEncode( "Вы уверены что хотите отказаться от участия в мероприятии?" );
+			break;
+	}
+	sActionReady += ";"
+}
+
+switch( sAction )
+{
+	case "confirm_participation":
+	case "refused_participation":
+		if( !teEventResult.is_confirm && !teEventResult.not_participate )
+			sActionReady += "SET=RunAction/sAction," + sAction + ";SET=RunAction/iUserId," + curUserID + ";ACTION=RunAction"
+		else if( teEventResult.is_confirm )
+			sActionReady = "ALERT=" + UrlEncode( "Вы уже подтвердили участие в мероприятии" ) + ";" + sRedirectAction
+		else if( teEventResult.not_participate )
+			sActionReady = "ALERT=" + UrlEncode( "Вы уже отказались от участия в мероприятии" ) + ";" + sRedirectAction
+		break;
+}
+
+%>
+<SPXMLScreen Ready="<%=sActionReady%>">
+
+	<Action Name="RunAction" Source="event_actions" Success="<%=sPostAction%>">
+	  <Param Name="iUserId" Value=""/>
+	  <Param Name="iEventId" Value="<%=teEventResult.event_id%>"/>
+	  <Param Name="sAction" Value=""/>
+	  <Param Name="sSelectedObjects" Value=""/>
+	</Action>
+
+</SPXMLScreen>

@@ -1,0 +1,182 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+curDescObjectID = iLearningTaskResultID = OptInt( oParamSource.GetOptProperty( "learning_task_id" ), null );
+curDescObject = teLearningTaskResult = OpenDoc( UrlFromDocID( iLearningTaskResultID ) ).TopElem;
+teLearningTask = OpenDoc( UrlFromDocID( teLearningTaskResult.learning_task_id ) ).TopElem;
+teEducationPlan = OpenDoc( UrlFromDocID(teLearningTaskResult.education_plan_id)).TopElem;
+
+bUserIsLector = false;
+if ( teEducationPlan.event_id.HasValue )
+{
+	teEvent = OpenDoc(UrlFromDocID(teEducationPlan.event_id)).TopElem;
+	for(fldLector in teEvent.lectors)
+	{
+		catLector = fldLector.lector_id.OptForeignElem;
+		if(catLector != undefined && catLector.person_id == curUserID)
+		{
+			bUserIsLector = true;
+			break;
+		}
+	}
+}
+
+bUserIsExpert = ArrayOptFindByKey( teLearningTask.experts, curUserID, "person_id" ) != undefined;
+
+if(bUserIsLector || bUserIsExpert)
+{
+%>
+<Action Name="LearningTaskResultChangeAction" Source="learning_task_result_change" Success="<%=ISDIALOG?"CLOSEDIALOG":"REFRESH"%>" Failure="ALERT={messageText}">
+	<Param Name="action" Value="evaluate"/>
+	<Param Name="learning_task_id" Value="<%=teLearningTaskResult.learning_task_id%>"/>
+	<Param Name="learning_task_result_id" Value="<%=iLearningTaskResultID%>"/>
+	<Param Name="education_plan_id" Value="<%=teLearningTaskResult.education_plan_id%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+}
+%>
+<Label Class="XAML-label-header-3"><%=tools_web.get_cur_lng_name( teLearningTask.name,curLng.short_id )%></Label>
+<%
+if ( teLearningTaskResult.status_id != "process" )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": ( teLearningTaskResult.status_id == "evaluated" ? "Задание выполнено и оценено." : "Задание выполнено и ожидает оценки." )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+
+<TabControl Name="LearningTaskTab" Width="100%" Preservable="1" TabsLocation="n">
+<%
+if(bUserIsLector || bUserIsExpert)
+{
+%>
+	<TabItem Class="icon-file-text" Title="<%=XmlAttrEncode("Ответ")%>">
+<%
+if ( curDescObject.desc.HasValue )
+{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-overflow" Height="300" Width="100%" UsePadding="false">
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+		</StackPanel>
+<%
+}
+%>
+		<Grid Width="100%" Class="XAML-grid-container">
+			<GridColumns>
+				<GridColumn Width="120"/>
+				<GridColumn/>
+			</GridColumns>
+<%
+	fldFile = ArrayOptFirstElem( teLearningTaskResult.files );
+	bDispCloseTag = true;
+	if ( fldFile != undefined )
+	{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_file", curLngWeb )%>:</Label>
+<%
+		catResource = fldFile.PrimaryKey.OptForeignElem;
+		if ( catResource != undefined )
+		{
+%>
+				<Link Click="OPENWINDOW=<%=tools_web.get_object_source_url( "resource", catResource.id )%>"><![CDATA[<%=catResource.name%>]]></Link>
+<%
+			bDispCloseTag = false;
+		}
+	if ( bDispCloseTag )
+	{
+%>
+				<Label/>
+<%
+	}
+%>
+			</GridRow>
+<%
+	}
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%="Оценка"%>:</Label>
+				<Edit Name="Mark" Width="40"  Editable="<%=teLearningTaskResult.status_id == "evaluation"%>" Enabled="<%=teLearningTaskResult.status_id == "evaluation"%>"><![CDATA[<%=teLearningTaskResult.mark%>]]></Edit>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%="Коментарий"%>:</Label>
+				<EditBox Name="Comment" Width="100%"  Editable="<%=teLearningTaskResult.status_id == "evaluation"%>" Enabled="<%=teLearningTaskResult.status_id == "evaluation"%>"><![CDATA[<%=teLearningTaskResult.comment%>]]></EditBox>
+			</GridRow>
+		</Grid>
+
+	</TabItem>
+<%
+}
+%>
+	<TabItem Class="icon-info-circle" Title="<%=XmlAttrEncode("Задание")%>">
+
+<%
+curDescObject = teLearningTask;
+if ( curDescObject.desc.HasValue )
+{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-overflow" Height="300" Width="100%" UsePadding="false">
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+		</StackPanel>
+<%
+}
+%>
+		<Grid Width="100%" Class="XAML-grid-container">
+			<GridColumns>
+				<GridColumn Width="120"/>
+				<GridColumn/>
+			</GridColumns>
+<%
+	fldFile = ArrayOptFirstElem( teLearningTask.files );
+	bDispCloseTag = true;
+	if ( fldFile != undefined )
+	{
+%>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_file", curLngWeb )%>:</Label>
+<%
+		catResource = fldFile.PrimaryKey.OptForeignElem;
+		if ( catResource != undefined )
+		{
+%>
+				<Link Click="OPENWINDOW=<%=tools_web.get_object_source_url( "resource", catResource.id )%>"><![CDATA[<%=catResource.name%>]]></Link>
+<%
+			bDispCloseTag = false;
+		}
+	if ( bDispCloseTag )
+	{
+%>
+				<Label/>
+<%
+	}
+%>
+			</GridRow>
+<%
+	}
+%>
+		</Grid>
+	</TabItem>
+
+</TabControl>
+
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=LearningTaskResultChangeAction">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

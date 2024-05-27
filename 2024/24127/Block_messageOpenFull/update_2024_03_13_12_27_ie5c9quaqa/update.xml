@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>ie5c9quaqa</id>
+		<create_date>2024-03-13T12:27:02+00:00</create_date>
+		<server_version>2023.2.856 (2024-03-07)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x65F170573233D963</id>
+			<code>Block_messageOpenFull</code>
+			<name lang-ru:VALUE="##'Открыть карточку блока сообщений (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>block_message</catalog_name>
+			<link_name>block_message</link_name>
+			<show_in_list>true</show_in_list>
+			<show_in_form>true</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/Block_messageOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/Block_messageOpenFull.bs</url>
+			<default_disp_evaluate>false</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

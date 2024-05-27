@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>oaqhv4nab8</id>
+		<create_date>2024-02-02T18:36:36+00:00</create_date>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<notifications>
+		<notification>
+			<id>0x610B6DC4E89A3B1C</id>
+			<code>continuous_feedback_delete_notify</code>
+			<name lang-ru:VALUE="##'Уведомление об отмене запроса на обратную связь'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>6992803414063069331</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+		</notification>
+		<notification>
+			<id>0x610B6C996BF3F768</id>
+			<code>continuous_feedback_remind</code>
+			<name lang-ru:VALUE="##'Напоминание о необходимости заполнить обратную связь'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>6992802554912268160</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+		</notification>
+	</notifications>
+</data>

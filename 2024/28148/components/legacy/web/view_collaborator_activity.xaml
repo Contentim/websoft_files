@@ -1,0 +1,22 @@
+﻿<SPXMLScreen>
+<!--
+	<Collection Name="COLLABORATOR_ACTIVITY_LIST" Source="COLLABORATOR_ACTIVITY_LIST">
+		<Param Name="person_id" Value="<%=curObjectID%>"/>
+		<Param Name="returndatatype" Value="datagrid"/>
+	</Collection>
+
+	<DataGrid Name="CollaboratorActivityList" Title="<%=tools_web.get_web_const("rezultatydeyate", curLngWeb)%>" Source="{COLLABORATOR_ACTIVITY_LIST}" Width="100%" Height="400"/>
+	<Chart Name="COLLABORATOR_ACTIVITY_GRAPH" Width="100%" Height="400" DataChartID="caption" DataCategory="name" DataValue="raw_value" Source="{COLLABORATOR_ACTIVITY_LIST}"/>
+-->
+
+	<Collection Name="ObjectiveDashboard" Source="COLLABORATOR_ACTIVITY_LIST">
+		<Param Name="person_id" Value="<%=curObjectID%>"/>
+		<Param Name="returndatatype" Value="chart"/>
+	</Collection>
+
+	
+	<WTTree Name="AssObjDashChart" Width="100%" DisplayToggle="1" Source="{ObjectiveDashboard}" Selectable="0" DataID="id" DataParent="parent_id" DataTitle="name" DataImage="icon" NodeMode="normal" NodeClick="" ElementWidth="300" ElementHeight="100" Orientation="left" DisplayTips="1" TipLayout="image=icon|text=text" ElementForm="roundrect" LevelsOpen="1">
+	</WTTree>
+
+
+</SPXMLScreen>

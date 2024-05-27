@@ -1,0 +1,167 @@
+﻿<SPXMLScreen><%
+	try
+	{
+		curAddingSelector
+		sAddingSelectorID = curAddingSelector.GetOptProperty( 'id', '' );
+		bShow = tools_web.is_true( curAddingSelector.GetOptProperty( 'show', '1' ) );
+		arrSelectingObjects = curAddingSelector.GetOptProperty( 'arr_selecting_objects', [] );
+		sXQueryQual = curAddingSelector.GetOptProperty( 'xquery_qual', '' );
+		sCatalogName = curAddingSelector.GetOptProperty( 'catalog_name', '' );
+		bShowNext = tools_web.is_true( curAddingSelector.GetOptProperty( 'show_next', '1' ) );
+		bEditable = tools_web.is_true( curAddingSelector.GetOptProperty( 'editable', '1' ) );
+		bAddSelector = false;
+		bCanChange = tools_web.is_true( curAddingSelector.GetOptProperty( 'can_change', '0' ) );
+		iSelectObjectID = OptInt( curAddingSelector.GetOptProperty( 'select_object_id', '' ) );
+		sSelectObjectName = curAddingSelector.GetOptProperty( 'select_object_name', '' );
+		aAdditionalFields = curAddingSelector.GetOptProperty( 'additional_fields', [] );
+		sSelectAction = curAddingSelector.GetOptProperty( 'select_action', "" );
+	}
+	catch( ex )
+	{
+		
+		sAddingSelectorID = tools_web.get_web_param( PARAMETERS, 'id', '', true );
+		bShow = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'show', '0', true ) )
+		arrSelectingObjects = tools.read_object( tools_web.get_web_param( PARAMETERS, 'arr_selecting_objects', '[]', true ) );
+		sXQueryQual = tools_web.get_web_param( PARAMETERS, 'xquery_qual', '', true );
+		sCatalogName = tools_web.get_web_param( PARAMETERS, 'catalog_name', '', true );
+		bShowNext = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'show_next', '1', true ) )
+		bEditable = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'editable', '1', true ) );
+		bAddSelector = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'add_selector', '1', true ) );
+		bCanChange = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'can_change', '0', true ) );
+		iSelectObjectID = OptInt( tools_web.get_web_param( PARAMETERS, 'select_object_id', '', true ) );
+		sSelectObjectName = UrlDecode( tools_web.get_web_param( PARAMETERS, 'select_object_name', '', true ) );
+
+		aAdditionalFields = tools.read_object( UrlDecode( tools_web.get_web_param( PARAMETERS, 'additional_fields', '[]', true ) ) );
+		sSelectAction = tools_web.get_web_param( PARAMETERS, 'select_action', '', true );
+	}
+	//alert( 'sSelectObjectName '+sSelectObjectName )
+	//alert( 'iSelectObjectID '+iSelectObjectID )
+		
+	sNewName = tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" )
+	if( bShow )
+	{
+		if( !bAddSelector && bEditable )
+		{
+%>
+	<Edit Name="AddingSelectorLastPanelID<%=sAddingSelectorID%>" Hidden="1"><%=sNewName%></Edit>
+	<Edit Name="AddingSelectorChangeEditID<%=sAddingSelectorID%>" Hidden="1"/>
+	<Edit Name="AddingSelectorCloseAction<%=sAddingSelectorID%>" Hidden="1"/>
+	<Dialog Name="SelectDialogAddingSelector<%=sAddingSelectorID%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!AddingSelectorCloseAction<%=sAddingSelectorID%>}">
+		<Param Name="catalog_name" Value="<%=sCatalogName%>"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="xquery_qual" Value="<%=XmlAttrEncode( sXQueryQual )%>"/>
+		<Param Name="disp_filter" Value="<%=tools_web.is_true( ( curDevice.disp_type == "" ) )%>"/>
+		<Param Name="can_be_empty" Value="false"/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+<%
+		}
+		if( ArrayOptFirstElem( arrSelectingObjects ) == undefined && ( iSelectObjectID != undefined || !bShowNext ) )
+		{
+			oSelected = new Object();
+			if( iSelectObjectID != undefined )
+			{
+				oSelected.object_id = iSelectObjectID;
+				oSelected.object_name = sSelectObjectName
+			}
+			arrSelectingObjects = [ oSelected ];
+		}
+			
+		sCloseAction = "Set=ObjectName{AddingSelectorChangeEditID" + sAddingSelectorID + "},{CatalogListDataGridFullList:^/disp};Set={AddingSelectorChangeEditID" + sAddingSelectorID + "},{CatalogListDataGridFullList:^/id};" + ( sSelectAction != "" ? "SET=TempAddingSelectorId,{CatalogListDataGridFullList:^/id};" + sSelectAction : "" );
+		for( elem in arrSelectingObjects )
+		{
+%>
+	<StackPanel Name="StackPanel<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+		<Edit Name="FieldID<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Hidden="1"><%=elem.GetOptProperty( "id", sNewName )%></Edit>
+		<Edit Name="DeleteSelector<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Hidden="1"/>
+		<Edit Name="<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Hidden="1"><%=elem.GetOptProperty( "object_id", "" )%></Edit>
+		<StackPanel Orientation="Horizontal" Adapt="1" Class="XAML-stack-container">
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+			if( bEditable )
+			{
+%>
+				<Edit Name="ObjectName<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Width="<%=curDevice.disp_type == "mobile" ? "100%" : "300"%>"  Editable="false" Class="XAML-input-selector"><![CDATA[<%=elem.GetOptProperty( "object_name", "" )%>]]></Edit>
+<%
+			}
+			else
+			{
+%>
+				<Label Width="300"><![CDATA[<%=elem.GetOptProperty( "object_name", "" )%>]]></Label>
+<%
+			}
+%>
+		
+<%
+			if( bEditable )
+			{
+				if (  bCanChange || !bShowNext  )
+				{
+%>
+				<Button Click="SET=AddingSelectorCloseAction<%=sAddingSelectorID%>,<%=UrlEncode( sCloseAction )%>;SET=AddingSelectorChangeEditID<%=sAddingSelectorID%>,<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>;OPENDIALOG=SelectDialogAddingSelector<%=sAddingSelectorID%>" Class="XAML-button-content XAML-button-selector icon-folder-open-o"></Button>
+				<Button Click="Set=<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>,;Set=ObjectName<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>,;" Class="XAML-button-content XAML-button-selector icon-close"></Button>
+<%
+				}
+			}
+%>
+			</StackPanel>
+<%
+			if( ArrayOptFirstElem( aAdditionalFields ) != undefined )
+			{
+				for( field in aAdditionalFields )
+				{
+					if( bEditable )
+					{
+%>
+			<Edit Editable="<%=( ( bCanChange || !bShowNext ) )%>" Name="AdditionalFields<%=field.id + "adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>" Width="<%=field.GetOptProperty( "width", 300 )%>"><%=elem.GetOptProperty( field.id, "" )%></Edit>
+<%
+					}
+					else
+					{
+%>
+			<Label Width="<%=field.GetOptProperty( "width", 300 )%>"><%=elem.GetOptProperty( field.id, "" )%></Label>
+<%
+					}
+				}
+			}
+%>
+		</StackPanel>
+<%
+			if( bEditable && bShowNext )
+			{
+%>
+		<Button  Click="HIDE=StackPanel<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>;SET=DeleteSelector<%="adding_selector_object_" + sAddingSelectorID + "_" + elem.GetOptProperty( "id", sNewName )%>,1;" Class="XAML-button-content XAML-button-selector icon-delete"></Button>
+<%
+			}
+%>
+	</StackPanel>
+<%
+		}
+		if( bEditable && bShowNext )
+		{
+			sNextAction = "SET=AddingSelectorShowEdit" + sNewName + ",1;Set=AddingSelectorSelectObjectName" + sNewName + ",{CatalogListDataGridFullList:^/disp};Set=AddingSelectorSelectObjectID" + sNewName + ",{CatalogListDataGridFullList:^/id};HIDE=AddButtonAddingSelector" + sNewName + ";UPDATE=BlockAddingSelector" + sNewName + ";" + ( sSelectAction != "" ? "SET=TempAddingSelectorId,{CatalogListDataGridFullList:^/id};" + sSelectAction : "" );
+%>
+	<Edit Name="AddingSelectorShowEdit<%=sNewName%>" Hidden="1"/>
+	<Edit Name="AddingSelectorSelectObjectID<%=sNewName%>" Hidden="1"/>
+	<Edit Name="AddingSelectorSelectObjectName<%=sNewName%>" Hidden="1"/>
+	<Panel Name="BlockAddingSelector<%=sNewName%>" Source="panel_adding_selector" ShowHeader="false">
+		<Param Name="xquery_qual" Value="<%=XmlAttrEncode( sXQueryQual )%>"/>
+		<Param Name="id" Value="<%=sAddingSelectorID%>"/>
+		<Param Name="show" Value="{AddingSelectorShowEdit<%=sNewName%>}"/>
+		<Param Name="add_selector" Value="1"/>
+		<Param Name="catalog_name" Value="<%=sCatalogName%>"/>
+		<Param Name="can_change" Value="<%=bCanChange%>"/>
+		<Param Name="select_object_id" Value="{AddingSelectorSelectObjectID<%=sNewName%>}"/>
+		<Param Name="select_object_name" Value="{AddingSelectorSelectObjectName<%=sNewName%>}"/>
+		<Param Name="select_action" Value="<%=sSelectAction%>"/>
+		<Param Name="additional_fields" Value="<%=UrlEncode( tools.object_to_text( aAdditionalFields, 'json' ) )%>"/>
+	</Panel>
+	<StackPanel Name="AddButtonAddingSelector<%=sNewName%>" Hidden="0">
+		<Button Class="XAML-button" Click="SET=AddingSelectorCloseAction<%=sAddingSelectorID%>,<%=UrlEncode( sNextAction )%>;OPENDIALOG=SelectDialogAddingSelector<%=sAddingSelectorID%>"><%=XmlAttrEncode( tools_web.get_web_const( "veb_add", curLngWeb ) )%></Button>
+	</StackPanel>
+<%
+		}
+	}
+
+%>
+</SPXMLScreen>

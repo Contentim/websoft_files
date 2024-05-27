@@ -1,0 +1,17 @@
+﻿<SPXMLScreen>
+	<Label Class="XAML-object-title-label"><%=tools_web.get_web_const( '9il1vjwtjw', curLngWeb )%></Label>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="50%" Align="Right"/>
+			<GridColumn/>
+		</GridColumns>		
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_code")%>:</Label>
+			<Label><%=curObject.code%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_name")%>:</Label>
+			<Label><%=tools_web.get_cur_lng_name( curObject.name , curLng.short_id )%></Label>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

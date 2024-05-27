@@ -1,0 +1,746 @@
+﻿<%
+sReadyAction = "";
+curAssessmentID = null;
+curPart = undefined;
+curPartCode = curUrlQuery.GetOptProperty( "part_code", "" );
+curCourseID = OptInt( curUrlQuery.GetOptProperty( "course_id" ), null );
+
+bDisableFinishTestBtn = tools_web.is_true( tools_web.get_web_param( curParams, "test_learning_proc_body.disable_finish_test_btn", "0", true ) );
+bHideFinishAttemptBtn = tools_web.is_true( tools_web.get_web_param( curParams, "test_learning_proc_body.hide_finish_attempt_btn", "0", true ) );
+
+if ( curObjectID == null )
+{
+	curOldObjectID = OptInt( curUrlQuery.GetOptProperty( "old_object_id" ), null );
+	if ( curOldObjectID != null )
+	{
+		try
+		{
+			curObjectDoc = OpenDoc( UrlFromDocID( curOldObjectID ) );
+			Env.SetProperty( 'curObjectDoc', curObjectDoc );
+			Env.SetProperty( 'curObjectID', curObjectID = curOldObjectID );
+			curObject = curObjectDoc.TopElem;
+		}
+		catch ( err )
+		{
+			curObjectID = null;
+		}
+
+		if ( curObjectID == null )
+		{
+			catTestLearning = ArrayOptFirstElem( XQuery( 'for $elem in test_learnings where $elem/active_test_learning_id = ' + curOldObjectID + ' return $elem' ) );
+			if ( catTestLearning == undefined )
+			{
+				if ( curCourseID != null && curPartCode != "" )
+					sReadyAction = "OPENURL=" + tools_web.get_mode_clean_url( "learning", null, { doc_code: "learnings", doc_id: curDocID } );
+			}
+			else
+			{
+				curAssessmentID = catTestLearning.assessment_id.Value;
+				curAssessment = OpenDoc( UrlFromDocID( catTestLearning.assessment_id ) ).TopElem;
+				if ( curAssessment.test_finish_redirect == "main" )
+					sReadyAction = "OPENURL=/home"
+				else if ( curAssessment.test_finish_redirect == "url" )
+					sReadyAction = "OPENURL=" + curAssessment.test_finish_redirect_url;
+				else
+					sReadyAction = "OPENURL=" + tools_web.get_mode_clean_url( curAssessment.test_finish_redirect, null, { doc_code: ( curAssessment.test_finish_redirect + "s" ), doc_id: curDocID } );
+			}
+		}
+	}
+}
+if ( curObject != null && curObject.Name == 'test_learning' )
+{
+	sReadyAction = "OPENURL=" + tools_web.get_mode_clean_url( "test_learning_stat", curObjectID, { doc_id: curDocID } );
+}
+%>
+<SPXMLScreen Ready="<%=sReadyAction%>">
+<%
+if ( sReadyAction != "" )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+
+if ( curObjectID == null )
+{
+	bNotFound = false;
+	activeTestLearningArray = undefined;
+	curAssessmentID	= OptInt( curUrlQuery.GetOptProperty( 'assessment_id' ), null );
+	if ( curAssessmentID == null )
+	{
+		bNotFound = true;
+	}
+	else
+	{
+		activeTestLearningArrayFirstElem = ArrayOptFirstElem( XQuery( 'for $elem in active_test_learnings where $elem/person_id = ' + curUserID + ' and $elem/assessment_id = ' + curAssessmentID + ' return $elem' ) );
+		if ( activeTestLearningArrayFirstElem == undefined )
+			bNotFound = true;
+	}
+
+	if ( bNotFound )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'obektnenayden', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+
+	Env.SetProperty( 'curObjectID', curObjectID = activeTestLearningArrayFirstElem.id.Value );
+	Env.SetProperty( 'curObjectDoc', curObjectDoc = OpenDoc( UrlFromDocID( curObjectID ) ) );
+	curObject = curObjectDoc.TopElem;
+
+	curAssessment = OpenDoc( UrlFromDocID( curAssessmentID ) ).TopElem;
+}
+
+
+if ( curCourseID != null && curPartCode != "" )
+	curPart = curObject.parts.GetOptChildByKey( curPartCode );
+
+if ( curPart == undefined )
+{
+	curSource = curObject;
+	dtStartLearningDate = curObject.start_learning_date;
+	dtMaxEndDate = curObject.max_end_date;
+	iState = curSource.state_id.Value;
+}
+else
+{
+	curSource = curPart;
+	dtStartLearningDate = null;
+	dtMaxEndDate = null;
+	iState = curSource.cur_state_id.Value;
+}
+
+if ( curAssessmentID == null )
+{
+	if ( ! curSource.ChildExists( 'assessment_id' ) || ! curSource.assessment_id.HasValue )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'obektnenayden', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+
+	curAssessmentID	= curSource.assessment_id.Value;
+	try
+	{
+		curAssessment = OpenDoc( UrlFromDocID( curAssessmentID ) ).TopElem;
+	}
+	catch ( err )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": ( tools_web.get_web_const( 'c_deleted', curLngWeb ) + ' Test ID: ' + curAssessmentID )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+
+curTitle = {
+	"object": curAssessment,
+	"object_title": tools_web.get_web_const( '8fx0ngrjex', curLngWeb )
+}
+
+
+if ( curObject.person_id != curUserID || ! tools_web.check_access( curAssessment, curUserID, curUser, Session ) )
+{
+	curMessageBox = {
+		"type": "error_access"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_check_education_plan_access.xaml" ) );
+
+
+bComplete = curSource.state_id != 0 && curSource.state_id != 1;
+bExpertEvalFlag = curSource.state_id == 2 && curSource.ChildExists( 'expert_eval' ) && curSource.expert_eval;
+bIsActive = ! bExpertEvalFlag && ( ! bComplete || curSource.attempts_num > curSource.test_learnings.ChildNum ) && ( dtStartLearningDate == null || dtStartLearningDate < CurDate );
+
+if (curSource.state_id == 4)
+	bDisableFinishTestBtn = false;
+
+bScheduleActive = true;
+if ( ! curAssessment.schedule.check_week_schedule( curUserID, curUser, Session ) )
+{
+	bScheduleActive = false;
+	bIsActive = false;
+}
+
+arrBlockListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.block_list', 'object_header;object_messages;object_buttons;object_tabs', true ) ).split( ";" );
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('id','zone','custom_web_template_id','wvars_num')" ) );
+
+function drowInfoGrid()
+{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+			arrGridRows = String( tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.main_tab.block_list.info_block.grid_row_list", "start_usage_date;last_usage_date;passing_score;score;state_id;cur_score;cur_state_id;attempts_num", true ) ).split( ";" );
+			for ( sGridRowElem in arrGridRows )
+			{
+				if ( sGridRowElem == 'start_usage_date' )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_act_date', curLngWeb )%>:</Label>
+					<Label><%=StrDate( curSource.start_usage_date, true, false )%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'last_usage_date' )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vtlpb_last_use', curLngWeb )%>:</Label>
+					<Label><%=StrDate( curSource.last_usage_date, true, false )%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'passing_score' )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_pass_score', curLngWeb )%>:</Label>
+					<Label><%=StrReal( curAssessment.passing_score, 2 )%> <%=( curAssessment.passing_score.HasValue && curSource.max_score.HasValue && curSource.max_score != 0 ? ' / ' + StrReal( curSource.max_score, 2 ) + ' (' + Int( ( 100.0 * curAssessment.passing_score ) / curSource.max_score ) + '%)' : '' )%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'score' && ( curSource.attempts_num > 1 || bComplete ) && ! curAssessment.not_display_unfinished_score )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_res_score', curLngWeb )%>:</Label>
+					<Label><%=StrReal( curSource.score, 2 )%> <%=( curSource.score.HasValue && curSource.max_score.HasValue && curSource.max_score != 0 ? ' / ' + StrReal( curSource.max_score, 2 ) + ' (' + Int( ( 100.0 * curSource.score ) / curSource.max_score ) + '%)' : '' )%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'state_id' && ( curSource.attempts_num > 1 || bComplete ) )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_res_state', curLngWeb )%>:</Label>
+					<Label><%=curLngCommon.learning_states.GetChildByKey( curSource.state_id ).name%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'cur_score' && ! bComplete && ! curAssessment.not_display_unfinished_score )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_cur_score', curLngWeb )%>:</Label>
+					<Label><%=StrReal( curSource.cur_score, 2 )%> <%=( curSource.cur_score.HasValue && curSource.max_score.HasValue && curSource.max_score != 0 ? ' / ' + StrReal( curSource.max_score, 2 ) + ' (' + Int( ( 100.0 * curSource.cur_score ) / curSource.max_score ) + '%)' : '' )%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'cur_state_id' && ! bComplete )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_current_state', curLngWeb )%>:</Label>
+					<Label><%=curLngCommon.learning_states.GetChildByKey( curSource.cur_state_id ).name%></Label>
+				</GridRow>
+<%
+				}
+				if ( sGridRowElem == 'attempts_num' )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_attempt_num', curLngWeb )%>:</Label>
+					<Label><%=curSource.test_learnings.ChildNum%>&nbsp;/&nbsp;<%=curSource.attempts_num%></Label>
+				</GridRow>
+<%
+				}
+			}
+%>
+			</Grid>
+<%
+}
+
+for ( sBlockListElem in arrBlockListParam )
+{
+
+if ( sBlockListElem == "object_custom_block" )
+{
+	for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+	{
+		tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+		Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+	}
+}
+
+if ( sBlockListElem == 'object_main_info' )
+{
+	drowInfoGrid();
+}
+
+if ( sBlockListElem == 'object_header' )
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+if ( sBlockListElem == 'object_messages' )
+{
+
+if ( dtStartLearningDate != null && dtStartLearningDate > CurDate )
+{
+	curMessageBox = {
+		"id": "Start",
+		"type": "warning",
+		"text": ( tools_web.get_web_const( 'c_start_learning_date', curLngWeb ) + ' ' + StrDate( dtStartLearningDate, true, false ) + '. ' + tools_web.get_web_const( 'vlpb_message10', curLngWeb ) + ': ' + ( ( DateToRawSeconds( dtStartLearningDate ) - DateToRawSeconds( CurDate ) ) / 86400 ) + '. ' + tools_web.get_web_const( 'vlpb_message11', curLngWeb ) )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+<%
+}
+else if ( ! bScheduleActive )
+{
+	curMessageBox = {
+		"id": "Start",
+		"type": "warning",
+		"text": tools_web.get_web_const( 'vlpb_message11', curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+
+if ( dtMaxEndDate != null )
+{
+	if ( dtMaxEndDate < CurDate )
+	{
+		curMessageBox = {
+			"id": "Period",
+			"type": "warning",
+			"text": StrReplace( tools_web.get_web_const( 'vtlpb_message1', curLngWeb ), '{PARAM1}', ( ( DateToRawSeconds( CurDate ) - DateToRawSeconds( dtMaxEndDate ) ) / 86400 ) )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	else
+	{
+		if ( bIsActive )
+		{
+			curMessageBox = {
+				"id": "Period",
+				"type": "warning",
+				"text": ( tools_web.get_web_const( 'vtlpb_message3', curLngWeb ) + ' ' + ( ( DateToRawSeconds( dtMaxEndDate ) - DateToRawSeconds( CurDate ) ) / 86400 ) + ' ' + tools_web.get_web_const( 'vtlpb_message2', curLngWeb ) )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		}
+	}
+}
+
+if ( bComplete )
+{
+	curMessageBox = {
+		"id": "Complete",
+		"type": "info",
+		"text": tools_web.get_web_const( 'vtlpb_message4', curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+
+}
+
+if ( sBlockListElem == "object_buttons" )
+{
+%>
+<Action Name="TestFinishAction" Source="test_finish" Success="ACTION=PageRefreshFinish" Failure="ALERT={messageText}">
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+	<Param Name="assessment_id" Value="<%=curAssessmentID%>"/>
+	<Param Name="code" Value="<%=curPartCode%>"/>
+	<Param Name="attempt" Value="1"/>
+	<Param Name="move_to" Value="<%=curAssessment.test_finish_redirect%>"/>
+	<Param Name="move_to_url" Value="<%=curAssessment.test_finish_redirect_url%>"/>
+	<Param Name="sid" Value="<%=tools_web.get_sum_sid( curObjectID, Request.Session.sid )%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+teTestingSystem = qti_tools.get_testing_system( curAssessment );
+if ( teTestingSystem.test_launch_type == 'webtutor' )
+{
+%>
+<Action Name="PageRefreshFinish" Initialize="OPENURL=<%=tools_web.get_clean_url_exc_query( PAGEURL, "object_id;old_object_id", { mode: 'test_learning_proc', old_object_id: curObjectID } )%>"/>
+<%
+}
+else
+{
+%>
+<Action Name="PageRefreshFinish" Source="test_learning_refresh" Success="OPENURL=<%=tools_web.get_clean_url_exc_query( PAGEURL, "object_id;old_object_id", { mode: 'test_learning_proc', old_object_id: curObjectID } )%>">
+	<Param Name="active_test_learning_id" Value="<%=curObjectID%>"/>
+</Action>
+<%
+}
+%>
+<StackPanel Name="ToolBarPanel">
+<Toolbar Class="XAML-toolbar-actions" Adapt="true">
+<%
+	if ( bIsActive )
+	{
+		sLaunchUrl = ( curPart == undefined ? "test_launch.html?assessment_id=" + curAssessmentID + "&object_id=" + curObjectID + "&sid=" + tools_web.get_sum_sid( curAssessmentID, Request.Session.sid ) : "course_launch.html?course_id=" + curCourseID + "&sid=" + tools_web.get_sum_sid( curCourseID, Request.Session.sid ) + "&part_code=" + curPartCode ) + "&object_id=" + curObjectID;
+		sLaunchAction = "HIDE=ToolBarPanel;OPENWINDOW=" + sLaunchUrl + ( curAssessment.player.fit_screen || curAssessment.player.type != "v2" ? ",Width=" + curAssessment.win_width + ",Height=" + curAssessment.win_height : "" ) + ",Scroll=0,CloseAction=PageRefreshFinish";
+		bDistTestFinish = ! tools_web.is_true( tools_web.get_web_param( curParams, 'test_learning_proc_body.hide_test_finish', false, true ) );
+
+		if ( iState == 0 )
+		{
+%>
+	<Button Click="<%=XmlAttrEncode( sLaunchAction )%>" Class="XAML-button XAML-button-important"><%=tools_web.get_web_const( 'vlpb_start', curLngWeb )%></Button>
+<%
+		}
+		if ( iState == 1 || ( iState != 0 && curSource.attempts_num > curSource.test_learnings.ChildNum ) )
+		{
+%>
+	<Button Click="<%=XmlAttrEncode( sLaunchAction )%>" Class="XAML-button XAML-button-important"><%=tools_web.get_web_const( 'vlpb_next', curLngWeb )%></Button>
+<%
+		}
+		if ( curPart == undefined && bDistTestFinish )
+		{
+%>
+	<Button Click="HIDE=ToolBarPanel;SET=TestFinishAction/attempt,0;ACTION=TestFinishAction" Enabled="<%=!bDisableFinishTestBtn%>" Class="XAML-button"><%=tools_web.get_web_const( 'vtlpb_stop', curLngWeb )%></Button>
+<%
+		}
+		if ( curSource.attempts_num > 1 && !bHideFinishAttemptBtn )
+		{
+%>
+	<Button Click="HIDE=ToolBarPanel;SET=TestFinishAction/attempt,1;ACTION=TestFinishAction" Class="XAML-button"><%=tools_web.get_web_const( 'vlpb_attempt_finish', curLngWeb )%></Button>
+<%
+		}
+	}
+	if ( curAssessment.display_result_report && curUserID == curObject.person_id && curSource.lesson_report.HasValue )
+	{
+%>
+	<Button Click="OPENWINDOW=view_test_report.html?doc_id=<%=curDocID%>&object_id=<%=curObjectID%>" Class="XAML-button"><%=tools_web.get_web_const( 'c_stat', curLngWeb )%></Button>
+<%
+	}
+	if ( curPart != undefined )
+	{
+%>
+	<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( "learning_proc", curObjectID, { doc_id: curDocID } )%>" Class="XAML-button"><%=tools_web.get_web_const( 'vernutsyakproho', curLngWeb )%></Button>
+<%
+	}
+	if ( false && global_settings.debug )
+	{
+%>
+	<Button Click="ACTION=PageRefreshFinish" Class="XAML-button">PageRefreshFinish</Button>
+<%
+	}
+%>
+</Toolbar>
+</StackPanel>
+<%
+}
+
+if ( sBlockListElem == 'object_tabs' )
+{
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'LearningProcTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+if ( curDevice.disp_type != "" )
+{
+	arrTabListParam = ["main"];
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.tab_list', 'main;attempts;learnings;info', true ) ).split( ";" );
+}
+sTabsDispType = tools_web.get_web_param( curParams, 'test_learning_proc_body.tabs_disp_type', 'w', true );
+%>
+<TabControl Name="LearningProcTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="<%=sTabsDispType%>" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == "main" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.tab_list.main_tab.block_list', 'info', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Class="icon-tasks" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'izuchenie', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_main', 'zone' );
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "custom" && ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+		{
+			for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+			{
+				tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+				Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+			}
+		}
+
+		if ( sTabElem == 'info' )
+		{
+			curInformers = ({
+				"informers": []
+			});
+			if ( curDevice.disp_type != "" )
+			{
+				arrTiles = ["status","score"];
+			}
+			else
+			{
+				arrTiles = String( tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.main_tab.block_list.info_block.tile_list", "status;score;info", true ) ).split( ";" );
+			}
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-tiles-container" Adapt="true">
+<%
+			for ( sTileElem in arrTiles )
+			{
+				if ( sTileElem == 'status' )
+				{
+					curInformers.informers.push( {
+						"type": "status",
+						"state_id": iState
+					} );
+				}
+
+				if ( sTileElem == 'score' )
+				{
+					curInformers.informers.push( {
+						"type": "score",
+						"score": ( curSource.score > 0.0 ? curSource.score.Value : ( curSource.cur_score.HasValue ? curSource.cur_score.Value : 0.0 ) ),
+						"max_score": curSource.max_score.Value,
+						"mastery_score": curAssessment.passing_score.Value
+					} );
+				}
+
+				if ( sTileElem == 'info' )
+				{
+					curInformers.informers.push( {
+						"type": "info",
+						"last_usage_date": curSource.last_usage_date.Value,
+						"start_learning_date": dtStartLearningDate,
+						"max_end_date": dtMaxEndDate
+					} );
+				}
+
+				if ( sTileElem == 'course_image' && curAssessment.resource_id.HasValue )
+				{
+					sUrl = tools_web.get_object_source_url( 'resource', curAssessment.resource_id );
+					curInformers.informers.push( {
+						"type": "image",
+						"url": sUrl
+					} );
+				}
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+			</StackPanel>
+<%
+			drowInfoGrid();
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   ATTEMPTS TAB   /////////////////////////////////////////////
+if ( sTabListParam == "attempts" && bIsActive && ( curSource.attempts_num > 1 || curSource.test_learnings.ChildNum > 0 ) )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.tab_list.attempts_tab.block_list', 'history', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.attempts_tab", "", true );
+%>
+	<TabItem Class="icon-history" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'istoriyapopytok', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'history' )
+		{
+%>
+		<Collection Name="LearningAttemptsCollection">
+			<Data>
+<%
+			for ( fldTestLearningElem in curSource.test_learnings )
+			{
+%>
+				<Row>
+					<Cell Id="date" Value="<%=( StrDate( fldTestLearningElem.start_usage_date, true, false ) + ' - ' + StrDate( fldTestLearningElem.last_usage_date, true, false ) )%>"/>
+					<Cell Id="score" Value="<%=( StrReal( fldTestLearningElem.score, 2 ) + ( curSource.max_score == 0 || ! curSource.max_score.HasValue ? '' : ' (' + Int( ( 100 * fldTestLearningElem.score ) / curSource.max_score ) + '%)' ) )%>"/>
+					<Cell Id="state" Value="<%=( fldTestLearningElem.state_id.HasValue ? curLngCommon.learning_states.GetChildByKey( fldTestLearningElem.state_id ).name : '' )%>"/>
+					<Cell Id="url" Value="<%=tools_web.get_mode_clean_url( "test_learning_stat", fldTestLearningElem.PrimaryKey, { assessment_id: curAssessmentID, sid: tools_web.get_sum_sid( fldTestLearningElem.PrimaryKey, Request.Session.sid ), doc_id: curDocID } )%>"/>
+				</Row>
+<%
+			}
+%>
+			</Data>
+		</Collection>
+		<DataGrid Name="LearningEventGrid" Source="{LearningAttemptsCollection}" Height="400">
+			<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vdb_aim_date', curLngWeb ) )%>" Width="100%" Type="link" URL="{url}"/>
+			<DataGridColumn Value="score" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_score', curLngWeb ) )%>" Width="100" Type="string"/>
+			<DataGridColumn Value="state" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vppb_state', curLngWeb ) )%>" Width="100" Type="string"/>
+		</DataGrid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   LEARNINGS TAB   /////////////////////////////////////////////
+if ( sTabListParam == "learnings" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.tab_list.learnings_tab.block_list', 'learnings', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.learnings_tab", "", true );
+%>
+	<TabItem Class="icon-history" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'istoriyaprohozhd', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'learnings' )
+		{
+			curView = {
+				"id": "Learnings",
+				"height": "400",
+				"catalog_name": "test_learning",
+				"xquery_qual": ( "$elem/person_id = " + curUserID + " and $elem/assessment_id = " + curAssessmentID ),
+				"disp_link": "true",
+				"link_mode": "test_learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"sort_index": "3",
+				"sort_direct": "-",
+				"list_columns": 'assessment_name;start_usage_date;start_learning_date;last_usage_date;score;state_id',
+				"param_preffix": "test_learning_proc_body.tab_list.learnings_tab.block_list.learnings_block"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   INFO TAB   /////////////////////////////////////////////
+if ( sTabListParam == "info" && curPart == undefined )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'test_learning_proc_body.tab_list.info_tab.block_list', 'info', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.info_tab", "", true );
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_info", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' )
+		{
+%>
+		<StackPanel Class="" Width="100%">
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'testnaznachen', curLngWeb )%>:</Label>
+<%
+			try
+			{
+				catUser = curObject.doc_info.creation.user_id.OptForeignElem;
+				if ( catUser == undefined )
+					throw 'not_user';
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.doc_info.creation.user_id, { doc_id: curDocID } )%>"><![CDATA[<%=catUser.fullname%>]]></Link>
+				</GridRow>
+<%
+			}
+			catch ( err )
+			{
+%>
+					<Label><![CDATA[<%=curObject.doc_info.creation.user_login%>]]></Label>
+				</GridRow>
+<%
+			}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'datanaznacheniya', curLngWeb )%>:</Label>
+					<Label><%=curObject.doc_info.creation.date%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'dolzhnostvmomen', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( curObject.person_position_name, curLng.short_id )%>]]></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'podrazdeleniev', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( curObject.person_subdivision_name, curLng.short_id )%>]]></Label>
+				</GridRow>
+			</Grid>
+		</StackPanel>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   CUSTOM TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'custom_tab' )
+{
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		iCurTab++;
+		sTabTitle = tools_web.get_web_param( curParams, "test_learning_proc_body.tab_list.custom_tab", "", true );
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			tools_web.set_override_web_params( curParams, catOverrideWebTemplateElem );
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+}
+%>
+</TabControl>
+<%
+}
+
+}
+%>
+</SPXMLScreen>

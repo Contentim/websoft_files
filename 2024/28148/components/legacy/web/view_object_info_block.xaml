@@ -1,0 +1,259 @@
+﻿<SPXMLScreen>
+<%
+
+arrFieldsParam_object_info = tools_web.get_web_param( curParams, 'object_info_block.fields', [], true );
+sEditedAction_object_info = tools_web.get_web_param( curParams, 'object_info_block.edited_action', '', true );
+bHideEmpty_object_info = tools_web.is_true( tools_web.get_web_param( curParams, 'object_info_block.hide_empty', false, true ) );
+bEditedIfCurUser_object_info = tools_web.is_true( tools_web.get_web_param( curParams, 'object_info_block.edited_if_cur_user', false, true ) );
+bObjectIsCurUser_object_info = tools_web.is_true( tools_web.get_web_param( curParams, 'object_info_block.object_is_cur_user', false, true ) );
+
+if ( bObjectIsCurUser_object_info )
+{
+	curObjectID_object_info = curUserID;
+	curObject_object_info = OpenDoc( UrlFromDocID( curUserID ) ).TopElem;
+}
+else
+{
+	curObjectID_object_info = curObjectID;
+	curObject_object_info = Request.Session.Env.GetOptProperty( 'curObject' );
+	if ( curObject_object_info == undefined )
+		curObject_object_info = curObject;
+}
+
+arrFields_object_info = [];
+sTitle_object_info = '';
+sValue_object_info = '';
+for ( oFieldElem in arrFieldsParam_object_info )
+{
+	sTitle = oFieldElem.GetOptProperty( "title", "" );
+	sValue = "";
+	fldField = undefined;
+	bIsProperty = false;
+	if ( StrContains( oFieldElem.name, "." ) )
+	{
+		try
+		{
+			fldField = curObject_object_info.EvalPath( oFieldElem.name );
+		}
+		catch ( err )
+		{
+			continue;
+		}
+	}
+	else
+	{
+		fldField = curObject_object_info.OptChild( oFieldElem.name );
+		if ( fldField == undefined && curObject_object_info.PropertyExists( oFieldElem.name ) )
+		{
+			bIsProperty = true;
+			sValue = RValue( GetObjectProperty( curObject_object_info, oFieldElem.name ) );
+			if ( bHideEmpty_object_info && ( sValue == '' || sValue == null ) )
+				continue;
+
+			sFieldType = "string";
+		}
+	}
+
+	if ( fldField != undefined )
+	{
+		if ( bHideEmpty_object_info && ! fldField.HasValue )
+			continue;
+
+		if ( sTitle == "" )
+			sTitle = tools.get_field_title( fldField );
+		sValue = fldField.Value;
+		sFieldType = fldField.Type;
+	}
+	else if ( ! bIsProperty )
+	{
+		if ( curObject_object_info.ChildExists( "custom_elems" ) )
+		{
+			fldCustomTemplate = tools.get_custom_template( curObject_object_info.Name, curObjectID_object_info );
+			fldCustomFields = fldCustomTemplate.fields;
+			fldCustomField = fldCustomFields.GetOptChildByKey( oFieldElem.name );
+			if ( fldCustomField == undefined )
+				continue;
+
+			if ( sTitle == "" )
+				sTitle = fldCustomField.title.Value;
+			sFieldType = fldCustomField.type.Value;
+
+			fldField = curObject_object_info.custom_elems.GetOptChildByKey( oFieldElem.name );
+			if ( fldField != undefined )
+				sValue = fldField.value.Value;
+		}
+		else
+		{
+			continue;
+		}
+		if ( bHideEmpty_object_info && sValue == '' )
+			continue;
+	}
+
+	if ( sTitle == "" )
+		sTitle = oFieldElem.name;
+
+	sFieldTypeProp = oFieldElem.GetOptProperty( "type", "" );
+	if ( sFieldTypeProp != "" )
+		sFieldType = sFieldTypeProp;
+
+	arrFields_object_info.push(	{
+		"title": sTitle,
+		"name": oFieldElem.name,
+		"type": sFieldType,
+		"value": sValue,
+		"edited": tools_web.is_true( oFieldElem.GetOptProperty( "edited" ) ),
+		"disp_if_cur_user": tools_web.is_true( oFieldElem.GetOptProperty( "disp_if_cur_user" ) )
+	} );
+}
+
+if ( ArrayCount( arrFields_object_info ) != 0 )
+{
+%>
+<Action Name="FieldEditAction" Source="object_info_change" Success="REFRESH" Failure="ALERT={messageText}">
+	<Param Name="object_id" Value="<%=curObjectID_object_info%>"/>
+	<Param Name="field_name" Value=""/>
+	<Param Name="field_value" Value=""/>
+</Action>
+<Dialog Name="FieldEditDialog" Source="dlg_edit_text" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vveditetekst", curLngWeb ) )%>" Close="SET=FieldEditAction/field_value,{DialogText};ACTION=FieldEditAction;">
+	<Param Name="label" Value=""/>
+	<Param Name="text" Value=""/>
+</Dialog>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="250"/>
+		<GridColumn/>
+	</GridColumns>
+<%
+	for ( oFieldElem in arrFields_object_info )
+	{
+		if ( curUserID != curObjectID_object_info && oFieldElem.disp_if_cur_user )
+			continue;
+
+		sFieldTitle = tools_web.get_cur_lng_name( oFieldElem.title, curLng.short_id );
+%>
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><![CDATA[<%=sFieldTitle%>:]]></Label>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+		sValue = oFieldElem.value;
+		sDownloadHref = '';
+		bNoWrap = true;
+		switch ( oFieldElem.type )
+		{
+			case 'file':
+			case 'foreign_elem':
+				if ( sValue != '' )
+					try
+					{
+						iValue = Int( sValue );
+						teCustomFieldObject = OpenDoc( UrlFromDocID( iValue ) ).TopElem;
+						sValue = tools.get_disp_name_value( teCustomFieldObject );
+						if ( sFieldType_custom_fields == 'file' )
+							sDownloadHref = '/download_file.html?file_id=' + iValue + '&sid=' + tools_web.get_sum_sid( iValue, Session.sid );
+					}
+					catch ( err )
+					{
+						sValue = tools_web.get_web_const( 'c_deleted', curLngWeb );
+					}
+				break;
+
+			case 'bool':
+				sValue = tools_web.is_true( sValue ) ? tools_web.get_web_const( "c_yes", curLngWeb ) : tools_web.get_web_const( "c_no", curLngWeb );
+				break;
+
+			case "combo":
+			case "radio":
+				bNoWrap = false;
+				sValue = tools_web.get_cur_lng_name( sValue, curLng.short_id );
+				break;
+
+			case 'string':
+			case 'text':
+				bNoWrap = false;
+				break;
+
+			case 'date':
+				try
+				{
+					sValue = StrDate( Date( sValue ), true, true );
+				}
+				catch ( err )
+				{
+				}
+				break;
+		}
+		switch ( oFieldElem.type )
+		{
+			case 'mailto':
+%>
+			<Link NoWrap="<%=bNoWrap%>" Adapt="true" Click="OPENURL=<%=XmlAttrEncode( 'mailto:' + sValue )%>"><![CDATA[<%=sValue%>]]></Link>
+<%
+				break;
+
+			case 'link':
+%>
+			<Link NoWrap="<%=bNoWrap%>" Adapt="true" Click="OPENURL=<%=XmlAttrEncode( sValue )%>"><![CDATA[<%=sValue%>]]></Link>
+<%
+				break;
+
+			case 'file':
+			case 'foreign_elem':
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+				<Label NoWrap="1" Class="XAML-right-margin"><![CDATA[<%=sValue%>]]></Label>
+<%
+				if ( sDownloadHref != '' )
+				{
+%>
+				<Link Click="OPENWINDOW=<%=sDownloadHref%>"><%=tools_web.get_web_const( "vrb_download_file", curLngWeb )%></Link>
+<%
+				}
+%>
+			</StackPanel>
+<%
+				break;
+
+			case "richtext":
+%>
+			<HTMLBox Width="100%"><![CDATA[<%=sValue%>]]></HTMLBox>
+<%
+				break;
+
+			case "imagefile":
+%>
+			<Image Source="<%=sValue%>" MaxWidth="600"/>
+<%
+				break;
+
+			case "text":
+				sValue = StrReplace( HtmlEncode( sValue ), "\n", "\n<br/>" );
+%>
+			<HTMLBox Class="XAML-right-margin" Width="100%" Dynamic="false"><![CDATA[<%=sValue%>]]></HTMLBox>
+<%
+				break;
+
+			default:
+%>
+			<Label NoWrap="<%=bNoWrap%>"><![CDATA[<%=sValue%>]]></Label>
+<%
+				break;
+		}
+
+		if ( oFieldElem.edited && ( ! bEditedIfCurUser_object_info || curUserID == curObjectID_object_info ) )
+		{
+%>
+			<Button Class="" Click="<%=XmlAttrEncode( ( sEditedAction_object_info == '' ? 'SET=FieldEditDialog/label,' + UrlEncode( sFieldTitle ) + ';SET=FieldEditDialog/text,' + UrlEncode( sValue ) + ';SET=FieldEditAction/field_name,' + oFieldElem.name + ';OPENDIALOG=FieldEditDialog;' : sEditedAction_object_info ) )%>"></Button>
+<%
+		}
+%>
+		</StackPanel>
+	</GridRow>
+<%
+}
+%>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

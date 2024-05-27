@@ -1,0 +1,58 @@
+﻿<%
+/*
+	передается объект oCheckPlanAccessParam
+	параметры
+		object_id	- id объекта для проверки ( если нету берется curObjectID )
+		te_object	- TopElem объекта
+		cancel_temp	- закрывать шаблон, если проверка не пройдена
+		show_message- отображать сообщение о неудачной проверке
+*/
+	try
+	{
+		oCheckPlanAccessParam;
+	}
+	catch( ex )
+	{
+		oCheckPlanAccessParam = {};
+	}
+	oCheckPlanAccessParam.SetProperty( "access", true );
+	iObjectID = OptInt( oCheckPlanAccessParam.GetOptProperty( "object_id", curObjectID ) );
+
+	if( iObjectID != undefined )
+	{
+		if( iObjectID == curObjectID )
+			teObject = curObject;
+		else
+			teObject = oCheckPlanAccessParam.GetOptProperty( "te_object", OpenDoc( UrlFromDocID( iObjectID ) ).TopElem );
+			
+		if( teObject.ChildExists( "education_plan_id" ) && teObject.education_plan_id.HasValue )
+			try
+			{
+				educationPlanDoc = OpenDoc( UrlFromDocID( teObject.education_plan_id ) ).TopElem;
+
+				if( !educationPlanDoc.getEducationPlanAccess( iObjectID, curUserID ) )
+				{
+					oCheckPlanAccessParam.SetProperty( "access", false );
+					if( oCheckPlanAccessParam.GetOptProperty( "show_message", true  ) )
+					{
+						curMessageBox = {
+							"type": "info",
+							"text": tools_web.get_web_const( 'zaprashivaemogo', curLngWeb ),
+							"html": ( '<a href="' + tools_web.get_mode_clean_url( null, teObject.education_plan_id, { doc_id: curDocID } ) + '" >' + tools_web.get_web_const( 'vlpb_message8', curLngWeb ) + '</a>' )
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+					}
+					if( oCheckPlanAccessParam.GetOptProperty( "cancel_temp", true  ) )
+					{
+%>
+</SPXMLScreen>
+<%
+						Cancel();
+					}
+				}
+			}
+			catch ( err )
+			{
+			}
+	}
+%>

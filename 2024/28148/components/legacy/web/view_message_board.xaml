@@ -1,0 +1,180 @@
+﻿<SPXMLScreen>
+<%
+	try
+	{
+		var iPageSize = OptInt(tools_web.get_web_param(curParams, "message_board.page_size", null, false), 0);
+			
+		/*var i_pic_width = 150;
+		if (sPicMode == "image")
+		{
+			i_pic_width = OptInt(tools_web.get_web_param(curParams, "gallery_body.pic_mode.pic_width", null, true), 150);
+			if (i_pic_width == 0)
+				i_pic_width = 150;
+		}*/
+		
+		var bFMForum = false;
+		var iCurForumID = OptInt(tools_web.get_web_param(curParams, "message_board.forum_id", null, false));
+		var iSelectedForumId = OptInt(CONTEXT.GetOptProperty( "forum_id", null),null);
+		
+		alert (iCurForumID + " " + iSelectedForumId);
+		teForum = undefined;
+		
+		if (iSelectedForumId != undefined && iSelectedForumId != null)
+		{
+			teForum = OpenDoc(UrlFromDocID(iSelectedForumId)).TopElem;  
+		}
+		else
+		{
+			teForum = OpenDoc(UrlFromDocID(iCurForumID)).TopElem;  
+		}
+		
+		curTitle = {
+			"object_title": "Доска объявлений"
+		};
+		//Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+		
+		if (teForum != undefined)
+		{
+			if (teForum.person_id == curUserID)
+			{
+			   bFMForum = true;  
+			}
+			else
+			{
+			   arrModerators = teForum.moderators;
+				elemCurUser = arrModerators.GetOptChildByKey(curUserID);
+				if (elemCurUser != undefined)
+				{
+				   bFMForum = true; 
+				}
+			}
+		
+		
+		var sShowPersParam = tools_web.get_web_param(curParams, "message_board.show_person_param", null, false); 
+		//alert("ShowParam: " + sShowPersParam); 
+%>
+		<Action Name="DeleteMessage" Source="create_new_forum_entry" Success="ALERT={messageText};UPDATE=MessageBoardDataGrid;" Failure="ALERT={messageText};">
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="ForumId" Value='<%=iSelectedForumId%>'/> 
+			<Param Name="PersonId" Value="<%=curUserID%>"/>
+			<Param Name="sAction" Value=""/>
+			<Param Name="ForumEntryId" Value=""/>
+		</Action>
+		
+		<Dialog Name="MBAddMessage" Source="dlg_message_board_add_advert" Width="70%" Close="UPDATE=MessageBoardDataGrid;">
+			<Param Name="iForumId" Value="<%=iSelectedForumId%>"/>
+			<Param Name="iPersonId" Value="<%=curUserID%>"/>
+			<Param Name="iForumEntryId" Value=""/>
+			<Param Name="sAction" Value=""/>
+		</Dialog>
+
+		<Collection Name="MessageBoardCollection" Source="message_board_collection">
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="iForumId" Value="<%=iSelectedForumId%>"/>
+			<Param Name="sSelectedStatus" Value="{SelectPeriod}"/>
+			<Param Name="sSearchWord" Value="{WordSearch}"/>
+		</Collection>
+	
+		<Grid Width="100%" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="150"/>
+					<GridColumn/> 
+				</GridColumns>
+				
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_period", curLngWeb)%>:</Label>
+					<ComboBox Name="SelectPeriod" SelectedItem="<%=CONTEXT.GetOptProperty("SelectPeriod", "all")%>" Change="">
+						<ComboBoxItem Value="all"><%=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )%></ComboBoxItem> 
+						<ComboBoxItem Value="last_week"><%=tools_web.get_web_const( "zaposlednyuyuned", curLngWeb )%></ComboBoxItem>
+						<ComboBoxItem Value="last_month"><%=tools_web.get_web_const( "vcb_last_month", curLngWeb )%></ComboBoxItem>
+					</ComboBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=HtmlEncode("Форум (тема)")%>:</Label>
+<%
+							strForumName = "";
+							try
+							{
+								strForumName = teForum.name ;
+							}
+							catch(ex)
+							{
+								strForumName = "";
+							}
+							
+							alert("strForumName: " + strForumName);
+							
+							curSelector = {
+								"id": "forum_id",
+								"width": "100%",
+								"catalog_name": "forum",
+								"object_id_item_name": "forum_id",
+								"object_id": (iCurForumID != null && iSelectedForumId == null ? iCurForumID : OptInt( iSelectedForumId, null ) ),
+								"object_name":  strForumName,
+								"can_be_empty": "true"
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>				
+				</GridRow >
+				<GridRow >
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_key_word", curLngWeb)%>:</Label>
+					<Edit Width="100%" Name="WordSearch"></Edit>
+				</GridRow>
+		</Grid>
+			
+			<Toolbar Class="XAML-toolbar" Adapt="true" Width="100%">
+					<Button Click="UPDATE=MessageBoardDataGrid;" Class="XAML-button XAML-button-ok"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+			</Toolbar>
+		
+			<DataGrid Name="MessageBoardDataGrid" Width="100%" Source="{MessageBoardCollection}" Selection="multiple">
+				<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true" Ghost="false"/>
+				
+	<%
+		if (curDevice.disp_type != "mobile")
+		{
+	%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vfb_author", curLngWeb )%>" Value="person_fullname" Type="string"/>
+	<%
+			if (sShowPersParam == '1')
+			{ 
+	%>	
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_position", curLngWeb )%>" Value="person_position" Type="string" Width="150"/>  
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_subd", curLngWeb )%>" Value="person_subdivision" Type="string" Width="200"/> 
+	<%
+			}
+	%>	
+				<DataGridColumn Title="<%=tools_web.get_web_const( "vdb_aim_date", curLngWeb )%>" Value="create_date" Type="link" Click="OPENWINDOW={entry_url}" Width="160"/>
+				<DataGridColumn Title="<%=tools_web.get_web_const( "tekstobyavleniya", curLngWeb )%>" Value="text_entry" Type="string" Width="403"/>
+	<%
+			if (bFMForum == true) 
+			{	
+	%>		
+				<DataGridColumn Title="" Value="<%=StrNonTitleCase( tools_web.get_web_const( "c_edit", curLngWeb ) )%>" Type="button" Width="110" Click="SET=MBAddMessage/sAction,edit_entry;SET=MBAddMessage/iForumEntryId,{id};OPENDIALOG=MBAddMessage"/> 
+				<DataGridColumn Title="" Value="<%=StrNonTitleCase( tools_web.get_web_const( "c_delete", curLngWeb ) )%>" Type="button" Width="80" Icon="/icons/16round/16_delete_1.png" Click="SET=DeleteMessage/sAction,delete_entry;SET=DeleteMessage/iForumEntryId,{id};ACTION=DeleteMessage;"/> 
+	<%
+			}
+		}
+		else
+		{
+	%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vdb_aim_date", curLngWeb )%>" Value="create_date" Type="link" Click="OPENWINDOW={entry_url}" Width="100%"/>
+	<%
+		}
+	%>			
+			</DataGrid>
+		
+			<Toolbar Width="100%">
+				<Button Class="XAML-button XAML-button-plus" Click="SET=MBAddMessage/iForumId,{forum_id};SET=MBAddMessage/sAction,add_entry;OPENDIALOG=MBAddMessage;" Icon="/icons/16round/16_add_0.png"><%=tools_web.get_web_const( "veb_add", curLngWeb )%></Button>
+			</Toolbar>
+	<%
+		}
+		
+	}
+	catch(err)
+	{
+		alert("Error message_board: " + err);
+	}
+
+%>	
+	
+</SPXMLScreen>

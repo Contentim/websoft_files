@@ -1,0 +1,208 @@
+﻿<SPXMLScreen>
+
+<Label/>
+<Label/>
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<%
+bDispDeliveryType = tools_web.is_true( tools_web.get_web_param( curParams, "good_body.tab_list.main_tab.block_list.info_block.disp_delivery_type", true, true ) );
+bInBasket = false;
+catBasket = ArrayOptFirstElem( XQuery( 'for $elem in baskets where $elem/person_id = ' + curUserID + ' return $elem' ) );
+
+bShowInstance = tools_web.is_true( curUrlQuery.GetOptProperty( 'show_instance' ) );
+bFormOrder = tools_web.is_true( curUrlQuery.GetOptProperty( 'is_form_order' ) );
+
+if ( catBasket != undefined )
+{
+	teBasket = OpenDoc( UrlFromDocID( catBasket.id ) ).TopElem;
+	fldGoodChild = teBasket.goods.GetOptChildByKey( curObjectID );
+	bInBasket = fldGoodChild != undefined;
+}
+
+if ( bInBasket )
+{
+	curMessageBox = {
+		"type": "info",
+		"text": ( tools_web.get_web_const( 'tovarnahoditsya', curLngWeb ) + ( fldGoodChild.number > 1 ? ' ' + tools_web.get_web_const( 'c_num', curLngWeb ) + ': ' + fldGoodChild.number + ' ' + StrNonTitleCase( tools_web.get_web_const( 'sht', curLngWeb ) ) + '.' : '' ) )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+
+sCurrencyTypeID = tools_web.get_web_param( curParams, 'good_body.currency_type_id', '', true );
+fldCost = undefined;
+if ( sCurrencyTypeID != '' )
+	fldCost = ArrayOptFindByKey( curObject.costs, sCurrencyTypeID, 'currency_type_id' );
+if ( fldCost == undefined )
+	fldCost = ArrayOptFirstElem( curObject.costs );
+sCurrencyTypeID = fldCost == undefined ? '' : fldCost.currency_type_id.Value;
+
+sConfirmAction = bInBasket ? "CONFIRM=" + XmlAttrEncode( tools_web.get_web_const( 'tovarnahoditsya_1', curLngWeb ) ) + ";" : '';
+%>
+<Action Name="AddBasketAction" Source="basket_change" Success="REFRESH" Failure="ALERT={messageText}">
+	<Param Name="action" Value="add_good"/>
+	<Param Name="good_id" Value="<%=curObjectID%>"/>
+	<Param Name="is_form_order" Value="<%=bFormOrder%>"/>
+	<Param Name="currency_type_id" Value="<%=sCurrencyTypeID%>"/>
+</Action>
+<Toolbar Class="XAML-toolbar">
+	<Button Class="XAML-button XAML-button-plus" Click="<%=sConfirmAction%>SET=AddBasketAction/action,add_good;ACTION=AddBasketAction"><%=tools_web.get_web_const( 'dobavitvkorzin', curLngWeb )%></Button>
+<%
+if ( bInBasket )
+{
+%>
+	<Button Class="XAML-button XAML-button-minus" Click="CONFIRM=<%=XmlAttrEncode( tools_web.get_web_const( 'udalittovarizk', curLngWeb ) )%>;SET=AddBasketAction/action,del_good;ACTION=AddBasketAction"><%=tools_web.get_web_const( 'udalitizkorzin', curLngWeb )%></Button>
+<%
+}
+%>
+	<Button Class="XAML-button XAML-button-trash" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'goods', null, { tab: '1' } )%>"><%=tools_web.get_web_const( 'l5o7acbegs', curLngWeb )%></Button>
+</Toolbar>
+<%
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'GoodBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'good_body.tab_list', 'main', true ) ).split( ';' );
+%>
+<TabControl Name="GoodBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+	if ( sTabListParam == 'main' )
+	{
+		iCurTab++;
+		arrBlockListParam = String( tools_web.get_web_param( curParams, 'good_body.tab_list.main_tab.block_list', 'info;desc;fields', true ) ).split( ';' );
+		sTabTitle = tools_web.get_web_param( curParams, "good_body.tab_list.main_tab", "", true );
+
+		bDispFields = ArrayOptFind( arrBlockListParam, "This=='fields'" ) != undefined;
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == 'info' )
+			{
+%>
+		<!-- <Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_info', curLngWeb ) )%>" Expanded="1" Width="100%"> -->
+		<StackPanel Width="100%">
+			<Grid Width="100%" Class="XAML-grid-main-content" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="80%"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn Width="250" Align="Right"/>
+							<GridColumn/>
+						</GridColumns>
+
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_name', curLngWeb )%>:</Label>
+							<Label><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+						</GridRow>
+<%
+				if ( curObject.good_type_id.HasValue )
+				{
+					catGoodType = curObject.good_type_id.OptForeignElem;
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'tiptovarov', curLngWeb )%>:</Label>
+<%
+					if ( catGoodType == undefined )
+					{
+%>
+							<Label Class="XAML-alert-text"><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+<%
+					}
+					else
+					{
+%>
+							<Label><%=tools_web.get_cur_lng_name( catGoodType.name, curLng.short_id )%></Label>
+<%
+					}
+%>
+						</GridRow>
+<%
+				}
+				if ( bShowInstance && curObject.delivery_type.Value != 'unlimit' )
+				{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_num', curLngWeb )%>:</Label>
+							<Label> <%=( iAmntGoods = ArrayCount( XQuery( "for $elem in good_instances where $elem/good_id = "+ curObjectID +" and $elem/status = 'in_stock' return $elem" ) ) ) > 0 ? iAmntGoods : "Отсутствует"%> </Label>
+						</GridRow>
+<%
+				}
+				if ( bDispDeliveryType )
+				{
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'tippostavki', curLngWeb )%>:</Label>
+							<Label><%=curLngCommon.delivery_types.GetChildByKey( curObject.delivery_type ).name%></Label>
+						</GridRow>
+<%
+				}
+				if ( bDispFields && curObject.good_type_id.HasValue )
+				{
+					fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+					if ( fldCustomElems != null )
+					{
+						fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+						if ( ArrayCount( fldWebCustomFields ) != 0 )
+						{
+							arrCustomFieldNames = Array();
+							curCustomFields = {
+								"id": "GoodFields",
+								"fields": fldWebCustomFields,
+								"source": curObject.custom_elems,
+								"modify_eval": false,
+								"draw_grid_columns": false
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+						}
+					}
+				}
+
+				oCost = ArrayOptFirstElem( curObject.costs );
+				sSum = ( oCost != undefined && oCost.sum.HasValue ) ? ( oCost.sum.Value != 0 ) ? oCost.sum.Value : "Отсутствует" : "";
+				sCurrency = "";
+				if ( sSum != "" && oCost.currency_type_id.HasValue )
+				{
+					oCurrencyType = lists.currency_types.GetOptChildByKey( oCost.currency_type_id.Value );
+					sCurrency = ( oCurrencyType != undefined && oCurrencyType.short_name.HasValue ) ? oCurrencyType.short_name.Value : oCost.currency_type_id.Value;
+				}
+				sGenCost = sSum + " " + sCurrency;
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_cost', curLngWeb )%>:</Label>
+							<Label> <%=sGenCost%> </Label>
+						</GridRow>
+					</Grid>
+<%
+				if ( curObject.resource_id.HasValue )
+				{
+%>
+					<Image Class="XAML-image-tile-image XAML-image-tile-good" MaxHeight="200" UpdateOnLoad="true" Source="<%=tools_web.get_object_source_url( 'resource', curObject.resource_id, ({ 'Session': Request.Session }) )%>"/>
+<%
+				}
+%>
+				</GridRow>
+			</Grid>
+		</StackPanel>
+<%
+			}
+
+			if ( sTabElem == 'desc' )
+			{
+				Response.Write( tools_web.place_xaml( "block_desc" ) );
+			}
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+%>
+</TabControl>
+</SPXMLScreen>

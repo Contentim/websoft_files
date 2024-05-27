@@ -1,0 +1,25 @@
+﻿<SPXMLScreen>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="150" Align="right"/>
+			<GridColumn Align="left"/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+			<Edit Name="new_project_name" Width="350"></Edit>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button XAML-button-ok" Width="100" Click="CLOSEDIALOG">OK</Button>
+			<Button Class="XAML-button XAML-button-cancel" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

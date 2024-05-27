@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<download_packages SPXML-FORM="x-local://wtv/wtv_form_download_packages.xmd">
+	<download_package>
+		<id>sclrdio0iu</id>
+		<type>objects</type>
+		<url>update_2023_07_28_15_14_sclrdio0iu.zip</url>
+		<package_date>2023-07-28T15:14:07+00:00</package_date>
+	</download_package>
+</download_packages>

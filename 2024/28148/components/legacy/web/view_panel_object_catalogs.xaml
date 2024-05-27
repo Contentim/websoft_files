@@ -1,0 +1,150 @@
+﻿<%
+	try
+	{
+		curObjectCatalogs
+		bShow = tools_web.is_true( curObjectCatalogs.GetOptProperty( 'show', '1' ) );
+		bAddCatalog =tools_web.is_true( curObjectCatalogs.GetOptProperty( 'add_catalog', '0' ) );
+		sCatalogName = curObjectCatalogs.GetOptProperty( 'catalog_name', '' );
+		teObjectCatalogs = curObjectCatalogs.GetOptProperty( 'teObjectCatalogs', '' );;
+	}
+	catch( ex )
+	{
+		sDataStr = tools_web.get_web_param( PARAMETERS, 'data_str', '', true );
+		bShow = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'show', '0', true ) )
+		bAddCatalog = tools_web.is_true( tools_web.get_web_param( PARAMETERS, 'add_catalog', '0', true ) )
+		sCatalogName = tools_web.get_web_param( PARAMETERS, 'catalog_name', '', true )
+		teObjectCatalogs = OpenDocFromStr( UrlDecode( sDataStr ), "form=x-local://wtv/wtv_catalog_list_base.xmd;ignore-top-elem-name=1" ).TopElem;
+	}
+		
+	sNewName = tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" )
+	if( bShow )
+	{
+		if( !bAddCatalog )
+		{
+%>
+<SPXMLScreen>
+	<Edit Name="EditBlockObjectCatalogs" Hidden="1"><![CDATA[<%=teObjectCatalogs.Xml%>]]></Edit>
+	<Edit Name="ObjectCatalogsLastNameEdit" Hidden="1"><%=sNewName%></Edit>
+	<Edit Name="ObjectCatalogsActionEdit" Hidden="1"/>
+	<Edit Name="ObjectCatalogsOpenDialogActionEdit" Hidden="1"/>
+	<Edit Name="ObjectCatalogsSelectedObjectIdsEdit" Hidden="1"/>
+	<Edit Name="ObjectCatalogsCatalogNameEdit" Hidden="1"/>
+	<Edit Name="ObjectCatalogsEditSelectedIds" Hidden="1"></Edit>
+<%
+			for( _catalog in curLngCommon.exchange_object_types )
+			{
+%>
+	<Edit Name="ObjectCatalogsEditSelectedIds<%=_catalog.name%>" Hidden="1"><%=teObjectCatalogs.catalogs.GetOptChildByKey( _catalog.name ) != undefined ? ArrayMerge( teObjectCatalogs.catalogs.GetOptChildByKey( _catalog.name ).objects, "This.object_id", ";" ) : ""%></Edit>
+<%
+			}
+%>	
+	<Action Name="ObjectCatalogsAction" Source="object_catalogs_action" Success="{!messageText}">
+		<Param Name="action" Value="{ObjectCatalogsActionEdit}"/>
+		<Param Name="temp_selected_data" Value=""/>
+		<Param Name="object_type" Value="{ObjectCatalogsCatalogNameEdit}"/>
+		<Param Name="data_str" Value="{EditBlockObjectCatalogs}"/>
+		<Param Name="last_name" Value="{ObjectCatalogsLastNameEdit}"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+	<Dialog Name="SelectCatalogsObjects" Source="dlg_select" Title="<%=tools_web.get_web_const( "0isplvair0", curLngWeb )%>" Close="SET=ObjectCatalogsActionEdit,add_objects;SET=ObjectCatalogsAction/temp_selected_data,{CatalogListDataGridSelList};ACTION=ObjectCatalogsAction;">
+		<Param Name="catalog_name" Value="{ObjectCatalogsCatalogNameEdit}"/>
+		<Param Name="multi_select" Value="true"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="xquery_qual" Value=""/>
+	</Dialog>
+	<StackPanel Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+		<Grid Width="100%" Class="XAML-grid-filter">
+			<GridColumns>
+				<GridColumn Width="250"/>
+				<GridColumn Width="100%" Align="right"/>
+				<GridColumn Width="100" Align="right"/>
+			</GridColumns>
+
+			<GridRow>
+				<ComboBox Name="ComboCatalogsType" Width="250" Class="XAML-combo-view" SelectedItem="start">
+					<ComboBoxItem Value="start" Change="HIDE=StackPanelSelectObjects"><%=XmlAttrEncode( tools_web.get_web_const( "o4t9wq7sjy", curLngWeb ) )%></ComboBoxItem>	
+<%
+			for( _catalog in curLngCommon.exchange_object_types )
+			{
+%>
+					<ComboBoxItem Value="<%=_catalog.name%>" Change="SET=ObjectCatalogsOpenDialogActionEdit,<%=UrlEncode( "SET=ObjectCatalogsCatalogNameEdit," + _catalog.name + ";SET=ObjectCatalogsEditSelectedIds,{ObjectCatalogsEditSelectedIds" + _catalog.name + "}" )%>;SET=ObjectCatalogsCatalogNameEdit,<%=_catalog.name%>;SHOW=StackPanelSelectObjects"><%=XmlAttrEncode( _catalog.title )%></ComboBoxItem>	
+<%
+			}
+%>				
+				</ComboBox>
+				<Label/>
+				<StackPanel Name="StackPanelSelectObjects" Hidden="1" Class="XAML-stack-container">
+					<Button Class="XAML-button XAML-button-view" Click="{!ObjectCatalogsOpenDialogActionEdit};SET=SelectCatalogsObjects/selected_object_ids,{ObjectCatalogsEditSelectedIds};OPENDIALOG=SelectCatalogsObjects"><%=XmlAttrEncode( tools_web.get_web_const( "la3bpgs3t9", curLngWeb ) )%></Button>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+			arrCatalogs = teObjectCatalogs.catalogs;
+		}
+		else
+		{
+%>
+<SPXMLScreen Ready="SET=ObjectCatalogsLastNameEdit,<%=sNewName%>">
+<%
+			arrCatalogs = new Array( teObjectCatalogs.catalogs.GetOptChildByKey( sCatalogName ) );
+		}
+		for( elem in arrCatalogs )
+		{
+%>
+	<StackPanel Name="StackPanelSelectObjectsCatalogsForHidden<%=elem.type%><%=sNewName%>" Class="XAML-stack-container">
+		<Edit Name="ObjectCatalogsEditDeleted<%=elem.type%><%=sNewName%>" Hidden="1">0</Edit>
+		<Panel Class="XAML-Object-Title" Title="<%=XmlAttrEncode( curLngCommon.exchange_object_types.GetOptChildByKey( elem.type ).title )%>">
+			<StackPanel Orientation="Vertical" Adapt="1">
+				<Grid Width="100%" Class="XAML-Wiki-Object-grid">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+						<GridColumn Width="150" Align="right"/>
+						<GridColumn Width="150" Align="right"/>
+					</GridColumns>
+
+					<GridRow>
+						<Edit Class="XAML-Object-Edit" Name="ObjectCatalogsEditName<%=elem.type%><%=sNewName%>"><%=XmlAttrEncode( elem.title )%></Edit>
+						<StackPanel Name="StackPanelSelectObjectsCatalogs<%=elem.type%><%=sNewName%>" Hidden="<%=elem.all%>" Class="XAML-stack-container">
+							<Button Class="XAML-button" Click="SET=SelectCatalogsObjects/selected_object_ids,{ObjectCatalogsEditSelectedIds<%=elem.type%>};SET=ObjectCatalogsCatalogNameEdit,<%=elem.type%>;OPENDIALOG=SelectCatalogsObjects"><%=XmlAttrEncode( tools_web.get_web_const( "la3bpgs3t9", curLngWeb ) )%></Button>
+						</StackPanel>
+						<Button Class="XAML-button" Click="SET=ObjectCatalogsEditSelectedIds<%=elem.type%>,;SET=ObjectCatalogsEditDeleted<%=elem.type%><%=sNewName%>,1;HIDE=StackPanelSelectObjectsCatalogsForHidden<%=elem.type%><%=sNewName%>;SET=ObjectCatalogsCatalogNameEdit,<%=elem.type%>;SET=ObjectCatalogsActionEdit,delete_catalog;ACTION=ObjectCatalogsAction;"><%=XmlAttrEncode( "Удалить блок" )%></Button>
+					</GridRow>
+				</Grid>
+				<CheckBox Class="XAML-Wiki-CheckBox" Checked="<%=elem.all%>" Check="HIDE=StackPanelSelectObjectsCatalogs<%=elem.type%><%=sNewName%>,StackPanelSelectObjectsCatalogsDataGrid<%=elem.type%><%=sNewName%>" Uncheck="SHOW=StackPanelSelectObjectsCatalogs<%=elem.type%><%=sNewName%>,StackPanelSelectObjectsCatalogsDataGrid<%=elem.type%><%=sNewName%>" Name="SelectAllObjects<%=elem.type%><%=sNewName%>"><%=HtmlEncode(tools_web.get_web_const( "vdb_include_all", curLngWeb ))%></CheckBox>
+			</StackPanel>
+			<StackPanel Name="StackPanelSelectObjectsCatalogsDataGrid<%=elem.type%><%=sNewName%>" Hidden="<%=elem.all%>" Class="XAML-stack-container">
+				<Collection Name="ObjectsCatalogsCollection<%=elem.type%><%=sNewName%>" Source="objects_catalogs_collection">
+					<Param Name="data_str" Value="{EditBlockObjectCatalogs}"/>
+					<Param Name="catalog_name" Value="<%=elem.type%>"/>
+				</Collection>
+				<DataGrid Name="ObjectsCatalogsDataGrid<%=elem.type%><%=sNewName%>" Source="{ObjectsCatalogsCollection<%=elem.type%><%=sNewName%>}" Selection="Multiple">
+					<Menu>
+						<MenuItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%>" Click="SET=ObjectCatalogsCatalogNameEdit,<%=elem.type%>;SET=ObjectCatalogsActionEdit,delete_objects;SET=ObjectCatalogsAction/temp_selected_data,{ObjectsCatalogsDataGrid<%=elem.type%><%=sNewName%>};ACTION=ObjectCatalogsAction;"/>
+					</Menu>
+				</DataGrid>
+			</StackPanel>
+		</Panel>
+	</StackPanel>
+<%
+		}
+		
+%>
+	<Edit Name="ObjectCatalogsShowEdit<%=sNewName%>" Hidden="1"/>
+	<Edit Name="ObjectCatalogsCatalogNameEdit<%=sNewName%>" Hidden="1"/>
+	<Panel Name="BlockObjectCatalogs<%=sNewName%>" Source="panel_object_catalogs" ShowHeader="false">
+		<Param Name="data_str" Value="{EditBlockObjectCatalogs}"/>
+		<Param Name="show" Value="{ObjectCatalogsShowEdit<%=sNewName%>}"/>
+		<Param Name="add_catalog" Value="1"/>
+		<Param Name="catalog_name" Value="{ObjectCatalogsCatalogNameEdit<%=sNewName%>}"/>
+	</Panel>
+<%
+	}
+	else
+	{
+%>
+<SPXMLScreen>
+<%
+	}
+%>
+</SPXMLScreen>

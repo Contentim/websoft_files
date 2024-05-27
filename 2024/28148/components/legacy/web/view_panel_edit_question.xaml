@@ -1,0 +1,226 @@
+﻿<%
+
+function write_conditions( catQuestion )
+{
+	sActionSelect = ""
+	switch( catQuestion.type_id )
+	{
+		case "choice":
+		case "combo":
+		case "select":
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "dngduhlnxs", curLngWeb ) )%>:</Label>	
+		
+		<StackPanel Width="100%" Class="XAML-stack-container XAML-questions-panel">
+			<Button Class="XAML-button" Width="100" Click="SET=EditQuestionAction,add_entry;ACTION=EditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "veb_add", curLngWeb ) )%></Button>
+			<Grid Width="100%" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="80%"/>
+					<GridColumn/>
+					<GridColumn Width="100"/>
+				</GridColumns>
+<%
+			
+			for( _entr in catQuestion.entries )
+			{
+				if( catQuestion.type_id != "select" )
+					sActionSelect = ArrayMerge( ArraySelect( catQuestion.entries, "This.id != _entr.id" ), "'SET=IsCorrect' + This.id + ',0'", ";" )
+%>
+				<GridRow>
+					<Edit Width="100%" Name="EntryValue<%=_entr.id%>"><%=XmlAttrEncode( _entr.value )%></Edit>	
+					<CheckBox Name="IsCorrect<%=_entr.id%>" Checked="<%=_entr.is_correct%>" Check="<%=sActionSelect%>" Width="100%"></CheckBox>	
+					<StackPanel Width="100%" Class="XAML-stack-container">
+						<Button Class="XAML-button-delete" Width="100" Click="SET=DeleteEntry<%=_entr.id%>,1;SET=EditQuestionAction,update_question;ACTION=EditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%></Button>
+						<Edit Hidden="1" Width="100%" Name="DeleteEntry<%=_entr.id%>">0</Edit>	
+					</StackPanel>
+				</GridRow>
+<%
+			}
+%>
+			</Grid>
+		</StackPanel>
+<%
+			break;
+			
+		case "string":
+		case "text":
+		case "number":
+%>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "frfayv6mpc", curLngWeb ) )%>:</Label>	
+		<StackPanel Width="100%" Class="XAML-stack-container  XAML-questions-panel">
+			<Button Class="XAML-button" Width="100" Click="SET=EditQuestionAction,add_condition;ACTION=EditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "veb_add", curLngWeb ) )%></Button>
+			<Grid Width="100%" Adapt="true" Class="XAML-wiki-dialog-grid">
+				<GridColumns>
+					<GridColumn Width="<%=catQuestion.type_id != "number" ? "200" : "75"%>"/>
+					<GridColumn/>
+					<GridColumn Width="100"/>
+				</GridColumns>
+<%
+			
+			for( _condition in catQuestion.conditions )
+			{
+%>
+				<GridRow>
+<%
+				if( catQuestion.type_id != "number" )
+				{
+%>
+					<ComboBox Name="OptionType<%=_condition.ChildIndex%>" Width="200" SelectedItem="<%=_condition.sentence_option_id%>">
+<%
+					for( _type in curLngCommon.sentence_option_types )
+					{
+%>
+			 			<ComboBoxItem Value="<%=_type.id%>"><%=XmlAttrEncode( _type.name )%></ComboBoxItem>
+<%
+					}
+%>
+					</ComboBox>
+<%
+				}
+				else
+				{
+					_condition.grading_option_id = StrReplace( StrReplace( StrReplace( _condition.grading_option_id, "&amp;", "&" ), "&lt;", "<" ), "&gt;", ">" )
+
+%>
+					<ComboBox Name="OptionType<%=_condition.ChildIndex%>" Width="75" SelectedItem="<%=_condition.grading_option_id.HasValue ? curLngCommon.grading_option_types.GetChildByKey( _condition.grading_option_id ).option_id : ""%>">
+<%
+					for( _type in curLngCommon.grading_option_types )
+					{
+%>
+			 			<ComboBoxItem Value="<%=_type.option_id%>"><%=XmlAttrEncode( _type.id )%></ComboBoxItem>
+<%
+					}
+%>
+					</ComboBox>
+<%
+				}
+%>
+					<Edit Class="Wiki-input" Width="<%=catQuestion.type_id == "number" ? "100" : "100%"%>" KeyPress="<%=catQuestion.type_id == "number" ? "#!1-47:STOP;#!58-10000:STOP;#!S1-10000:STOP" : ""%>" Name="EntryValue<%=_condition.ChildIndex%>"><%=XmlAttrEncode( ( catQuestion.type_id == "number" ? OptInt( _condition.value, "" ) : _condition.value ) )%></Edit>	
+					<StackPanel Width="100%" Class="XAML-stack-container">
+						<Button Class="XAML-button-delete" Width="100" Click="SET=DeleteCondition<%=_condition.ChildIndex%>,1;SET=EditQuestionAction,update_question;ACTION=EditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%></Button>
+						<Edit Hidden="1" Width="100%" Name="DeleteCondition<%=_condition.ChildIndex%>">0</Edit>	
+					</StackPanel>
+				</GridRow>
+<%
+			}
+%>
+			</Grid>
+		</StackPanel>
+<%
+			break;
+			
+		default:
+%>
+		<Label/>
+		<Label/>
+<%
+			
+	}
+}
+sReadyAction = "";
+teQuestions = OpenDocFromStr( "<top_elem>" + UrlDecode( tools_web.get_web_param( PARAMETERS, "questions_xml", "", true ) ) + "</top_elem>", 'form=x-local://wtv/wtv_acquaint.xmd;ignore-top-elem-name=1' ).TopElem.questions;
+sQuestionID = tools_web.get_web_param( PARAMETERS, "question_id", "", true );
+if( sQuestionID == "" )
+{
+	_question = teQuestions.AddChild();
+	_question.id = tools.random_string( 10 );
+}
+else
+	_question = teQuestions.GetChildByKey( sQuestionID );
+	
+if( !_question.is_custom && _question.item_id.HasValue )
+{
+	function get_type_id( sType )
+	{
+		switch( sType )
+		{
+			case "multiple_choice":
+				return "choice";
+			case "multiple_response":
+				return "select";
+			case "gap_fill":
+				return "string";
+			case "numerical_fill_in_blank":
+				return "number";
+		}
+		return "";
+	}
+
+	teItem = OpenDoc( UrlFromDocID( _question.item_id ) ).TopElem;
+	_question.title = teItem.title;
+	_question.type_id = get_type_id( teItem.type_id );
+	switch( _question.type_id )
+	{
+		case "select":
+		case "choice":
+			for( _answer in teItem.answers )
+			{
+				_ch = _question.entries.AddChild();
+				_ch.id = _answer.id;
+				_ch.value = _answer.text;
+				_ch.is_correct = _answer.is_correct_answer
+			}
+			break;
+		case "string":
+		case "number":
+			if( ArrayOptFirstElem( teItem.answers ) != undefined )
+				_question.conditions.AssignElem( ArrayOptFirstElem( teItem.answers ).conditions );
+			break;
+	}
+	_question.is_custom = true;
+	//sReadyAction = "SET=questions_xml," + UrlEncode( teQuestions.Xml )
+}
+
+%>
+<SPXMLScreen Ready="<%=sReadyAction%>" Class="XAML-Wiki-dialog">
+	<Action Name="EditQuestion" Source="acquaint_assign_action" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="action" Value="{EditQuestionAction}"/>
+	</Action>
+	<Edit Name="EditQuestionsXml" Hidden="1"><%=UrlEncode( teQuestions.Xml )%></Edit>
+	<Edit Name="EditQuestionID" Hidden="1"><%=_question.id%></Edit>
+	<Edit Name="EditQuestionAction" Hidden="1"/>
+	<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="20%"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_type", curLngWeb ) )%>:</Label>	
+			<ComboBox Name="QuestionTypeID" Width="100%" SelectedItem="<%=_question.type_id%>">
+<%
+				for( _type in curLngCommon.acquaint_question_types )
+				{
+%>
+			  <ComboBoxItem Value="<%=_type.id%>" Change="SET=EditQuestionAction,update_question;ACTION=EditQuestion;"><%=XmlAttrEncode( _type.name )%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_heading", curLngWeb ) )%>:</Label>	
+			<Edit Name="QuestionTitle" Width="100%"><![CDATA[<%=_question.title%>]]></Edit>
+		</GridRow>
+		<GridRow>
+<%
+	write_conditions( _question );
+%>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-grid-dialog-buttons" Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="SET=EditQuestionAction,close_question;ACTION=EditQuestion;">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+
+</SPXMLScreen>

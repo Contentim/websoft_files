@@ -1,0 +1,359 @@
+﻿<%
+// const_start
+sConstNotIndicated = tools_web.get_web_const( 'vrb_not_specified', curLngWeb );
+// const_end
+%>
+<SPXMLScreen>
+<%
+
+function title_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+function tab_block()
+{
+%>
+
+<TabControl Name="LectorBodyTab" ActiveTab="<%=iDefaultTab%>" Adapt="1" Width="100%"  TabsLocation="<%=tools_web.get_web_param( curParams, "lector_body.tabs_disp_type", "w", true )%>">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "main" )
+		{
+			main_tab()
+		}
+
+///////////////////////////////////////////////   EDU_METHOD TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "edu_method" )
+		{
+			tab_edu_method()
+		}
+
+
+
+///////////////////////////////////////////////   EVENT TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "event" )
+		{
+			tab_event()
+		}
+
+
+///////////////////////////////////////////////   RESPONSE TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "response" )
+		{
+			tab_response()
+		}
+
+///////////////////////////////////////////////   RESPONSE TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "custom_fields" )
+		{
+			tab_custom_field()
+		}
+
+///////////////////////////////////////////////   REPORT TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "report" )
+		{
+			tab_report()
+		}
+
+		if ( sTabListParam == 'custom_tab' )
+			custom_tab();
+
+	}
+%>
+</TabControl>
+<%
+}
+
+function custom_tab()
+{
+	iCurTab++;
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.custom_tab", "", true );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "nastraivaemaya", curLngWeb )
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+function main_tab()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "lector_body.tab_list.main_tab.block_list", "info;desc", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-info2">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "info" )
+		{
+			info_draw()
+		}
+		else if ( sTabElem == "desc" )
+		{
+            desc_draw()
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function info_draw()
+{
+	if ( curObject.allow_publication || sEmail != "" )
+	{
+%>
+			<Grid Width="100%" Adapt="1" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>
+<%
+		if ( curObject.allow_publication )
+		{
+			if( curObject.type == "collaborator" )
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_org", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curPerson.org_id.HasValue ? ( oTemp = curPerson.org_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.disp_name, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curPerson.position_parent_id.HasValue ? ( oTemp = curPerson.position_parent_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.name, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curPerson.position_id.HasValue ? ( oTemp = curPerson.position_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.name, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+				</GridRow>
+<%
+			}
+			else
+			{
+				curPerson = curObject;
+			}
+			if(curPerson.phone.HasValue)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_phone", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curPerson.phone%>]]></Label>
+				</GridRow>
+<%
+			}
+		}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_email", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=sEmail != "" ? sEmail : sConstNotIndicated%>]]></Label>
+				</GridRow>
+			</Grid>
+<%
+	}
+}
+
+function desc_draw()
+{
+	Response.Write( tools_web.place_xaml( "block_desc" ) );
+}
+
+function tab_edu_method()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "lector_body.tab_list.edu_method_tab.block_list", "edu_methods", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.edu_method_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "vepb_edu_methods", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-university">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "edu_methods" )
+		{
+			xarrEduMethodLectors = XQuery( "for $i in education_method_lectors where $i/lector_id = " + curObjectID + " return $i" );
+			curView = {
+				"id": "EduMethods",
+				"height": "",
+				"check_access": "false",
+				"catalog_name": "education_method",
+				"view_type": "education_method",
+				"xquery_qual": ( " MatchSome( $elem/id, ( " + ArrayMerge( xarrEduMethodLectors, "This.education_method_id", "," ) + " ) ) " ),
+				"check_access": "false",
+				"disp_link": "true",
+				"link_object_field": "id",
+				"link_mode": "education_method",
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;type;duration" : "name;type"),
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"param_preffix": "lector_body.tab_list.edu_method_tab.block_list.edu_methods",
+				"paging_size": 15
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_event()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "lector_body.tab_list.event_tab.block_list", "events", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.event_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_events", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-calendar-o">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "events" )
+		{
+			xarrEventLectors = XQuery( "for $i in event_lectors where $i/lector_id = " + curObjectID + " return $i" );
+			curView = {
+				"id": "Events",
+				"height": "",
+				"catalog_name": "event",
+				"view_type": "event",
+				"xquery_qual": ( " MatchSome( $elem/id, ( " + ArrayMerge( xarrEventLectors, "This.event_id", "," ) + " ) ) " ),
+				"check_access": "false",
+				"disp_link": "true",
+				"link_object_field": "id",
+				"link_mode": "event",
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;start_date;status_id" : "name;start_date"),
+				"link_field_index": 0,
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_paging": "true",
+				"param_preffix": "lector_body.tab_list.event_tab.block_list.events",
+				"paging_size": 15
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_response()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "lector_body.tab_list.response_tab.block_list", "responses", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.response_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "9pllz8peh0", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-edit">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "responses" )
+		{
+			xarrEvent = XQuery( "for $elem in event_lectors where $elem/lector_id = " + curObjectID + " return $elem" );
+			xarrResponse = ArrayOptFirstElem( xarrEvent ) == undefined ? [] : XQuery( "for $elem in responses where $elem/is_public = true() and MatchSome( $elem/object_id, (" + ArrayMerge( xarrEvent, "lector_id", "," ) + ") ) order by $elem/create_date descending return $elem" );
+			sResponsesParamPrefix = "lector_body.tab_list.response_tab.block_list.responses"
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_response_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_custom_field()
+{
+	sTabTitle = tools_web.get_web_param( curParams, "lector_body.tab_list.custom_fields_tab", "", true );
+
+	arrCustomFieldNames = [];
+	fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+	if ( fldCustomElems != null )
+	{
+		iCurTab++;
+%>
+		<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_additional", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-ellipsis-h">
+<%
+		curCustomFields = {
+						"id": "customFieldsViewGrid",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+						"source": curObject.custom_elems,
+						"modify_eval": false
+					};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+%>
+		</TabItem>
+<%
+	}
+}
+
+function tab_report()
+{
+	sReportTabPath = "lector_body.tab_list.report_tab";
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_reports_tab.xaml" ) );
+}
+
+
+sEmail = "";
+if(curObject.type == "collaborator")
+{
+	curPerson = OpenDoc( UrlFromDocID( curObject.person_id ) ).TopElem;
+	curTitle = {
+		"object": curPerson,
+		"image_url" : tools_web.get_object_source_url( "person", curObject.person_id, "200x200" ),
+		"object_title": tools_web.get_web_const( "c_lector", curLngWeb)
+	};
+	sEmail = curPerson.email;
+}
+else
+{
+	curTitle = {
+		"object": curObject,
+		"object_title": tools_web.get_web_const( "c_lector", curLngWeb)
+	};
+	sEmail = curObject.email;
+}
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( "LectorBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, "lector_body.tab_list", "main;desc;edu_method;event;response;report", true ) ).split( ";" );
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+
+arrBlockListParam = String( tools_web.get_web_param( curParams, "lector_body.block_list", "title;tab", true ) ).split( ";" );
+for( sBlockListParam in arrBlockListParam )
+{
+	if ( sBlockListParam == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if( sBlockListParam == "title" )
+		title_block();
+
+	if( sBlockListParam == "tab" )
+		tab_block();
+
+	if( sBlockListParam == "block_desc" )
+		desc_draw();
+
+	if( sBlockListParam == "block_info" )
+		info_draw();
+}
+
+
+%>
+</SPXMLScreen>

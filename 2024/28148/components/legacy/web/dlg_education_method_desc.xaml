@@ -1,0 +1,329 @@
+﻿<SPXMLScreen>
+<%
+EducationMethodId = OptInt( PARAMETERS.GetOptProperty( "EducationMethodId", "") );
+teEducationMethod = OpenDoc( UrlFromDocID( EducationMethodId ) ).TopElem;
+sRatingFormula = tools_web.is_true( PARAMETERS.GetOptProperty( "sRatingFormula" ) );
+bRatingFormulaAspEvalType = tools_web.is_true( PARAMETERS.GetOptProperty( "bRatingFormulaAspEvalType" ) );
+iRequestTypeId = OptInt( PARAMETERS.GetOptProperty( "iRequestTypeId", ""), "" );
+
+var sBlockList = String( tools_web.get_web_param( curParams, "education_method_map.block_list", "comment;edu_programs;type;rating;similar", true ) )
+var aBlockList = sBlockList == "" ? [] : sBlockList.split( ";" );
+
+var bShowLink = tools_web.is_true( tools_web.get_web_param( curParams, "education_method_map.show_link_button", "0", true ) )
+
+var aPlacesID = Array();
+var catParentSub = curUser.position_id.OptForeignElem;
+if ( catParentSub != undefined )
+	catParentSub = catParentSub.parent_object_id.OptForeignElem;
+while ( catParentSub != undefined )
+{
+	if ( catParentSub.place_id.HasValue )
+		aPlacesID.push(catParentSub.place_id.Value);
+		
+	if ( catParentSub.Name != "org" )
+	{
+		if ( catParentSub.parent_object_id.HasValue )
+			catParentSub = catParentSub.parent_object_id.OptForeignElem;
+		else
+			catParentSub = catParentSub.org_id.OptForeignElem;
+	}
+	else
+		catParentSub = undefined;
+}
+aPlacesID = ArraySelectDistinct( aPlacesID, "This" );
+
+function evalRating( EDUCATION_METHOD_ID, EDUCATION_METHOD_TOPELEM )
+{
+	if(sRatingFormula != "")
+		try
+		{
+			if ( bRatingFormulaAspEvalType )
+				return EvalCodePage(sRatingFormula);
+			else
+				return tools.safe_execution( sRatingFormula );
+		}
+		catch(_x_)
+		{
+		}
+		
+	return "";
+}
+
+bNeedOpenGrid = true;
+for( _block_elem in aBlockList )
+{
+	if( bNeedOpenGrid )
+	{
+%>
+	<Grid Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn/>
+		</GridColumns>
+		
+<%
+		bNeedOpenGrid = false;
+	}
+	if( _block_elem == "desc" )
+	{
+		if( !teEducationMethod.desc.HasValue )
+			continue;
+%>
+	</Grid>
+<%
+		curDescObject = teEducationMethod;
+		curDescObjectID = EducationMethodId;
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+		bNeedOpenGrid = true;
+	}
+	if( _block_elem == "comment" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_desc", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( teEducationMethod.comment )%></Label>
+		</GridRow>
+<%
+	}
+	if( _block_elem == "person_num" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "1mdaw3bfgd", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( teEducationMethod.person_num )%></Label>
+		</GridRow>
+<%
+	}
+	if( _block_elem == "education_org" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "8ep5fzi6uu", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( teEducationMethod.education_org_id.HasValue ? teEducationMethod.education_org_id.ForeignElem.name : "" )%></Label>
+		</GridRow>
+<%
+	}
+	if( _block_elem == "cost" )
+	{
+		arr = new Array();
+		if( teEducationMethod.cost.HasValue )
+		{
+			arr.push( teEducationMethod.cost );
+			if( teEducationMethod.currency.HasValue )
+				arr.push( teEducationMethod.currency.ForeignElem.name );
+			if( teEducationMethod.cost_type.HasValue )
+				arr.push( teEducationMethod.cost_type.ForeignElem.name );
+		}
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_cost", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( ArrayMerge( arr, "This", " " ) )%></Label>
+		</GridRow>
+<%
+	}
+	if( _block_elem == "name" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( tools_web.get_cur_lng_name( teEducationMethod.name, curLng.short_id ) )%></Label>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "roles" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "4egocnh7uc", curLngWeb )%>:</Label>
+			<StackPanel Width="100%" Class="XAML-stack-container">
+<%
+		for( _role in teEducationMethod.role_id )
+		{
+			feRole = _role.OptForeignElem;
+			if( feRole == undefined )
+				continue;
+%>
+				<Label><%=tools_web.get_cur_lng_name( feRole.name, curLng.short_id )%></Label>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "tags" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vkmb_tag", curLngWeb )%>:</Label>
+			<StackPanel Width="100%" Class="XAML-stack-container">
+<%
+		for( _tag in teEducationMethod.tags )
+		{
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, _tag.tag_id )%>" Width="100%"><%=tools_web.get_cur_lng_name( _tag.tag_name, curLng.short_id)%></Link>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "knowledge_parts" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_knowledge_part", curLngWeb )%>:</Label>
+			<StackPanel Width="100%" Class="XAML-stack-container">
+<%
+		for( _kp in teEducationMethod.knowledge_parts )
+		{
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( "knowledge_classifier", _kp.knowledge_part_id )%>" Width="100%"><%=tools_web.get_cur_lng_name( _kp.knowledge_part_name, curLng.short_id)%></Link>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "edu_programs" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vhoditvsostavd", curLngWeb )%>:</Label>
+			<StackPanel Width="100%" Class="XAML-stack-container">
+<%
+		for( vTemp in XQuery("for $elem in compound_program_education_methods where $elem/education_method_id = " + EducationMethodId + " return $elem"))
+		{
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, vTemp.compound_program_id, { doc_id: curDocID } )%>" Width="100%"><%=tools_web.get_cur_lng_name(vTemp.name, curLng.short_id)%></Link>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "type" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_edu_type", curLngWeb )%>:</Label>
+			<Label><%=( teEducationMethod.type == "course" ? StrNonTitleCase( tools_web.get_web_const( "elektronnoe", curLngWeb ) ) : StrNonTitleCase( tools_web.get_web_const( "nsyhg8lnvg", curLngWeb ) ) )%></Label>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "rating" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_rating", curLngWeb )%>:</Label>
+			<HTMLBox>
+				<![CDATA[<%=evalRating( EducationMethodId, teEducationMethod )%>]]>
+			</HTMLBox>
+		</GridRow>
+<%
+	}
+	if ( _block_elem == "similar" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "cpisokpohozhihp", curLngWeb )%>:</Label>
+			<StackPanel Class="XAML-stack-container">
+<%
+		for ( vTemp in QueryCatalogByKeys("education_methods", "id", ArrayExtract( teEducationMethod.similar_education_methods, "This.PrimaryKey")))
+		{
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, vTemp.PrimaryKey, { doc_id: curDocID } )%>" Width="100%"><%=tools_web.get_cur_lng_name(vTemp.name, curLng.short_id)%></Link>
+<%
+		}
+%>
+			</StackPanel>
+		</GridRow>			
+<%
+	}
+	if ( _block_elem == "custom_elems" )
+	{
+%>
+		</Grid>	
+<%
+		fldCustomElems = tools.get_custom_template( teEducationMethod.Name, EducationMethodId, teEducationMethod );
+		if ( fldCustomElems != null )
+		{
+			fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+			if ( ArrayCount( fldWebCustomFields ) != 0 )
+			{
+				arrCustomFieldNames = Array();
+				curCustomFields = {
+					"template": fldCustomElems,
+					"fields": fldWebCustomFields,
+					"source": teEducationMethod.custom_elems,
+					"modify_eval": false,
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+			}
+		}
+		bNeedOpenGrid = true;
+	}
+}
+if( !bNeedOpenGrid )
+{
+%>
+	</Grid>
+<%
+}
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid  XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<StackPanel Orientation="Horizontal" Adapt="true" Class="XAML-stack-container">
+<%
+if( bShowLink )
+{
+%>
+				<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( null, EducationMethodId, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( "p9ynzvyzkx", curLngWeb )%></Button>
+<%
+}
+catCourse = undefined;
+if ( teEducationMethod.type == "course" )
+	catCourse = teEducationMethod.course_id.OptForeignElem;
+			
+if ( teEducationMethod.is_open || catCourse != undefined)
+{
+	if ( teEducationMethod.is_open )
+	{
+%>
+				<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( "request_create", null, { request_type_id: iRequestTypeId, request_object_id: EducationMethodId, doc_id: curDocID } )%>"><%=tools_web.get_web_const( "podatzayavkunap", curLngWeb )%></Button>
+<%
+	}
+	if ( catCourse != undefined )
+	{
+		vTemp = ArrayOptFirstElem(XQuery("for $elem in active_learnings where $elem/person_id = " + curUserID + " and $elem/course_id = " + catCourse.PrimaryKey + " order by $elem/start_usage_date descending return $elem"));
+		if ( vTemp != undefined )
+		{
+%>
+				<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( null, vTemp.PrimaryKey, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( "prodolzhitobuche", curLngWeb )%></Button>
+<%
+		}
+		else if ( catCourse.yourself_start )
+		{
+						
+%>
+				<Button Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catCourse.PrimaryKey, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( "aktivirovatkur", curLngWeb )%></Button>
+<%
+		}
+	}
+}
+%>
+			
+				<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

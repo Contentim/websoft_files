@@ -1,0 +1,1532 @@
+﻿<%
+if ( curObjectID == null )
+{
+	curObjectID = curUserID;
+	curObject = curUser;
+	Request.Session.Env.SetProperty( 'curObjectID', curUserID );
+	Request.Session.Env.SetProperty( 'curObject', curUser );
+}
+
+catPosition = curObject.position_id.HasValue ? curObject.position_id.OptForeignElem : undefined;
+catThanksAccount = undefined;
+
+
+
+curPage = {
+	"id": "collaborator_body",
+	"Ready": "",
+	"arrOperationActions": [],
+	"arrOperationPriveleges": [],
+	"curInformers": [],
+	"curTitle": {
+		"object": curObject,
+		"image_url": tools_web.get_object_source_url( "person", curObjectID, "200x200" )
+	},
+	"Toolbar": {
+		"Name": "ToolBarPanel",
+		"Elems": []
+	},
+	"arrTabs": []
+};
+
+bRedirectCandidate = tools_web.is_true( tools_web.get_web_param( curParams, curPage.id + ".redirect_candidate", "false", true ) );
+if ( curObject.is_candidate && bRedirectCandidate )
+{
+	curPage.Ready = tools_web.get_mode_clean_url( "candidate", curObjectID, { doc_id: curDocID } );
+}
+
+if ( curPage.Ready == "" )
+{
+	curPage.sDispFields = tools_web.get_web_param( curParams, curPage.id + '.tab_list.main_tab.block_list.info_block.disp_field_list', 'position;sub;org;sex;email;phone;birthday;photo', false );
+	curPage.curTitle.disp_image = StrContains( curPage.sDispFields, 'photo' ) && curObject.disp_personal_info;
+
+
+	arrFuncManagers = tools.get_relative_boss_types( curUserID, curObjectID );
+	if ( curObjectID == curUserID )
+	{
+		catCurrentBossType = ArrayOptFirstElem( XQuery( "for $elem in boss_types where $elem/code = 'current_user' return $elem/Fields('id')" ) );
+		if ( catCurrentBossType != undefined )
+		{
+			arrFuncManagers.push( {
+				"boss_type_id": catCurrentBossType.id.Value
+			} );
+		}
+	}
+	xarrOperations = tools.get_relative_operations( arrFuncManagers );
+	xarrOperations = ArraySelect( xarrOperations, "This.action.HasValue" );
+	curPage.arrOperationActions = ArraySelect( xarrOperations, "operation_type==0 && ArrayOptFind(String(This.operation_catalog_list).split(','),'This==\"collaborator\"')!=undefined" );
+	curPage.arrOperationPriveleges = ArraySelectByKey( xarrOperations, 1, "operation_type" );
+	curPage.bShowAll = curUser.access.access_role == 'admin' || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_all", "action" ) != undefined;
+
+
+	if ( curUserID != curObjectID )
+	{
+		catChat = ArrayOptFirstElem( XQuery( "for $elem in personal_chats where $elem/person_id = " + curUserID + " and $elem/partner_id=" + curObjectID + " order by $elem/last_message_date descending return $elem/Fields('prohibited','partner_prohibited','confirmed','partner_confirmed')" ) );
+		if ( catChat != undefined )
+		{
+			if ( ! catChat.prohibited && ! catChat.partner_prohibited )
+			{
+				if ( catChat.confirmed && catChat.partner_confirmed )
+				{
+					if ( tools_web.check_session_user( Request, curObjectID ) )
+					{
+						curPage.Toolbar.Elems.push( { "Type": "Button", "Title": tools_web.get_web_const( 'poobshatsyavonla', curLngWeb ), "Click": ( "OPENURL=" + tools_web.get_mode_clean_url( "personal_chat", null, { doc_id: curDocID } ) + "#" + curObjectID ) } );
+					}
+
+					curPage.Toolbar.Elems.push( { "Type": "Button", "Title": tools_web.get_web_const( 'napisatsoobshen', curLngWeb ), "Click": ( "OPENURL=" + tools_web.get_mode_clean_url( "communication", curObjectID, { doc_id: curDocID } ) ) } );
+				}
+			}
+		}
+		else if ( curObject.allow_personal_chat_request )
+		{
+			curPage.Toolbar.Elems.push( { "Type": "Button", "Title": tools_web.get_web_const( 'priglasitkobshe', curLngWeb ), "Click": "ACTION=InviteUserAction" } );
+		}
+
+		sThanksCurrencyType = tools_web.get_web_param( curParams, curPage.id + '.thanks_currency_type_id', '', true );
+		sBonusCurrencyType = tools_web.get_web_param( curParams, curPage.id + '.bonus_currency_type_id', '', true );
+		iThanksAmount = OptInt( tools_web.get_web_param( curParams, curPage.id + '.thanks_amount', 1, true ), 1 );
+		if ( sThanksCurrencyType != '' && sBonusCurrencyType != '' )
+		{
+			fldCurrency = lists.currency_types.GetOptChildByKey( sThanksCurrencyType );
+			if ( fldCurrency != undefined )
+			{
+				catThanksAccount = ArrayOptFirstElem( XQuery( "for $elem in accounts where $elem/object_id = " + curUserID + " and $elem/currency_type_id = " + XQueryLiteral( sThanksCurrencyType ) + " and $elem/balance >= " + iThanksAmount + " return $elem/Fields('id')" ) );
+				if ( catThanksAccount != undefined )
+					curPage.Toolbar.Elems.push( { "Type": "Button", "Title": tools_web.get_web_const( 'poblagodarit', curLngWeb ), "Click": ( "CONFIRM=" + XmlAttrEncode( StrReplace( StrReplace( tools_web.get_web_const( 'perechislitpara', curLngWeb ), '{PARAM1}', iThanksAmount ), '{PARAM2}', fldCurrency.short_name ) ) + "ACTION=GameThanksAction" ) } );
+			}
+		}
+	}
+
+	if ( ArrayCount( curPage.arrOperationActions ) != 0 )
+	{
+		oParam = {
+			"name_id": "CollaboratorBody",
+			"curUserID": curUserID,
+			"curUser": curUser
+		};
+		oParations = { "Type": "Operations", "Name": "OperationId", "Title": tools_web.get_web_const( 'vypolnitoperac', curLngWeb ), "Elems": [] };
+		for ( catActionElem in curPage.arrOperationActions )
+		{
+			sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+			oParations.Elems.push( { "Value": catActionElem.PrimaryKey.Value, "Title": tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id ), "Click": sClick } );
+		}
+		curPage.Toolbar.Elems.push( oParations );
+	}
+
+	iTabCount = 0;
+
+	arrTabListParam = tools_web.get_web_param( curParams, curPage.id + '.tab_list', ['main','boss','form','learnings','test_learnings','event','edu_plan','request','competence','activity','instraction','comp_ben;summary','files'], true );
+	var curSubPersonIDsByManagerID = null;
+	var bCurUserBoss = null;
+	for ( sTabListParam in arrTabListParam )
+	{
+		sTabParamPrefix = curPage.id + '.tab_list.' + sTabListParam + '_tab';
+		oTab = null;
+		switch ( sTabListParam )
+		{
+			case 'main':
+				oTab = { "id": "main", "title": tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) };
+				break;
+			case 'boss':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_detailed", "action" ) != undefined )
+					oTab = { "id": "boss", "title": tools_web.get_web_const( 'c_managers', curLngWeb ) };
+				break;
+			case 'form':
+				bDispResume = curObject.disp_resume && ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_resume", "action" ) != undefined );
+				bDispFiles = curObject.disp_files && ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_files", "action" ) != undefined );
+				bDispLog = curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_change_log", "action" ) != undefined;
+				if ( bDispResume || curObject.disp_desc || bDispFiles || bDispLog )
+				{
+					if( bCurUserBoss == null )
+					{
+						bCurUserBoss = tools.call_code_library_method( "libMain", "is_boss", [ curObjectID, curObject, curUserID, true ] ).is_boss
+					}
+					if ( bCurUserBoss )
+					{
+						oTab = { "id": "form", "title": tools_web.get_web_const( 'wrj18njror', curLngWeb ) };
+					}
+				}
+				break;
+			case 'learnings':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_learning", "action" ) != undefined )
+					oTab = { "id": "learnings", "title": tools_web.get_web_const( 'aepxbjonzz', curLngWeb ) };
+				break;
+			case 'test_learnings':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_learning", "action" ) != undefined )
+					oTab = { "id": "test_learnings", "title": tools_web.get_web_const( 'c_tests', curLngWeb ) };
+				break;
+			case 'event':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_event", "action" ) != undefined )
+					oTab = { "id": "event", "title": tools_web.get_web_const( 'c_events', curLngWeb ) };
+				break;
+			case 'edu_plan':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_development_plan", "action" ) != undefined )
+					oTab = { "id": "edu_plan", "title": tools_web.get_web_const( 'uchebnyeplany', curLngWeb ) };
+				break;
+			case 'request':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_request", "action" ) != undefined )
+					oTab = { "id": "request", "title": tools_web.get_web_const( 'c_requests', curLngWeb ) };
+				break;
+			case 'competence':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_competence", "action" ) != undefined )
+					oTab = { "id": "competence", "title": tools_web.get_web_const( 'ass_competences', curLngWeb ) };
+				break;
+			case 'activity':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_dactivity", "action" ) != undefined )
+					oTab = { "id": "activity", "title": "Деятельность" };
+				break;
+			case 'instraction':
+				if ( catPosition != undefined && catPosition.position_common_id.HasValue && ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_position_common_instruction", "action" ) != undefined ) )
+				{
+					xarrPositionCommonInstraction = tools.xquery( "for $elem in position_common_instructions where $elem/position_common_id = " + catPosition.position_common_id + " return $elem/id, $elem/__data" );
+					if ( ArrayOptFirstElem( xarrPositionCommonInstraction ) != undefined )
+						oTab = { "id": "instraction", "title": tools_web.get_web_const( 'c_position_common_instruction', curLngWeb ) };
+				}
+				break;
+			case 'comp_ben':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_comp_ben", "action" ) != undefined )
+					oTab = { "id": "comp_ben", "title": "Компенсации и льготы" };
+				break;
+			case 'files':
+				bDispFiles = curObject.disp_files && ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_files", "action" ) != undefined );
+				if ( bDispFiles )
+				{
+					if( bCurUserBoss == null )
+					{
+						bCurUserBoss = tools.call_code_library_method( "libMain", "is_boss", [ curObjectID, curObject, curUserID, true ] ).is_boss
+					}
+					if ( bCurUserBoss )
+					{
+						oTab = { "id": "files", "title": tools_web.get_web_const( 'vdb_files', curLngWeb ) };
+					}
+				}
+				break;
+			case 'summary':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_summary", "action" ) != undefined )
+					oTab = { "id": "summary", "title": tools_web.get_web_const( 'vcb_summary', curLngWeb ) };
+				break;
+			case 'certificate':
+				if ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_certificates", "action" ) != undefined )
+				{
+					oTab = { "id": "certificates", "title": "Сертификаты" };
+				}
+				break;
+		}
+		if ( oTab == null )
+			continue;
+
+		oTab.count = iTabCount;
+		iTabCount++;
+
+		sTabTitle = tools_web.get_web_param( curParams, sTabParamPrefix, "", true );
+		if ( sTabTitle != "" )
+			oTab.title = tools_web.get_cur_lng_name( sTabTitle, curLng.short_id );
+
+		oTab.block_list = String( tools_web.get_web_param( curParams, sTabParamPrefix + '.block_list', 'boss', true ) ).split( ';' );
+
+		curPage.arrTabs.push( oTab );
+	}
+
+	if ( true )
+	{
+		arrTiles = String( tools_web.get_web_param( curParams, curPage.id + ".tab_list.main_tab.block_list.info_tile_block.tile_list", "tests;courses;exp;events", true ) ).split( ";" );
+		for ( sTileElem in arrTiles )
+		{
+			if ( sTileElem == 'tests' )
+			{
+				iObjectCount = ArrayCount( tools.xquery( "for $elem in test_learnings where $elem/person_id = " + curObjectID + " return $elem/id" ) );
+				if ( iObjectCount > 0 )
+				{
+					iCompleteCount = ArrayCount( tools.xquery( "for $elem in test_learnings where $elem/person_id = " + curObjectID + " and ( $elem/state_id = 2 or $elem/state_id = 4 ) return $elem/id" ) );
+					curPage.curInformers.push( {
+						"type": "scale_number",
+						"title": tools_web.get_web_const( 'uspeshnotestov', curLngWeb ),
+						"count": iCompleteCount,
+						"max_count": iObjectCount
+					} );
+				}
+			}
+
+			if ( sTileElem == 'courses' )
+			{
+				iObjectCount = ArrayCount( tools.xquery( "for $elem in learnings where $elem/person_id = " + curObjectID + " return $elem/id" ) );
+				if ( iObjectCount > 0 )
+				{
+					iCompleteCount = ArrayCount( tools.xquery( "for $elem in learnings where $elem/person_id = " + curObjectID + " and ( $elem/state_id = 2 or $elem/state_id = 4 ) return $elem/id" ) );
+					curPage.curInformers.push( {
+						"type": "scale_number",
+						"title": tools_web.get_web_const( 'uspeshnokursov', curLngWeb ),
+						"count": iCompleteCount,
+						"max_count": iObjectCount
+					} );
+				}
+			}
+
+			if ( sTileElem == 'exp' && ( curPage.bShowAll || ArrayOptFindByKey( curPage.arrOperationPriveleges, "show_detailed", "action" ) != undefined ) && ( curObject.hire_date.HasValue || curObject.position_date.HasValue ) )
+			{
+				curPage.curInformers.push( {
+					"type": "info_person_exp",
+					"hire_date": curObject.hire_date.Value,
+					"position_date": curObject.position_date.Value
+				} );
+			}
+
+			if ( sTileElem == 'events' )
+			{
+				iCount = ArrayCount( tools.xquery( "for $elem in event_results where $elem/person_id = " + curObjectID + " and $elem/is_assist = true() return $elem/id" ) );
+				curPage.curInformers.push( {
+					"type": "number",
+					"title": tools_web.get_web_const( 'meropriyatiy', curLngWeb ),
+					"value": iCount
+				} );
+			}
+		}
+	}
+}
+
+
+
+
+
+if ( curPage.Ready != "" )
+{
+%>
+<SPXMLScreen Ready="<%=XmlAttrEncode( curPage.Ready )%>">
+</SPXMLScreen>
+<%
+	Cancel();
+}
+%>
+<SPXMLScreen>
+<%
+curTitle = curPage.curTitle;
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+if ( ArrayCount( curPage.arrOperationActions ) != 0 )
+{
+	curCollectionMenu = {
+		"id": "CollaboratorBody",
+		"catalog_name": "collaborator",
+		"selected_data": UrlEncode( '[{"id":' + curObjectID + '}]' )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+}
+%>
+<StackPanel Name="<%=XmlAttrEncode( curPage.Toolbar.Name )%>">
+<Toolbar Name="<%=XmlAttrEncode( curPage.Toolbar.Name )%>" Class="XAML-toolbar-actions" Adapt="true">
+<%
+for ( oToolbarElem in curPage.Toolbar.Elems )
+{
+	switch ( oToolbarElem.Type )
+	{
+		case 'Button':
+%>
+	<Button Class="XAML-button" Click="<%=XmlAttrEncode( oToolbarElem.Click )%>"><![CDATA[<%=oToolbarElem.Title%>]]></Button>
+<%
+			break;
+
+		case 'Operations':
+%>
+	<ComboBox Name="<%=XmlAttrEncode( oToolbarElem.Name )%>" Width="200">
+		<ComboBoxItem Value="" Selected="True"><![CDATA[<%=oToolbarElem.Title%>]]></ComboBoxItem>
+<%
+			for ( oOperationElem in oToolbarElem.Elems )
+			{
+%>
+		<ComboBoxItem Value="<%=XmlAttrEncode( oOperationElem.Value )%>" Change="<%=XmlAttrEncode( oOperationElem.Click )%>"><![CDATA[<%=oOperationElem.Title%>]]></ComboBoxItem>
+<%
+			}
+%>
+	</ComboBox>
+<%
+			break;
+	}
+}
+%>
+</Toolbar>
+</StackPanel>
+<%
+
+
+
+
+
+
+if ( catThanksAccount != undefined )
+{
+%>
+<Action Name="GameThanksAction" Source="game_change">
+	<Param Name="action" Value="thanks"/>
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+	<Param Name="thanks_amount" Value="<%=iThanksAmount%>"/>
+	<Param Name="thanks_currency_type_id" Value="<%=sThanksCurrencyType%>"/>
+	<Param Name="bonus_currency_type_id" Value="<%=sBonusCurrencyType%>"/>
+</Action>
+<%
+}
+%>
+<Action Name="InviteUserAction" Source="communication_users_actions" Success="ALERT={messageText};REFRESH">
+	<Param Name="iUserId" Value="<%=curObjectID%>"/>
+	<Param Name="sAction" Value="invite"/>
+</Action>
+
+<Dialog Name="BenefitDialog" Source="dlg_desc" Title="<%=tools_web.get_web_const("zzzpprpvcs_3", curLngWeb)%>" Width="650">
+	<Param Name="iObjectId" Value=""/>
+</Dialog>
+<%
+arrTabs = curPage.arrTabs;
+if ( curDevice.disp_type != "" )
+{
+	arrTabs = ArraySelect( arrTabs, "This.id=='main'||This.id=='boss'" );
+}
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'CollaboratorBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+%>
+<TabControl Name="CollaboratorBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( oTabElem in arrTabs )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'main' )
+{
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == "info_tile" )
+		{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-tiles-container" Adapt="true">
+<%
+			curInformers = ({
+				"informers": curPage.curInformers
+			});
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+			</StackPanel>
+<%
+		}
+
+		if ( sTabElem == 'info' )
+		{
+%>
+				<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+					<GridColumns>
+						<GridColumn Width="250"/>
+						<GridColumn/>
+					</GridColumns>
+<%
+			if ( StrContains( curPage.sDispFields, 'position' ) )
+			{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_position', curLngWeb )%>:</Label>
+<%
+						if ( curObject.position_id.HasValue )
+						{
+							if ( catPosition == undefined )
+							{
+%>
+						<Label><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+<%
+							}
+							else
+							{
+								sPositionText = tools_web.get_cur_lng_name( catPosition.name, curLng.short_id ) + ( catPosition.is_boss ? ", " + tools_web.get_web_const( 'c_boss', curLngWeb ) : "" );
+								if ( catPosition.position_common_id.HasValue )
+								{
+%>
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catPosition.position_common_id, { doc_id: curDocID } )%>"><![CDATA[<%=sPositionText%>]]></Link>
+<%
+								}
+								else
+								{
+%>
+						<Label><![CDATA[<%=sPositionText%>]]></Label>
+<%
+								}
+							}
+						}
+						else
+						{
+%>
+						<Label><%="---"%></Label>
+<%
+						}
+%>
+					</GridRow>
+<%
+			}
+			if ( StrContains( curPage.sDispFields, 'sub' ) )
+			{
+				teSubdivision = null;
+				if ( curObject.position_parent_id.HasValue )
+				{
+					try
+					{
+						teSubdivision = OpenDoc( UrlFromDocID( curObject.position_parent_id ) ).TopElem;
+						if ( teSubdivision.Name != 'subdivision' )
+							teSubdivision = null;
+					}
+					catch ( err )
+					{
+						teSubdivision = undefined;
+					}
+				}
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_subd', curLngWeb )%>:</Label>
+<%
+						if ( teSubdivision == null )
+						{
+%>
+							<Label><%="---"%></Label>
+<%
+						}
+						else
+						{
+							if ( teSubdivision == undefined )
+							{
+%>
+								<Label><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+<%
+							}
+							else
+							{
+%>
+								<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, teSubdivision.id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( teSubdivision.name, curLng.short_id )%>]]></Link>
+<%
+							}
+						}
+%>
+					</GridRow>
+<%
+			}
+			if ( StrContains( curPage.sDispFields, 'org' ) )
+			{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_org', curLngWeb )%>:</Label>
+<%
+						if (curObject.org_id.HasValue)
+						{
+							oTemp = curObject.org_id.OptForeignElem;
+							if (oTemp != undefined)
+							{
+								if (tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_body.tab_list.main_tab.block_list.info_block.org_link", true, true )))
+								{
+%>
+								<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, oTemp.PrimaryKey, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( oTemp.disp_name, curLng.short_id )%>]]></Link>
+<%
+								}
+								else
+								{
+%>
+								<Label><![CDATA[<%=tools_web.get_cur_lng_name( oTemp.disp_name, curLng.short_id )%>]]></Label>
+<%
+								}
+							}
+							else
+							{
+%>
+								<Label><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+<%
+							}
+
+						}
+						else
+						{
+%>
+							<Label><%="---"%></Label>
+<%
+						}
+%>
+					</GridRow>
+<%
+			}
+			if ( curObject.disp_personal_info )
+			{
+				if ( StrContains( curPage.sDispFields, 'email' ) )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_email', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=curObject.email%>]]></Label>
+					</GridRow>
+<%
+				}
+				if ( StrContains( curPage.sDispFields, 'phone' ) )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_phone', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=curObject.phone%>]]></Label>
+					</GridRow>
+<%
+				}
+			}
+			if ( StrContains( curPage.sDispFields, 'birthday' ) && curObject.disp_birthdate.Value )
+			{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_birthday', curLngWeb )%>:</Label>
+						<Label><%=( curObject.disp_birthdate_year ? StrDate( curObject.birth_date, false ) : ( curObject.birth_date.HasValue ? StrInt( Day( curObject.birth_date ), 2 ) + "." + StrInt( Month( curObject.birth_date ), 2 ) : "" ) )%></Label>
+					</GridRow>
+<%
+			}
+			if ( StrContains( curPage.sDispFields, 'sex' ) && curObject.disp_sex.Value )
+			{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_sex', curLngWeb )%>:</Label>
+						<Label><%=( curObject.sex == 'm' ? tools_web.get_web_const( 'vpb_m', curLngWeb ) : ( curObject.sex == 'w' ? tools_web.get_web_const( 'vpb_w', curLngWeb ) : '' ) )%></Label>
+					</GridRow>
+<%
+			}
+			if ( StrContains( curPage.sDispFields, 'login' ) && curObject.disp_login )
+			{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_login', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=curObject.login%>]]></Label>
+					</GridRow>
+<%
+			}
+			if ( curObject.level_id.HasValue )
+			{
+				catLevel = curObject.level_id.OptForeignElem;
+				if ( catLevel != undefined )
+				{
+%>
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'ib4f868k39', curLngWeb )%>:</Label>
+						<Label><![CDATA[<%=tools_web.get_cur_lng_name( catLevel.name, curLng.short_id )%>]]></Label>
+					</GridRow>
+<%
+				}
+			}
+			if (StrContains( curPage.sDispFields, 'current_state' ) && curObject.current_state.HasValue)
+			{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_current_state', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( curObject.current_state, curLng.short_id )%>]]></Label>
+				</GridRow>
+<%
+			}
+
+			if ( tools_web.is_true( tools_web.get_web_param( curParams, "collaborator_body.tab_list.main_tab.block_list.info_block.disp_custom_fields", false, true ) ) )
+			{
+				fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				curCustomFields = {
+					"id": "CollaboratorCustomFields",
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+					"source": curObject.custom_elems,
+					"modify_eval": false,
+					"draw_grid_columns": false
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+
+			}
+%>
+				</Grid>
+<%
+		}
+
+		if ( sTabElem == "qualification" )
+		{
+			iCollumnsNum = 4;
+			xarrQualificationAssignments = XQuery( "for $elem in qualification_assignments where $elem/person_id = " + curObjectID + " and $elem/status = 'assigned' order by $elem/assignment_date descending return $elem" );
+			if ( ArrayOptFirstElem( xarrQualificationAssignments ) != undefined )
+			{
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'fkl9td7yv0', curLngWeb ) )%>">
+			<Grid Width="100%" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="100" Align="center"/>
+					<GridColumn Width="100" Align="center"/>
+					<GridColumn Width="100" Align="center"/>
+					<GridColumn Width="100" Align="center"/>
+				</GridColumns>
+<%
+				iRowCounter = 0;
+				bLastTag = false;
+				for ( catQualificationAssignmentElem in xarrQualificationAssignments )
+				{
+					sQualificationUrl = UrlFromDocID( catQualificationAssignmentElem.qualification_id );
+					try
+					{
+						teQualification = OpenDoc( sQualificationUrl ).TopElem;
+					}
+					catch ( err )
+					{
+						continue;
+					}
+					if ( iRowCounter == 0 )
+					{
+						bLastTag = true;
+%>
+				<GridRow>
+<%
+					}
+					sObjectImageUrl = teQualification.resource_id.HasValue ? tools_web.get_object_source_url( 'resource', teQualification.resource_id ) : '/ico/qualification.ico';
+%>
+				<Image Source="<%=XmlAttrEncode( sObjectImageUrl )%>" Click="OPENURL=<%=tools_web.get_mode_clean_url( "game", curObjectID, { doc_id: curDocID } )%>" Height="100" MaxWidth="100">
+<%
+					if ( teQualification.desc.HasValue )
+					{
+%>
+					<HTMLTip><![CDATA[<%=tools_web.get_web_desc( teQualification.desc, sQualificationUrl, 'qualification.desc' )%>]]></HTMLTip>
+<%
+					}
+%>
+				</Image>
+<%
+					iRowCounter++;
+					if ( iRowCounter >= iCollumnsNum )
+					{
+						bLastTag = false;
+						iRowCounter = 0;
+%>
+				</GridRow>
+<%
+					}
+				}
+				if ( bLastTag )
+				{
+%>
+			</GridRow>
+<%
+				}
+%>
+			</Grid>
+		</Panel>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   BOSS TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'boss' )
+{
+%>
+	<TabItem Class="icon-user-tie" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == "boss" )
+		{
+			arrUserFuncManagers = tools.get_uni_user_bosses( curObjectID, { "return_object_type": "func_manager" } );
+			arrNativeManagers = ArraySelectDistinct( ArraySelectByKey( arrUserFuncManagers, true, "is_native" ), 'person_id' );
+			arrNotNativeManagers = ArraySort( ArraySelectByKey( arrUserFuncManagers, false, "is_native" ), 'boss_type_id', '-' );
+
+			if ( ArrayCount( arrNativeManagers ) != 0 )
+			{
+				curPersonsList = {
+					"title": tools_web.get_web_const( 'neposredstvennye', curLngWeb ),
+					"persons": arrNativeManagers,
+					"primary_key": "person_id"
+				}
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+			}
+
+			if ( ArrayCount( arrNotNativeManagers ) != 0 )
+			{
+				for ( catBossTypeElem in ArraySelectDistinct( arrNotNativeManagers, 'boss_type_id' ) )
+				{
+					arrManagers = ArraySelectDistinct( ArraySelectByKey( arrNotNativeManagers, catBossTypeElem.boss_type_id, "boss_type_id" ), 'person_id' );
+					if ( catBossTypeElem.boss_type_id.HasValue )
+					{
+						catFuncType = catBossTypeElem.boss_type_id.OptForeignElem;
+						sFuncType = catFuncType == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( catFuncType.name, curLng.short_id );
+					}
+					else
+					{
+						sFuncType = tools_web.get_web_const( 'weg16bxma7', curLngWeb );
+					}
+%>
+				<Label Class="XAML-label-header-4"><![CDATA[<%=sFuncType%>:]]></Label>
+<%
+					curPersonsList = {
+						"persons": arrManagers,
+						"primary_key": "person_id",
+						"max_columns": ( curDevice.disp_type == "" ? 3 : 2 )
+					}
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+				}
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   FORM TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'form' )
+{
+%>
+	<TabItem Class="icon-list-alt" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+		for ( sTabElem in oTabElem.block_list )
+		{
+			if ( sTabElem == 'resume' && bDispResume )
+			{
+				catRequme = ArrayOptFirstElem( XQuery( "for $elem in resumes where $elem/person_id = " + curObjectID + " return $elem" ) );
+				if ( catRequme != undefined )
+				{
+					curResume = OpenDoc( UrlFromDocID( catRequme.id ) ).TopElem;
+					switch ( curResume.family_status )
+					{
+						case "married":
+							sFamilyStatus = tools_web.get_web_const( 'vrb_married', curLngWeb );
+							break;
+						case "not_married":
+							sFamilyStatus = tools_web.get_web_const( 'vrb_unmarried', curLngWeb );
+							break;
+						case "divorced":
+							sFamilyStatus = tools_web.get_web_const( 'vrb_divorcee', curLngWeb );
+							break;
+						default:
+							sFamilyStatus = "";
+							break;
+					}
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_resume', curLngWeb ) )%>">
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_sex', curLngWeb )%>:</Label>
+					<Label><%=( curResume.sex == "m" ? tools_web.get_web_const( 'vpb_m', curLngWeb ) : tools_web.get_web_const( 'vpb_w', curLngWeb ) )%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_family_status', curLngWeb )%>:</Label>
+					<Label><%=sFamilyStatus%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_birthday', curLngWeb )%>:</Label>
+					<Label><%=StrDate( curResume.birth_date, false )%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_education', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( fldType = curLngCommon.educ_types.GetOptChildByKey( curResume.educ_type_id ), ( fldType == undefined ? "" : fldType.name ) )%>]]></Label>
+				</GridRow>
+<%
+					if ( curResume.academic_degree.HasValue )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uchenayastepen', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curResume.academic_degree) %>]]></Label>
+				</GridRow>
+<%
+					}
+					if ( curResume.academic_heading.HasValue )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uchenoezvanie', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( curResume.academic_heading )%>]]></Label>
+				</GridRow>
+<%
+					}
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_service', curLngWeb )%>:</Label>
+					<Label><%=curResume.exp_years%></Label>
+				</GridRow>
+<%
+					if ( curResume.main_lng.HasValue )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_lng_my', curLngWeb )%>:</Label>
+					<Label><%=curLngCommon.languages.GetOptChildByKey( curResume.main_lng ).name%></Label>
+				</GridRow>
+<%
+					}
+					if ( curResume.lngs.ChildNum != 0 )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vrb_lng_is', curLngWeb )%>:</Label>
+					<StackPanel Orientation="Vertical">
+<%
+						for ( fldLngElem in curResume.lngs )
+						{
+							if ( fldLngElem.lng_id.HasValue )
+							{
+								fldType = curLngCommon.language_levels.GetOptChildByKey( fldLngElem.level );
+%>
+						<Label><%=( curLngCommon.languages.GetOptChildByKey( fldLngElem.lng_id ).name + ( fldType == undefined ? "" : " (" + fldType.name + ")" ) )%></Label>
+<%
+							}
+						}
+%>
+					</StackPanel>
+				</GridRow>
+<%
+					}
+
+					catPersonnelReserve = ArrayOptFirstElem( XQuery( "for $elem in personnel_reserves where $elem/person_id = " + curObjectID + " and $elem/status = 'in_reserve' return $elem" ) );
+					if ( catPersonnelReserve != undefined )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'sostoitvkadrov', curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=( catCareerReserveType = catPersonnelReserve.career_reserve_type_id.OptForeignElem, ( catCareerReserveType == undefined ? tools_web.get_web_const( 'sostoit', curLngWeb ) : catCareerReserveType.name ) )%>]]></Label>
+				</GridRow>
+<%
+					}
+%>
+			</Grid>
+
+			<Collection Name="ResumeWorkExpirienceCollection">
+				<Data>
+<%
+					for ( fldWorkExpirienceElem in curResume.work_experiences )
+					{
+%>
+					<Row>
+						<Cell Id="start" Value="<%=StrDate( fldWorkExpirienceElem.start_date, false )%>"/>
+						<Cell Id="finish" Value="<%=StrDate( fldWorkExpirienceElem.finish_date, false )%>"/>
+						<Cell Id="org" Value="<%=XmlAttrEncode( fldWorkExpirienceElem.org_name )%>"/>
+						<Cell Id="position" Value="<%=XmlAttrEncode( fldWorkExpirienceElem.position_name )%>"/>
+						<Cell Id="desc" Value="<%=XmlAttrEncode( fldWorkExpirienceElem.desc )%>"/>
+					</Row>
+<%
+					}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="ResumeWorkExpirienceGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'opytraboty', curLngWeb ) )%>" Source="{ResumeWorkExpirienceCollection}" PageSize="100">
+				<DataGridColumn Value="start" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vrb_start', curLngWeb ) )%>" Width="80" Type="string"/>
+				<DataGridColumn Value="finish" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vrb_finish', curLngWeb ) )%>" Width="80" Type="string"/>
+				<DataGridColumn Value="org" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_org', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="position" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_position', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Width="100%" Type="string"/>
+			</DataGrid>
+
+			<Collection Name="ResumeEducationCollection">
+				<Data>
+<%
+					for ( fldEducationElem in curResume.educations )
+					{
+						fldType = curLngCommon.expended_educ_types.GetOptChildByKey( fldEducationElem.type );
+%>
+					<Row>
+						<Cell Id="name" Value="<%=XmlAttrEncode( fldEducationElem.name )%>"/>
+						<Cell Id="type" Value="<%=( fldType == undefined ? '' : XmlAttrEncode( fldType.name ) )%>"/>
+						<Cell Id="spec" Value="<%=XmlAttrEncode( fldEducationElem.specialisation )%>"/>
+						<Cell Id="result" Value="<%=XmlAttrEncode( fldEducationElem.result )%>"/>
+						<Cell Id="date" Value="<%=fldEducationElem.date%>"/>
+					</Row>
+<%
+					}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="ResumeEducationGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vrb_edu_courses', curLngWeb ) )%>" Source="{ResumeEducationCollection}" PageSize="100">
+				<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100%" Type="string"/>
+				<DataGridColumn Value="type" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_type', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="spec" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vrb_faculty', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="result" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vrb_result', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'godokonchaniya', curLngWeb ) )%>" Width="50" Type="string"/>
+			</DataGrid>
+
+			<Collection Name="ResumeProjectCollection">
+				<Data>
+<%
+					for ( fldProjectElem in curResume.projects )
+					{
+%>
+					<Row>
+						<Cell Id="sphere" Value="<%=XmlAttrEncode( fldProjectElem.sphere )%>"/>
+						<Cell Id="type" Value="<%=XmlAttrEncode( fldProjectElem.type )%>"/>
+						<Cell Id="exam_year" Value="<%=XmlAttrEncode( fldProjectElem.examination_year )%>"/>
+						<Cell Id="year" Value="<%=fldProjectElem.year%>"/>
+						<Cell Id="desc" Value="<%=fldProjectElem.desc%>"/>
+					</Row>
+<%
+					}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="ResumeProjectGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( '159pmteyyz', curLngWeb ) )%>" Source="{ResumeProjectCollection}" PageSize="100">
+				<DataGridColumn Value="sphere" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="type" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_type', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="exam_year" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'godprovedeniyae', curLngWeb ) )%>" Width="50" Type="string"/>
+				<DataGridColumn Value="year" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'godprovedeniya', curLngWeb ) )%>" Width="50" Type="string"/>
+				<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Width="100%" Type="string"/>
+			</DataGrid>
+		</Panel>
+<%
+				}
+			}
+
+			if ( sTabElem == 'desc' && curObject.disp_desc )
+			{
+				Response.Write( tools_web.place_xaml( "block_desc" ) );
+			}
+
+			if ( sTabElem == 'files' && bDispFiles )
+			{
+				Response.Write( tools_web.place_xaml( "list_files" ) );
+			}
+
+			if ( sTabElem == 'history' && bDispLog )
+			{
+%>
+			<Collection Name="HistoryCollection">
+				<Data>
+<%
+				for ( fldLogElem in curObject.change_logs )
+				{
+%>
+					<Row>
+						<Cell Id="date" Value="<%=StrDate( fldLogElem.date, true, false )%>"/>
+						<Cell Id="position" Value="<%=XmlAttrEncode( fldLogElem.position_name )%>"/>
+						<Cell Id="sub" Value="<%=XmlAttrEncode( fldLogElem.position_parent_name )%>"/>
+						<Cell Id="org" Value="<%=XmlAttrEncode( fldLogElem.org_name )%>"/>
+					</Row>
+<%
+				}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="HistoryGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vcb_history', curLngWeb ) )%>" Source="{HistoryCollection}" PageSize="100">
+				<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vdb_aim_date', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="position" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_position', curLngWeb ) )%>" Width="100%" Type="string"/>
+				<DataGridColumn Value="sub" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_subd', curLngWeb ) )%>" Width="200" Type="string"/>
+				<DataGridColumn Value="org" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_org', curLngWeb ) )%>" Width="200" Type="string"/>
+			</DataGrid>
+<%
+			}
+		}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   LEARNINGS TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'learnings' )
+{
+%>
+	<TabItem Class="icon-newspaper-o" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'active_learnings' )
+		{
+			curView = {
+				"id": "ActiveLearnings",
+				//"disp_type": "list",
+				"title": tools_web.get_web_const( 'aktivnyeobuchen', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "active_learning",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_proc",
+				"disp_filter": "false",
+				"disp_search": true,
+				"selection": "multiple",
+				"list_columns": "course_id.ForeignElem.name;start_usage_date;score;state_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+%>
+<!-- <Label Class="XAML-label-spacer"/> -->
+<%
+		if ( sTabElem == 'learnings' )
+		{
+			curView = {
+				"id": "Learnings",
+				"title": tools_web.get_web_const( 'zavershennyeobu', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "learning",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": true,
+				"selection": "multiple",
+				"list_columns": "course_id.ForeignElem.name;last_usage_date;score;state_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   TEST_LEARNINGS TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'test_learnings' )
+{
+%>
+	<TabItem Class="icon-clipboard2" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'active_learnings' )
+		{
+			curView = {
+				"id": "TestActiveLearnings",
+				"title": tools_web.get_web_const( 'b3uk06edze', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "active_test_learning",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "test_learning_proc",
+				"disp_filter": "false",
+				"disp_search": true,
+				"selection": "multiple",
+				"list_columns": "assessment_name;start_usage_date;score;state_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+%>
+<!-- <Label Class="XAML-label-spacer"/> -->
+<%
+		if ( sTabElem == 'learnings' )
+		{
+			curView = {
+				"id": "TestLearnings",
+				"title": tools_web.get_web_const( '8fcf8y2h17', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "test_learning",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "test_learning_stat",
+				"disp_filter": "false",
+				"disp_search": true,
+				"selection": "multiple",
+				"list_columns": "assessment_name;last_usage_date;score;state_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   EVENT TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'event' )
+{
+%>
+	<TabItem Class="icon-calendar-o" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'events' )
+		{
+			curView = {
+				"id": "Events",
+				"title": tools_web.get_web_const( 'c_events', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "event_collaborator",
+				"view_type": "event",
+				"xquery_qual": ( "$elem/collaborator_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "event",
+				"link_object_field": "event_id",
+				"disp_filter": "false",
+				"disp_search": true,
+				"list_columns": 'finish_date;name;person_num;status_id;total_cost'
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   EDU_PLAN TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'edu_plan' )
+{
+%>
+	<TabItem Class="icon-stack" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'edu_plans' )
+		{
+			curView = {
+				"id": "EduPlan",
+				"title": tools_web.get_web_const( 'uchebnyeplany', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "education_plan",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_search": true,
+				"list_columns": "name;state_id;create_date;plan_date;readiness_percent"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   REQUEST TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'request' )
+{
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'requests' )
+		{
+			curView = {
+				"id": "Request",
+				"title": tools_web.get_web_const( 'c_requests', curLngWeb ),
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "request",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": "true",
+				"disp_filter": false,
+				"disp_search": true,
+				"list_columns": "create_date;request_type_id;object_name;status_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   COMPETENCE TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'competence' )
+{
+%>
+	<TabItem Class="icon-server" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'competences' )
+		{
+			Response.Write( tools_web.place_xaml( "xaml_collaborator_competence" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   ACTIVITY TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'activity' )
+{
+%>
+	<TabItem Class="icon-bar-chart-o" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'activity' )
+		{
+			Response.Write( tools_web.place_xaml( "xaml_collaborator_activity" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   INSTRACTION TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'instraction' )
+{
+%>
+	<TabItem Class="icon-file-text-o" Title="<%=XmlAttrEncode( oTabElem.title )%>" Reload="true">
+<%
+		if ( iDefaultTab == oTabElem.count )
+		{
+			for ( sTabElem in oTabElem.block_list )
+			{
+				if ( sTabElem == 'instractions' )
+				{
+%>
+			<Grid Class="XAML-grid-list-container">
+				<GridColumns>
+					<GridColumn Width="100%"/>
+				</GridColumns>
+<%
+					for ( catPositionCommonInstractionElem in xarrPositionCommonInstraction )
+					{
+						tePositionCommonInstraction = OpenDoc( UrlFromDocID( catPositionCommonInstractionElem.id ) ).TopElem;
+%>
+				<GridRow>
+					<Grid Class="XAML-grid-list-item">
+						<GridColumns>
+							<GridColumn Width="32"/>
+							<GridColumn Width="100%"/>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+							<Image Class="XAML-info-icon" Source="/pics/1blank.gif" Click="TOGGLE=AddPart<%=catPositionCommonInstractionElem.id%>">
+								<HTMLTip><%=tools_web.get_web_const( 'vnrqm9djn5', curLngWeb )%></HTMLTip>
+							</Image>
+							<StackPanel Orientation="Vertical">
+								<Label><![CDATA[<%=tools_web.get_cur_lng_name( ( tePositionCommonInstraction.name.HasValue ? tePositionCommonInstraction.name : tePositionCommonInstraction.section_instruction_id.sd.name ), curLng.short_id )%>]]></Label>
+								<StackPanel Class="XAML-info-block" Name="AddPart<%=catPositionCommonInstractionElem.id%>" Orientation="Vertical" Hidden="1">
+									<HTMLBox><![CDATA[<%=tePositionCommonInstraction.desc%>]]></HTMLBox>
+								</StackPanel>
+							</StackPanel>
+						</GridRow>
+					</Grid>
+				</GridRow>
+<%
+					}
+%>
+			</Grid>
+<%
+				}
+			}
+		}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   COMP_BEN TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'comp_ben' )
+{
+%>
+	<TabItem Class="icon-star" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'main' )
+		{
+			fldCurrencyType = lists.currency_types.GetOptChildByKey( curObject.comp_ben.currency_type_id );
+			fldPeriodity = curLngCommon.perioditys.GetOptChildByKey( curObject.comp_ben.payment_period );
+%>
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn Width="250"/>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'oklad', curLngWeb )%>:</Label>
+				<Label><%=( curObject.comp_ben.salary + ( curObject.comp_ben.currency_type_id.HasValue ? ' ' + ( fldCurrencyType == undefined ? curObject.comp_ben.currency_type_id : fldCurrencyType.short_name ) : '' ) + ( curObject.comp_ben.payment_period.HasValue ? ' ' + 'Период выплат' + ': ' + ( fldPeriodity == undefined ? curObject.comp_ben.payment_period : fldPeriodity.name ) : '' ) )%></Label>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%='Возможные выплаты'%>:</Label>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+<%
+			iCounter = 0;
+			for ( fldPaymentTypeElem in curObject.comp_ben.payment_types )
+			{
+				iCounter++;
+
+				catPaymentType = fldPaymentTypeElem.payment_type_id.OptForeignElem;
+				if ( catPaymentType == undefined )
+					continue;
+%>
+					<Label><%=( tools_web.get_cur_lng_name( catPaymentType.name, curLng.short_id ) + ( iCounter >= curObject.comp_ben.payment_types.ChildNum ? "" : "," ) )%></Label>
+<%
+			}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+<%
+		}
+
+		if ( sTabElem == 'benefit' )
+		{
+			curView = {
+				"id": "Benefits",
+				"disp_type": "list",
+				"title": "Привилегии",
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "benefit_item",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": true,
+				"disp_filter": false,
+				"disp_search": false,
+				"hide_empty": true,
+				"icon_class": "icon-star",
+				"link_field_index": 2,
+				"action": "SET=BenefitDialog/iObjectId,{id};OPENDIALOG=BenefitDialog;"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+		<Label Class="XAML-label-spacer"/>
+<%
+		}
+
+		if ( sTabElem == 'payment' )
+		{
+			curView = {
+				"id": "Payments",
+				"title": "Выплаты сотрудникам",
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "payment",
+				"xquery_qual": ( "$elem/person_id = " + curObjectID ),
+				"disp_link": false,
+				"disp_filter": false,
+				"disp_search": true,
+				"hide_empty": true,
+				"list_columns": "pay_date;payment_type_id.ForeignElem.name;sum"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   CERTIFICATE TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'certificates' )
+{
+%>
+	<TabItem Class="icon-calendar-o" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	curView = {
+		"id": "ValidCertificates",
+		"title": "Действующие сертификаты",
+		"height": "",
+		"disp_paging": true,
+		"paging_size": 100,
+		"catalog_name": "certificate",
+		"xquery_qual": ( "$elem/person_id = " + curObjectID + " and $elem/valid = true()"),
+		"disp_filter": true,
+		"disp_search": true,
+		"disp_link": "false"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+
+	curView = {
+		"id": "InvalidCertificates",
+		"title": "Просроченные сертификаты",
+		"height": "",
+		"disp_paging": true,
+		"paging_size": 100,
+		"catalog_name": "certificate",
+		"xquery_qual": ( "$elem/person_id = " + curObjectID + " and $elem/valid = false()"),
+		"disp_filter": true,
+		"disp_search": true,
+		"disp_link": "false"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+	</TabItem>
+<%
+}
+
+////////////////////////////////////////////////   FILES TAB   //////////////////////////////////////////////
+if ( oTabElem.id == 'files' )
+{
+%>
+	<TabItem Class="icon-server" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+	if ( bDispFiles )
+	{
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+	}
+%>
+	</TabItem>
+<%
+}
+
+///////////////////////////////////////////////   SUMMARY TAB   /////////////////////////////////////////////
+if ( oTabElem.id == 'summary' )
+{
+%>
+	<TabItem Class="icon-columns" Title="<%=XmlAttrEncode( oTabElem.title )%>">
+<%
+    sSummaryTab = tools_web.get_web_param( curParams, "collaborator_body.tab_list.summary_tab.block_list", "false", true );
+    sCstmCollectnCode = tools_web.get_web_param( curParams, "collaborator_body.tab_list.summary_tab.code_collection_timeline", "", true );
+
+	for ( sTabElem in oTabElem.block_list )
+	{
+		if ( sTabElem == 'summary' )
+		{
+			curFilter = {
+				'id': 'materials',
+				'title': tools_web.get_web_const( 'vcb_summary', curLngWeb ),
+				'action': 'UPDATE=SummaryPanel',
+				'disp_selector': false,
+				'disp_search': false,
+				'row_filters': [
+					[
+						{ 'name': 'summary_start_date', 'type': 'date', 'title': 'Период с' },
+						{ 'name': 'summary_finish_date', 'type': 'date', 'title': 'Период по' }
+					]
+				],
+				'schema': 'small'
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+		<Panel Name="SummaryPanel" Source="collaborator_summary" ShowHeader="false">
+			<Param Name="summary_start_date" Value="{summary_start_date}"/>
+			<Param Name="summary_finish_date" Value="{summary_finish_date}"/>
+            <Param Name="b_show_timeline" Value="<%=StrContains( sSummaryTab, "timeline" )%>"/>
+            <Param Name="code_collection_timeline" Value="<%=sCstmCollectnCode%>"/>
+		</Panel>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

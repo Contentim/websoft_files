@@ -1,0 +1,254 @@
+﻿<SPXMLScreen>
+<StackPanel Class="login-block">
+
+<%
+if ( ! global_settings.settings.allow_self_register )
+{
+	curMessageBox = {
+		"type": "error",
+		"text": ( tools_web.get_web_const( 'samoregistraci_1', curLngWeb ) + '.' )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+sEditClass = "";
+bDispLicense = tools_web.is_true( tools_web.get_web_param( curParams, "disp_license", "false", true ) );
+bDispFinishAlert = tools_web.is_true( tools_web.get_web_param( curParams, "disp_finish_alert", false, true ) );
+
+iFirstStep = bDispLicense ? 1 : 2;
+iStepCount = iFirstStep + ( global_settings.settings.self_register_disp_subs ? 1 : 0 ) + ( global_settings.settings.self_register_disp_custom_elems ? 1 : 0 );
+iCurStep = OptInt( CONTEXT.GetOptProperty( "cur_step" ), iFirstStep );
+sStep = bDispLicense || global_settings.settings.self_register_disp_subs || global_settings.settings.self_register_disp_custom_elems ? tools_web.get_web_const( 'shag', curLngWeb ) + " " + iCurStep + ": " : "";
+//alert('iCurStep= ' +iCurStep)
+if ( bDispLicense )
+{
+%>
+<StackPanel Name="StepPanel1" Hidden="<%=( iCurStep == 1 ? 0 : 1 )%>">
+<Label Class="XAML-label-header-1">
+	<![CDATA[<%=tools_web.get_web_const( 'shag', curLngWeb ) + " 1: " + tools_web.get_web_const( 'polzovatelskoe', curLngWeb )%>]]>
+</Label>
+	<HTMLBox>
+		<%=HtmlEncode( tools_web.get_web_param( curParams, "license_text", "", true ) )%>
+	</HTMLBox>
+	<StackPanel Height="20"/>
+	<CheckBox Name="license_confirm" Change="TOGGLE=NextButton"><%=tools_web.get_web_const( 'prinimayuuslovi', curLngWeb )%></CheckBox>
+</StackPanel>
+<%
+}
+%>
+<StackPanel Name="StepPanel2" Hidden="<%=( iCurStep == 2 ? 0 : 1 )%>">
+<Label Class="XAML-label-header-1">
+	<![CDATA[<%=( iStepCount > 1 ? tools_web.get_web_const( 'shag', curLngWeb ) + " " + ( bDispLicense ? 2 : 1 ) + ": " : "" ) + tools_web.get_web_const( 'lichnyedannye', curLngWeb )%>]]>
+</Label>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'uf_last_name', curLngWeb )%>:</Label>
+			<Edit Name="lastname" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "lastname", "" ) )%></Edit>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'uf_name', curLngWeb )%>:</Label>
+			<Edit Name="firstname" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "firstname", "" ) )%></Edit>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'uf_s_name', curLngWeb )%>:</Label>
+			<Edit Name="middlename" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "middlename", "" ) )%></Edit>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_sex', curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal">
+				<RadioButton Name="sex" Value="m" Checked="<%=( CONTEXT.GetOptProperty( "sex" ) == "m" ? 1 : 0 )%>"><%=tools_web.get_web_const( 'vpb_m', curLngWeb )%></RadioButton>
+				<Label Width="20"/>
+				<RadioButton Name="sex" Value="w" Checked="<%=( CONTEXT.GetOptProperty( "sex" ) == "w" ? 1 : 0 )%>"><%=tools_web.get_web_const( 'vpb_w', curLngWeb )%></RadioButton>
+			</StackPanel>
+		</GridRow>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'vpb_birthday', curLngWeb )%>:</Label>
+			<DatePicker Name="birth_date" Class="<%=sEditClass%>"><%=StrDate( CONTEXT.GetOptProperty( "birth_date", "" ), false )%></DatePicker>
+		</GridRow>
+<%
+	if ( ! global_settings.settings.eval_post_registration_script || ! global_settings.settings.script_create_login )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'uf_login', curLngWeb )%>:</Label>
+			<Edit Name="login" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "login", "" ) )%></Edit>
+		</GridRow>
+<%
+	}
+	if ( ! global_settings.settings.eval_post_registration_script || ! global_settings.settings.script_create_password )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'veb_pass', curLngWeb )%>:</Label>
+			<Edit Name="password" Type="password" Class="<%=sEditClass%>" Width="200"></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'uf_pass_ret', curLngWeb )%>:</Label>
+			<Edit Name="password2" Type="password" Class="<%=sEditClass%>" Width="200"></Edit>
+		</GridRow>
+<%
+	}
+	fldRequiredField = global_settings.settings.required_fields.GetOptChildByKey( 'email' );
+	if ( fldRequiredField != undefined && fldRequiredField.is_web_edit )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=( fldRequiredField.is_required ? '* ' : '' )%><%=tools_web.get_web_const( 'uf_email', curLngWeb )%>:</Label>
+			<Edit Name="email" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "email", "" ) )%></Edit>
+		</GridRow>
+<%
+	}
+	fldRequiredField = global_settings.settings.required_fields.GetOptChildByKey( 'phone' );
+	if ( fldRequiredField != undefined && fldRequiredField.is_web_edit )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=( fldRequiredField.is_required ? '* ' : '' )%><%=tools_web.get_web_const( 'uf_phone', curLngWeb )%>:</Label>
+			<Edit Name="phone" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "phone", "" ) )%></Edit>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<Label><%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%></Label>
+</StackPanel>
+
+<%
+if ( global_settings.settings.self_register_disp_subs )
+{
+%>
+<StackPanel Name="StepPanel3" Hidden="<%=( iCurStep == 3 ? 0 : 1 )%>">
+<Label Class="XAML-label-header-1">
+	<![CDATA[<%=tools_web.get_web_const( 'shag', curLngWeb ) + " " + ( 4 - iFirstStep ) + ": " + tools_web.get_web_const( 'razmeshenievstr', curLngWeb )%>]]>
+</Label>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>
+
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'c_subd', curLngWeb )%>:</Label>
+<%
+		curSelector = {
+			"id": "Subdivision",
+			"width": "200",
+			"catalog_name": "subdivision",
+			"object_id": CONTEXT.GetOptProperty( "sub_id", "" ),
+			"object_id_item_name": "sub_id"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+		</GridRow>
+<%
+	if ( global_settings.settings.self_register_use_position_commons )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'c_position_common', curLngWeb )%>:</Label>
+<%
+		curSelector = {
+			"id": "PositionCommon",
+			"width": "200",
+			"catalog_name": "position_common",
+			"object_id": CONTEXT.GetOptProperty( "position_common_id", "" ),
+			"object_id_item_name": "position_common_id"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+		</GridRow>
+<%
+	}
+	else
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column">* <%=tools_web.get_web_const( 'c_position', curLngWeb )%>:</Label>
+			<Edit Name="position" Class="<%=sEditClass%>" Width="200"><%=HtmlEncode( CONTEXT.GetOptProperty( "position", "" ) )%></Edit>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+	<Label><%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%></Label>
+</StackPanel>
+<%
+}
+if ( global_settings.settings.self_register_disp_custom_elems )
+{
+%>
+<StackPanel Name="StepPanel4" Hidden="<%=( iCurStep == 4 ? 0 : 1 )%>">
+<Label Class="XAML-label-header-1">
+	<![CDATA[<%=tools_web.get_web_const( 'shag', curLngWeb ) + " " + ( ( global_settings.settings.self_register_disp_subs ? 5 : 4 ) - iFirstStep ) + ": " + tools_web.get_web_const( 'dopolnitelnyed', curLngWeb )%>]]>
+</Label>
+<%
+	fldCustomElems = tools.get_custom_template( 'collaborator' );
+	if ( fldCustomElems != null )
+	{
+		curCustomFields = {
+			"id": "User",
+			"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+			"modify_eval": true,
+			"combo_box_width": "100%",
+			"condition_action": ""
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+	}
+%>
+	<Label><%=tools_web.get_web_const( 'c_text_required_filds', curLngWeb )%></Label>
+</StackPanel>
+<%
+}
+%>
+<Action Name="NextStepAction" Source="user_form_next_step" Success="SET=NextStepAction/cur_step,{next_step};HIDE=StepPanel1,StepPanel2,StepPanel3,StepPanel4,PrevButton,NextButton,RegButton;SHOW=StepPanel{next_step}{show_buttons}" Failure="ALERT={messageText}">
+	<Param Name="cur_step" Value="<%=iCurStep%>"/>
+	<Param Name="direction" Value="next"/>
+	<Param Name="first_step" Value="<%=iFirstStep%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Action Name="RegistrationAction" Source="user_form_registration" Success="HIDE=StepPanel1,StepPanel2,StepPanel3,StepPanel4,PrevButton,NextButton,RegButton;SHOW=GoButton;<%=( global_settings.settings.web_banned_self_register ? 'ALERT=' + tools_web.get_web_const( "uc_message1", curLngWeb ) : ( bDispFinishAlert ? 'ALERT=' + tools_web.get_web_const( "uc_message2", curLngWeb ) : 'OPENURL=/default' ) )%>" Failure="ALERT={messageText}">
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Grid Width="100%" Class="XAML-grid-container" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+		<GridColumn Width="200"/>
+		<GridColumn Width="240"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label><![CDATA[<%=( global_settings.settings.web_banned_self_register ? tools_web.get_web_const( "uf_message", curLngWeb ) : "" )%>]]></Label>
+		<StackPanel Name="PrevButton" Hidden="<%=( iStepCount > 1 && iCurStep > 2 ? 0 : 1 )%>" UsePadding="false">
+			<Button Class="XAML-button XAML-button-prev" Width="120" Click="SET=NextStepAction/direction,prev;ACTION=NextStepAction"><%=tools_web.get_web_const( 'vernutsya', curLngWeb )%></Button>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" UsePadding="false">
+			<StackPanel Name="NextButton" Hidden="<%=( iStepCount > 1 && iCurStep < iStepCount && iCurStep != 1 ? 0 : 1 )%>" UsePadding="false">
+				<Button Class="XAML-button XAML-button-next" Width="120" Click="SET=NextStepAction/direction,next;ACTION=NextStepAction"><%=tools_web.get_web_const( 'vlpb_next', curLngWeb )%></Button>
+			</StackPanel>
+
+			<StackPanel Name="RegButton" Hidden="<%=( iCurStep >= iStepCount ? 0 : 1 )%>" UsePadding="false">
+				<Button Class="XAML-button XAML-button-save XAML-button-important" Width="180" Click="ACTION=RegistrationAction"><%=tools_web.get_web_const( "uf_submit", curLngWeb )%></Button>
+			</StackPanel>
+
+			<StackPanel Name="GoButton" Hidden="1" UsePadding="false">
+				<Button Class="XAML-button XAML-button-next" Width="210" Click="OPENURL=/default"><%=tools_web.get_web_const( 'pereytikstrani', curLngWeb )%></Button>
+			</StackPanel>
+		</StackPanel>
+	</GridRow>
+</Grid>
+
+</StackPanel>
+</SPXMLScreen>

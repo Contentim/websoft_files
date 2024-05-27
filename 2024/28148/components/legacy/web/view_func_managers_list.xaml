@@ -1,0 +1,49 @@
+﻿<%
+try
+{
+	curFuncManagers;
+}
+catch ( err )
+{
+	curFuncManagers = ({});
+}
+curFuncManagers_sID = curFuncManagers.GetOptProperty( 'id', '' );
+curFuncManagers_bSelected = tools_web.is_true( curFuncManagers.GetOptProperty( 'selected' ) );
+
+if ( curFuncManagers_bSelected )
+{
+%>
+<Dialog Name="SelectDialogGroupManagers<%=curFuncManagers_sID%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="<%=curFuncManagers.GetOptProperty( 'dialog_close_action', '' )%>" Height="90%">
+	<Param Name="catalog_name" Value="collaborator"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="selected_object_ids" Value="<%=ArrayMerge( curObject.func_managers, 'PrimaryKey', ';' )%>"/>
+	<Param Name="typein" Value="true"/>
+</Dialog>
+
+<Grid Width="100%" Class="XAML-grid-filter">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-label-filters-title"><![CDATA[<%=tools_web.get_web_const( 'weg16bxma7', curLngWeb )%>]]></Label>
+
+		<Button Class="XAML-button-content" Click="OPENDIALOG=SelectDialogGroupManagers<%=curFuncManagers_sID%>"><![CDATA[<%=tools_web.get_web_const( 'veb_b7', curLngWeb )%>]]></Button>
+	</GridRow>
+</Grid>
+<%
+}
+else
+{
+%>
+<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_web_const( 'weg16bxma7', curLngWeb )%>]]></Label>
+<%
+}
+
+curPersonsList = {
+	"persons": curObject.func_managers,
+	"primary_key": "person_id"
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+%>

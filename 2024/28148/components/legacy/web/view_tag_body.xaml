@@ -1,0 +1,82 @@
+﻿<SPXMLScreen>
+<%
+function title_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+function info_block()
+{
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table adaptive" Adapt="1">
+		<GridColumns>
+			<GridColumn />
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%="Публикаций"%>:</Label>
+			<Label><%=ArrayCount( xarrObjects )%></Label>
+		</GridRow>
+	</Grid>
+<%
+}
+
+function objects_block()
+{
+	if( ArrayOptFirstElem( xarrObjects ) == undefined )
+	{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%="Нет прикрепленных объектов"%>]]></Label>
+<%
+		return;
+	}
+%>
+		<TabControl Adapt="true" TabsLocation="w">
+<%
+	for( elem in ArraySelectDistinct( xarrObjects, "This.catalog" ) )
+	{
+		sTitle = elem.catalog.ForeignElem.title;
+		xarrObjectsCatalog = ArraySelect( xarrObjects, "This.catalog == elem.catalog" )
+%>
+			<TabItem Title="<%=XmlAttrEncode( sTitle + " (" + ArrayCount( xarrObjectsCatalog ) + ")" )%>">
+<%
+		curView = {
+			"id": "TagObjects" + elem.catalog,
+			"height": "400",
+			"array": ArrayMerge( xarrObjectsCatalog, "This.object_id", ";" ),
+			"catalog_name": elem.catalog,
+			"disp_search": "true",
+			"disp_filter": "false",
+			"sort_direct": "-",
+			"param_preffix": "tag_body.block_list.objects",
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+					
+%>
+			</TabItem>
+<%
+	}
+%>
+		</TabControl>
+<%
+}
+
+xarrObjects = XQuery( "for $i in tagged_objects where $i/tag_id = " + curObjectID + " return $i" );
+arrBlockListParam = String( tools_web.get_web_param( curParams, "tag_body.block_list", "title;info;objects", true ) ).split( ";" );
+
+for( sBlockListParam in arrBlockListParam )
+{
+	switch( sBlockListParam )
+	{
+		case "title":
+			title_block();
+			break;
+		case "info":
+			info_block();
+			break;
+		case "objects":
+			objects_block();
+			break;
+	}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,413 @@
+﻿function GetRequestContinuousFeedbackCollaborator()
+{
+
+	function getParam(_oFormFields, _sName)
+	{
+		result = "";
+		try
+		{
+			_tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+			result = _tmpFld != undefined ? String(_tmpFld.value)+"" : PARAMETERS.GetOptProperty(_sName);
+		}
+		catch (_err)
+		{
+			result = "";
+			return result;
+		}
+		return result;
+	}
+	function get_objects_id()
+	{
+		var sObjectIDs = "";
+		if ( getParam( oFormFields, "selected_objects_id" ) == undefined || getParam( oFormFields, "selected_objects_id" ) == "" )
+		{
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = SELECTED_OBJECT_IDS + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = OBJECT_ID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if ( sObjectIDs == "" )
+			{
+				try
+				{
+					sObjectIDs = curObjectID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+		}
+		else
+		{
+			sObjectIDs = getParam(oFormFields, "selected_objects_id");
+		}
+
+		return ( sObjectIDs != "" ? String( sObjectIDs ).split( ";" ) : [] );
+	}
+	function getFormMessage(_sMessage)
+	{
+		var oForm;
+		oForm = {
+			command: "alert",
+			msg: _sMessage,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+
+		return oForm;
+	}
+
+	function merge_form_fields()
+	{
+		switch ( oResAction.command )
+		{
+			case "confirm":
+				_form_fields = oResAction.confirm_result.form_fields;
+				break;
+			default:
+				_form_fields = oResAction.form_fields
+				break;
+		}
+		try
+		{
+			for( _field in oFormFields )
+			{
+				if( ArrayOptFind( _form_fields, "This.name == _field.name" ) == undefined && !(oResAction.command == "select_object" && oResAction.field_name == _field.name ) )
+				{
+					_form_fields.push( { name: _field.name, type: "hidden", value: _field.value } );
+				}
+			}
+		}
+		catch( err ){}
+	}
+
+	function getPersonShortName( iPersonID )
+	{
+		var sShortName = "";
+		teCollaborator = tools.open_doc( iPersonID ).TopElem;
+		sShortName = teCollaborator.lastname + " " + StrCharRangePos(teCollaborator.firstname, 0, 1) + "." + StrCharRangePos(teCollaborator.middlename, 0, 1) + ".";
+		return sShortName;
+	}
+
+	function getParagraphName(_arrObjectIDs)
+	{
+		if (ArrayCount(_arrObjectIDs) > 2)
+		{
+			_aObjects = [getPersonShortName(_arrObjectIDs[0]), getPersonShortName(_arrObjectIDs[1])];
+			_sObjectsName = "Для кого: " + ArrayMerge(_aObjects, 'This', ', ') + " и еще " + (ArrayCount(_arrObjectIDs)-2);
+		}
+		else if (ArrayCount(_arrObjectIDs) == 1)
+			_sObjectsName = "Для кого: " + getPersonShortName(_arrObjectIDs[0]);
+		else
+			_sObjectsName = "Для кого: " + getPersonShortName(_arrObjectIDs[0]) + ", " + getPersonShortName(_arrObjectIDs[1]);
+		
+		return _sObjectsName;
+	}
+	
+	function getDateISO_8601(dDateParam)
+	{
+		var sDateReturn;
+	
+		sDateReturn = StrInt(Year(dDateParam), 4) + "-" + StrInt(Month(dDateParam), 2) + "-" + StrInt(Day(dDateParam), 2);
+	
+		return sDateReturn;
+	}
+	function getQueryQual()
+	{
+		var iApplLevel = undefined;
+		var sApplication = SCOPE_WVARS.GetOptProperty( "sAPPLICATION", null );
+		var sQueryQual = "";
+
+		var oSubordinateParams = {
+			arrTypeSubordinate: ['fact','func'],
+			bReturnIDs: true,
+			sCatalog: '',
+			arrFieldsNames: null,
+			xQueryCond: '',
+			bGetOrgSubordinate: true,
+			bGetGroupSubordinate: true,
+			bGetPersonSubordinate: true,
+			bInHierSubdivision: true,
+			arrBossTypeIDs: [],
+			bWithoutUseManagementObject: true,
+		};
+
+		if( sApplication != null && sApplication != undefined && sApplication != "" )
+		{//приложение
+			iApplLevel = tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, sApplication ] );
+		
+			if(iApplLevel >= 10)
+			{
+				sAccessType = "admin";
+			}
+			else if(iApplLevel >= 7)
+			{
+				sAccessType = "manager";
+			}
+			else if(iApplLevel >= 5)
+			{
+				sAccessType = "hr";
+			}
+			else if(iApplLevel >= 1)
+			{
+				sAccessType = "observer";
+			}
+			else
+			{
+				sAccessType = "reject";
+			}
+		
+			switch(sAccessType)
+			{
+				case "hr":
+					arrBossType = tools.call_code_library_method( "libApplication", "GetApplicationHRBossTypes", [ sApplication, curUserID ] );
+					oSubordinateParams.arrTypeSubordinate = ['func'];
+					oSubordinateParams.arrBossTypeIDs = arrBossType;
+					var arrCollabsIDs = tools.call_code_library_method( "libMain", "GetSubordinateRecords", [ curUserID, oSubordinateParams ] );
+					sQueryQual = "MatchSome( $elem/id, (" + ArrayMerge( arrCollabsIDs, "This", "," ) + ") )";
+					break;
+				case "observer":
+				case "reject":
+					sQueryQual = "1 = 0";
+			}
+		
+		}
+		else
+		{//портал
+			var sCanAddFeedback = teApplication.wvars.ObtainChildByKey( "can_add_feedback" ).value;
+
+			var bWithHerarchy = tools_web.is_true(teApplication.wvars.ObtainChildByKey( "with_hierarchy" ).value);
+
+			switch(sCanAddFeedback)
+			{
+				case "subordinate":
+					oSubordinateParams.arrTypeSubordinate = ['fact'];
+					oSubordinateParams.bGetGroupSubordinate = false;
+					oSubordinateParams.bGetPersonSubordinate = true;
+					oSubordinateParams.bInHierSubdivision = bWithHerarchy;
+					var arrCollabsIDs = tools.call_code_library_method( "libMain", "GetSubordinateRecords", [ curUserID, oSubordinateParams ] );
+					sQueryQual = "MatchSome( $elem/id, (" + ArrayMerge( arrCollabsIDs, "This", "," ) + ") )";
+					break;
+				case "func_subordinate":
+					var arrFuncBossTypes = tools_web.parse_multiple_parameter(teApplication.wvars.ObtainChildByKey( "func_boss_types" ).value.Value);
+					if ( ArrayOptFirstElem(arrFuncBossTypes) == undefined )
+					{
+						sQueryQual = "1 = 0";
+					}
+					else
+					{
+						oSubordinateParams.arrTypeSubordinate = ['func'];
+						oSubordinateParams.bInHierSubdivision = bWithHerarchy;
+						oSubordinateParams.arrBossTypeIDs = arrFuncBossTypes;
+						var arrCollabsIDs = tools.call_code_library_method( "libMain", "GetSubordinateRecords", [ curUserID, oSubordinateParams ] );
+						sQueryQual = "MatchSome( $elem/id, (" + ArrayMerge( arrCollabsIDs, "This", "," ) + ") )";
+					}
+					break;
+				case "colleague":
+					if (bWithHerarchy)
+					{
+						var arrCollabsIDs = tools.call_code_library_method( 'libMain', 'get_user_collaborators', [ curUserID, "colleagues_hier", false ] );
+					}
+					else
+					{
+						var arrCollabsIDs = tools.call_code_library_method( 'libMain', 'get_user_collaborators', [ curUserID, "colleagues", false ] );
+					}
+					sQueryQual = "MatchSome( $elem/id, (" + ArrayMerge( arrCollabsIDs, "This.id", "," ) + ") )";
+					break;
+			}
+		}
+
+		return sQueryQual;
+	}
+
+	var teApplication = continuous_feedback.get_component_application();
+
+	var arrContextObjectIDs = get_objects_id();
+	var iContextObjectID = ArrayOptFirstElem(arrContextObjectIDs);
+	var bContextError = false;
+	if ( iContextObjectID == undefined )
+	{
+		bContextError = true;
+	}
+	else
+		{
+			var docObject= tools.open_doc(iContextObjectID);
+			if ( iContextObjectID == undefined )
+			{
+				bContextError = true;
+			}
+			else
+			{
+				var teContextObject = docObject.TopElem;
+				if (teContextObject.Name != 'collaborator')
+				{
+					bContextError = true;
+				}
+			}
+
+		}
+	if (bContextError)
+	{
+		return {command: "close_form", msg: i18n.t( 'snachalavyberitesotrudnika' )};
+	}
+
+
+	var arrApplicationResponseTypes = continuous_feedback.get_component_application_response_types();
+	var iResponseTypeID = getParam(oFormFields, "response_type");
+	if (iResponseTypeID == undefined)
+	{
+		var	sXQuery = "for $elem in response_types where $elem/object_type = 'collaborator' and MatchSome( $elem/id, (" + ArrayMerge(arrApplicationResponseTypes, "This.response_type_id",",") + ") ) return $elem/Fields('id','name')";
+		var xarrResponseTypes = tools.xquery(sXQuery);
+
+		if ( ArrayCount(xarrResponseTypes) == 0 )
+		{
+			return {command: "close_form", msg: i18n.t( 'obratnaiasviaznenastroena' )};
+		}
+		else
+		if ( ArrayCount(xarrResponseTypes) == 1 )
+		{
+			iResponseTypeID = xarrResponseTypes[0].id.Value;
+		}
+		else
+		{
+			arrRadioEntries = [];
+			for ( catResponseType in xarrResponseTypes)
+			{
+				arrRadioEntries.push({name: catResponseType.name.Value, value: catResponseType.id.Value});
+			}
+			sRadioValue = xarrResponseTypes[0].id.Value;
+
+			arrFormFields = [
+				{ name: "response_type", type: "radio", entries: arrRadioEntries, value: sRadioValue }
+			];
+
+		oResAction =
+			{
+				command: "display_form",
+				height: 175 + ArrayCount(xarrResponseTypes)*22 + 20,
+				title: "Запрос обратной связи",
+				form_fields: arrFormFields,
+				buttons:
+					[
+						{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+						{ name: "submit", label: "Далее", type: "submit", css_class: "btn-cancel-custom" }
+					],
+				no_buttons: false
+			};
+			merge_form_fields()
+			return oResAction;
+		}
+	}
+
+
+	var oApplicationResponseType = ArrayOptFind(arrApplicationResponseTypes, "OptInt(This.response_type_id, 0) == "+OptInt(iResponseTypeID, 1));
+	if ( !tools_web.is_true(oApplicationResponseType.save_author) )
+	{
+		return {command: "close_form", msg: i18n.t( 'nelziazaprashivatanonimnuiu' )};
+	}
+
+	var iResponsePersonID = OptInt( getParam(oFormFields, "object_coll_id") );
+	if (iResponsePersonID == undefined)
+	{
+
+		iDaysPlanning = OptInt(getParam(oFormFields, "sDaysPlanning"), 7);
+		
+		arrFormFields = [
+			{ name: "collaborators_name", type: "paragraph", value: getParagraphName(arrContextObjectIDs) },
+			{ name: "object_coll_id", type: "foreign_elem", catalog: "collaborator", multiple: false, label: "У кого", query_qual: getQueryQual(),mandatory: true, validation: "nonempty" },
+			{ name: "assess_till", type: "date", label: "Оценить до ", value: getDateISO_8601( DateOffset(Date(), 86400*iDaysPlanning) ), mandatory: true, validation: "nonempty" },
+		];
+		oResAction =
+		{
+			command: "display_form",
+			height: 360,
+			title: "Запрос обратной связи",
+			form_fields: arrFormFields,
+			buttons:
+				[
+					{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+					{ name: "submit", label: "Выполнить", type: "submit", css_class: "btn-cancel-custom" }
+				],
+			no_buttons: false
+		};
+		merge_form_fields()
+		return oResAction;
+	}
+
+
+	dtPlanDate = OptDate( getParam(oFormFields, "assess_till") );
+	iCountAll = ArrayCount(arrContextObjectIDs);
+
+	oRes = tools.call_code_library_method("libContinuousFeedback", "GetRequestContinuousFeedbackCollaborator", [curUserID, iResponsePersonID, arrContextObjectIDs, iResponseTypeID, dtPlanDate, sNotifyResponse, iNotifyResponseType]);
+
+	if ( oRes.error != 0 )
+	{
+		oResAction = {
+			command: "alert",
+			msg: "ERROR: libGame: GetRequestContinuousFeedbackCollaborator: " + oRes.errorText,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+	else
+	{
+        if ( oRes.count == iCountAll )
+        {
+            _Msg = i18n.t( 'obratnaiasviaz' );
+        }
+        else
+        {
+            _Msg = StrReplace( StrReplace(i18n.t( 'sozdanozaprosov' ), "{PARAM1}", oRes.count), "{PARAM2}", iCountAll );
+        }
+
+		oResAction = {
+			command: "close_form",
+			msg: _Msg,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+
+	return oResAction;
+}
+
+var oResAction = new Object();
+try
+{
+	oFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch ( _err )
+{
+	try
+	{
+		oFormFields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+	}
+	catch ( _err )
+	{
+		oFormFields = [];
+	}
+}
+
+
+RESULT = GetRequestContinuousFeedbackCollaborator();

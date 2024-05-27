@@ -1,0 +1,45 @@
+try
+{
+	RESULT = [];
+	var oCollectionParams =
+	{
+		paging: PAGING,
+		sort: SORT,
+		distincts: [],
+		filters: []
+	}
+
+	try
+	{
+		_DISTINCTS;
+		if (_DISTINCTS == undefined || _DISTINCTS == null || _DISTINCTS == '')
+			throw 'no filter';
+		oCollectionParams.distincts = tools_web.parse_multiple_parameter(_DISTINCTS);
+	}catch(e){}
+
+	try
+	{
+		_FILTERS;
+		if (_FILTERS == undefined || _FILTERS == null || _FILTERS == '')
+			throw 'no filter';
+
+		oCollectionParams.filters = tools_web.parse_multiple_parameter(_FILTERS);
+	}catch(e){}
+
+
+	var sXQueryQual = sFilter;
+	if(sXQueryQual == "")
+		sXQueryQual = SCOPE_WVARS.GetOptProperty("FILTER", "");
+
+	var oRes = tools.call_code_library_method("libContinuousFeedback", "GetProjectParticipantsApp", [ curUserID, sAccessTypeId, sApplication, sXQueryQual, bShowDismiss, tools_web.parse_multiple_parameter(aStateParticipants), tools_web.parse_multiple_parameter(aAdditionalFields), oCollectionParams])
+	
+	ERROR = oRes.error;
+	MESSAGE = oRes.errorText;
+	RESULT = oRes.array;
+}
+catch(err)
+{
+	ERROR = 1;
+	MESSAGE = "ERROR: RemoteCollection: GetProjectParticipantsApp:\r\n" + err;
+}
+

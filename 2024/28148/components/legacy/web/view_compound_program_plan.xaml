@@ -1,0 +1,213 @@
+﻿<SPXMLScreen Class="View_compound_program_plan">
+<%
+curDescObjectID = iCompoundProgramID = curObject.compound_program_id.Value;
+curDescObject = teCompoundProgram = OpenDoc( UrlFromDocID( iCompoundProgramID ) ).TopElem;
+
+curTitle = {
+	"object": teCompoundProgram,
+	"object_title": ( StrDate( curObject.start_date, false ) + ( curObject.finish_date.HasValue ? ' — ' + StrDate( curObject.finish_date, false ) : '' ) )
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+iEducationPlanID = null;
+teEducationPlan = null;
+catEducationPlan = ArrayOptFirstElem( tools.xquery( "for $elem in education_plans where $elem/person_id = " + curUserID + " and $elem/compound_program_id = " + iCompoundProgramID + " return $elem/id, $elem/__data" ) );
+if ( catEducationPlan != undefined )
+{
+	iEducationPlanID = catEducationPlan.id.Value;
+	teEducationPlan = OpenDoc( UrlFromDocID( iEducationPlanID ) ).TopElem;
+}
+
+if ( teEducationPlan == null )
+{
+	curMessageBox = {
+		"id": "ProgramInfo",
+		"type": "warning",
+		"text": "Не найден план обучения, связанный с данной модульной программой."
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+iDefaultProgramID = OptInt( CONTEXT.GetOptProperty( 'CompoundProgramID' ), OptInt( curUrlQuery.GetOptProperty( 'program_id' ), null ) );
+%>
+
+<Edit Name="CompoundProgramID" Hidden="true"><%=iDefaultProgramID%></Edit>
+<Collection Name="CompoundProgramTreeCollection">
+<Data>
+<%
+iAllPrograms = 0;
+iCompletePrograms = 0;
+function set_folder( iParentParam )
+{
+	if ( iAllPrograms > 100 )
+		return;
+
+	for ( fldProgramElem in ArraySelect( teEducationPlan.programs, "state_id != 6 && type=='folder' && parent_progpam_id==" + ( iParentParam == null ? 'null' : iParentParam ) ) )
+	{
+		iAllPrograms++;
+		sIconUrl = '/asou/lstate' + fldProgramElem.state_id + '.png';
+		if ( fldProgramElem.state_id > 1 )
+			iCompletePrograms++;
+%>
+	<Row>
+		<Cell Id="id" Value="<%=XmlAttrEncode( fldProgramElem.id )%>"/>
+		<Cell Id="parent_id" Value="<%=XmlAttrEncode( fldProgramElem.parent_progpam_id )%>"/>
+		<Cell Id="name" Value="<%=XmlAttrEncode( fldProgramElem.name )%>"/>
+		<Cell Id="icon" Value="<%=XmlAttrEncode( sIconUrl )%>"/>
+		<Cell Id="expanded" Value="1"/>
+	</Row>
+<%
+		set_folder( fldProgramElem.PrimaryKey );
+	}
+}
+set_folder( null );
+%>
+</Data>
+</Collection>
+
+<Edit Name="DefaulProgramID" Hidden="true"><%=iDefaultProgramID%></Edit>
+<Grid Class="XAML-grid-content-hor-container">
+	<GridColumns>
+		<GridColumn Width="300"/>
+		<GridColumn/>
+	</GridColumns>
+	<GridRow>
+
+		<StackPanel Class="XAML-stack-container">
+			<StackPanel Class="XAML-stack-container-no-padding" Orientation="Horizontal">
+			 		<Label Class="icon-home main-item-icon" />
+					<Link Click="Hide=CompoundProgramPanel;Show=CompoundProgramMain" Class="main-item-link"><%='Главная страница'%></Link>
+			</StackPanel>
+			<Tree 	Name="CompoundProgramTree"
+					Source="{CompoundProgramTreeCollection}"
+					DataID="id"
+					DataParent="parent_id"
+					DataTitle="name"
+					DataIcon="icon"
+					DataExpanded="expanded"
+					Click="SET=CompoundTabID,0;SET=CompoundProgramID,{id};UPDATE=CompoundProgramPanel;Hide=CompoundProgramMain;Show=CompoundProgramPanel"
+					Preservable="0"
+					Width=""
+			></Tree>
+		</StackPanel>
+
+		<StackPanel Orientation="Vertical">
+
+			<StackPanel Name="CompoundProgramMain" Class="XAML-stack-container">
+<%
+	if ( ArrayOptFindByKey( teEducationPlan.programs, 'event', 'type' ) != undefined )
+	{
+		curMessageBox = {
+			"id": "EventInfo",
+			"type": "info",
+			"text": "В рамках учебной программы проводятся мероприятия.",
+			"buttons": [
+				{ "title": "Открыть календарь", "click": ( "OPENWINDOW=" + tools_web.get_mode_clean_url( "event_calendar", null, { doc_id: curDocID } ) ) }
+			]
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+						<Label Class="XAML-info-grid-title-column"><%='Преподаватели'%>:</Label>
+						<StackPanel Orientation="Vertical">
+<%
+	curSourceObjectID = iCompoundProgramID;
+	curSourceObject = teCompoundProgram;
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_lectors.xaml" ) );
+%>
+						</StackPanel>
+<%
+if ( teEducationPlan != null )
+{
+%>
+				<Grid Width="100%" Class="XAML-grid-info-table">
+					<GridColumns>
+						<GridColumn Width="250"/>
+						<GridColumn/>
+					</GridColumns>
+
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%='Изучить'%>:</Label>
+						<Label><![CDATA[<%=StrDate( teEducationPlan.finish_date, false )%>]]></Label>
+					</GridRow>
+
+					<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%='Старт'%>:</Label>
+						<Label><![CDATA[<%=StrDate( teEducationPlan.plan_date, false )%>]]></Label>
+					</GridRow>
+				</Grid>
+<%
+	curInformers = ({
+		"informers": []
+	});
+	if ( curDevice.disp_type != "" )
+	{
+		arrTiles = ["status","last_days","last_tests"];
+	}
+	else
+	{
+		arrTiles = String( tools_web.get_web_param( curParams, "compound_program_plan.tile_list", "status;score;last_days", true ) ).split( ";" );
+	}
+%>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+	for ( sTileElem in arrTiles )
+	{
+			if ( sTileElem == 'status' )
+		{
+			curInformers.informers.push( {
+				"type": "scale_number",
+				"title": "Прогресс",
+				"count": OptInt( teEducationPlan.readiness_percent, 0 ),
+				"max_count": 100,
+				"disp_desc": false
+			} );
+		}
+		if ( sTileElem == 'score' )
+		{
+			curInformers.informers.push( {
+				"type": "number",
+				"title": "Общая оценка",
+				"value": OptInt( teEducationPlan.mark, 0 )
+			} );
+		}
+		if ( sTileElem == 'last_days' && teEducationPlan.finish_date.HasValue )
+		{
+			curInformers.informers.push( {
+				"type": "number",
+				"title": "Осталось дней",
+				"value": ( CurDate > teEducationPlan.finish_date ? 0 : ( ( DateToRawSeconds( DateNewTime( teEducationPlan.finish_date ) ) - DateToRawSeconds( DateNewTime( CurDate ) ) ) / 86400 ) + 1 )
+			} );
+		}
+
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+				</StackPanel>
+<%
+}
+%>
+			</StackPanel>
+
+			<Edit Name="CompoundTabID" Hidden="true"></Edit>
+			<Panel Name="CompoundProgramPanel" ShowHeader="false" Height="100%" Source="compound_program_plan_panel">
+				<Param Name="progpam_id" Value="{CompoundProgramID}"/>
+				<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+				<Param Name="compound_program_id" Value="<%=iCompoundProgramID%>"/>
+				<Param Name="event_id" Value="<%=curObjectID%>"/>
+				<Param Name="tab_id" Value="{CompoundTabID}"/>
+			</Panel>
+
+		</StackPanel>
+
+	</GridRow>
+</Grid>
+
+
+</SPXMLScreen>

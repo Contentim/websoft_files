@@ -1,0 +1,239 @@
+﻿<SPXMLScreen>
+	<Collection Name="AssignQualificationCollection" Source="game_qualification_collection">
+		<Param Name="status" Value="assigned"/>
+		<Param Name="type" Value="my"/>
+	</Collection>
+	<Collection Name="InProcessQualificationCollection" Source="game_qualification_collection">
+		<Param Name="status" Value="in_process"/>
+		<Param Name="type" Value="my"/>
+	</Collection>
+	<Collection Name="AllQualificationCollection" Source="game_qualification_collection">
+		<Param Name="type" Value="open"/>
+	</Collection>
+	<HTMLBox>
+				<![CDATA[
+					<style>
+						.XAML-KnowledgeListColumns .spxmltileview-tile { height: 100% !important; min-width: 100px !important; }
+						.XAML-white-background { background-color: white ; border-bottom: 1px solid  #ebebec; }
+						.XAML-white-silver-hover:hover{	background-color: #ebebec  !important; }
+						.XAML-game-padding {	padding-left: 20px  !important; padding-top: 20px  !important; }
+						.XAML-game-without-padding {	padding: 0px  !important; }
+						.XAML-progress-bar-silver { background-color: silver; }
+					</style>
+				]]>
+	</HTMLBox>
+<%
+iRowQty = OptInt( tools_web.get_web_param( curParams, "game_awards.iRowQty", "6", true ), 6 );
+bOpenQualification = tools_web.is_true( tools_web.get_web_param( curParams, "game_awards.open_qualification", "0", true ) );
+
+var sTargetType = "";
+var sTargetId = "";
+
+try
+{
+	curUrlQuery = UrlQuery( PAGEURL );
+	sTargetType = curUrlQuery.GetOptProperty( "target", "" );
+	sTargetId = OptInt( curUrlQuery.GetOptProperty( "target_id", "" ) );
+}
+catch(e)
+{}
+
+if( sTargetType == "qual" && sTargetId != "" )
+{
+	xarrQualificationAssignments = XQuery( "for $elem in qualification_assignments where $elem/person_id = " + curUserID + " and $elem/qualification_id = " + sTargetId + " return $elem" );
+	catQualificationAssignment = ArrayOptFindByKey( xarrQualificationAssignments, "in_process", "status" );
+	teQualificationAssignment = null;
+	if ( catQualificationAssignment == undefined )
+	{
+		catQualificationAssignment = ArrayOptFindByKey( xarrQualificationAssignments, "assigned", "status" );
+	}
+	if ( catQualificationAssignment != undefined )
+	{
+		teQualificationAssignment = OpenDoc( UrlFromDocID( catQualificationAssignment.id ) ).TopElem;
+	}
+	teQualification = OpenDoc( UrlFromDocID( sTargetId ) ).TopElem;
+	sURL = tools_web.get_object_source_url( "resource", teQualification.resource_id );
+	if( sURL=="" ) 
+		sURL = "pics/no-image.png";
+	curTitle = {
+		"object": teQualification,
+		"title": teQualification.name,
+		"image_url": sURL,
+		"disp_image": true
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	
+%>
+	<Collection Name="AssignedQualificationUsersCollection" Source="game_qualification_collection">
+		<Param Name="type" Value="assigned_qualification_users"/>
+		<Param Name="object_id" Value="<%=sTargetId%>"/>
+	</Collection>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "250"%>" Align="left"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<Label><%=HtmlEncode( ( teQualificationAssignment != null ? teQualificationAssignment.status.ForeignElem.name.Value :  tools_web.get_web_const( "nenachato", curLngWeb ) ) )%></Label>
+		</GridRow>
+<%
+	if( teQualificationAssignment != null )
+	{
+		if( teQualificationAssignment.status == "assigned" )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_qualif_ass_date", curLngWeb )%>:</Label>
+			<Label><%=teQualificationAssignment.assignment_date.HasValue ? StrDate( teQualificationAssignment.assignment_date, false ) : ""%></Label>
+		</GridRow>
+<%
+		}
+		else
+		{
+			iScaledProgress = Math.round(teQualification.get_scaled_progress( curUserID ) );
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "tekushiyprogres", curLngWeb )%>:</Label>
+			<StackPanel Class="XAML-stack-tile-image-container" Orientation="Horizontal">
+				<ProgressBar FullScale="100" Aspect="0.05" Size="200" Value="<%=iScaledProgress%>"  Vertical="false" FitContainer="false" Class="wt-progress-plain wt-progress-hidden"/>
+				<Label><![CDATA[<%=iScaledProgress%> %]]></Label>
+			</StackPanel>
+		</GridRow>
+<%
+		}
+	}
+%>
+	</Grid>
+	<Grid Class="XAML-grid-info-table" Adapt="true">	
+		<GridColumns>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+<%
+if( teQualification.desc.HasValue )
+{
+%>
+			<HTMLBox Dynamic="true"><![CDATA[
+				<style>
+					div.s-h-contaner
+					{
+						font-size: medium;
+						width: 100%;
+					}
+					.s-h-contaner a
+					{
+						word-wrap: break-word;
+					}
+					div.s-h-toolbar
+					{
+						word-wrap: break-word;
+					}
+					img.s-h-img
+					{
+						max-width: 100%;
+						max-height: 100%;
+					}
+					span.s-h-b
+					{
+						font-weight: bold;
+						word-wrap: break-word;
+					}
+					p.s-h-p
+					{
+						word-wrap: break-word;
+					}
+				</style>
+				<div class="s-h-contaner">
+<%
+	Request.Session.Env.SetProperty( 'curDescObjectID', sTargetId );
+	Response.Write( tools_library.convert_to_simple_html( tools_web.get_web_desc( teQualification.Child( "desc" ), UrlFromDocID( sTargetId ), teQualification.Name + ".desc" ) ) );
+%>
+				</div>
+<%
+	if( curDevice.disp_type == "mobile" )
+	{
+%>
+				<script type="text/javascript">
+					$("div.s-h-contaner").css('max-width', $(document).width()*0.75 + 'px' );
+				</script>
+<%
+	}
+%>		
+			]]></HTMLBox>
+<%
+}
+else
+{
+%>
+			<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_web_const( "netdannyh", curLngWeb )%>]]></Label>
+<%
+}
+%>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn  Align="Center"/>
+		</GridColumns>
+		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Эту награду уже получили"%></Label>
+		</GridRow>
+		
+		<GridRow>
+			<TileView Name="AssignedQualificationUsers" Class="XAML-tileview-list" Width="100%" DataSource="{AssignedQualificationUsersCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+				<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+			</TileView>
+		</GridRow>
+		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Возможно, тебя заинтересует"%></Label>
+		</GridRow>
+		<GridRow>
+			<TileView Name="AllQualificationTile" Class="XAML-tileview-list" Width="100%" DataSource="{AllQualificationCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+				<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+			</TileView>
+		</GridRow>
+	</Grid>
+<%
+}
+else
+{
+%>
+	
+	<StackPanel Class="XAML-game-panel">
+		<StackPanel Class="XAML-game-block">
+			<Label Class="XAML-label-header-2"><%="В процессе"%></Label>
+		</StackPanel>
+		<TileView Class="XAML-tileview-list" Name="InProcessQualificationTile"  Width="100%" DataSource="{InProcessQualificationCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+			<Param Name="type" Value="list"/>
+			<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+		</TileView>
+	</StackPanel>
+
+	<StackPanel Class="XAML-game-panel">
+		<StackPanel Class="XAML-game-block">
+			<Label Class="XAML-label-header-2"><%="Присвоенные"%></Label>
+		</StackPanel>
+
+		<TileView Name="AssignQualificationTile" Width="100%" Class="XAML-tileview-list" DataSource="{AssignQualificationCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+			<Param Name="type" Value="list"/>
+			<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+		</TileView>
+	</StackPanel>
+
+	<StackPanel Class="XAML-game-panel">
+		<StackPanel Class="XAML-game-block">
+			<Label Class="XAML-label-header-2"><%="Возможно, тебя заинтересует"%></Label>
+		</StackPanel>
+
+		<TileView Name="AllQualificationTile" Class="XAML-tileview-list" Width="100%" DataSource="{AllQualificationCollection}" TemplateSource="game_qualification_tile" PageSize="<%=iRowQty%>" Rows="1">
+			<Param Name="type" Value="list"/>
+			<Param Name="bOpenQualification" Value="<%=bOpenQualification%>"/>
+		</TileView>
+	</StackPanel>
+<%
+}
+%>
+</SPXMLScreen>

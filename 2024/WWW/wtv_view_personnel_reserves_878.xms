@@ -1,0 +1,327 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="wtv_view_personnel_reserves">
+
+<USE FORM="//wtv/ms_general.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+
+			<LINE VERT-ALIGN="center">
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'vcrb_build_report')" IMAGE-URL="//wtv/svg/elem_right.svg" CMD="RunReport"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'sgsvrm6x6u' )" IMAGE-URL="//wtv/svg/export.svg" CMD="ExportToExcel"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="'Параметры отчёта'" IMAGE-URL="//wtv/svg/filter.svg" CHECKED-EXPR="!TopElem.is_minimized" ACTION="
+				
+					if ( TopElem.is_minimized )
+					{
+						TopElem.is_minimized = false;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : false } ] );
+					}
+					else
+					{
+						TopElem.is_minimized = true;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : true } ] );
+					}
+
+				"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+			</LINE>
+
+		</PANEL>
+		
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+		<WITH VAR="arrOptions" EXPR="TopElem.compare_params">
+		<LIST NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+			<COLUMNS>
+				<COL WIDTH="150vpx" TITLE-EXPR="'Тип резерва'"/>
+				<COL WIDTH="250vpx" TITLE-EXPR="ms_tools.get_const('c_coll')"/>
+				<COL WIDTH="250vpx" TITLE-EXPR="ms_tools.get_const('c_position')"/>
+				<COL WIDTH="250vpx" TITLE-EXPR="ms_tools.get_const('c_subd')"/>
+				<COL WIDTH="150vpx" TITLE-EXPR="ms_tools.get_const('c_org')"/>
+				<COL WIDTH="150vpx" TITLE-EXPR="ms_tools.get_const('c_status')"/>
+				<COL WIDTH="120vpx" TITLE-EXPR="'Стал кандидатом'"/>
+				<COL WIDTH="120vpx" TITLE-EXPR="'Включен в резерв'"/>
+				<COL WIDTH="120vpx" TITLE-EXPR="'Исключен из резерва'"/>
+				<COL WIDTH="120vpx" TITLE-EXPR="'План карьерного этапа'"/>
+				<IF EXPR="ArrayOptFirstElem(arrOptions) != undefined &amp;&amp; tools_web.is_true(TopElem.is_compare)">
+					<LOOP VAR="_option" EXPR="arrOptions">
+						<COL WIDTH="120vpx" TITLE-EXPR="_option.name"/>
+					</LOOP>
+				</IF>
+			</COLUMNS>
+			<LOOP VAR="_doc" EXPR="TopElem.personnel_reserves">
+				<ROW SINGLE-SELECT="1" BK-COLOR-EXPR="AppUi.themeColors.list_standart_bg">
+					<COL TITLE-EXPR="_doc.career_reserve_type_name"/>
+					<COL TITLE-EXPR="_doc.person_fullname"/>
+					<COL TITLE-EXPR="_doc.person_position_name"/>
+					<COL TITLE-EXPR="_doc.person_subdivision"/>
+					<COL TITLE-EXPR="_doc.person_org"/>
+					<COL TITLE-EXPR="_doc.status"/>
+					<COL TITLE-EXPR="_doc.start_date"/>
+					<COL TITLE-EXPR="_doc.include_reserve_date"/>
+					<COL TITLE-EXPR="_doc.finish_date"/>
+					<COL TITLE-EXPR="_doc.career_reserve_count"/>
+					<IF EXPR="ArrayOptFirstElem(arrOptions) != undefined &amp;&amp; tools_web.is_true(TopElem.is_compare)">
+						<LOOP VAR="_option" EXPR="arrOptions">
+							<COL WIDTH="120vpx" TITLE-EXPR="_doc.Child( _option.value ).Value"/>
+						</LOOP>
+					</IF>
+				</ROW>
+			</LOOP>
+			
+		</LIST>
+		</WITH>
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				<ITEM TYPE="ms_object_selector" catalogExpr="'career_reserve_type'" WIDTH="100%" SOURCE="Ps.career_reserve_type_id"/>
+				<WITH VAR="iRoleLevel" EXPR="
+					var xmCurUser = tools.get_cur_user();
+					var APPLICATION = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().code.Value )
+					return tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ xmCurUser.id.Value, APPLICATION ] );
+				">
+				<WITH VAR="iManagerBossTypeID" EXPR="
+					var teApplication = tools_app.get_cur_application();
+					var arrBossTypesID = [];
+					var iManagerBossTypeID = null;
+					if (!IsEmptyValue(teApplication))
+					{
+						if ( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ) != undefined )
+						{
+							iManagerBossTypeID = OptInt( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ).value, null );
+						}
+					}
+					if(iManagerBossTypeID == null)
+					{
+						iManagerBossTypeID = RValue(ArrayOptFirstElem(tools.xquery('for $elem in boss_types where $elem/code = \'education_manager\' return $elem'), {'id':null}).id);
+					}
+					return iManagerBossTypeID
+				">
+				<ITEM TYPE="ms_object_selector" catalogExpr="'org'" WIDTH="100%" SOURCE="Ps.org_id" afterSelectAction="Ps.Parent.subdivision_id.Clear();" xqueryQualExpr="
+						if(iRoleLevel != 1 && iRoleLevel != 5)
+							return '';
+						
+						var arrFMCond = [];
+						arrFMCond.push('$fm/catalog = \'org\'');
+
+						var xmCurUser = tools.get_cur_user();
+						arrFMCond.push('$fm/person_id = ' + XQueryLiteral(xmCurUser.id.Value));
+						
+						if(iRoleLevel == 5 && iManagerBossTypeID != null)
+							arrFMCond.push('$fm/boss_type_id = ' + XQueryLiteral(iManagerBossTypeID));
+						return 'some $fm in func_managers satisfies ($fm/object_id = $elem/id and ' + ArrayMerge(arrFMCond, 'This', ' and ') + ')';
+				"/>
+				<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'subdivision'" SOURCE="Ps.subdivision_id" xqueryQualExpr="
+					if(iRoleLevel != 1 && iRoleLevel != 5)
+						return TopElem.org_id.HasValue ? '$elem/org_id = ' + XQueryLiteral(TopElem.org_id.Value) : '';
+						
+						var arrFMCond = [];
+						arrFMCond.push('$fm/catalog = \'subdivision\'');
+
+						var xmCurUser = tools.get_cur_user();
+						arrFMCond.push('$fm/person_id = ' + XQueryLiteral(xmCurUser.id.Value));
+						
+						if(iRoleLevel == 5 && iManagerBossTypeID != null)
+							arrFMCond.push('$fm/boss_type_id = ' + XQueryLiteral(iManagerBossTypeID));
+					
+						var sSubdivIDsReq = 'for $fm in func_managers where ' + ArrayMerge(arrFMCond, 'This', ' and ') + ' return $fm/Fields(\'object_id\')';
+						var arrSubdivIDs = tools.xquery(sSubdivIDsReq);
+						var arrHierSubdiv = [];
+						for(itemElem in arrSubdivIDs)
+						{
+							arrHierSubdiv = ArrayUnion(arrHierSubdiv, tools.xquery('for $elem in subdivisions where IsHierChildOrSelf( $elem/id,' + itemElem.object_id.Value + ' ) order by $elem/Hier() return $elem'));
+						}
+						return ArrayOptFirstElem(arrSubdivIDs) == undefined ? 'false()' :'$elem/is_disbanded != true() and MatchSome($elem/id, (' + ArrayMerge(arrHierSubdiv, 'id', ',') + '))'
+					"/>
+				</WITH>
+				</WITH>
+				<TitleLabel STD-MARGINS="0" TITLE-EXPR="ms_tools.get_const('c_status')">
+					<LOOP EXPR="common.personnel_reserve_status_types" VAR="ListElem">
+						<CHECK SOURCE="ArrayOptFind( Ps.status_types, 'This.value == ' + CodeLiteral( ListElem.id ) ) != undefined" SET-VALUE-ACTION="
+						if ( NewValue )
+						{
+							xmCurField = Ps.status_types.ObtainChildByKey( ListElem.id );
+							xmCurField.name = ListElem.name;
+						}
+						else
+						{
+							Ps.status_types.DeleteChildByKey(ListElem.id);
+						}
+						TopElem.Doc.SetChanged( true );
+						" TITLE-EXPR="ListElem.name"/>
+					</LOOP>
+				</TitleLabel>
+				<LINE>
+					<DateLabel SOURCE="Ps.date_start" TITLE-EXPR="'Период с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.date_end" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+				<CHECK SOURCE="Ps.is_compare" TITLE-EXPR="'Сравнить резервистов'"/>
+				<IF EXPR="tools_web.is_true(Ps.is_compare)">
+					<TitleLabel STD-MARGINS="0" TITLE-EXPR="'Параметры для сравнения'">
+						<WITH VAR="arrCompareParams" EXPR="
+						arrParams = [{ 
+										name: 'Пол', 
+										value: 'sex'
+									},
+									{
+										name: 'Возраст',
+										value: 'age'
+									},
+									{
+										name: 'Стаж в компании',
+										value: 'exp_years_company'
+									},
+									{
+										name: 'Стаж на должности',
+										value: 'exp_years_position'
+									},
+									{
+										name: 'Длительность нахождения в резерве',
+										value: 'in_reserve_month'
+									},
+									{
+										name: 'Эффективность',
+										value: 'efficiency'
+									},
+									{
+										name: 'Выполнение ИПР',
+										value: 'ipr'
+									},
+									{
+										name: 'Оценка эффективности',
+										value: 'efficiency_estimation'
+									},
+									{
+										name: 'Потенциал развития',
+										value: 'development_potential'
+									},
+									{
+										name: 'Регион',
+										value: 'region'
+									}
+						];
+						return arrParams;
+						">
+							<LOOP EXPR="arrCompareParams" VAR="ListElem">
+								<CHECK SOURCE="ArrayOptFind( Ps.compare_params, 'This.value == ' + CodeLiteral( ListElem.value ) ) != undefined" SET-VALUE-ACTION="
+								if ( NewValue )
+								{
+									xmCurField = Ps.compare_params.ObtainChildByKey( ListElem.value );
+									xmCurField.name = ListElem.name;
+								}
+								else
+								{
+									Ps.compare_params.DeleteChildByKey(ListElem.value);
+								}
+								TopElem.Doc.SetChanged( true );
+								" TITLE-EXPR="ListElem.name"/>
+							</LOOP>
+						</WITH>
+					</TitleLabel>
+				</IF>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="RunReport" ACTION="
+	TopElem.personnel_reserves.Clear();
+	var oFilters = new Object();
+	
+	if (TopElem.career_reserve_type_id.HasValue)
+		oFilters.career_reserve_type_id = TopElem.career_reserve_type_id.Value;
+	if (TopElem.org_id.HasValue)
+		oFilters.org_id = TopElem.org_id.Value;
+	if (TopElem.subdivision_id.HasValue)
+		oFilters.subdivision_id = TopElem.subdivision_id.Value;
+	
+	var arrStatusTypes = ArrayExtract(TopElem.status_types, 'This.value.Value');
+	if(ArrayOptFirstElem(arrStatusTypes) != undefined)
+		oFilters.status_types = arrStatusTypes;
+	if (TopElem.date_start.HasValue)
+		oFilters.date_start = StrDate(TopElem.date_start, true);
+	if (TopElem.date_end.HasValue)
+		oFilters.date_end = StrDate(DateOffset(TopElem.date_end, 86400), true);
+		
+	var arrCompareParams= ArrayExtract(TopElem.compare_params, 'This.value.Value');
+	if(ArrayOptFirstElem(arrCompareParams) != undefined)
+		oFilters.compare_params = arrCompareParams;
+
+
+		/*************/
+		/**** LOG ****/
+		/*************/
+		    CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ oFilters ]]);
+		/*************/
+		/** END LOG **/
+		/*************/
+		
+
+	oRes = CallServerMethod( 'tools', 'call_code_library_method', ['libTalentPool', 'GetPersonnelReservesReport', [ tools.cur_user_id, tools_app.get_cur_application().id, oFilters ]]);
+
+	if (oRes.HasProperty('error') &amp;&amp; oRes.error != 0)
+	{
+		LogEvent('', 'ERROR: GetPersonnelReservesReport: [' + oRes.error + ']: ' + oRes.errorText);
+	}
+	else
+	{
+		for (_result in oRes.array)
+		{
+			_child_doc = TopElem.personnel_reserves.AddChild();
+			_child_doc.career_reserve_type_name = _result.career_reserve_type_name;
+			_child_doc.person_fullname = _result.person_fullname;
+			_child_doc.person_position_name = _result.person_position_name;
+			_child_doc.person_subdivision = _result.person_subdivision;
+			_child_doc.person_org = _result.person_org;
+			_child_doc.status = _result.status;
+			_child_doc.start_date = _result.start_date;
+			_child_doc.include_reserve_date = _result.include_reserve_date;
+			_child_doc.finish_date = _result.finish_date;
+			_child_doc.career_reserve_count = _result.career_reserve_count;
+
+			if(_result.GetOptProperty('sex') != undefined)
+				_child_doc.sex = _result.sex;
+			if(_result.GetOptProperty('age') != undefined)
+				_child_doc.age = _result.age;
+			if(_result.GetOptProperty('exp_years_company') != undefined)
+				_child_doc.exp_years_company = _result.exp_years_company;
+			if(_result.GetOptProperty('exp_years_position') != undefined)
+				_child_doc.exp_years_position = _result.exp_years_position;
+			if(_result.GetOptProperty('in_reserve_month') != undefined)
+				_child_doc.in_reserve_month = _result.in_reserve_month;
+			if(_result.GetOptProperty('efficiency') != undefined)
+				_child_doc.efficiency = _result.efficiency;
+			if(_result.GetOptProperty('ipr') != undefined)
+				_child_doc.ipr = _result.ipr;
+			if(_result.GetOptProperty('efficiency_estimation') != undefined)
+				_child_doc.efficiency_estimation = _result.efficiency_estimation;
+			if(_result.GetOptProperty('development_potential') != undefined)
+				_child_doc.development_potential = _result.development_potential;
+			if(_result.GetOptProperty('region') != undefined)
+				_child_doc.region = _result.region;
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl('x-local://templates/wtv_view_personnel_reserves.html');
+	_filemname = ObtainTempFile('.xls');
+
+	PutUrlText( _filemname, _str );
+	ShellExecute( 'open', _filemname );
+"/>
+
+</SPXML-SCREEN>

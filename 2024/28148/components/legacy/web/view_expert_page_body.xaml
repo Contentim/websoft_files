@@ -1,0 +1,543 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'tab_list', 'profile;inbox;archive;coordination', true ) ).split( ';' );
+	showUnconfirmedObjects = tools_web.get_web_param( curParams, 'show_unconfirmed_objects', '0', true );
+	searchPanelExpanded = tools_web.get_web_param( curParams, 'search_panel_expanded', 'false', true );
+	search_exist = ( oParamSource.GetOptProperty("search") != undefined && tools_web.is_true( oParamSource.GetOptProperty("search") ) );
+	iTreeWeight = Int( tools_web.get_web_param( curParams, "tree_wight", 300, true ));
+	if ( search_exist )
+		searchPanelExpanded = true;
+	searchParam = String( tools_web.get_web_param( curParams, 'search_panel_param', 'classifier;create_date;action_date;key_word;tag;expert;status', true ) ).split( ';' );
+	_panel_expand = tools_web.get_web_param( curParams, 'quest_panel_expand', '0', true );
+	
+	fieldArray = Array( "knowledge_classifier_id", "start_create_date", "finish_create_date", "start_action_date", "finish_action_date", "key_word", "tag_id", "expert_id", "status" );
+	urlFieldArray = Array( "kc_id", "from_cdate", "to_cdate", "from_adate", "to_adate", "keyword", "tag_id", "expert_id", "status" )
+	i = 0;
+
+	knowledge_classifier_id = (oParamSource.GetOptProperty( "kc_id") != undefined ? oParamSource.GetOptProperty( "kc_id" ) : "");
+	start_create_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "from_cdate" ) : "");
+	finish_create_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "to_cdate" ) : "");
+	start_action_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "from_adate" ) : "");
+	finish_action_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "to_adate" ) : "");
+	key_word = (oParamSource.GetOptProperty( "keyword") != undefined ? oParamSource.GetOptProperty( "keyword" ) : "");
+	tag_id = (oParamSource.GetOptProperty( "tag_id") != undefined ? oParamSource.GetOptProperty( "tag_id" ) : "");
+	expert_id = (oParamSource.GetOptProperty( "expert_id") != undefined ? oParamSource.GetOptProperty( "expert_id" ) : "");
+	status = (oParamSource.GetOptProperty( "status") != undefined ? oParamSource.GetOptProperty( "status" ) : "");
+	
+	iTab = (0 - 1)
+	xarrExperts = XQuery("for $elem in experts where $elem/person_id = " + curUserID + " return $elem");
+	curUserExpertCatElem = ArrayOptFirstElem( xarrExperts );
+	is_expert = ( curUserExpertCatElem != undefined );
+	
+	_use_hier = tools_web.get_web_param( curParams, "full_list_question_by_hier", "0", true );
+	
+	if ( oParamSource.GetOptProperty( "qsort_type" ) != undefined )
+		_sort_type = oParamSource.GetOptProperty( "qsort_type" );
+	else
+		_sort_type = tools_web.get_web_param( curParams, "question_sort_type", "", true )
+	if ( _sort_type == "" )
+		_sort_type = "question";
+			
+	bEditQuestion = tools_web.is_true( tools_web.get_web_param( curParams, "expert_page.b_edit_question", "0", true ) );
+	sShowExpertQuestionBtn = tools_web.get_web_param( curParams, 'show_expert_question_button', '0', true );	
+	bShowSubExpertQuestion = tools_web.is_true( tools_web.get_web_param( curParams, "show_sub_expert_question", "0", true ) );
+	bShowExpertQuestion = tools_web.is_true( tools_web.get_web_param( curParams, "show_expert_question", "1", true ) );
+	searchQuestParam = String( tools_web.get_web_param( curParams, 'archive_quest_search_param', 'area;create_date;key_word', true ) ).split( ';' );
+	
+	strAction= "search";
+	strMode= "expert_page";
+	upd = "";
+	if( ArrayOptFind( arrTabListParam, "This == 'archive'" ) != undefined )
+		upd += "UPDATE=FinishExpertQuestions;";
+	if( ArrayOptFind( arrTabListParam, "This == 'inbox'" ) != undefined )
+		upd += "UPDATE=ActiveExpertQuestions;";
+%>
+
+<SPXMLScreen>
+	<Action Name="SubmitCancelLink" Source="SubmitCancelLink" Success="ALERT={messageText};UPDATE=KnowledgePartSogl;UPDATE=TagSogl" Failure="ALERT={messageText}">
+		<Param Name="object_id" Value="{TempObjSogl}"/>
+		<Param Name="kptg_id" Value="{TempKPTSogl}"/>
+		<Param Name="comment" Value=""/>
+		<Param Name="action" Value="{TempActionSogl}"/>
+		<Param Name="type" Value="{TempTypeSogl}"/>
+	</Action>
+	<Dialog Name="CommentDialog" Source="dlg_edit_text" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vveditetekst", curLngWeb ) )%>" Close="SET=SubmitCancelLink/comment,{DialogText};ACTION=SubmitCancelLink;">
+		<Param Name="label" Value="<%=XmlAttrEncode( tools_web.get_web_const( "c_comment", curLngWeb ) + ":" )%>"/>
+	</Dialog>
+	
+	<Collection Name="CoordinationCollectionKP" Source="CoordinationCollection">
+		<Param Name="key_word" Value="{KeyWordKP}"/>
+		<Param Name="type" Value="knowledge_part"/>
+	</Collection>	
+	<Collection Name="CoordinationCollectionTag" Source="CoordinationCollection">
+		<Param Name="key_word" Value="{KeyWordTag}"/>
+		<Param Name="type" Value="tag"/>
+	</Collection>	
+	<Collection Name="QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+		<Param Name="iExpertId" Value="<%=expert_id%>"/>
+		<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+		<Param Name="sKeyWord" Value="{questionskey_word}"/>
+		<Param Name="iTagId" Value="<%=OptInt( CONTEXT.GetOptProperty( "CloudTagId" ), OptInt( curUrlQuery.GetOptProperty( "CloudTagId" ), tag_id ) )%>"/>
+		<Param Name="bUseHier" Value="<%=_use_hier%>"/>
+		<Param Name="sSortType" Value="<%=_sort_type%>"/>
+	</Collection>
+<%
+	function add_filter( name, type )
+	{
+
+		obj_filter = new Object();
+		switch( name )
+		{
+			case "CreateDateSA":
+				obj_filter.title = 'Дата создания с';
+			case "CreateDateFA":
+				if( name == "CreateDateFA" )
+					obj_filter.title = 'Дата создания по';
+				obj_filter.type = "date";
+				break;
+			case "area":
+				obj_filter.type = "foreign_elem";
+				obj_filter.catalog_name = "knowledge_part";
+				obj_filter.title = tools_web.get_web_const( "vfb_subject", curLngWeb );
+	
+				break;
+							
+			case "status":
+				obj_filter.type = "combo";
+				obj_filter.title = tools_web.get_web_const( "c_status", curLngWeb );
+				obj_filter.items = [ { value: "all", title: tools_web.get_web_const( "vsestatusy", curLngWeb ) }, { value: "false", title: tools_web.get_web_const( "vmeq_status_not_answered", curLngWeb ) }, { value: "true", title: tools_web.get_web_const( "vmeq_status_answered", curLngWeb ) } ];;
+				break;
+
+		}
+		obj_filter.name = name + type;
+		return obj_filter;	
+	}
+	function write_question_panel( block_type, status )
+	{
+%>
+			<StackPanel>				
+<%							
+				
+				//block_type = "ActiveQuestions";
+				row_filters = new Array();
+				arr_filters = new Array();
+				cnt_filter = 0;
+				for( elem in ArraySelect( searchQuestParam, "This == 'create_date' || This == 'area'" ) )
+				{
+					if( cnt_filter >= 3 )
+					{
+						cnt_filter = 0;
+						row_filters.push( arr_filters );
+						arr_filters = new Array();
+					}
+					if( elem == "create_date" )
+					{
+						arr_filters.push( add_filter( "CreateDateSA", block_type ) );
+						cnt_filter++;
+						if( cnt_filter >= 3 )
+						{
+							cnt_filter = 0;
+							row_filters.push( arr_filters );
+							arr_filters = new Array();
+						}
+						arr_filters.push( add_filter( "CreateDateFA", block_type ) );
+					}
+					else
+						arr_filters.push( add_filter( elem, block_type ) );
+					cnt_filter++;
+				}
+				if( cnt_filter > 0 )
+				{
+					row_filters.push( arr_filters );
+				}
+				curFilter = {
+						'id': block_type,
+						'search_field': "key_word" + block_type,
+						'search_width': 150,
+						'disp_search': true,
+						'search_action': "UPDATE=" + block_type + "ExpertQuestions;",
+						'selectors_action': "UPDATE=" + block_type + "ExpertQuestions;",
+						'action': "UPDATE=" + block_type + "ExpertQuestions;",
+						'row_filters': row_filters,
+					};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+				<Collection Name="<%=block_type%>QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+					<Param Name="iExpertId" Value="<%=ArrayMerge( xarrExperts, "This.id", ";" )%>"/>
+					<Param Name="qStatus" Value="<%=status%>"/> 
+					<Param Name="sKeyWord" Value="{key_word<%=block_type%>}"/>
+					<Param Name="QuestionType" Value="{status<%=block_type%>}"/>
+					<Param Name="iObjectKP" Value="{areaActiveQuestions}"/>
+					<Param Name="start_create_date" Value="{CreateDateSA<%=block_type%>}"/>
+					<Param Name="finish_create_date" Value="{CreateDateFA<%=block_type%>}"/>
+					<Param Name="bShowExpertQuestion" Value="<%=bShowExpertQuestion%>"/>
+					<Param Name="bShowSubExpertQuestion" Value="<%=bShowSubExpertQuestion%>"/>
+				</Collection>
+				<HTMLBox>
+						<![CDATA[
+							<style>
+								.XAML-image-contain { background-size: contain !important; }
+							</style>
+						]]>
+				</HTMLBox>
+				<TileView Class="XAML-tileview-list" Name="<%=block_type%>ExpertQuestions" DataSource="{<%=block_type%>QuestionsCollection}" TemplateSource="knowledge_tile_list" Columns="1" Width="100%" PageSize="8">
+					<Param Name="edit_answer" Value="true"/>
+					<Param Name="edit_question" Value="<%=bEditQuestion%>"/>
+				</TileView>
+			</StackPanel>
+<%
+	}
+	if ( !is_expert )
+	{
+%>
+		<Label Class="labelItalic"><%=tools_web.get_web_const( "vmkpb_not_expert", curLngWeb )%></Label>	
+<%
+	}
+	else
+	{
+%>
+	<TabControl Name="AssessmentBodyTab" ActiveTab="<%=(oParamSource.GetOptProperty( "main_tab" ) != undefined ? oParamSource.GetOptProperty( "main_tab" ) : CONTEXT.GetOptProperty( "AssessmentBodyTab", 0 ) ) %>" Width="100%" DisplayMode="tab" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>">
+<%
+		for( _tab in arrTabListParam )
+		{
+			if ( _tab == 'profile' )
+			{
+				iTab++;
+%>
+		<TabItem Class_="icon-mixcloud" Title="<%=tools_web.get_web_const( "veb_expertise_area", curLngWeb )%>">
+<%
+			askQuestion =  false;
+			treeCollectionName =  "ExpertKnowledgeAreasTree";
+			Response.Write( (EvalCodePageUrl( (global_settings.web_path + "view_knowledge_map_tree_template.xaml") ) ));
+%>		
+		
+		</TabItem>
+<%
+			}
+			if ( _tab == 'inbox' )
+			{
+				iTab++;
+%>
+		<TabItem Class_="icon-question-circle-o" Title="<%=tools_web.get_web_const( "vmkpb_not_answered_questions", curLngWeb )%>">
+
+<%							
+				write_question_panel( "ActiveQuestions", false );
+%>
+			
+		</TabItem>
+<%
+			}
+			if ( _tab == 'archive' )
+			{
+%>
+		<TabItem Class_="icon-file-archive-o" Title="<%=tools_web.get_web_const( "vmkpb_archive_questions", curLngWeb )%>">
+<%							
+				write_question_panel( "ArhiveQuestions", true );
+%>
+		</TabItem>
+<%
+			}
+			if ( _tab == 'coordination' )
+			{
+				iTab++;
+%>
+		
+		<TabItem Class_="icon-thumbs-o-up" Title="<%=tools_web.get_web_const( "soglasovanie", curLngWeb )%>">
+			<Edit Name="TempTypeSogl" Hidden="1"></Edit>	
+			<Edit Name="TempObjSogl" Hidden="1"></Edit>	
+			<Edit Name="TempKPTSogl" Hidden="1"></Edit>	
+			<Edit Name="TempActionSogl" Hidden="1"></Edit>	
+			<TabControl  Class="XAML-tabcontrol-filter" Name="SoglBodyTab" DisplayMode="<%=curDevice.disp_type == "mobile" ? "accordion" : "tab"%>" Width="100%" MinHeight="350">
+				<TabItem Class_="icon-thumbs-o-up" Title="<%=tools_web.get_web_const( "privyazkakkarte", curLngWeb )%>">
+<%
+				curFilter = {
+						'search_field': "KeyWordKP",
+						'search_width': 150,
+						'disp_search': true,
+						'search_action': "UPDATE=KnowledgePartSogl;",
+						'selectors_action': "UPDATE=KnowledgePartSogl;",
+						'action': "UPDATE=KnowledgePartSogl;",
+					};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+					<DataGrid Name="KnowledgePartSogl" Title="<%="Объекты для согласования"%>" Source="{CoordinationCollectionKP}" Height="<%=curDevice.disp_type == "mobile" ? "200" : "400"%>" >
+						<DataGridColumn Title="<%=tools_web.get_web_const("c_name", curLngWeb)%>" Value="name" Width="200" Sortable="1" Type="link" Click="{!click}"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("s5j056rnbt", curLngWeb)%>" Value="catalog" Width="150" Type="string"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("c_knowledge_part", curLngWeb)%>" Value="kpt_name" Type="link" Width="200" Click="{!click_kpt}"/>
+
+						<DataGridColumn Title="<%=tools_web.get_web_const("soglasovat", curLngWeb)%>" Value="sogl" Type="link" Width="150" Click="SET=TempObjSogl,{id};SET=TempTypeSogl,knowledge_part;SET=TempKPTSogl,{kpt_id};SET=TempActionSogl,sogl;OPENDIALOG=CommentDialog;"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("c_reject", curLngWeb)%>" Value="reject" Type="link" Width="150" Click="SET=TempObjSogl,{id};SET=TempTypeSogl,knowledge_part;SET=TempKPTSogl,{kpt_id};SET=TempActionSogl,reject;ACTION=SubmitCancelLink;"/>
+					</DataGrid>
+				</TabItem>
+				<TabItem Class_="icon-thumbs-o-up" Title="<%=tools_web.get_web_const( "privyazkaktegam", curLngWeb )%>">
+<%
+				curFilter = {
+						'search_field': "KeyWordTag",
+						'search_width': 150,
+						'disp_search': true,
+						'search_action': "UPDATE=TagSogl;",
+						'selectors_action': "UPDATE=TagSogl;",
+						'action': "UPDATE=TagSogl;",
+					};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+					<DataGrid Name="TagSogl" Title="<%="Объекты для согласования"%>" Source="{CoordinationCollectionTag}" Height="<%=curDevice.disp_type == "mobile" ? "200" : "400"%>">
+						<DataGridColumn Title="<%=tools_web.get_web_const("c_name", curLngWeb)%>" Value="name" Width="200" Sortable="1" Type="link" Click="{!click}"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("s5j056rnbt", curLngWeb)%>" Value="catalog" Width="150" Type="string"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("vkmb_tag", curLngWeb)%>" Value="kpt_name" Type="link" Width="150" Click="{!click_kpt}"/>
+
+						<DataGridColumn Title="<%=tools_web.get_web_const("soglasovat", curLngWeb)%>" Value="sogl" Type="link" Width="150" Click="SET=TempObjSogl,{id};SET=TempTypeSogl,tag;SET=TempKPTSogl,{kpt_id};SET=TempActionSogl,sogl;OPENDIALOG=CommentDialog;"/>
+						<DataGridColumn Title="<%=tools_web.get_web_const("c_reject", curLngWeb)%>" Value="reject" Type="link" Width="150" Click="SET=TempObjSogl,{id};SET=TempTypeSogl,tag;SET=TempKPTSogl,{kpt_id};SET=TempActionSogl,reject;ACTION=SubmitCancelLink;"/>
+					</DataGrid>
+				</TabItem>
+			</TabControl>
+		</TabItem>
+<%
+			}
+			if ( _tab == 'info' )
+			{
+				iTab++;
+				curExpert = OpenDoc( UrlFromDocID( curUserExpertCatElem.id ) ).TopElem;
+				curPerson = curUser;
+%>
+		<TabItem Class="icon-info2" Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+			<Action Name="SaveExpertData" Source="save_expert_data" Success="ALERT={messageText};REFRESH;" Failure="ALERT={messageText}">
+				<Param Name="expert_id" Value="<%=curUserExpertCatElem.id%>"/>
+				<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			</Action>
+<%	
+				if ( curDevice.disp_type != "mobile" )
+				{	
+%>	
+					<Button Class="XAML-button XAML-button-important" Click="ACTION=SaveExpertData"><%="Сохранить"%></Button>
+<%
+				}
+%>
+			<Grid Width="100%" Class="XAML-grid-main-content">
+				<GridColumns>
+					<GridColumn/>
+<%	
+				if ( curDevice.disp_type != "mobile" )
+				{	
+%>	
+					<GridColumn Width="300"/>
+<%
+				}
+%>
+				</GridColumns>
+				<GridRow>
+					<StackPanel>
+						<Grid Width="100%" >
+							<GridColumns>
+								<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100%" : "70%"%>"/>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+								<GridColumn/>
+<%
+				}
+%>
+							</GridColumns>
+
+							<GridRow>
+								<Grid Width="100%" Class="XAML-grid-info-table">
+									<GridColumns>
+										<GridColumn Width="<%=curDevice.disp_type == "mobile" ? "100" : "250"%>" Align="left"/>
+										<GridColumn/>
+									</GridColumns>
+
+<%
+				if ( curExpert.type == 'collaborator' && curPerson.position_name.HasValue )
+				{
+%>
+									<GridRow>
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+<%	
+					if ( curDevice.disp_type == "mobile" )
+					{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+					}
+%>
+										<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curExpert.person_id )%>"><%=HtmlEncode( curPerson.position_name )%></Link>
+									</GridRow>
+<%				
+				}
+				if ( curExpert.type == "collaborator" && curPerson.position_parent_name.HasValue )
+				{
+%>
+									<GridRow>
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+<%	
+					if ( curDevice.disp_type == "mobile" )
+					{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+					}
+%>
+										<Label><%=HtmlEncode( curPerson.position_parent_name )%></Label>
+									</GridRow>
+<%				
+				}
+				if ( curExpert.rating.HasValue )
+				{
+%>					
+									<GridRow>
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_rating", curLngWeb )%>:</Label>
+<%	
+					if ( curDevice.disp_type == "mobile" )
+					{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+					}
+%>
+										<Label><%=curExpert.rating%></Label>
+									</GridRow>
+<%
+				}
+%>
+									<GridRow>
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_email", curLngWeb )%>:</Label>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+				}
+%>
+										<Label><%=curExpert.email%></Label>
+									</GridRow>
+									<GridRow>
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "zameshayushiyeksp", curLngWeb )%>:</Label>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+				}
+				sub_expert = curExpert.sub_expert_id.HasValue ? curExpert.sub_expert_id.OptForeignElem : undefined;
+				curSelector = {
+					"id": "SubExpertID",
+					"multi_select": false,
+					"catalog_name": "expert",
+					"xquery_qual": "$elem/id != " + curUserExpertCatElem.id,
+					"width": "100%",
+					"can_be_empty": true,
+					"object_id": ( sub_expert != undefined ? sub_expert.id.Value : "" )
+				};
+				Response.Write( EvalCodePageUrl( (global_settings.web_path + "view_selector.xaml") ) );
+%>
+									</GridRow>
+<%
+				_knowledge_parts = XQuery("for $kp in knowledge_parts where contains( $kp/experts, '" + curUserExpertCatElem.id + "' ) order by $kp/name return $kp");
+%>					
+									<GridRow Class="XAML-gridrow-multiline">
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "veb_expertise_area", curLngWeb )%>:</Label>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+				}
+%>
+										<StackPanel Orientation="Vertical" Class="XAML-StackPanelKnowledge">
+<%
+				curSelectorList = {
+					"id": "ExpertsAreas",
+					"title": "",
+					"selected_object_ids": ArrayMerge( _knowledge_parts, "This.id", ";" ),
+					"height": "",			
+					"catalog_name": "knowledge_part",
+					"disp_search": "false",
+					"disp_filter": "false",
+					"sort_direct": "-",
+					"disp_array": "true",
+					"disp_link": "true",
+					"show_all": true,
+					"list_columns": "name",
+					"is_data_grid": "true",
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>					
+											<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogExpertsAreas"><%="Изменить область экспертизы"%></Button>
+										</StackPanel>
+									</GridRow>
+				
+									<GridRow Class="XAML-gridrow-multiline">
+										<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkpb_comment", curLngWeb )%>:</Label>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+									</GridRow>
+									<GridRow>
+<%
+				}
+%>
+										<EditBox Name="ExpertComment" Width="100%"><%=HtmlEncode( curExpert.comment )%></EditBox>
+									</GridRow>			
+						</Grid>
+					</GridRow>
+				</Grid>
+				<StackPanel Orientation="Horizontal" Adapt="true" Class="XAML-stack-tiles-container">
+					<StackPanel Orientation="Vertical" Class="wt-informer wt-info-score XAML-stack-informer XAML-stack-informer-score">
+						<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=tools_web.get_web_const( "voprosovotveche", curLngWeb )%>]]></Label>
+						<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+							<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container circular-scale-container">
+									<ContScale Name="ScoreScale" Type="circular" FullScale="100" DiagramPart="0.3" DisplayValue="true" DisplayPercent="true">
+<%
+				allQuestion = XQuery( "for $i in expert_questions where $i/expert_id = " + curUserExpertCatElem.id + " return $i" );
+				aQuestion = ArraySelect( allQuestion, "This.status" );
+%>	
+										<Val Value="<%=ArrayCount( allQuestion ) > 0 ? StrReal( ArrayCount( aQuestion ) * 100.0 / ArrayCount( allQuestion ), 0 ) : 0%>"/>
+									</ContScale>
+							</StackPanel>
+							<Label Class="wt-info-value-string"><%=ArrayCount( aQuestion )%> Из <%=ArrayCount( allQuestion )%></Label>
+						</StackPanel>
+					</StackPanel>
+				</StackPanel>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+<%	
+				if ( curDevice.disp_type == "mobile" )
+				{	
+%>	
+				<Grid Width="100%">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Width="100"/>
+					</GridColumns>
+					<GridRow>
+						<Label/>
+						<Button Class="XAML-button XAML-button-important" Click="ACTION=SaveExpertData"><%="Сохранить"%></Button>
+					</GridRow>
+				</Grid>
+<%
+				}
+%>
+		</TabItem>
+<%
+			}
+		}
+%>
+	</TabControl>
+<%
+	}
+%>	
+
+</SPXMLScreen>

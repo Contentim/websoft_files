@@ -1,0 +1,52 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+iEducationPlanID = OptInt( PARAMETERS.GetOptProperty( "education_plan_id" ) );
+
+sName = PARAMETERS.GetOptProperty( 'name' );
+sOpenAction = PARAMETERS.GetOptProperty( 'action' );
+sIconUrl = PARAMETERS.GetOptProperty( 'icon' );
+sObjectImageUrl = PARAMETERS.GetOptProperty( 'img' );
+
+
+sLayout = '';
+
+
+	var sImageType = tools_web.get_web_param( curParams, "object_tile.sImageType", "block", true ); // block/tile
+	var sCustomClass = tools_web.get_web_param( curParams, "object_tile.sCustomClass", "", true );
+%>
+<Action Name="EducationPlanProgramAction" Source="education_plan_launch" Success="{!OpenAction}" Failure="ALERT={messageText}">
+	<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+	<Param Name="progpam_id" Value=""/>
+	<Param Name="task_id" Value=""/>
+	<Param Name="task_type" Value=""/>
+	<Param Name="doc_id" Value="<%=curDocID%>"/>
+	<Param Name="activate" Value="true"/>
+</Action>
+<Dialog Name="LearningTaskResultDialog" Source="dlg_learning_task_result" Title="<%='Выполнение задания'%>" Width="750" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="learning_task_id" Value=""/>
+	<Param Name="education_plan_id" Value="<%=iEducationPlanID%>"/>
+</Dialog>
+<Dialog Name="ViewMediaDialog" Source="dlg_view_media" Title="<%='Просмотр материала'%>" Width="750" Height="550" Close="UPDATE=CompoundProgramPanel">
+	<Param Name="object_id" Value=""/>
+</Dialog>
+
+<StackPanel Orientation="Vertical" Class="wtx-tile-2">
+
+	<StackPanel Orientation="Vertical" Class="wtx-tile-image-bg">
+		<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+	</StackPanel>
+
+	<StackPanel Orientation="Vertical" Class="wtx-tile-title">
+		<Label Class="wtx-tile-title-text"><![CDATA[<%=sName%>]]></Label>
+	</StackPanel>
+
+	<StackPanel Orientation="Horizontal" Class="wtx-tile-btns">
+		<Image Source="<%=XmlAttrEncode( sIconUrl )%>" Width="16" Height="16"/>
+		<!--<Label/>-->
+		<Button Class="XAML-button" Click="<%=sOpenAction%>"><![CDATA[<%='Открыть'%>]]></Button>
+	</StackPanel>
+
+</StackPanel>
+
+</SPXMLScreen>

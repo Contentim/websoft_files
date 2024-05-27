@@ -1,0 +1,44 @@
+﻿<%
+// const_start
+sConstDoneOnly = "Только завершенные";
+// const_end
+	sUpdateAction = "UPDATE=PlansList";
+%>
+<SPXMLScreen>
+	<Collection Name="AssPlans" Source="event_assessment_plans">
+		<Param Name="sStatus" Value="{ShowFilter}"/>
+		<Param Name="sSeacrhWord" Value="{SeacrhWord}"/>		
+	</Collection>
+<%
+	if( curDoc == null )
+	{
+		curTitle = {
+			"default_title": tools_web.get_web_const( "spisokplanovte", curLngWeb )
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+	}
+
+	arr_filters = new Array();
+	
+	obj_filter = new Object();
+	obj_filter.name = "ShowFilter";
+	obj_filter.type = "combo";
+	obj_filter.SetProperty( "default", "is_done" );
+	obj_filter.items = new Array();
+	obj_filter.items.push( { value: "all", title: tools_web.get_web_const( "c_all", curLngWeb ) } );
+	obj_filter.items.push( { value: "is_done", title: sConstDoneOnly } );
+	arr_filters.push( obj_filter );
+
+	curFilter = {
+		'id': 'EventAssessmentPlans',
+		'search_width': 150,
+		'search_field': 'SeacrhWord',
+		'search_action': sUpdateAction,
+		'action': sUpdateAction,
+		'filters': arr_filters,
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<TileView Width="100%" Columns="1" PageSize="10"  DataSource="{AssPlans}" TemplateSource="object_tile_row" Name="PlansList" Class="XAML-tileview-list"/>
+	
+</SPXMLScreen>

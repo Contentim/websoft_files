@@ -1,0 +1,38 @@
+﻿<%
+	var iSubID = OptInt(PARAMETERS.GetOptProperty("sub_id"));
+	var sFirstLetter = OptInt(PARAMETERS.GetOptProperty("firstlettercode"), null);
+	var bShowDismissed = tools_web.is_true(PARAMETERS.GetOptProperty("show_dismissed"));
+	
+	var bIsOrg = iSubID == undefined || ArrayCount(XQuery("for $elem in orgs where $elem/id = " + iSubID + " return $elem/Fields('id')")) > 0;
+	
+	var xQuery; 
+	if (bIsOrg)
+		xQuery = "for $elem in collaborators where "+(bShowDismissed ? "": "$elem/is_dismiss = false() and ")+ " " + (iSubID != undefined ? "($elem/org_id = " + iSubID + " or $elem/position_parent_id = " + iSubID + ") and": "") + " $elem/fullname != '' return $elem/Fields('id','fullname')";
+	else
+	{
+		if (iSubID != undefined)
+		{
+			xQuery = tools.xquery("for $elem in subdivisions where IsHierChild( $elem/id, " + iSubID + " ) order by $elem/Hier() return $elem/id");
+			
+			xQuery = "for $elem in collaborators where ($elem/position_parent_id = " + iSubID + " or MatchSome($elem/position_parent_id, (" +ArrayMerge(xQuery, "This.id", ",")+ "))) and $elem/fullname != '' " + (bShowDismissed ? "": "and $elem/is_dismiss = false()")+ " return $elem/Fields('id','fullname')";
+		}
+		else
+		{
+			xQuery = new Array();
+		}
+	}
+	
+	var sL, sLetterActionPrfx = "SET=firstLetterCode,@;REFRESH";
+%><SPXMLScreen>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+		<Link Class="<%=(sFirstLetter == null ? "XAML-grid-label-name": "")%>" Click="<%=StrReplace(sLetterActionPrfx, "@", "")%>">*</Link>
+<%
+		for (sL in ArraySort(ArraySelectDistinct(ArrayExtract(XQuery(xQuery), "StrToCharCodesArray(This.fullname.Value)[0]"), "This"), "This", "+"))
+		{
+%>
+		<Link Class="<%=(sFirstLetter == sL ? "XAML-grid-label-name": "")%>" Click="<%=StrReplace(sLetterActionPrfx, "@", sL)%>"><%=StrFromCharCodesArray([sL])%></Link>
+<%
+		}
+%>
+	</StackPanel>
+</SPXMLScreen>

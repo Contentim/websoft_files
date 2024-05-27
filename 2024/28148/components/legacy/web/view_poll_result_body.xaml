@@ -1,0 +1,150 @@
+﻿<SPXMLScreen>
+<%
+iPollID = curObject.poll_id.Value;
+tePoll = OpenDoc( UrlFromDocID( iPollID ) ).TopElem;
+
+curTitle = {
+	"object": tePoll,
+	"object_title": ( tools_web.get_web_const( 'c_poll', curLngWeb ) + ': ' + tools_web.get_cur_lng_name( tePoll.name, curLng.short_id ) ),
+	"title": ( StrDate( curObject.create_date, false ) + ' ' + curObject.person_fullname )
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+if ( ! tePoll.show_report || ( curObject.person_id != curUserID && ! tePoll.report_viewers.ChildByKeyExists( curUserID ) ) )
+{
+	curMessageBox = {
+		"type": "error_access"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+%>
+
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( '7e1dwbst85', curLngWeb ) )%>" Expanded="1" Width="100%">
+<Grid Class="XAML-grid-list-container">
+	<GridColumns>
+		<GridColumn Width="100%"/>
+	</GridColumns>
+<%
+	for ( fldQuestionElem in curObject.questions )
+	{
+		fldPollQuestion = tePoll.questions.GetOptChildByKey( fldQuestionElem.PrimaryKey );
+		if ( fldPollQuestion == undefined || fldPollQuestion.type == 'title' )
+			continue;
+
+		sValue = fldQuestionElem.value.Value;
+%>
+	<GridRow>
+		<Grid Class="XAML-grid-list-item">
+			<GridColumns>
+				<GridColumn Width="32"/>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Label Class="icon-question"></Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<Label><![CDATA[<%=tools_web.get_cur_lng_name( fldPollQuestion.title, curLng.short_id )%>]]></Label>
+<%
+		switch ( fldPollQuestion.type )
+		{
+			case 'file':
+				try
+				{
+					teResource = OpenDoc( UrlFromDocID( Int( sValue ) ) ).TopElem;
+					sValue = teResource.name;
+%>
+					<Link Click="OPENWINDOW=<%=tools_web.get_object_source_url( 'resource', teResource.id )%>"><![CDATA[<%=sValue%>]]></Link>
+<%
+				}
+				catch ( err )
+				{
+%>
+					<Label><![CDATA[<%=sValue%>]]></Label>
+<%
+				}
+				break;
+
+			case 'date':
+				try
+				{
+					sValue = StrDate( Date( fldQuestionElem.value ), true );
+				}
+				catch ( err )
+				{
+				}
+%>
+					<Label><![CDATA[<%=sValue%>]]></Label>
+<%
+				break;
+
+			case 'link_to_database_object':
+				try
+				{
+					teObject = OpenDoc( UrlFromDocID( Int( sValue ) ) ).TopElem;
+					sValue = tools.get_disp_name_value( teObject );
+				}
+				catch ( err )
+				{
+				}
+%>
+					<Label><![CDATA[<%=sValue%>]]></Label>
+<%
+				break;
+
+			case 'choice':
+			case 'combo':
+			case 'select':
+			case 'order':
+			{
+				try
+				{
+					arrValue = String( sValue ).split( ';' );
+					sValue = '';
+					for ( sValueElem in arrValue )
+					{
+						if ( sValueElem == '' )
+						{
+							continue;
+						}
+						fldEntry = fldPollQuestion.entries.GetOptChildByKey( OptInt( sValueElem ) );
+						sValue += ( sValue == '' ? '' : ', ' ) + ( fldEntry == undefined ? sValueElem : fldEntry.value );
+					}
+				}
+				catch ( err )
+				{
+				}
+%>
+					<Label><![CDATA[<%=sValue%>]]></Label>
+<%
+				break;
+			}
+
+			default:
+%>
+					<Label><![CDATA[<%=sValue%>]]></Label>
+<%
+				break;
+		}
+
+		if ( fldQuestionElem.comment.HasValue )
+		{
+%>
+				<Label Class="XAML-grid-list-desc"><![CDATA[<%=fldQuestionElem.comment%>]]></Label>
+<%
+		}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</GridRow>
+<%
+	}
+%>
+</Grid>
+</Panel>
+
+</SPXMLScreen>

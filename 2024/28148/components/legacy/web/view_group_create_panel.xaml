@@ -1,0 +1,78 @@
+﻿<SPXMLScreen>
+<%
+oAccess = tools_web.get_person_object_info( 'group', curUserID, curUser );
+if ( oAccess.can_create != true )
+{
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+sTags = CONTEXT.GetOptProperty( 'tags', '' );
+arrTags = [];
+//alert('sTags = '+sTags);
+if ( StrBegins( sTags, '[' ) || StrBegins( sTags, '{' ) )
+{
+	arrTags = tools.read_object( sTags );
+	sTags = ArrayMerge( arrTags, 'id', ';' )
+	arrTags = QueryCatalogByKeys( 'tags', 'id', ArrayExtract( arrTags, 'Int(This.id)' ) );
+}
+else if ( sTags != '' )
+{
+	arrTags = QueryCatalogByKeys( 'tags', 'id', ArrayExtract( String( sTags ).split( ';' ), 'Int(This)' ) );
+}
+%>
+<Action Name="GroupCheckAction" Source="group_change" Success="ACTION=GroupChangeAction" Failure="CONFIRM={messageText};ACTION=GroupChangeAction">
+	<Param Name="action_id" Value="check_tags"/>
+	<Param Name="sid" Value="<%=curDocSid%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Action Name="GroupChangeAction" Source="group_change" Success="OPENURL=<%=tools_web.get_mode_clean_url( "groups", null, { doc_id: curDocID } )%>" Failure="ALERT={messageText}">
+	<Param Name="action_id" Value="create"/>
+	<Param Name="sid" Value="<%=curDocSid%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<Dialog Name="SelectDialogGroupTags" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( '0mzyraf76u', curLngWeb ) )%>" Close="SET=tags,{CatalogListDataGridSelList};REFRESH;">
+	<Param Name="catalog_name" Value="tag"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="selected_object_ids" Value="<%=XmlAttrEncode( sTags )%>"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<Edit Name="tags" Hidden="true"><%=HtmlEncode( sTags )%></Edit>
+<Edit Name="boss_type_id" Hidden="true"><%=OptInt( tools_web.get_web_param( curParams, 'group_create_panel.boss_type_id', '', true ), '' )%></Edit>
+<Panel Title="<%=tools_web.get_web_const( "fjqyvof7cb", curLngWeb )%>">
+	<Grid Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="50"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow Class="XAML-grid-label-name">
+			<Label><%=( tools_web.get_web_const( "c_name", curLngWeb ) + ":" )%></Label>
+			<Edit Name="name"><![CDATA[<%=CONTEXT.GetOptProperty( 'name', '' )%>]]></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "pe82k7en9s", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal">
+				<Button Click="OPENDIALOG=SelectDialogGroupTags" Class="XAML-button-selector">...</Button>
+<%
+if ( sTags != '' )
+{
+	for ( catTagElem in arrTags )
+	{
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catTagElem.PrimaryKey, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catTagElem.name, curLng.short_id )%>]]></Link>
+<%
+	}
+}
+%>
+			</StackPanel>
+		</GridRow>
+		<GridRow Class="XAML-grid-label-name">
+			<Label><%=( tools_web.get_web_const( "c_desc", curLngWeb ) + ":" )%></Label>
+			<EditBox Name="desc" Height="60"><![CDATA[<%=CONTEXT.GetOptProperty( 'desc', '' )%>]]></EditBox>
+		</GridRow>
+	</Grid>
+	<Button Class="XAML-button XAML-button-proceed" Click="ACTION=GroupCheckAction"><%=tools_web.get_web_const( "vmg_create_group", curLngWeb )%></Button>
+</Panel>
+</SPXMLScreen>

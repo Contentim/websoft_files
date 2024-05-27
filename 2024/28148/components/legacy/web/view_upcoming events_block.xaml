@@ -1,0 +1,183 @@
+﻿<SPXMLScreen Class="block-upcoming-events">
+<%
+	iCount = Int(tools_web.get_web_param( curParams, "upcoming_events.iCount", "5", true ));
+	sName = tools_web.get_web_param( curParams, "upcoming_events.sHeaderText", tools_web.get_web_const( 'blizhayshiemerop', curLngWeb ), true );
+	bImage= tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bShowImage", "1", true ));
+	iImageWidth = Int(tools_web.get_web_param( curParams, "upcoming_events.iImageWidth", "100", true ));
+	bDate = tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bShowDate", "1", true ));
+	bShowTime = tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bShowTime", "0", true ));
+	bShowDesc = tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bShowDesc", "0", true ));
+	bShowAllUpcomingEventsLink = tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bShowAllUpcomingEventsLink", "1", true ));
+	bUseCache = tools_web.is_true(tools_web.get_web_param( curParams, "upcoming_events.bUseCache", "0", true ));
+	sStatuses = tools_web.get_web_param( curParams, "upcoming_events.statuses", "plan;active", true );
+	//descending,ascending
+
+	bBuildNew=!bUseCache
+	arrEventLists=[]
+	if (bUseCache)
+	{
+		strUserDataID="upcoming_events_"+iCount+"_cache_"+curUserID+'_'+Request.Session.sid
+		arrCachedEvents = tools_web.get_user_data(strUserDataID)
+		
+		if (arrCachedEvents != null && arrCachedEvents.HasProperty("arrResult"))
+		{
+			arrEventLists=arrCachedEvents.arrResult
+		}
+		else
+		{
+			bBuildNew=true
+		}
+	}
+	
+	if (bBuildNew)
+	{
+		curDate=DateNewTime(Date(),00,00,00)
+		
+		arrEventStatuses = String( sStatuses ).split( ';' );	
+		
+		sStatusQueryAdd=""
+		for(sStatus in arrEventStatuses)
+		{
+			if(sStatus != "")
+			{
+				if(sStatusQueryAdd != "")
+					sStatusQueryAdd += " or ";
+				sStatusQueryAdd += (" $elem/status_id='" + sStatus + "'");
+			}
+		}
+		if(sStatusQueryAdd != "")
+			sStatusQueryAdd = " and (" + sStatusQueryAdd + ")";
+		
+		sDateQueryAdd = " and $elem/start_date>=date('"+curDate+"')"	
+		// Находим все, где я участник
+		sQuery = "for $elem in event_collaborators where $elem/collaborator_id = " + curUserID;
+		sQuery += sDateQueryAdd  + sStatusQueryAdd;
+		sQuery +=  " return $elem";
+
+		arrUserEvents = XQuery(sQuery);        
+		arrUserEvents = ArraySelectDistinct( arrUserEvents, 'event_id' );
+
+		// Находим все публичные
+		sQuery = "for $elem in events where $elem/is_public=true() ";
+		sQuery += sDateQueryAdd  + sStatusQueryAdd;
+		sQuery +=  " return $elem";
+
+		arrEvents = XQuery(sQuery);
+		
+		// Находим все, где я преподаватель
+		sQuery = "for $elem in event_lectors where $elem/person_id = " + curUserID;
+		sQuery += sDateQueryAdd  + sStatusQueryAdd;
+		sQuery +=  " return $elem";
+		arrTutorEvents = XQuery(sQuery);        
+		arrTutorEvents = ArraySelectDistinct( arrTutorEvents, 'event_id' );
+
+		//извлекаем данные по идентификаторам и выбираем уникальные
+		arrEvents = ArrayExtract(arrEvents, "id");
+		arrEvents = ArrayUnion( arrEvents, ArrayExtract(arrUserEvents, "event_id") );
+		arrEvents = ArrayUnion( arrEvents, ArrayExtract(arrTutorEvents, "event_id") );
+		arrEvents = ArraySelectDistinct( arrEvents, 'This' );
+	
+		curCount = 0;
+		for ( catUpcomingEvent in arrEvents )
+		{
+			if ( !tools_web.check_access( catUpcomingEvent, curUserID, curUser, Session ) )
+				continue;			
+			if ( curCount < iCount )
+			{
+				try
+				{
+					teEvent = OpenDoc(UrlFromDocID(catUpcomingEvent.PrimaryKey)).TopElem;
+				}
+				catch(ex)
+				{
+					continue;
+				}
+				if ( bImage )
+				{
+					if ( teEvent.resource_id != null && teEvent.resource_id !='' && teEvent.resource_id != undefined )
+					{
+						sImageUrl = "download_file.html?file_id=" + teEvent.resource_id + "&sid=" + tools_web.get_sum_sid( teEvent.resource_id, Request.Session.sid );
+					}
+					else
+					{
+						sImageUrl = '/images/' + teEvent.Name + '.png';
+					}
+				}
+				arrEventLists.push({"id":RValue(catUpcomingEvent.PrimaryKey),"name":teEvent.name.Value,"sImageUrl":sImageUrl,"start_date":teEvent.start_date.Value,"comment":teEvent.comment.Value})
+			}
+			else
+			{
+				break;
+			}
+			curCount++;
+		}
+	
+		if (bUseCache)
+		{
+			tools_web.set_user_data(strUserDataID, ({"arrResult" : arrEventLists}), 86400);
+		}
+	}
+  
+	if (ArrayOptFirstElem(arrEventLists) != undefined)
+	{
+%>
+	<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-block">			
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+			<Label Class="XAML-label-block-header"><![CDATA[<%=tools_web.get_cur_lng_name(sName, curLng.short_id )%>]]></Label>
+		</StackPanel>
+<%
+		for (oEvent in arrEventLists)
+		{
+%>	
+		<StackPanel Orientation="Horizontal" Class="UpcomingEvents-Item XAML-stack-article-container">
+			<Image Source="<%=oEvent.sImageUrl%>" Width="<%=iImageWidth%>" />
+			<StackPanel Orientation="Vertical" Class="Upcoming-Events-Item XAML-stack-article">
+
+<%				
+				if ( bDate )			
+				{
+					if (bShowTime )
+					{
+%>	
+				<Label Class="Upcoming-Events-Date XAML-label-article-date"><![CDATA[<%=oEvent.start_date%>]]></Label>
+							
+<%
+					}
+					else
+					{
+							newDate = StrDate (oEvent.start_date,false,false);
+%>
+				<Label Class="Upcoming-Events-Date XAML-label-article-date"><![CDATA[<%=newDate%>]]></Label>
+<%		
+					}
+				}
+%>				
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, oEvent.id )%>" Class="XAML-label-article-title"><![CDATA[<%=tools_web.get_cur_lng_name(oEvent.name, curLng.short_id )%>]]></Link>
+<%
+				if ( bShowDesc )
+				{
+%>				
+				<Label Class="Upcoming-Events-Desc XAML-label-article-desc"><![CDATA[<%=oEvent.comment%>]]></Label>
+<%				
+				}
+%>				
+			</StackPanel>
+		</StackPanel>
+<%
+		}
+		if ( bShowAllUpcomingEventsLink )			
+		{		
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-upcoming-events-all-link XAML-stack-article-all-container">
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( "event_calendar" )%>"><%=tools_web.get_web_const( "vsemeropriyatiya", curLngWeb )%></Link>
+		</StackPanel>
+<%	
+		}
+						
+%>	
+	</StackPanel>
+<%
+	}
+%>
+
+</SPXMLScreen>

@@ -1,0 +1,179 @@
+﻿<SPXMLScreen>
+<%
+function get_active_object( fe, name )
+{
+	switch( name )
+	{
+		case "test_learning":
+			return fe.active_test_learning_id;
+		case "learning":
+			return fe.active_learning_id;
+	}
+	return fe.id
+}
+sRecordUrl = "";
+bEdit = false;
+if( ISDIALOG )
+{
+	bEdit = true;
+	iObjectId = OptInt( PARAMETERS.GetOptProperty( "object_id" ) );
+	teRecord = OpenDoc( UrlFromDocID( iObjectId ) ).TopElem;
+}
+else
+{
+	iObjectId = curObjectID;
+	teRecord = curObject;
+	bEdit = ArrayOptFind( OpenDoc( UrlFromDocID( teRecord.proctoring_object_id ) ).TopElem.persons, "This.person_id == curUserID && This.type == 'proctor'" ) != undefined;
+}
+
+feLearning = teRecord.object_id.OptForeignElem;
+if( feLearning != undefined )
+	sRecordUrl = teRecord.get_url_record( curUser, Md5Hex( get_active_object( feLearning, teRecord.object_type ) ) )
+%>
+	<Action Name="SaveComment" Source="proctoring_action" Success="ALERT={messageText};UPDATE=LearningRecordsFoto;" Failure="Alert={messageText}">
+		<Param Name="action" Value="save_comment"/>
+		<Param Name="learning_record_id" Value="<%=iObjectId%>"/>
+		<Param Name="resource_id" Value=""/>
+		<Param Name="comment" Value=""/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>		
+	</Action>
+	<Action Name="SaveRecord" Source="proctoring_action" Success="ALERT={messageText};<%=ISDIALOG ? "CLOSEDIALOG;" : ""%>" Failure="Alert={messageText}">
+		<Param Name="action" Value="save_status"/>
+		<Param Name="learning_record_id" Value="<%=iObjectId%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>		
+	</Action>	
+<%
+if( !ISDIALOG && bEdit )
+{
+%>
+	<Toolbar>
+		<Button Class="XAML-button" Width="100" Click="ACTION=SaveRecord;">Сохранить</Button>
+	</Toolbar>
+<%
+}
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="250"/>
+			<GridColumn/>
+		</GridColumns>	
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=teRecord.proctoring_object_type.HasValue ? teRecord.proctoring_object_type.ForeignElem.title : ""%>:</Label>
+			<Label><%=XmlAttrEncode( tools_web.get_cur_lng_name( teRecord.proctoring_object_name, curLng.short_id ) )%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_date', curLngWeb )%>:</Label>
+			<Label><%=StrDate( teRecord.doc_info.creation.date, false )%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_fio', curLngWeb )%>:</Label>
+			<Label><%=XmlAttrEncode( teRecord.person_fullname )%></Label>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_status', curLngWeb )%>:</Label>
+			<ComboBox Name="state_id" Width="250" Enabled="<%=bEdit%>" SelectedItem="<%=teRecord.state_id%>">
+			<%
+				for( _status in curLngCommon.learning_record_statuss )
+				{
+			%>
+				<ComboBoxItem Value="<%=_status.id%>"><%=_status.name%></ComboBoxItem>			
+			<%
+				}
+			%>
+			</ComboBox>
+		</GridRow>
+<%
+if( sRecordUrl != "" )
+{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%="Запись тестирования"%>:</Label>
+			<Link Click="OPENWINDOW=<%=sRecordUrl%>"><%=XmlAttrEncode( tools_web.get_web_const( 'q0laxmdm5w', curLngWeb ) )%></Link>
+		</GridRow>
+<%
+}
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%='Статус проверки фото'%>:</Label>
+			<Label><%=XmlAttrEncode( teRecord.check_foto_state_id.HasValue ? teRecord.check_foto_state_id.ForeignElem.name : "" )%></Label>
+		</GridRow>
+	</Grid>
+	
+	<TabControl>
+		<TabItem Title="<%="Фото-отчет"%>">	
+			<Collection Name="ProctoringObjectFotosCollection" Source="proctoring_collection">
+				<Param Name="sType" Value="learning_record_foto_report"/>
+				<Param Name="iObjectId" Value="<%=iObjectId%>"/>
+			</Collection>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+				</GridColumns>	
+				<GridRow>
+					<TileView Name="LearningRecordsFoto" DataSource="{ProctoringObjectFotosCollection}" TemplateSource="proctoting_foto"  TileHeight="305" TileWidth="240" Columns="5" PageSize="10">
+						<Param Name="can_edit" Value="<%=teRecord.state_id == "active" && bEdit%>"/>
+						<Param Name="learning_record_id" Value="<%=iObjectId%>"/>
+					</TileView>
+				</GridRow>
+			</Grid>
+		</TabItem>
+		<TabItem Title="<%="Видео/аудио материалы"%>">	
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+				</GridColumns>	
+<%
+conds = new Array();
+_catFileType = ArrayOptFirstElem( XQuery( 'for $i in resource_types where $i/code = ' + XQueryLiteral( 'proctoring_download_files' ) + ' return $i' ) );
+if( _catFileType != undefined )
+	conds.push( "$i/resource_type_id = " + _catFileType.id )
+conds.push( "MatchSome( $i/id, ( " + ArrayMerge( teRecord.files, "This.PrimaryKey", "," ) + " ) )" );
+xarrResources = ArrayDirect( XQuery( "for $i in resources where " + ArrayMerge( conds, "This", " and " ) + " return $i" ) );
+bFound = false;
+for( file in teRecord.files )
+{
+	feFile = ArrayOptFind( xarrResources, "This.id == file.file_id" ) 
+	if( feFile != undefined )
+	{
+		bFound = true;
+%>
+			
+				<GridRow>
+					<Link Click="OPENURL=/view_play_resource.html?object_id=<%=file.file_id%>"><%=XmlAttrEncode( tools_web.get_cur_lng_name( feFile.name, curLng.short_id ) )%></Link>
+				</GridRow>
+<%
+	}
+}
+if( !bFound )
+{
+%>
+				<GridRow>
+					<Label><%=XmlAttrEncode( "Видео и аудио материалы отсутствуют" )%></Label>
+				</GridRow>
+<%
+}
+%>
+			</Grid>
+		</TabItem>
+	</TabControl>
+<%
+if( ISDIALOG )
+{
+%>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=SaveRecord;">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_close", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+<%
+}
+%>
+</SPXMLScreen>

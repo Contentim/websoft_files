@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>kdfdw60wer</id>
+		<server_version>2020.3.3.183 (2020-06-09)</server_version>
+	</basic>
+	<code_librarys>
+		<code_library>
+			<id>0x60B5CE1A8B3F9ABF</id>
+			<code>libContinuousFeedback</code>
+			<name VALUE="##'Библиотека Непрывная обратная связь'##"/>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/libs/continuous_feedback_library.js</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/code_library/libContinuousFeedback</load_path>
+				<code>components/continuous_feedback/code_library/libContinuousFeedback</code>
+			</i18n_param>
+		</code_library>
+	</code_librarys>
+</data>

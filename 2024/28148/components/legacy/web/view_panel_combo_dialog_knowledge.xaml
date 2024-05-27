@@ -1,0 +1,201 @@
+﻿<%
+function get_knowledges_lists( name )
+{
+	get_uka = false;
+	switch( name )
+	{
+		case "MyKnowledgeProfileTree":
+			user_kp_array = tools.get_knowledge_parts_by_person_id( curUserID );
+			get_uka = true;
+		case "ExpertKnowledgeAreasTree":
+			if( !get_uka )
+			{
+				curUserExpertCatElem = XQuery("for $elem in experts where $elem/person_id = " + curUserID + " return $elem");
+				user_kp_array = new Array()
+				if ( curUserExpertCatElem == undefined )
+					user_kp_array = Array();
+				else
+					for( exp in curUserExpertCatElem )
+						user_kp_array = ArrayUnion( user_kp_array, XQuery("for $elem in knowledge_parts where contains($elem/experts, '" + exp.id + "' ) return $elem") );
+			}
+
+			user_kp_array = ArraySelectDictinct( user_kp_array, "This.id" );
+			arr_result = new Array();
+			for( elem in user_kp_array )
+				arr_result = ArrayUnion( arr_result, tools.xquery( "for $i in knowledge_parts where IsHierChild( $i/id, " + elem.id + " ) order by $i/Hier() return $i") );
+			arr_result = ArrayUnion( arr_result, user_kp_array );
+			return ArraySelectDictinct( arr_result, "This.id" )
+			break;
+
+		case "KnowledgeMapTree":
+		case "KnowledgeClassifierTree":
+			return XQuery( "for $i in knowledge_parts " + ( classifier_id != "" ? " where $i/knowledge_classifier_id = " + classifier_id : "" ) + " return $i" );
+			break;
+	}
+}
+function get_xquery( name )
+{
+	get_uka = false;
+	switch( name )
+	{
+		case "KnowledgeMapTree":
+		case "KnowledgeClassifierTree":
+			if( classifier_id != "" )
+				return "$elem/knowledge_classifier_id = " + classifier_id;
+			else
+				return "";
+			break;
+
+		case "MyKnowledgeProfileTree":
+			user_kp_array = tools.get_knowledge_parts_by_person_id( curUserID );
+			get_uka = true;
+		case "ExpertKnowledgeAreasTree":
+			if( !get_uka )
+			{
+				curUserExpertCatElem = XQuery("for $elem in experts where $elem/person_id = " + curUserID + " return $elem");
+				user_kp_array = new Array()
+				if ( curUserExpertCatElem == undefined )
+					user_kp_array = Array();
+				else
+					for( exp in curUserExpertCatElem )
+						user_kp_array = ArrayUnion( user_kp_array, XQuery("for $elem in knowledge_parts where contains($elem/experts, '" + exp.id + "' ) return $elem") );
+			}
+
+			user_kp_array = ArraySelectDictinct( user_kp_array, "This.id" );
+			arr_result = new Array();
+			for( elem in user_kp_array )
+				arr_result = ArrayUnion( arr_result, tools.xquery( "for $i in knowledge_parts where IsHierChild( $i/id, " + elem.id + " ) order by $i/Hier() return $i") );
+			arr_result = ArrayUnion( arr_result, user_kp_array );
+			return "MatchSome( $elem/id, ( " + ArrayMerge( ArraySelectDictinct( arr_result, "This.id" ), "This.id", "," ) + " ) )"
+			break;
+	}
+}
+
+type = tools_web.get_web_param( PARAMETERS, 'type', "", true );
+collection = tools_web.get_web_param( PARAMETERS, 'collection', "", true );
+classifier_id = OptInt( tools_web.get_web_param( PARAMETERS, 'classifier_id', "", true ), "" );
+knowledge_part_id = OptInt( tools_web.get_web_param( PARAMETERS, 'knowledge_part_id', "", true ), "" );
+nName = tools.random_string( 6 );
+%>
+<SPXMLScreen>
+	<Edit Name="ActionSelect<%=nName%>" Hidden="1"></Edit>
+	<Dialog Name="SelectDialogPanel<%=nName%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!ActionSelect<%=nName%>}">
+		<Param Name="catalog_name" Value=""/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="view_type" Value=""/>
+		<Param Name="xquery_qual" Value=""/>
+		<Param Name="check_access" Value="false"/>
+		<Param Name="list_columns" Value="<%=curDevice.disp_type != "mobile" ? "" : "name"%>"/>
+		<Param Name="display_object_ids" Value=""/>
+		<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+	</Dialog>
+	<Grid Width="100%" Class="XAML-info-grid-bullet">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type != "mobile" ? 200 : "100%"%>"/>
+<%
+	if( curDevice.disp_type != "mobile" )
+	{
+%>
+			<GridColumn/>
+<%
+	}
+%>
+		</GridColumns>
+
+<%
+	if( collection == "KnowledgeMapTree" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="<%=curDevice.disp_type != "mobile" ? "200" : "100%"%>"><%=XmlAttrEncode( tools_web.get_web_const( "vkpb_classifier", curLngWeb ) )%>:</Label>
+<%
+		if( curDevice.disp_type == "mobile" )
+		{
+%>
+		</GridRow>
+		<GridRow>
+<%
+		}
+
+		if( type == "combo" )
+		{
+			xarrClassifiers = XQuery( "for $i in knowledge_classifiers return $i" );
+%>
+			<ComboBox Name="ComboClassifier<%=nName%>" SelectedItem="<%=classifier_id%>" Change="SET=KnowledgePartID,;SET=KnowledgeClassifierID,{ComboClassifier<%=nName%>};UPDATE=KnowledgeMapListPart;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};">
+				<ComboBoxItem Value="">-</ComboBoxItem>
+<%
+			for( elem in xarrClassifiers )
+			{
+				if ( !tools_web.check_access( OpenDoc( UrlFromDocID ( elem.id ), 'form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1' ).TopElem , curUserID, curUser, Request.Session ) )
+					continue;
+%>
+				<ComboBoxItem Value="<%=elem.id%>"><%=XmlAttrEncode( elem.name )%></ComboBoxItem>
+<%
+			}
+%>
+			</ComboBox>
+<%
+		}
+		else
+		{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+				<Edit Name="Classifier<%=nName%>" Hidden="1"><%=classifier_id%></Edit>
+				<Edit Name="ClassifierName<%=nName%>" Editable="false" Width="<%=curDevice.disp_type != "mobile" ? 500 : "100%"%>"><%=XmlAttrEncode( classifier_id != "" ? OpenDoc( UrlFromDocID( classifier_id ) ).TopElem.name : "" )%></Edit>
+				<Button Class="XAML-button-content XAML-button-selector icon-folder-open-o" Click="SET=ActionSelect<%=nName%>,<%=UrlEncode( "SET=KnowledgePartID,;SET=KnowledgeClassifierID,{CatalogListDataGridFullList:^/id};UPDATE=KnowledgeMapListPart;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}" )%>;SET=SelectDialogPanel<%=nName%>/catalog_name,knowledge_classifier;SET=SelectDialogPanel<%=nName%>/xquery_qual,;SET=SelectDialogPanel<%=nName%>/check_access,true;OPENDIALOG=SelectDialogPanel<%=nName%>">...</Button>
+			</StackPanel>
+<%
+		}
+%>
+		</GridRow>
+<%
+	}
+
+	if( collection != "KnowledgeMapTree" || classifier_id != "" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column" Width="<%=curDevice.disp_type != "mobile" ? "200" : "100%"%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_knowledge_part", curLngWeb ) )%>:</Label>
+<%
+		if( curDevice.disp_type == "mobile" )
+		{
+%>
+		</GridRow>
+		<GridRow>
+<%
+		}
+		if( type == "combo" )
+		{
+			xarrKnowledgeParts = get_knowledges_lists( collection );
+%>
+			<ComboBox Name="ComboParts<%=nName%>" SelectedItem="<%=knowledge_part_id%>" Change="SET=KnowledgePartID,{ComboParts<%=nName%>};UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};">
+				<ComboBoxItem Value="">-</ComboBoxItem>
+<%
+			for( elem in xarrKnowledgeParts )
+			{
+%>
+				<ComboBoxItem Value="<%=elem.id%>"><%=XmlAttrEncode( elem.name )%></ComboBoxItem>
+<%
+			}
+%>
+			</ComboBox>
+<%
+		}
+		else
+		{
+
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-selector">
+				<Edit Name="Part<%=nName%>" Hidden="1"><%=knowledge_part_id%></Edit>
+				<Edit Name="PartName<%=nName%>" Editable="false" Width="<%=curDevice.disp_type != "mobile" ? 500 : "100%"%>"><%=XmlAttrEncode( knowledge_part_id != "" ? OpenDoc( UrlFromDocID( knowledge_part_id ) ).TopElem.name : "" )%></Edit>
+				<Button Class="XAML-button-content XAML-button-selector icon-folder-open-o" Click="SET=ActionSelect<%=nName%>,<%=UrlEncode( "SET=KnowledgePartID,{CatalogListDataGridFullList:^/id};SET=PartName" + nName + ",{CatalogListDataGridFullList:^/disp};UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};" )%>;SET=SelectDialogPanel<%=nName%>/catalog_name,knowledge_part;SET=SelectDialogPanel<%=nName%>/xquery_qual,<%=get_xquery( collection )%>;SET=SelectDialogPanel<%=nName%>/check_access,false;OPENDIALOG=SelectDialogPanel<%=nName%>"/>
+			</StackPanel>
+<%
+		}
+%>
+		</GridRow>
+<%
+	}
+%>
+	</Grid>
+</SPXMLScreen>

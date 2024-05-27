@@ -1,0 +1,21 @@
+﻿<SPXMLScreen>
+	<Dialog Name="SelectResource" Source="dlg_select_file" Width="600" Title="<%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>" Close="SET=<%=tools_web.get_web_param( PARAMETERS, "field_name", "", true )%>,{SelectedFile};UPDATE=ResourceField;">
+	</Dialog>
+<%
+	iResourceID = OptInt( tools_web.get_web_param( PARAMETERS, "resource_id", "", true ) );
+	sObjectType = tools_web.get_web_param( PARAMETERS, "object_type", "", true );
+	sObjectImageUrl = ""
+	if ( iResourceID != undefined )
+		sObjectImageUrl = tools_web.get_object_source_url( 'resource', iResourceID );
+	else if( sObjectType != "" )
+		sObjectImageUrl = '/images/' + sObjectType + '.png';
+	if( sObjectImageUrl != "" )
+	{
+%>
+	<StackPanel Width="250">
+		<Image Click="OPENDIALOG=SelectResource;" Source="<%=XmlAttrEncode( sObjectImageUrl )%>" Width="250" Height="250"/>
+	</StackPanel>
+<%
+	}
+%>
+</SPXMLScreen>

@@ -1,0 +1,214 @@
+﻿<SPXMLScreen>
+<%
+	function create_account( sAccountCurrency )
+	{
+		docAccount = OpenNewDoc( 'x-local://wtv/wtv_account.xmd' );
+		docAccount.TopElem.status = 'active';
+		docAccount.TopElem.object_id = curUserID;
+		tools.common_filling( 'object', docAccount.TopElem, curUserID, curUser );
+		docAccount.TopElem.currency_type_id = sAccountCurrency;
+		docAccount.TopElem.name = docAccount.TopElem.object_name;
+		docAccount.BindToDb( DefaultDb );
+		docAccount.Save()
+		return docAccount.TopElem;
+	}
+
+	iCompetenceProfileId = OptInt( tools_web.get_web_param( curParams, "game_achievments.competence_profile_id", "", true ) );
+	bAllowThanks = tools_web.is_true( tools_web.get_web_param( curParams, "game_achievments.allow_thanks", "", true ) );
+	bAllowScore = tools_web.is_true( tools_web.get_web_param( curParams, "game_achievments.allow_score", "", true ) );
+	sThanksCurrencyTypeId = tools_web.get_web_param( curParams, "game_achievments.thanks_currency_type_id", "", true );
+	sScoreCurrencyTypeId = tools_web.get_web_param( curParams, "game_achievments.score_currency_type_id", "", true );
+	sDlgTitle = tools_web.get_web_param( curParams, "game_achievments.dlg_title", "Передача баллов", true );
+	bFillComment = tools_web.get_web_param( curParams, "game_achievments.fill_comment", false, true ); 
+	bAnonymTransfer = tools_web.get_web_param( curParams, "game_achievments.anonym_transfer", false, true ); 
+	sAnonymName = tools_web.get_web_param( curParams, "anonym_name", "", true ); 
+	iAmntPoints = tools_web.get_web_param( curParams, "game_achievments.amnt_points", "", true ); 
+	bShowFldPoints = tools_web.is_true( tools_web.get_web_param( curParams, "game_achievments.show_fld_points", true, true ) );
+	sFldPointsName = tools_web.get_web_param( curParams, "game_achievments.fld_point_name", "", true );
+	sBtnCancelName = tools_web.get_web_param( curParams, "game_achievments.btn_cancel_name", "", true );
+	sBtnTransferName = tools_web.get_web_param( curParams, "game_achievments.btn_transfer_name", "", true );
+	
+	teLevel = null;
+	
+	function set_person_level()
+	{
+		tePerson = curUser;
+		if ( ! tePerson.level_id.HasValue )
+		{
+			return false;
+		}
+		teLevel = OpenDoc( UrlFromDocID( tePerson.level_id ) ).TopElem;
+		if ( ! teLevel.currency_type_id.HasValue )
+		{
+			return false;
+		}
+		return true;
+	}
+	function write_button( ct_id, points )
+	{
+		if ( iCompetenceProfileId == undefined )
+		{
+			return false;
+		}
+
+		if ( bAllowThanks && sThanksCurrencyTypeId != "" && sThanksCurrencyTypeId == ct_id )
+		{
+%>
+	<Button Class="XAML-button" Click="SET=TransferScore/type,thanks;SET=TransferScore/currency_type_id,<%=ct_id%>;Set=TransferScore/affordable_points,<%=points%>;OPENDIALOG=TransferScore">Благодарность</Button>
+<%
+		}
+
+		if ( !bAllowThanks && StrContains( sScoreCurrencyTypeId, ct_id ) ) 
+		{
+%>
+	<Button Class="XAML-button" Click="SET=TransferScore/type,score;SET=TransferScore/currency_type_id,<%=ct_id%>;Set=TransferScore/affordable_points,<%=points%>;OPENDIALOG=TransferScore">Поделиться</Button>
+<%
+		}
+		else if ( !bAllowThanks && sScoreCurrencyTypeId == ct_id ) 
+		{
+%>
+	<Button Class="XAML-button" Click="SET=TransferScore/type,score;SET=TransferScore/currency_type_id,<%=ct_id%>;Set=TransferScore/affordable_points,<%=points%>;OPENDIALOG=TransferScore">Благодарность</Button>
+<%
+		}
+		else if ( bAllowScore && sScoreCurrencyTypeId != "" && sScoreCurrencyTypeId == ct_id )
+		{
+%>
+	<Button Class="XAML-button" Click="SET=TransferScore/type,score;SET=TransferScore/currency_type_id,<%=ct_id%>;Set=TransferScore/affordable_points,<%=points%>;OPENDIALOG=TransferScore">Поделиться</Button>
+<%
+		}
+	}
+
+	if ( set_person_level() )
+	{
+		xarrAccounts = XQuery( "for $i in accounts where $i/object_id = " + curUserID + " return $i" );
+		if( bAllowThanks && sThanksCurrencyTypeId != "" && lists.currency_types.GetOptChildByKey( sThanksCurrencyTypeId ) != undefined && ArrayOptFind( xarrAccounts, "This.currency_type_id == sThanksCurrencyTypeId" ) == undefined )
+		{
+			xarrAccounts = ArrayUnion( xarrAccounts, [ create_account( sThanksCurrencyTypeId ) ] );
+		}
+		if( bAllowScore && sScoreCurrencyTypeId != "" && lists.currency_types.GetOptChildByKey( sScoreCurrencyTypeId ) != undefined  && ArrayOptFind( xarrAccounts, "This.currency_type_id == sScoreCurrencyTypeId" ) == undefined )
+		{
+			xarrAccounts = ArrayUnion( xarrAccounts, [ create_account( sScoreCurrencyTypeId ) ] );
+		}
+		
+%>
+	<Dialog Name="TransferScore" Source="dlg_game_dialog" Width="<%=curDevice.disp_type != "mobile" ? "600" : "95%"%>" Title="<%=sDlgTitle%>" Close="OPENURL=<%=PAGEURL%>;">
+		<Param Name="type" Value=""/>
+		<Param Name="competence_profile_id" Value="<%=iCompetenceProfileId%>"/>
+		<Param Name="currency_type_id" Value=""/>
+		<Param Name="fill_comment" Value="<%=bFillComment%>"/>
+		<Param Name="anonym_transfer" Value="<%=bAnonymTransfer%>"/>
+		<Param Name="anonym_name" Value="<%=sAnonymName%>"/>
+		<Param Name="amnt_points" Value="<%=iAmntPoints%>"/>
+		<Param Name="affordable_points" Value=""/>
+		<Param Name="show_fld_points" Value="<%=bShowFldPoints%>"/>
+		<Param Name="btn_cancel_name" Value="<%=sBtnCancelName%>"/>
+		<Param Name="btn_transfer_name" Value="<%=sBtnTransferName%>"/>
+		<Param Name="sender" Value="<%=curUserID%>"/>
+		<Param Name="fld_point_name" Value="<%=sFldPointsName%>"/>
+		<Param Name="btn_cancel_name" Value="<%=sBtnCancelName%>"/>
+		<Param Name="btn_transfer_name" Value="<%=sBtnTransferName%>"/>
+	</Dialog>
+	<StackPanel>
+		<StackPanel Orientation="Wrap" Adapt="true" Class="XAML-stack-tiles-container">
+<%	
+		sURL = tools_web.get_object_source_url( "resource", teLevel.resource_id );
+		if( sURL=="" ) 
+			sURL = "pics/no-image.png";
+			
+		progress = 0;
+		value = 0;
+		cnt = 0;
+		for( ct in teLevel.currency_types )
+		{
+			acc = ArrayOptFind( xarrAccounts, "This.currency_type_id == ct.currency_type_id" );
+			if( ct.max_value.HasValue && ct.max_value > 0 )
+				value += OptReal( ( acc != undefined ? acc.balance : 0 ), 0 )/Real( ct.max_value );
+			cnt++;
+		}
+%>
+			<StackPanel Class="XAML-stack-list-container">
+			<StackPanel Orientation="Vertical" Class="wt-informer wt-informer-level XAML-stack-informer">
+				<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%="Мой уровень"%>]]></Label>
+				<StackPanel Orientation="Vertical" Class="wt-info-body XAML-stack-informer-body">
+					<Grid Width="100%" Class="XAML-grid-info-table-compact" CellClass="">
+						<GridColumns>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+							<Label Class="XAML-label-grid-column-name"><%="Текущий статус"%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-label-grid-column-name main-label"><%=teLevel.name%></Label>				
+						</GridRow>
+
+<%
+		nLevel = ArrayOptFirstElem( XQuery( "for $i in levels where $i/prev_level_id = " + teLevel.id + " return $i" ) );
+		if( nLevel != undefined )
+		{
+%>
+						<GridRow>	
+							<Grid Width="100%" CellClass="">
+								<GridColumns>
+									<GridColumn/>
+									<GridColumn Width="60"/>
+								</GridColumns>
+								<GridRow>
+									<StackPanel Orientation="Vertical">
+										<Label Class="XAML-label-grid-column-name"><%="Следующий"%></Label>
+										<Label Class="XAML-label-grid-column-name main-label"><%=nLevel.name%></Label>
+									</StackPanel>
+									<ContScale Name="ScoreScale" Type="circular" Width="50" Class="wt-info-course-score-scale XAML-contscale" FullScale="100" DiagramPart="0.3" DisplayValue="true" DisplayFirstValueAnyway="true" DisplayPercent="true">
+										<Val Value="<%=cnt > 0 ? value*100/cnt > 100 ? 100 : value*100/cnt : 0%>" DisplayTip="false"/>
+									</ContScale>
+								</GridRow>
+									
+							</Grid>
+						</GridRow>					
+<%
+		}
+%>
+					</Grid>
+				</StackPanel>
+
+			</StackPanel>
+			</StackPanel>
+<%
+		cnt = 1;
+		sShowCurrencyType = tools_web.get_web_param( curParams, "game_achievments.show_currency_types", "", true );
+		aShowCurrencyTypes = new Array();
+		//alert("sShowCurrencyType "+sShowCurrencyType)
+		if( sShowCurrencyType != "" )
+		{
+			aShowCurrencyTypes = String( sShowCurrencyType ).split( ";" )
+			xarrAccounts = ArrayIntersect( xarrAccounts, aShowCurrencyTypes, "This.currency_type_id", "This" );
+		}
+		for( acc in xarrAccounts )
+		{
+			ct = acc.currency_type_id.OptForeignElem;
+			if( ct == undefined )
+				continue;
+%>
+			<StackPanel Class="XAML-stack-list-container">
+			<StackPanel Orientation="Vertical" Class="wt-informer wt-info-score XAML-stack-informer">
+				<Label Class="wt-info-header XAML-label-informer-header"><![CDATA[<%=ct.name%>]]></Label>
+				<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle XAML-stack-informer-body">
+					<StackPanel Orientation="Vertical">
+						<Label Class="wt-info-value-string-value"><%=OptInt( acc.balance, 0 )%></Label>
+					</StackPanel>
+<%
+			write_button( acc.currency_type_id, OptInt( acc.balance, 0 ) );
+%>
+				</StackPanel>
+
+			</StackPanel>
+			</StackPanel>
+<%
+			cnt++;
+		}
+%>
+		</StackPanel>
+	</StackPanel>
+<%
+	}
+%>
+</SPXMLScreen>

@@ -1,0 +1,224 @@
+﻿<%
+try
+{
+	curCollectionMenu;
+}
+catch ( err )
+{
+	curCollectionMenu = ({});
+}
+
+sID_curCollectionMenu = curCollectionMenu.GetOptProperty( "id", "" );
+//alert(sID_curCollectionMenu);
+sSelectedData_curCollectionMenu = curCollectionMenu.GetOptProperty( "selected_data" );
+if ( sSelectedData_curCollectionMenu == undefined )
+	sSelectedData_curCollectionMenu = "{" + curCollectionMenu.GetOptProperty( "data_grid_id", "CatalogListDataGrid" + sID_curCollectionMenu ) + "}";
+%>
+<Collection Name="CatalogListMenu<%=sID_curCollectionMenu%>" Source="uni_catalog_list_menu">
+	<Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+	<Param Name="id_field_name" Value="<%=curCollectionMenu.GetOptProperty( "id_field_name", "id" )%>"/>
+	<Param Name="selected_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="catalog_name" Value="<%=curCollectionMenu.GetOptProperty( "catalog_name", "" )%>"/>
+	<Param Name="source_type" Value="<%=curCollectionMenu.GetOptProperty( "source_type", "" )%>"/>
+</Collection>
+<Edit Name="CatalogListMenuActionSuccessAction<%=sID_curCollectionMenu%>" Hidden="1">ALERT={!messageText};</Edit>
+<Edit Name="CatalogListMenuActionFailureAction<%=sID_curCollectionMenu%>" Hidden="1">ALERT={!messageText};</Edit>
+<Action Name="CatalogListMenuAction<%=sID_curCollectionMenu%>" Source="uni_catalog_list_menu_action" Success="{!CatalogListMenuActionSuccessAction<%=sID_curCollectionMenu%>}" Failure="{!CatalogListMenuActionFailureAction<%=sID_curCollectionMenu%>}">
+	<Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+	<Param Name="operation_id" Value=""/>
+	<Param Name="selected_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="elements_data" Value=""/>
+	<Param Name="values_data" Value=""/>
+	<Param Name="source_type" Value="<%=curCollectionMenu.GetOptProperty( "source_type", "" )%>"/>
+</Action>
+<Action Name="InviteUserAction<%=sID_curCollectionMenu%>" Source="communication_users_actions" Success="ALERT={messageText};">
+	<Param Name="iUserId" Value=""/>
+	<Param Name="sAction" Value=""/>
+</Action>
+<Action Name="DismissPersonAction<%=sID_curCollectionMenu%>" Source="dismiss_person_action" Success="ALERT={messageText};">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<Action Name="BlockAccessPersonAction<%=sID_curCollectionMenu%>" Source="block_access_person" Success="ALERT={messageText};">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<Action Name="SendNotificatPersonAction<%=sID_curCollectionMenu%>" Source="send_notification_person" Success="ALERT={messageText};">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<Action Name="PersonsCompareAction<%=sID_curCollectionMenu%>" Source="persons_compare_action" Success="OPENURL=<%=tools_web.get_mode_clean_url( "persons_compare", null, { persons: "{persons_ids}" } )%>">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+
+<Action Name="CreateEventAction<%=sID_curCollectionMenu%>" Source="event_create" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( null, "{event_id}" )%>">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="bCreateByModel" Value=""/>
+	<Param Name="iGroupId" Value=""/>
+	<Param Name="iModelEventId" Value=""/>
+	<Param Name="iDefaultTypeId" Value=""/>
+	<Param Name="sParentId" Value=""/>
+</Action>
+
+<Action Name="DuplicateEventAction<%=sID_curCollectionMenu%>" Source="event_duplicate" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( null, "{event_id}" )%>">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="bCopyParticipants" Value=""/>
+</Action>
+
+<Action Name="DeleteEventAction<%=sID_curCollectionMenu%>" Source="event_delete" Success="ALERT={messageText};OPENURL=<%=tools_web.get_mode_clean_url( "event_calendar", null )%>">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+
+<Action Name="ExcludeUserFromEventAction<%=sID_curCollectionMenu%>" Source="event_result_exclude_collaborator" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedObjects" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="source_type" Value=""/>
+</Action>
+<Action Name="ToggleUserEventAssistAction<%=sID_curCollectionMenu%>" Source="event_result_toggle_collaborator_assist" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedObjects" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+
+<Action Name="ReplaceParticipantAction<%=sID_curCollectionMenu%>" Source="replace_participant_action" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="iPersonId" Value=""/>
+</Action>
+
+<Action Name="SetEventParticipantsFromWaitingListAction<%=sID_curCollectionMenu%>" Source="event_set_participants_from_waiting_list" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedObjects" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="sWorkflowState" Value=""/>
+	<Param Name="iEventId" Value=""/>
+	<Param Name="iRequestTypeId" Value=""/>
+</Action>
+
+<Edit Name="SelectDialogCloseAction<%=sID_curCollectionMenu%>" Hidden="1">SET=CatalogListMenuAction<%=sID_curCollectionMenu%>/elements_data,{CatalogListDataGridSelList};ACTION=CatalogListMenuAction<%=sID_curCollectionMenu%></Edit>
+<Dialog Name="SelectDialog<%=sID_curCollectionMenu%>" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!SelectDialogCloseAction<%=sID_curCollectionMenu%>}">
+	<Param Name="catalog_name" Value=""/>
+	<Param Name="multi_select" Value=""/>
+	<Param Name="view_type" Value=""/>
+	<Param Name="xquery_qual" Value=""/>
+	<Param Name="check_access" Value="false"/>
+	<Param Name="selected_object_ids" Value=""/>
+	<Param Name="display_object_ids" Value=""/>
+	<Param Name="disp_filter" Value="true"/>
+	<Param Name="filter_id" Value=""/>
+	<Param Name="show_all" Value="<%=global_settings.settings.show_all_persons%>"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<Dialog Name="LearningParamsDialog<%=sID_curCollectionMenu%>" Source="dlg_set_course_test_params" Title="<%=XmlAttrEncode( tools_web.get_web_const( "parametryobuche", curLngWeb ) )%>" Close="{!ParamDlgCloseAction}">
+	<Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+	<Param Name="catalog_name" Value=""/>
+	<Param Name="multi_select" Value="1"/>
+	<Param Name="elements_data" Value=""/>
+	<Param Name="cur_index" Value="0"/>
+	<Param Name="last_action_line" Value=""/>
+</Dialog>
+<Dialog Name="ExcelImportCollaboratsDialog<%=sID_curCollectionMenu%>" Source="dlg_excel_import_collaborators" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vyborfaylassot", curLngWeb ) )%>"  Width="70%" Close="">
+	<Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="CreateNewPersonDialog<%=sID_curCollectionMenu%>" Source="dlg_create_new_person" Title="<%=XmlAttrEncode( tools_web.get_web_const( "parametrysotru", curLngWeb ) )%>" Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="CreateNewGroupDialog<%=sID_curCollectionMenu%>" Source="dlg_create_new_group" Title="<%=XmlAttrEncode( tools_web.get_web_const( "parametrygruppy", curLngWeb ) )%>" Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="CreateNewDepartmentDialog<%=sID_curCollectionMenu%>" Source="dlg_create_new_department" Title="<%=XmlAttrEncode( tools_web.get_web_const( "parametrypodra", curLngWeb ) )%>" Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="ChangePasswordPersonDialog<%=sID_curCollectionMenu%>" Source="dlg_change_password_person" Title="<%=XmlAttrEncode( tools_web.get_web_const( "izmenenieparolya", curLngWeb ) )%>" Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="PersonsImportExcelDialog<%=sID_curCollectionMenu%>" Source="dlg_persons_import_excel" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vyborfaylassot", curLngWeb ) )%>"  Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="CreateNotificationDialog<%=sID_curCollectionMenu%>" Source="dlg_create_notification" Title="<%=XmlAttrEncode( tools_web.get_web_const( "2ms9zm8n69", curLngWeb ) )%>" Close="{!ParamDlgCloseAction}">
+    <Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="KeyPositionSetParameters<%=sID_curCollectionMenu%>" Source="dlg_key_position_set_parameters" Title="<%=XmlAttrEncode(tools_web.get_web_const( "parametryklyuche_1", curLngWeb ))%>" Width="50%" Close="{!ParamDlgCloseAction};ACTION=TalentPoolKeyPositionAction;">
+   <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="SuccessorSetParameters<%=sID_curCollectionMenu%>" Source="dlg_successor_set_parameters" Title="<%=XmlAttrEncode(tools_web.get_web_const( "parametrypreem_1", curLngWeb ))%>" Width="50%" Close="{!ParamDlgCloseAction};ACTION=TalentPoolKeyPositionAction;">
+   <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="IncludeCollabPersonnelReserveDialog<%=sID_curCollectionMenu%>" Source="dlg_include_collab_personnel_reserve" Title="<%=XmlAttrEncode(tools_web.get_web_const( "vydvizheniesotr", curLngWeb ))%>" Width="70%" Close="{!ParamDlgCloseAction}">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+<Dialog Name="EditPersonCardDialog<%=sID_curCollectionMenu%>" Source="dlg_edit_person_card" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'redaktirovanie_8', curLngWeb ))%>"  Width="70%" Close="REFRESH">
+    <Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+
+<Dialog Name="EventLectorDialog<%=sID_curCollectionMenu%>" Source="dlg_event_lector" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_lector", curLngWeb ) )%>" Width="500" Close="REFRESH">
+	<Param Name="select_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Dialog>
+
+<Edit Name="SetObjectStatusCloseAction<%=sID_curCollectionMenu%>" Hidden="1">SET=CatalogListMenuAction<%=sID_curCollectionMenu%>/values_data,{status};ACTION=CatalogListMenuAction<%=sID_curCollectionMenu%></Edit>
+<Dialog Name="SetObjectStatusDialog<%=sID_curCollectionMenu%>" Source="dlg_set_object_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "uhxrmfu4y8", curLngWeb ) )%>" Close="{!SetObjectStatusCloseAction<%=sID_curCollectionMenu%>}">
+	<Param Name="common_status_collection_name" Value=""/>
+</Dialog>
+
+<Edit Name="SetProjectTaskStatusCloseAction<%=sID_curCollectionMenu%>" Hidden="1">SET=CatalogListMenuAction<%=sID_curCollectionMenu%>/values_data,{status};ACTION=CatalogListMenuAction<%=sID_curCollectionMenu%></Edit>
+<Dialog Name="SetProjectTaskStatusDialog<%=sID_curCollectionMenu%>" Source="dlg_set_project_task_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "uhxrmfu4y8", curLngWeb ) )%>" Close="{!SetProjectTaskStatusCloseAction<%=sID_curCollectionMenu%>}">
+</Dialog>
+
+<Edit Name="UniOperationDialogCloseAction<%=sID_curCollectionMenu%>" Hidden="1"></Edit>
+<Edit Name="UniOperationDialogSource<%=sID_curCollectionMenu%>" Hidden="1"></Edit>
+<Dialog Name="UniOperationDialog<%=sID_curCollectionMenu%>" Source="{UniOperationDialogSource<%=sID_curCollectionMenu%>}" Close="{!UniOperationDialogCloseAction<%=sID_curCollectionMenu%>}">
+	<Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+	<Param Name="selected_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="catalog_name" Value="<%=curCollectionMenu.GetOptProperty( "catalog_name", "" )%>"/>
+	<Param Name="source_type" Value="<%=curCollectionMenu.GetOptProperty( "source_type", "" )%>"/>
+
+	<Param Name="Param0" Value=""/>
+	<Param Name="Param1" Value=""/>
+	<Param Name="Param2" Value=""/>
+	<Param Name="Param3" Value=""/>
+	<Param Name="Param4" Value=""/>
+	<Param Name="Param5" Value=""/>
+	<Param Name="Param6" Value=""/>
+	<Param Name="Param7" Value=""/>
+	<Param Name="Param8" Value=""/>
+	<Param Name="Param9" Value=""/>
+</Dialog>
+
+<Edit Name="UniOperationActionSource<%=sID_curCollectionMenu%>" Hidden="1"></Edit>
+<Edit Name="UniOperationActionSuccessAction<%=sID_curCollectionMenu%>" Hidden="1">ALERT={messageText};</Edit>
+<Edit Name="UniOperationActionFailureAction<%=sID_curCollectionMenu%>" Hidden="1">ALERT={messageText};</Edit>
+<Action Name="UniOperationAction<%=sID_curCollectionMenu%>" Source="{UniOperationActionSource<%=sID_curCollectionMenu%>}" Success="{!UniOperationActionSuccessAction<%=sID_curCollectionMenu%>}" Failure="{!UniOperationActionFailureAction<%=sID_curCollectionMenu%>}">
+	<Param Name="Param0" Value=""/>
+	<Param Name="Param1" Value=""/>
+	<Param Name="Param2" Value=""/>
+	<Param Name="Param3" Value=""/>
+	<Param Name="Param4" Value=""/>
+	<Param Name="Param5" Value=""/>
+	<Param Name="Param6" Value=""/>
+	<Param Name="Param7" Value=""/>
+	<Param Name="Param8" Value=""/>
+	<Param Name="Param9" Value=""/>
+
+	<Param Name="name_id" Value="<%=sID_curCollectionMenu%>"/>
+	<Param Name="selected_data" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="catalog_name" Value="<%=curCollectionMenu.GetOptProperty( "catalog_name", "" )%>"/>
+	<Param Name="source_type" Value="<%=curCollectionMenu.GetOptProperty( "source_type", "" )%>"/>
+</Action>
+
+<Action Name="SendEvenNotifications<%=sID_curCollectionMenu%>" Source="event_send_notifications" Success="ALERT={messageText};">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<Action Name="AdjustRecruitmentPlanAction<%=sID_curCollectionMenu%>" Source="recruitment_plan_adjust" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<%
+//alert("DelegateRecruitmentPlanAction" + sID_curCollectionMenu);
+%>
+<Action Name="DelegateRecruitmentPlanAction<%=sID_curCollectionMenu%>" Source="recruitment_plan_delegate" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+	<Param Name="iUserId" Value=""/>
+</Action>
+<Action Name="CancelRecruitmentPlanAdjustmentAction<%=sID_curCollectionMenu%>" Source="recruitment_plan_cancel_adjustment" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+<Action Name="DeleteRecruitmentPlanAction<%=sID_curCollectionMenu%>" Source="recruitment_plan_delete" Success="ALERT={messageText};REFRESH;">
+	<Param Name="sSelectedData" Value="<%=sSelectedData_curCollectionMenu%>"/>
+</Action>
+
+<Action Name="WorckflowAction<%=sID_curCollectionMenu%>" Source="workflow_process" Success="{!workflow_action_success_action}" Failure="ALERT={messageText}">
+	<Param Name="object_id" Value=""/>
+	<Param Name="selected_object_ids" Value=""/>
+	<Param Name="action_id" Value=""/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>

@@ -1,0 +1,105 @@
+<SPXMLScreen>
+<%
+try
+{
+	curSourceObject;
+	curSourceObjectID;
+}
+catch ( err )
+{
+	curSourceObjectID = curObjectID;
+	curSourceObject = curObject;
+}
+try
+{
+	iMaxLectorsInRow = curMaxLectorsInRow;
+}
+catch ( err )
+{
+	iMaxLectorsInRow = 3;
+}
+	iMaxLectorsInRow = 3;
+%>
+<Grid Class="XAML-grid-photos-container XAML-grid-tile-view" Adapt="1">
+<%			
+	iCurLectorsCounter = 0;
+	iAllLectorsCounter = 0;
+%>
+	
+	<GridColumns>
+<%
+	for(x=0; x<iMaxLectorsInRow; x++)
+	{
+%>
+		<GridColumn Width="<%=Int(100/iMaxLectorsInRow)%>%"/>
+<%
+	}
+%>
+	</GridColumns>
+	<GridRow>
+<%
+	iLectorsCount = ArrayCount(curSourceObject.lectors);
+	for(fldLector in curSourceObject.lectors)
+	{
+		catLector = fldLector.PrimaryKey.OptForeignElem;
+		if(catLector != undefined)
+		{
+			if(catLector.type == "collaborator")
+			{
+				catCollLector = catLector.person_id.OptForeignElem;
+				if(catCollLector != undefined)
+				{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+			<StackPanel Class="XAML-stack-tile-image-container">
+				<Image Source="pics/1blank.gif" Class="bg-cover XAML-image-tile-image" Height="216">
+				<BackgroundImage Source="'<%=( String(catCollLector.pict_url) == "" ) ? "pics/nophoto.png" : XmlAttrEncode(StrReplace(catCollLector.pict_url, "\\", "/"))%>'"/>
+				</Image>
+			</StackPanel>
+			<StackPanel Class="XAML-stack-tile-title-container">
+				<Link Class="XAML-link-tile-title" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catLector.id, ({"doc_id": curDocID}))%>"><![CDATA[<%=catCollLector.fullname%>]]></Link>
+			</StackPanel>
+			<Label Class="XAML-label-tile-desc"><![CDATA[<%=catCollLector.position_name%>]]></Label>
+		</StackPanel>
+<%
+				}
+			}
+			else
+			{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-tile">
+			<StackPanel Class="XAML-stack-tile-image-container">
+				<Image Source="pics/1blank.gif" Class="bg-cover XAML-image-tile-image" Height="216">
+				<BackgroundImage Source="<%=catLector.resource_id.HasValue ? tools_web.get_object_source_url( "resource", catLector.resource_id ) : "pics/nophoto.png"%>"/>
+				</Image>
+			</StackPanel>
+			<StackPanel Class="XAML-stack-tile-title-container">
+				<Link Class="XAML-link-tile-title" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catLector.id, ({"doc_id": curDocID}))%>"><![CDATA[<%=catLector.lector_fullname%>]]></Link>
+			</StackPanel>
+		</StackPanel>
+<%
+			}
+		}
+		iCurLectorsCounter++;
+		iAllLectorsCounter++;
+		if(iCurLectorsCounter == iMaxLectorsInRow && iAllLectorsCounter != iLectorsCount)
+		{
+			iCurLectorsCounter = 0;
+%>
+	</GridRow>
+	<GridRow>
+<%
+		}
+			
+	}
+	while(iCurLectorsCounter != iMaxLectorsInRow)
+	{
+%>
+	<Label></Label>
+<%
+		iCurLectorsCounter++;
+	}
+%>
+	</GridRow>
+</Grid>
+</SPXMLScreen>

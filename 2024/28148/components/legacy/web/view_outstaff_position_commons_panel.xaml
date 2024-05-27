@@ -1,0 +1,42 @@
+﻿<SPXMLScreen>
+<%
+xarrPositionCommons = ArraySelectAll( XQuery( "for $elem in position_commons where $elem/allow_outstaff = true() order by $elem/name return $elem" ) );
+xarrPositions = [];
+if ( curUser.position_parent_id.HasValue )
+{
+	xarrSubs = tools.xquery( 'for $elem in subs where IsHierChild( $elem/id, ' + curUser.position_parent_id + ' ) and $elem/type = 'position' and $elem/basic_collaborator_id != null() order by $elem/Hier() return $elem/id' );
+	if ( ArrayOptFirstElem( xarrSubs ) != undefined && ArrayCount( xarrPositionCommons ) != 0 )
+		xarrPositions = XQuery( "for $elem in positions where MatchSome( $elem/id, (" + ArrayMerge( xarrSubs, 'id', ',' ) + ") ) and MatchSome( $elem/position_common_id, (" + ArrayMerge( xarrPositionCommons, "id", "," ) + ") ) return $elem" );
+}
+%>
+<Collection Name="OutstaffPositionCommonsCollection">
+<Data>
+<%
+for ( catPositionCommonElem in xarrPositionCommons )
+{
+	sSum = 0.0;
+	arrPositions = ArraySelectByKey( xarrPositions, catPositionCommonElem.id, 'position_common_id' );
+	for ( catPositionElem in arrPositions )
+	{
+		tePosition = OpenDoc( UrlFromDocID( catPositionElem.id ) ).TopElem;
+		if ( tePosition.cost_month.HasValue )
+			sSum += tePosition.cost_month;
+	}
+%>
+<Row>
+	<Cell Id="name" Value="<%=XmlAttrEncode( catPositionCommonElem.name )%>"/>
+	<Cell Id="position_num" Value="<%=ArrayCount( arrPositions )%>"/>
+	<Cell Id="sum" Value="<%=sSum%>"/>
+</Row>
+<%
+}
+%>
+</Data>
+</Collection>
+<DataGrid Name="OutstaffPositionCommonsDataGrid" Title="<%=tools_web.get_web_const( 'statuspovakans', curLngWeb )%>" Source="{OutstaffPositionCommonsCollection}" Height="400" Selection="none">
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_name', curLngWeb )%>" Value="name" Sortable="false" Width="100" Type="string"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'vakansiy', curLngWeb )%>" Value="position_num" Sortable="false" Width="100" Type="string"/>
+	<DataGridColumn Title="<%=tools_web.get_web_const( 'c_budget', curLngWeb )%>" Value="sum" Sortable="false" Width="100" Type="string"/>
+</DataGrid>
+
+</SPXMLScreen>

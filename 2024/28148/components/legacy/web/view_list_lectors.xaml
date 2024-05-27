@@ -1,0 +1,44 @@
+﻿<SPXMLScreen>
+<Collection Name="LectorListCollection">
+	<Data>
+<%
+try
+{
+	curLectorList;
+}
+catch ( err )
+{
+	curLectorList = curObject.lectors;
+}
+
+for ( fldLectorElem in curLectorList )
+{
+	catLector = fldLectorElem.lector_id.OptForeignElem;
+	if ( catLector == undefined )
+	{
+		sName = tools_web.get_web_const( 'c_deleted', curLngWeb );
+		sType = '';
+		sUrl = '';
+	}
+	else
+	{
+		sName = catLector.lector_fullname;
+		sType = curLngCommon.lector_types.GetChildByKey( catLector.type ).name;
+		sUrl = tools_web.get_mode_clean_url( null, catLector.PrimaryKey, { doc_id: curDocID } );
+	}
+%>
+		<Row>
+			<Cell Id="fullname" Value="<%=XmlAttrEncode( sName )%>"/>
+			<Cell Id="type" Value="<%=XmlAttrEncode( sType )%>"/>
+			<Cell Id="url" Value="<%=sUrl%>"/>
+		</Row>
+<%
+}
+%>
+	</Data>
+</Collection>
+<DataGrid Name="LectorListGrid" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vllec_title', curLngWeb ) )%>" Source="{LectorListCollection}" Height="200">
+	<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_fio', curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL={url}"/>
+	<DataGridColumn Value="type" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_type', curLngWeb ) )%>" Width="100" Type="string"/>
+</DataGrid>
+</SPXMLScreen>

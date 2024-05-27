@@ -1,0 +1,975 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+sConstFilters = tools_web.get_web_const( "c_filter", curLngWeb );
+// const_end
+
+bShowTitle = tools_web.is_true(tools_web.get_web_param( curParams, 'recrutment_body.show_title', 'false', true ));
+check_access = tools_web.get_web_param( curParams, 'recrutment_body.check_access', '', true );
+default_show_closed = tools_web.get_web_param( curParams, 'recrutment_body.default_show_closed', '', true );
+default_category_field = tools_web.get_web_param( curParams, 'recrutment_body.default_category_field', '', true );
+default_vacancy_owner = tools_web.get_web_param( curParams, 'recrutment_body.default_vacancy_owner', '', true );
+arrVacancyListParam = String( tools_web.get_web_param( curParams, 'recrutment_body.vacancy_tab_fields_list', 'date,vacancy,prof_area,region,subord,budget,desc,responses', true ) ).split( ';' );
+
+var strActiveTab = ArrayOptFind(PARAMETERS, "key == \"RecrutmentBodyTab\"");
+
+strActiveTab = (strActiveTab != undefined ? strActiveTab.value : OptInt( CONTEXT.GetOptProperty( 'RecrutmentBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+bShowSubsTree=tools_web.is_true(tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.bShowSubsTree", "0", true ))
+bCacheTree = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.bCacheTree", "1", true ) == "1";
+bAdminAccess = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.bAdminAccess", "0", true ) == "1";
+bFlush=(OptInt( curUrlQuery.GetOptProperty( "flush" ), OptInt(CONTEXT.GetOptProperty( "flush" ) , 0 ) ,0)==1);
+iPageItemsCount = Int( tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.iPageItemsCount", 10, true ));
+iGridHeight = Int( tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.iGridHeight", 400, true ));
+iTreeWidth = Int( tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.iTreeWidth", 250, true ));
+bShowThrobber = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.show_throbber", "0", true ) == "1";
+arrCategoryListToSelectParam = String( tools_web.get_web_param( curParams, 'recrutment_body.vacancys_tab.category_list_to_select', 'vacancy,region,profarea', true ) ).split( ';' );
+strPersonLinkType = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.person_link_type", "collaborator", true );
+iRequestRecruitmentTemplateId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.request_recruitment_template", 0, true ));
+iRequestTestingTemplateId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.request_testing_template", 0, true ));
+iRequestWorkplaceTemplateId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.request_workplace_template", 0, true ));
+iInterviewGuideTemplateId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.request_interview_guide", 0, true ));
+iHrPollId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.hr_poll", 0, true ));
+iHrPollProcedureId = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.hr_poll_procedure", 0, true ));
+
+bIsMobile = (curDevice.disp_type == "mobile");
+bUseFilters = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.use_filters", "0", true ) == "1";
+bFiltersPanelExpanded = tools_web.get_web_param( curParams, "recrutment_body.vacancys_tab.use_filters.show_expanded", "0", true ) == "1";
+bEventsCandUseFilters = tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.use_filters", "0", true ) == "1";
+bEventsCandFiltersPanelExpanded = tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.use_filters.show_expanded", "0", true ) == "1";	
+
+request_type = ArrayOptFirstElem(XQuery("for $elem in request_types where $elem/code='request_recruitment' return $elem"));
+curTitle = {
+	"defautl_title": tools_web.get_web_const( "kalendarmeropr", curLngWeb )
+}
+
+if ( bShowTitle )
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+}
+
+function DrawCollection(sTabIdParam)
+{
+	// alert("collection");
+	if (sTabIdParam == "vacancys")
+	{
+%>
+		<Collection Name="EstaffVacancyTreeCollection" Source="EstaffVacancyTreeCollection">
+					<Param Name="context" Value="{CONTEXT}"/>
+					<Param Name="sDataType" Value="{VacancyAuthor<%=sTabIdParam%>}"/>
+					<Param Name="showClosed" Value="{show_closed<%=sTabIdParam%>}"/>
+					<Param Name="categoryField" Value="{category_field<%=sTabIdParam%>}"/>
+					<Param Name="checkAccess" Value="<%=check_access%>"/>
+					<Param Name="defaultShowClosed" Value="<%=default_show_closed%>"/>
+					<Param Name="defaultCategoryField" Value="<%=default_category_field%>"/>
+					<Param Name="defaultVacancyOwner" Value="<%=default_vacancy_owner%>"/>
+					<Param Name="vacancySource" Value="<%=tools_web.get_web_param( curParams, "recrutment_body.vacancy_source", "wt;estaff", true )%>"/>
+					<Param Name="bShowSubsTree" Value="<%=bShowSubsTree%>"/>
+					<Param Name="strPersonLinkType" Value="<%=strPersonLinkType%>"/>
+		</Collection>
+<%
+	}
+	
+	if (sTabIdParam == "estaff_events_candidates")
+	{
+		// alert("sTabIdParam: " + sTabIdParam);
+%>
+		<Collection Name="EStaffEventCandidateCollection" Source="EStaffEventCandidateCollection">
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="NameTab" Value="<%=sTabIdParam%>"/>
+			<Param Name="IdRequestRecruitmentTemplate" Value="<%=iRequestRecruitmentTemplateId%>"/>
+			<Param Name="IdRequestTestingTemplate" Value="<%=iRequestTestingTemplateId%>"/>
+			<Param Name="IdRequestWorkplaceTemplate" Value="<%=iRequestWorkplaceTemplateId%>"/>
+			<Param Name="IdInterviewGuideTemplate" Value="<%=iInterviewGuideTemplateId%>"/>
+			<Param Name="IdHrPoll" Value="<%=iHrPollId%>"/>
+			<Param Name="IdHrPollProcedure" Value="<%=iHrPollProcedureId%>"/>
+		</Collection>
+<%
+	}
+}
+
+function drawShowClosedFilter(sTabIdParam, sUpdateAction, sClassParam)
+{
+	// alert(sTabIdParam);
+%>
+	<CheckBox Name="show_closed<%=sTabIdParam%>" Checked="<%=default_show_closed == "1" ? "true": "false"%>" Change="<%=sUpdateAction%>"><%=tools_web.get_web_const( "pokazyvatzakry", curLngWeb )%></CheckBox>
+<%
+}
+
+function drawVacancyAuthorFilter(sTabIdParam, sUpdateAction, sClassParam)
+{
+%>
+	<ComboBox Name="VacancyAuthor<%=sTabIdParam%>" SelectedItem="<%=default_vacancy_owner%>" Width="80" Change="<%=sUpdateAction%>">
+		<ComboBoxItem Value="self"><%=tools_web.get_web_const( "moi", curLngWeb )%></ComboBoxItem>
+		<ComboBoxItem Value="all"><%=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )%></ComboBoxItem>
+	</ComboBox>
+<%
+}
+
+function drawCategorizationFilter(sTabIdParam, sUpdateAction, sClassParam)
+{
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+		<Label><%=tools_web.get_web_const( "kategorizirova", curLngWeb )%>:</Label>
+		<ComboBox Name="category_field<%=sTabIdParam%>" SelectedItem="<%=default_category_field%>" Change="<%=sUpdateAction%>">
+<%
+			for (elemCateg in arrCategoryListToSelectParam)
+			{
+				switch (elemCateg)
+				{
+					case "vacancy":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=tools_web.get_web_const( "c_vacancy", curLngWeb )%></ComboBoxItem>
+<%
+						break;
+					case "region":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=tools_web.get_web_const( "vrb_region", curLngWeb )%></ComboBoxItem>
+<%
+						break;
+					case "prof_area":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=tools_web.get_web_const( "vrb_professional_field", curLngWeb )%></ComboBoxItem>
+<%
+						break;
+					default:
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=elemCateg%></ComboBoxItem>
+<%	
+						break;	
+				}
+		}
+%>					
+		</ComboBox>	
+	</StackPanel>
+<%
+}
+
+function DrawStartDateFilter (sTabIdParam, sUpdateAction, sClassParam)
+{
+	// alert("start_date");
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_period_date_start", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Adapt="100%"><DatePicker Name="start_date<%=sTabIdParam%>" Width="150"><%=(dStartPeriod != undefined ? StrDate(dStartPeriod,false,false) : CONTEXT.GetOptProperty("start_date" + sTabIdParam))%></DatePicker></StackPanel>
+		</StackPanel>
+<%
+}
+
+function DrawFinishDateFilter (sTabIdParam, sUpdateAction, sClassParam)
+{
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_period_date_finish", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Adapt="100%"><DatePicker Name="finish_date<%=sTabIdParam%>" Width="150"><%=(dEndPeriod != undefined ? StrDate(dEndPeriod,false,false) : CONTEXT.GetOptProperty("finish_date"))%></DatePicker></StackPanel>
+		</StackPanel>
+<%
+}
+
+function DrawEventStatusFilter (sTabIdParam, sUpdateAction, sClassParam)
+{
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+			<ComboBox Name="event_status<%=sTabIdParam%>" Width="150" SelectedItem="<%=estaff_event_default_status_field%>">
+				<ComboBoxItem Value="all"><%=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )%></ComboBoxItem>
+<%
+				for (status_elem in common.estaff_event_status_types)
+				{
+%>
+					<ComboBoxItem Value="<%=status_elem.id%>"><%=status_elem.name%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</StackPanel>
+<%
+}
+
+function DrawEstaffEventCategorizationFilter (sTabIdParam, sUpdateAction, sClassParam)
+{
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "kategorizirova", curLngWeb )%>:</Label>
+			<ComboBox Name="estaff_event_category_field<%=sTabIdParam%>" SelectedItem="<%=estaff_event_default_category_field%>">
+<%
+			iCount = 1;
+			for (elemCateg in arrEStaffEvTabCategoryList)
+			{
+				//alert("Categ[" + iCount + "]: " + elemCateg);
+				
+				switch (elemCateg)
+				{
+					case "estaff_event_type":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=tools_web.get_web_const( "tipsobytiyaesta", curLngWeb )%></ComboBoxItem>
+<%
+						break;
+					case "fio":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=tools_web.get_web_const( "c_fio", curLngWeb )%></ComboBoxItem>
+<%
+						break;
+					case "not_categorized":
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=HtmlEncode(tools_web.get_web_const( "bezkategorizac", curLngWeb ))%></ComboBoxItem>
+<%
+						break;
+					
+					default:
+%>
+						<ComboBoxItem Value="<%=elemCateg%>"><%=elemCateg%></ComboBoxItem>
+<%	
+						break;	
+				}
+			}
+%>					
+			</ComboBox>	
+		</StackPanel>
+<%			
+}
+		
+function DrawFilters(sTabId, bMain)
+{
+	//if(bUseFilters)
+	//{
+		//alert("filters: " + sTabId);
+		sMainClass = "";
+		
+		if (bUseFilters && sTabId == "vacancys")
+		{
+			if(!bMain)
+			{
+				iColumnsNum = !bIsMobile ? 3 : 1;
+				iFilterCounter = 0;
+	%>
+				<StackPanel Name="<%=sTabId%>FiltersPanel" Hidden="<%=!bFiltersPanelExpanded%>">
+						
+					<Grid Width="100%" CellClass="XAML-grid-filter-level-2-cell" Class="XAML-grid-filter-content">
+						<GridColumns>
+	<%
+						if(!bIsMobile)
+						{
+	%>
+							<GridColumn Width="33%"/>
+							<GridColumn Width="33%"/>
+	<%
+						}
+	%>
+							<GridColumn/>
+						</GridColumns>
+						
+						<GridRow>
+	<%
+							if ( params.indexOf("show_closed") >= 0  )
+							{
+								drawShowClosedFilter(sTabId, sChangeAction, sMainClass);
+							}
+							
+							if ( params.indexOf("vacancy_owner") >= 0 )
+							{
+								drawVacancyAuthorFilter(sTabId, sChangeAction, sMainClass);
+								iFilterCounter++;
+							}
+							
+							if ( params.indexOf("categorization") >= 0  )
+							{
+								drawCategorizationFilter(sTabId, sChangeAction, sMainClass);
+								iFilterCounter++;
+							}
+	%>
+			
+						</GridRow>
+					</Grid>
+				</StackPanel>
+	<%
+			}
+			else
+			{
+				sMainClass = "XAML-combo-view";
+									
+				if ( params.indexOf("show_closed") >= 0  )
+				{
+					drawShowClosedFilter(sTabId, sChangeAction, sMainClass);
+				}
+				
+				if ( params.indexOf("vacancy_owner") >= 0 )
+				{
+					drawVacancyAuthorFilter(sTabId, sChangeAction, sMainClass);
+				}
+				
+				if ( params.indexOf("categorization") >= 0  )
+				{
+					drawCategorizationFilter(sTabId, sChangeAction, sMainClass);
+				}
+			}
+		}
+		
+		if (bEventsCandUseFilters && sTabId == "estaff_events_candidates")
+		{
+				iColumnsNum = !bIsMobile ? 3 : 1;
+				iFilterCounter2 = 0;
+			if(!bMain)
+			{
+	%>
+				<StackPanel Name="<%=sTabId%>FiltersPanel" Hidden="<%=!bFiltersPanelExpanded%>">
+						
+					<Grid Width="100%" CellClass="XAML-grid-filter-level-2-cell" Class="XAML-grid-filter-content">
+						<GridColumns>
+	<%
+						if(!bIsMobile)
+						{
+	%>
+							<GridColumn Width="33%"/>
+							<GridColumn Width="33%"/>
+	<%
+						}
+	%>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+	<%
+							if ( EStaffEventTabParams.indexOf("start_date") >= 0  )
+							{
+								DrawStartDateFilter(sTabId, sChangeAction, sMainClass);
+							}
+							
+							if ( EStaffEventTabParams.indexOf("finish_date") >= 0  )
+							{
+								DrawFinishDateFilter(sTabId, sChangeAction, sMainClass);
+								iFilterCounter2++;
+							}
+							
+							if ( EStaffEventTabParams.indexOf("event_status") >= 0  )
+							{
+								DrawEventStatusFilter(sTabId, sChangeAction, sMainClass);
+								iFilterCounter2++;
+							}
+%>
+						</GridRow>
+						<GridRow>
+<%							
+							if ( EStaffEventTabParams.indexOf("categorization") >= 0  )
+							{
+								DrawEstaffEventCategorizationFilter(sTabId, sChangeAction, sMainClass);
+								iFilterCounter2++;
+							}
+	%>
+			
+						</GridRow>
+					</Grid>
+				</StackPanel>
+<%
+			}
+			else
+			{
+				//alert("main");
+				sMainClass = "XAML-combo-view";
+									
+				if ( EStaffEventTabParams.indexOf("start_date") >= 0  )
+				{
+					DrawStartDateFilter(sTabId, sChangeAction, sMainClass);
+				}
+				
+				if ( EStaffEventTabParams.indexOf("finish_date") >= 0  )
+				{
+					DrawFinishDateFilter(sTabId, sChangeAction, sMainClass);
+					iFilterCounter2++;
+				}
+				
+				if ( EStaffEventTabParams.indexOf("event_status") >= 0  )
+				{
+					DrawEventStatusFilter(sTabId, sChangeAction, sMainClass);
+					iFilterCounter2++;
+				}
+				if ( EStaffEventTabParams.indexOf("categorization") >= 0  )
+				{
+					DrawEstaffEventCategorizationFilter(sTabId, sChangeAction, sMainClass);
+					iFilterCounter2++;
+				}
+			}
+		}
+	//}
+			
+}	
+%>
+
+<!-- ========= Actions ============= -->
+<Action Name="ChangeDataType" Source="change_vacancy_array" Success="ALERT={messageText};REFRESH;" Failure="ALERT={messageText}">
+	<Param Name="DataType" Value="{DataType}"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+
+<Collection Name="CandidateCollection" Source="CandidateCollection">
+	<Param Name="context" Value="{CONTEXT}"/>
+	<Param Name="sDataType" Value="{VacancyAuthorCand}"/>
+</Collection>
+
+<%
+arrTabListParam = String( tools_web.get_web_param( curParams, "recrutment_body.tab_list", "vacancys;vacant_positions;requests;candidates;estaff_events_candidates", true ) ).split( ";" );
+if ( ArrayCount( arrTabListParam ) > 1 )
+{
+%>
+
+
+<TabControl Name="RecrutmentBodyTab" ActiveTab="<%=strActiveTab%>" Width="100%" Adapt="true" TabsLocation="<%=tools_web.get_web_param( curParams, "recrutment_body.tabs_disp_type", "w", true )%>">
+<%
+}
+for ( sTabListParam in arrTabListParam )
+{
+	if ( sTabListParam == "vacancys" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Class="icon-user-plus2" Title="<%=tools_web.get_web_const( "moivakansii", curLngWeb )%>">
+<%
+		}
+		
+		//sTabNameParam = "MyVacancy";
+		
+		if (bShowSubsTree && curDevice.disp_type != "mobile")
+		{
+			// alert("bShowSubsTree");
+
+			// Вызов универсального меню
+			curCollectionMenu = {						
+				"catalog_name": "{BossPanelTree:^/type}"
+			};
+			curCollectionMenu.SetProperty("data_grid_id", "BossPanelTree");
+			curCollectionMenu.SetProperty("selected_data", "{BossPanelTree}")
+			curCollectionMenu.SetProperty("id", "BossPanelTree");
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+			
+%>
+		<Action Name="UpdateCollaboratorsCache" Source="boss_panel_update_collaborators" Initialize="<%=(bShowThrobber ? "HIDE=BossPanelTree;SHOW=BossPanelThrobber": "")%>" Success="UPDATE=SubVacancyGrid<%=(bShowThrobber ? ";HIDE=BossPanelThrobber;SHOW=BossPanelTree": "")%>" Failure="<%=(bShowThrobber ? "HIDE=BossPanelThrobber;SHOW=BossPanelTree": "")%>">
+			<Param Name="iElemId" Value=""/>
+			<Param Name="sFilterId" Value=""/>
+			<Param Name="sSearchWord" Value=""/>		
+			<Param Name="bHideDismissed" Value="false"/>		
+	  		<Param Name="curUserID" Value="<%=curUserID%>"/>	
+			<Param Name="bAdminAccess" Value="<%=(bAdminAccess)%>"/>
+		</Action>
+		<Collection Name="PanellTreeCollection" Source="boss_panel_tree">
+		  <Param Name="curUserID" Value="<%=curUserID%>"/>
+		  <Param Name="bCacheTree" Value="<%=(bCacheTree && !bFlush)%>"/>
+		  <Param Name="bAdminAccess" Value="<%=(bAdminAccess)%>"/>
+		</Collection>
+		
+		<Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="<%=iTreeWidth%>" Align="left"/>
+				<GridColumn/>
+			</GridColumns>	
+		
+			<GridRow>							
+
+
+			<StackPanel Orientation="Vertical" Width="100%" Adapt="true">
+				<Tree Name="BossPanelTree" Source="{PanellTreeCollection}" DataID="id" DataParent="parent_id"
+				DataTitle="name" DataFatherhood="hasChildren" DataIcon="icon"
+				Click="SET=UpdateCollaboratorsCache/iElemId,{id};ACTION=UpdateCollaboratorsCache" Preservable="1" Width="<%=iTreeWidth%>">
+					<Menu Source="{CatalogListMenuBossPanelTree}"/>	
+				</Tree>
+				
+				<StackPanel Name="BossPanelThrobber" Hidden="1" Adapt="true">
+					<Image Source="/pics/ajax-loader-big.gif"/>
+				</StackPanel>
+
+			
+<%
+			
+		}//if (bShowSubsTree)
+		
+		if ( tools_web.get_web_param( curParams, "recrutment_body.vacancy_source", "wt;estaff", true ) != "wt" )
+		{
+			try
+			{
+				_url = ( StrBegins( global_settings.settings.recruitment.estaff_server_url, "http://" ) || StrBegins( global_settings.settings.recruitment.estaff_server_url, "https://" ) ? "" : tools_web.get_url_protocol( Request.Url ) ) + global_settings.settings.recruitment.estaff_server_url;
+				resp = HttpRequest( UrlAppendPath( _url, "/active_positions.xml" ) , "post" );
+			}
+			catch(err)
+			{
+%>
+				<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "neustanovlenos", curLngWeb )%></Label>
+<%
+			}
+		}
+		
+		params = tools_web.get_web_param( curParams, "recrutment_body.params", "", true );
+		hide_search_panel = tools_web.get_web_param( curParams, "recrutment_body.hide_search_panel", "", true );
+		
+		
+		DrawCollection(sTabListParam);
+	
+		if ( params != "" )
+		{
+			sChangeAction = "UPDATE=SubVacancyGrid";
+						
+			if(bUseFilters)
+			{
+%>
+				<StackPanel Class="XAML-stack-container">
+					<StackPanel Align="right" Class="XAML-stack-filters-container" Width="100%" Orientation="Vertical" Adapt="1">
+						<StackPanel Adapt="1"  Orientation="Horizontal" Class="XAML-stack-filter">
+							<Label Class="XAML-label-divider"></Label>
+							<Button Name="<%=sTabListParam%>FiltersButton" Class="XAML-button XAML-button-view" Toggle="1" Pressed="<%=(bFiltersPanelExpanded)%>" Click="Toggle=<%=sTabListParam%>FiltersPanel;" Release="Toggle=<%=sTabListParam%>FiltersPanel;"><%=sConstFilters%></Button>
+						</StackPanel>
+<%
+					DrawFilters(sTabListParam, false);	
+%>
+							
+					</StackPanel>
+				</StackPanel>
+<%
+
+			}
+		}
+%>	
+
+		<DataGrid Name="SubVacancyGrid" Source="{EstaffVacancyTreeCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='500'" : "Height='400'")%> Selection="single" Width="100%" Categorized="id:parent_id">
+			<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+			<DataGridColumn Title="parent_id" Value="parent_id" Type="string" Hidden="true"/>
+<%  
+	if (curDevice.disp_type != "mobile")
+	{
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'date'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "c_date", curLngWeb )%>" Value="date" Width="100" Type="link" Sortable="true" ColorSource="color" Click="OPENURL={object_url}"/>
+<%
+		}
+	}
+	if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'vacancy'")) != undefined)
+	{
+%>	
+		<DataGridColumn Title="<%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>" Value="name" Width="100%" ColorSource="color" Type="link" Sortable="true" Click="OPENURL={url_name}"/>
+<%
+	}
+	
+	if (curDevice.disp_type != "mobile")
+	{
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'prof_area'")) != undefined)
+		{
+%>	
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "profoblast", curLngWeb )%>" Value="profarea" Width="130" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'region'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "vrb_region", curLngWeb )%>" Value="region" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'subord'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "podchinenie", curLngWeb )%>" Value="subordination" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'budget'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "c_budget", curLngWeb )%>" Value="budget" Width="110" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'desc'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "c_desc", curLngWeb )%>" Value="file_name" Width="100" Type="link" Click="{!on_click}OPENURL={file_url}" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrVacancyListParam, "This == 'responses'")) != undefined)
+		{
+%>
+	 		<DataGridColumn Title="<%=tools_web.get_web_const( "otkliki", curLngWeb )%>" Value="responses" Width="70" Type="link" Click="{!on_click}OPENURL={response_url}" Sortable="true" ColorSource="color"/>
+<%
+		}
+	}
+%>
+		</DataGrid>
+<%
+	
+		bShowButtonCreate = tools_web.get_web_param( curParams, "recrutment_body.show_button_create", "0", true ) == "1"; 
+		if ( bShowButtonCreate )
+		{
+%>
+		<Toolbar Class="XAML-toolbar" Width="100%" Adapt="true">
+			<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'vacancy_estaff', null, { doc_id : Env.GetOptProperty( 'curDocID', '' ) } )%>"><%=tools_web.get_web_const( "sozdatvakansiyu", curLngWeb )%> </Button>
+		</Toolbar>
+<%		
+		}
+		if (bShowSubsTree)
+		{
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>	
+<%
+		}	
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "vacant_positions" )
+	{
+		
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Class="icon-list22" Title="<%=tools_web.get_web_const( "vakantnyepozic", curLngWeb )%>">
+<%
+		}
+%>	
+		<Grid Class="XAML-grid-table" Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="250"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow Class="XAML-gridrow-header">
+				<Label><%=tools_web.get_web_const( "c_position", curLngWeb )%></Label>
+				<Label><%=tools_web.get_web_const( "c_subd", curLngWeb )%></Label>
+			</GridRow>
+<%
+	_sub_elems_full = tools.get_all_subs_by_func_manager_id(curUserID);
+	_positions_full = QueryCatalogByKeys( "positions", "parent_object_id", ArrayExtract( _sub_elems_full, "id" ) );
+
+	_empty_positions = ArraySelect( _positions_full, "!basic_collaborator_id.HasValue" );
+	for ( _position in ArraySort( ArraySelectDistinct(_empty_positions, "id"), "name", "+" ) )
+	{
+		try
+		{
+			_subdivision_name = OpenDoc( UrlFromDocID( _position.parent_object_id ) ).TopElem.name;
+		}
+		catch(err)
+		{
+			_subdivision_name = "";
+		}
+		/*
+		RequirementsStrRow = "";
+		try
+		{
+			if (_position.position_common_id.HasValue)
+			{
+				positionCommonDoc = OpenDoc( UrlFromDocID( _position.position_common_id ) ).TopElem;
+				if ( positionCommonDoc.educ_type_id.HasValue )
+					RequirementsStrRow += '<GridRow><Label Class_="XAML-info-grid-title-column">' + tools_web.get_web_const( "vrb_education", curLngWeb ) + ':</Label><Label>' + positionCommonDoc.educ_type_id.ForeignElem.name + '</Label></GridRow>';
+				for ( _elem in positionCommonDoc.requirements )
+					RequirementsStrRow += '<GridRow><Label Class_="XAML-info-grid-title-column">' + _elem.name + ':</Label><Label>' + _elem.comment + '</Label></GridRow>';
+				for ( _elem in positionCommonDoc.skills )
+					RequirementsStrRow += '<GridRow><Label Class_="XAML-info-grid-title-column">' + _elem.skill_name + ':</Label><Label>' + _elem.level_name + '</Label></GridRow>';
+			}
+		}
+		catch(err)
+		{
+			alert(err)
+		}
+		*/
+
+%>
+			<GridRow>
+<%
+				if (!_position.position_common_id.HasValue)
+				{
+%>
+					<Label><%=XmlAttrEncode(_position.name)%></Label>
+<%
+				}
+				else
+				{
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, _position.position_common_id, { doc_id : curDocID } )%>"><%=XmlAttrEncode(_position.position_common_id.ForeignElem.name)%></Link>
+<%
+				}
+%>
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, _position.parent_object_id, { doc_id : curDocID } )%>"><%=_subdivision_name%></Link>
+			</GridRow>
+<%
+	}
+%>
+		</Grid>
+		<Toolbar Class="XAML-toolbar" Width="100%" Adapt="true">
+			<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'request_create', null, { request_type_id : ( request_type == undefined ? '' : request_type.id ), 'new' : 1 } )%>"><%=tools_web.get_web_const( "podatzayavkunap_1", curLngWeb )%></Button>
+			<Button Class="XAML-button XAML-button-proceed" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'search_resume', null, {} )%>"><%=tools_web.get_web_const( "naytilyudey", curLngWeb )%></Button>
+		</Toolbar>
+<%
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>	
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "requests" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Class="icon-user-check" Title="<%=tools_web.get_web_const( "moizayavkinapod", curLngWeb )%>">
+<%
+		}
+	curView = {
+		"id": "All",
+		"height": "",
+		"catalog_name": "request",
+		"xquery_qual": ( "$elem/person_id = " + curUserID + " and $elem/request_type_id = "+(request_type == undefined ? "null()" : request_type.id ) ),
+		"disp_filter": "true",
+		"filter_mode": "custom",
+		"disp_paging": "true",
+		"paging_size": 15,
+		"disp_search": "true",
+		"sort_direct": "-",
+		"filter_items": [
+			{ "field":"status_id", "name": "" }
+		],
+		"list_columns": "create_date;code;request_type_id;type;object_name;status_id"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "candidates" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Class="icon-users2" Title="<%=tools_web.get_web_const( "c_candidates", curLngWeb )%>">
+<%
+		}
+		try
+		{
+			CandidatesTabParams = tools_web.get_web_param( curParams, "recrutment_body.candidates_tab", "", true );
+		    arrCandidatesTabListParam = String( tools_web.get_web_param( curParams, "recrutment_body.candidates_tab.candidates_tab_fields_list", "fio,start_date,finish_date,state,vacancy_url,request_url", true ) ).split( ";" );
+						
+			_url = ( StrBegins( global_settings.settings.recruitment.estaff_server_url, "http://" ) || StrBegins( global_settings.settings.recruitment.estaff_server_url, "https://" ) ? "" : tools_web.get_url_protocol( Request.Url ) ) + global_settings.settings.recruitment.estaff_server_url;
+			resp = HttpRequest( UrlAppendPath( _url, "/active_positions.xml" ) , "post" );
+%>
+		<StackPanel Class="XAML-stack-container">
+					<StackPanel Align="right" Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+						<StackPanel Adapt="1"  Orientation="Horizontal" Class="XAML-stack-filter">
+							<ComboBox Class="XAML-combo-view" Name="VacancyAuthorCand" SelectedItem="self" Change="UPDATE=PersonGrid">
+			  					<ComboBoxItem Value="self"><%=tools_web.get_web_const( "moivakansii", curLngWeb )%></ComboBoxItem>
+			  					<ComboBoxItem Value="all"><%=tools_web.get_web_const( "vsevakansii", curLngWeb )%></ComboBoxItem>
+							</ComboBox>	
+							<Label Class="XAML-label-divider"></Label>
+							<Button Name="<%=sTabListParam%>FiltersButton" Class="XAML-button XAML-button-view" Toggle="1" Pressed="<%=(bFiltersPanelExpanded)%>" Click="Toggle=<%=sTabListParam%>FiltersPanel;" Release="Toggle=<%=sTabListParam%>FiltersPanel;"><%=sConstFilters%></Button>
+						</StackPanel>
+					</StackPanel>
+		</StackPanel>
+				
+		<DataGrid Name="PersonGrid" Source="{CandidateCollection}" Selection="multiple" Width="100%" <%=(curDevice.disp_type != "mobile" ? "Height='400'" : "Height='200'")%> PageSize="15">
+			<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+<% 	
+	if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'fio'")) != undefined)
+	{
+%>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" Type="link" Width="100%" Click="OPENURL={url_name}" Sortable="true"/>
+<%  
+	}
+	if (curDevice.disp_type != "mobile")
+	{
+		if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'start_date'")) != undefined)
+		{
+%>	
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="state_date" Width="140" Type="string" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'finish_date'")) != undefined)
+		{
+%>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "c_finish_date", curLngWeb )%>" Value="state_end_date" Width="140" Type="string" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'state'")) != undefined)
+		{
+%>
+		 	<DataGridColumn Title="<%=tools_web.get_web_const( "vppb_state", curLngWeb )%>" Value="state_desc" Width="150" Type="string" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'vacancy_url'")) != undefined)
+		{
+%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_vacancy", curLngWeb )%>" Value="vacancy_name" Width="150" Type="link" Click="OPENURL={vacancy_url}" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrCandidatesTabListParam, "This == 'request_url'")) != undefined)
+		{
+%>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_request", curLngWeb )%>" Value="request_name" Width="150" Type="link" Click="OPENURL={url_request}" Sortable="true"/>
+<%
+		}
+	}
+%>
+		</DataGrid>
+<%
+		}
+		catch(err)
+		{
+			alert("Error candidates: " + err);
+%>
+			<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "neustanovlenos", curLngWeb )%></Label>
+<%
+		}
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+	
+	if ( sTabListParam == "estaff_events_candidates" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+			<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( "moikandidatypo", curLngWeb ))%>">
+<%
+		}
+		try
+		{
+			EStaffEventTabParams = tools_web.get_web_param( curParams, "recrutment_body.params_estaff_events_tab", "", true );
+		    EStaffEvTabHideSearchPanel = tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.hide_search_panel", "", true );
+			estaff_event_default_category_field = tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.default_category_fild", "", true );
+			estaff_event_default_status_field = tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.default_status_fild", "", true );
+			iPeriodDays = Int( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.period_days", 0, true ));
+			arrEstaffEventListParam = String( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.estaff_event_tab_fields", "fio,vacancy_name,start_date,finish_date,estaff_event_type,event_status,request_recruitment_url,request_url", true ) ).split( ";" );
+			dStartPeriod = undefined;
+			dEndPeriod = undefined;
+			
+			// alert(String( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.estaff_event_tab_fields", "fio,vacancy_name,start_date,finish_date,estaff_event_type,event_status,request_recruitment_url,request_url", true ) ));
+			
+			arrEStaffEvTabCategoryList = String( tools_web.get_web_param( curParams, "recrutment_body.estaff_events_candidates_tab.category_list_to_select", "estaff_event_type,not_categorized,fio", true ) ).split( ";" );
+			
+			if (iPeriodDays != 0)
+			{
+				dStartPeriod = DateOffset(Date(), 0 - iPeriodDays*86400);
+				//dEndPeriod = Date();
+				dEndPeriod = DateOffset(Date(), 86400);
+			}
+			
+			DrawCollection(sTabListParam);
+							
+			if ( EStaffEventTabParams != "" )
+			{
+				sChangeAction = "";
+%>		
+				<StackPanel Class="XAML-stack-container" Width="100%">
+					<StackPanel Align="right" Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1" Width="100%">
+						<StackPanel Adapt="1"  Orientation="Horizontal" Class="XAML-stack-filter">
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "tipsobytiyaesta", curLngWeb )%>:</Label>
+							<ComboBox Name="<%=sTabListParam%>type_estaff_event" Class="XAML-combo-view" Width="150" SelectedItem="all">
+								<ComboBoxItem Value="all"><%=tools_web.get_web_const( "f0j4vfoxrb", curLngWeb )%></ComboBoxItem>
+<%
+								for (_elem in estaff_event_types)
+								{
+%>
+									<ComboBoxItem Value="<%=_elem.id%>"><%=_elem.name%></ComboBoxItem>
+<%
+								}
+%>
+							</ComboBox>
+							<Label Class="XAML-label-divider"></Label>
+							<Button Name="<%=sTabListParam%>FiltersButton" Class="XAML-button XAML-button-view" Toggle="1" Pressed="<%=(bEventsCandFiltersPanelExpanded)%>" Click="Toggle=<%=sTabListParam%>FiltersPanel;" Release="Toggle=<%=sTabListParam%>FiltersPanel;"><%=sConstFilters%></Button>
+						</StackPanel>
+<%
+						DrawFilters(sTabListParam, false);	
+%>
+					</StackPanel>
+				</StackPanel>
+<%
+			}
+%>
+				<Toolbar Class="XAML-toolbar" Width="100%" Adapt="true">
+					<Button Click="UPDATE=EStaffEventGrid" Class="XAML-button-content"><%=tools_web.get_web_const( "sf_submit", curLngWeb )%></Button>
+				</Toolbar>
+	
+				<DataGrid Name="EStaffEventGrid" Source="{EStaffEventCandidateCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='500'" : "Height='300'")%> Selection="multiple" Width="100%" PageSize="20" Categorized="!id:parent_id" Expanded="true">
+					<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+					<DataGridColumn Title="parent_id" Value="parent_id" Type="string" Hidden="true"/>
+<% 	
+	if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'fio'")) != undefined)
+	{
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_fio", curLngWeb ))%>" Value="person_fullname" <%=(curDevice.disp_type != "mobile" ? "Width='200'" : "Width='100%'")%> Type="link" Click="OPENURL={collaborator_url}" ColorSource="color_source" Sortable="true"/>
+<%
+	}
+	if (curDevice.disp_type != "mobile")
+	{
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'vacancy_name'")) != undefined)
+		{
+%>				
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_vacancy", curLngWeb ))%>" Value="vacancy_name" Width="180" Type="link" Click="OPENURL={vacancy_url}" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'start_date'")) != undefined)
+		{
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_start_date", curLngWeb ))%>" Value="start_date" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'finish_date'")) != undefined)
+		{
+%>
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("3bywib72ya", curLngWeb ))%>" Value="finish_date" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'estaff_event_type'")) != undefined)
+		{
+%>		
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("tipsobytiyaesta", curLngWeb ))%>" Value="estaff_event_type_name" Width="200" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'event_status'")) != undefined)
+		{
+%>	
+				 	<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_status", curLngWeb ))%>" Value="event_status_name" Width="70" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'request_recruitment_url'")) != undefined)
+		{
+%>	
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("zayavkanapodbor", curLngWeb ))%>" Value="action" Width="120" Type="link" Click="OPENURL={request_recruitment_url}" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrEstaffEventListParam, "This == 'request_url'")) != undefined)
+		{
+%>					
+					<DataGridColumn Title="" Value="request_action" Width="100" Type="link" Click="OPENURL={request_url}" ColorSource="color_source" Sortable="true"/>
+<%
+		}
+	}
+%>
+				</DataGrid>
+
+<%		
+		}
+		catch(err)
+		{
+		
+		}
+		
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+			</TabItem>
+<%
+		}
+
+	}
+}
+	if ( ArrayCount( arrTabListParam ) > 1 )
+	{
+%>
+</TabControl>
+<%
+	}
+%>
+</SPXMLScreen>

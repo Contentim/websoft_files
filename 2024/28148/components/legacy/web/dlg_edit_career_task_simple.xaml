@@ -1,0 +1,317 @@
+﻿<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+iObjectID = oParamSource.GetOptProperty( 'iObjectId' , null );
+strTaskPrefix=''
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+iDefaultWidth=!bDesctop?"100%":"300"
+try
+{
+	teCareerReserveID=Int(iObjectID)
+	teCareerReserve=OpenDoc( UrlFromDocID( teCareerReserveID ) ).TopElem
+}
+catch(ex)
+{
+	curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+}
+
+strTaskID = oParamSource.GetOptProperty( 'task_id' , null );
+fldTask=undefined
+if ( strTaskID != null )
+{
+	fldTask=teCareerReserve.tasks.GetOptChildByKey(strTaskID)
+}
+if (fldTask==undefined)
+{
+	curMessageBox = {
+		"type": "error",
+		"text": tools_web.get_web_const( 'neukazanidispy', curLngWeb )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+else
+{
+	strActionCodeList=String( "career_reserve_task_edit_mark;career_reserve_task_edit_person_comment;career_reserve_task_edit_mentor_comment;")
+	arrActionCodes = strActionCodeList.split( ";" );
+	
+	bTaskEditable=false
+	if (!fldTask.forbid_task_portal_edit)
+	{
+		if (!fldTask.start_edit_date.HasValue||(fldTask.start_edit_date.HasValue&&fldTask.start_edit_date<=curDate))
+		{
+			bTaskEditable=true
+		}
+	}
+
+	function fnCheckRight(sAction)
+	{
+		var bResult=false
+		if(curUser.access.access_role == "admin")
+			bResult=true;
+		fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sAction + "'") ;
+		if (fldAction!=undefined)
+		{
+			if (bTaskEditable)
+			{
+				bResult=true
+			}
+			else
+			{
+				bResult=ArrayOptFind(arrActionCodes, "This == '" + fldAction.action + "'")==undefined 
+			}
+		}
+		
+		if (!bTaskEditable&&!bResult&&StrContains(sAction,"_see_",true))
+		{
+			sCode=StrReplace(sAction,"_see_","_edit_")
+			fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sCode + "'") ;
+			if (fldAction!=undefined)
+			{
+				bResult=true
+			}
+		}
+		
+		return bResult
+	}
+
+	function fnCheckTaskEditRights()
+	{
+	
+		if(curUser.access.access_role == "admin")
+				return true;
+				
+		if (bTaskEditable)
+		{
+			for (sActionCode in arrActionCodes)
+			{
+				if (fnCheckRight(sActionCode))
+				{
+					return true
+				}
+			}
+		}
+		return false;
+	}
+
+	xarrBossTypes = tools.get_object_relative_boss_types(curUserID, teCareerReserveID);
+
+
+	if (!fldTask.commission_persons.ChildByKeyExists(curUserID))
+	{
+		arrComissionTypes=XQuery( 'for $elem in boss_types where $elem/code = \'talent_pool_commission\' return $elem' )
+
+		if (ArrayOptFirstElem(arrComissionTypes)!=undefined)
+		{
+			for (fldComissionType in arrComissionTypes)
+			{
+				xarrBossTypes = ArraySelect(xarrBossTypes, 'This.id!='+fldComissionType.id);
+			}
+		}
+	}
+
+
+	if (fldTask.tutor_id!=curUserID)
+	{
+		arrTaskTutorTypes=XQuery( 'for $elem in boss_types where $elem/code = \'talent_pool_task_tutor\' return $elem' )
+
+		if (ArrayOptFirstElem(arrTaskTutorTypes)!=undefined)
+		{
+			for (fldTaskTutorType in arrTaskTutorTypes)
+			{
+				xarrBossTypes = ArraySelect(xarrBossTypes, 'This.id!='+fldTaskTutorType.id);
+			}
+		}
+	}
+
+	xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+	xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',career_reserve,') )");
+	xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+	xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+	bAllowEdit = (fnCheckTaskEditRights()||(fldTask.type=='defence'&&fldTask.commission_persons.ChildByKeyExists(curUserID)));
+	
+
+bShowFiles=((ArrayOptFirstElem(fldTask.files)!=undefined)&&(fnCheckRight('career_reserve_task_edit_files')||(fnCheckRight('career_reserve_task_see_files'))))
+%>
+<Action Name="SaveTask" Source="talent_pool_edit_cr_task" Success="<%=('SET=NewUpdatedManagersResultSet,{ResultSet};CLOSEDIALOG')%>" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="task_id" Value="<%=strTaskID%>"/>
+		<Param Name="iObjectId" Value="<%=teCareerReserveID%>"/>
+  		<Param Name="sAction" Value="edit_cr_task"/>
+	</Action>
+<%
+if (bShowFiles)
+{
+%>
+	<TabControl Name="TalentPoolPRCardTaskBodyTab" Preservable="1" TabsLocation="n" TabsWidth="200" Width="100%" Adapt="true">
+		<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+<%
+}
+%>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn/>
+	</GridColumns>
+<%
+	if (fldTask.desc.HasValue)
+	{
+%>	
+	<GridRow>
+		<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.desc)%>]]></HTMLBox>
+	</GridRow>
+<%
+	}
+
+	if ((fnCheckRight('career_reserve_task_see_person_comment')&&fldTask.person_comment.HasValue)||fnCheckRight('career_reserve_task_edit_person_comment'))
+	{
+%>
+	<GridRow>
+		<StackPanel Orientation="Vertical" Adapt="true"> 
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'veresb_p_comment', curLngWeb ))%></Label>
+<%
+		if (fnCheckRight('career_reserve_task_edit_person_comment'))
+		{
+			strFieldName=strTaskPrefix+'person_comment'
+%>
+			<EditBox Name="<%=strFieldName%>" Height="200"  Width="100%"><%=XmlAttrEncode(fldTask.person_comment)%></EditBox>
+<%
+		}
+		else
+		{
+%>
+			<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.person_comment)%>]]></HTMLBox>
+<%
+		}
+%>
+		</StackPanel>
+	</GridRow>
+<%
+	}
+	if (fnCheckRight('career_reserve_task_edit_mentor_comment')||(fnCheckRight('career_reserve_task_see_mentor_comment')&&fldTask.tutor_comment.HasValue))
+	{
+%>
+	<GridRow>
+		<StackPanel Orientation="Vertical" Adapt="true"> 
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vcrb_mentor_comment', curLngWeb ))%></Label>
+<%
+		if (fnCheckRight('career_reserve_task_edit_mentor_comment'))
+		{
+			strFieldName=strTaskPrefix+'tutor_comment'
+%>
+			<EditBox Name="<%=strFieldName%>" Height="200"  Width="100%"><%=XmlAttrEncode(fldTask.tutor_comment)%></EditBox>
+<%
+		}
+		else
+		{
+%>		
+			<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.tutor_comment)%>]]></HTMLBox>
+<%
+		}
+%>
+		</StackPanel> 
+	</GridRow>
+<%
+	}
+%>
+	<GridRow>
+		<Grid Width="100%" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="75"/>
+				<GridColumn/>
+			</GridColumns>
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vdb_aim_value', curLngWeb ))%>:</Label>
+<%
+			if (fnCheckRight('career_reserve_task_edit_mark'))
+			{
+				strFieldName=strTaskPrefix+'score'
+%>
+				<Edit Name="<%=strFieldName%>" Width="100"><%=fldTask.score%></Edit>
+<%
+			}
+			else
+			{
+%>
+				<Label Class="XAML-grid-label-value"><%=HtmlEncode(fldTask.score)%></Label>
+<%
+			}
+%>
+			</GridRow>
+		</Grid>
+	</GridRow>
+</Grid>
+<%
+if (bShowFiles)
+{
+%>
+	</TabItem>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+<%
+	sID_curFiles=fldTask.id+Random(1,100000)
+	dummyObjectID=teCareerReserveID
+	dummyObject=teCareerReserve
+	sFilePath='tasks'
+	sFileObjectSubArrayID=fldTask.id.Value
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+</TabControl>
+<%
+}
+strAction=''
+if (bAllowEdit)
+{
+	if (strTaskPrefix!='')
+	{
+%>
+		<Edit Name="field_prefix" Hidden="1"><%=strTaskPrefix%></Edit>
+<%
+	}
+	strAction='Action=SaveTask'
+}
+%>
+<Edit Name="EditDialogAction" Hidden="true"><%=strAction%></Edit>
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+	<GridColumns>
+		<GridColumn/>
+<%
+	if (bAllowEdit)
+	{
+%>
+		<GridColumn Width="100"/>
+<%
+	}
+%>
+		<GridColumn Width="100"/>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+<%
+	if (bAllowEdit)
+	{
+%>
+		<Button Width="100" Click="{!EditDialogAction}"><%=tools_web.get_web_const( 'tkhz90n4pi', curLngWeb )%></Button>
+<%
+	}
+%>		
+		<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</GridRow>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

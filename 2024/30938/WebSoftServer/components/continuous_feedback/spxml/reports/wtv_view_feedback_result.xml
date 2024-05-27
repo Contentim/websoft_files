@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<wtv_view_feedback_results>
+
+	<!-- MAIN -->
+		<report_name TYPE="string" DEFAULT="wtv_view_feedback_results"/>
+		<is_minimized TYPE="bool" DEFAULT="false"/>
+		<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+		<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+		<hier_show TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<disp_tree_selector TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<!-- Объектов в списке -->
+		<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+		<!-- Выбрано объектов -->
+		<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+		<columns>
+			<column MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="integer"/>
+				<name TYPE="string"/>
+			</column>
+		</columns>
+	<!-- Задачи -->
+		<feedback_results>
+			<feedback_result MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="integer" FOREIGN-ARRAY="responses"/>
+
+				<!-- ID сотрудника -->
+				<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+
+				<!-- «Сотрудник» - ФИО сотрудника -->
+				<person_fullname TYPE="string"/>
+
+				<!-- «Должность» - наименование должности сотрудника -->
+				<person_position_name TYPE="string"/>
+
+				<!-- «Подразделение» - наименование подразделения, к которому относится должность -->
+				<person_subdivision_name TYPE="string"/>
+
+				<!-- «Организация» - наименование организации, к которой относится подразделение -->
+				<person_org_name TYPE="string"/>
+
+				<response_types>
+					<response_type MULTIPLE="1" PRIMARY-KEY="id">
+						<id TYPE="integer"/>
+						<name TYPE="string"/>
+						<task_count TYPE="string"/>
+						<assessment_count TYPE="string"/>
+					</response_type>
+				</response_types>
+
+			</feedback_result>
+		</feedback_results>
+
+	<!-- FILTERS -->
+		<response_type_id TYPE="integer" FOREIGN-ARRAY="response_types"/>
+		
+		<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+		<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+		<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+		<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+	<set_sel_action PROPERTY="1" PARAM="List" PARAM="Screen" EXPR="
+		TopElem = Child(0).Parent;
+		iSelrowsCount = ArrayCount( List.SelRows );
+		TopElem.count_sel = iSelrowsCount;
+		Screen.FindItem( 'StatusPanel' ).Update();
+	"/>
+
+</wtv_view_feedback_results>
+
+<OnInit PROPERTY="1" EXPR="
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

@@ -1,0 +1,34 @@
+﻿<%
+	//Server.Execute( "include/user_init.html" );
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+_comment = oParamSource.GetOptProperty( 'comment' );
+
+sDocID = OptInt( oParamSource.GetOptProperty( 'doc_id' ), '' );
+
+%>
+<SPXMLScreen>
+
+	<Action Name="SendComment" Source="candidate_record_processing" Success="REFRESH">
+		<Param Name="comment" Value="{MessageText}"/>
+		<Param Name="completion_id" Value="{valueCompletionId}"/>
+		<Param Name="doc_id" Value="<%=sDocID%>"/>
+		<Param Name="sid" Value="<%=tools_web.get_sum_sid( sDocID, Session.sid ) %>"/>
+		<Param Name="candidate_eid" Value="<%=oParamSource.GetOptProperty( 'candidate_eid' )%>"/>
+		<Param Name="record_eid" Value="<%=oParamSource.GetOptProperty( 'record_eid' )%>"/>
+	</Action>
+	<StackPanel Orientation="Vertical" Width="100%" Align="Left"  Adapt="true">
+		<Label><%=tools.get_web_str('vkpb_comment')%>:</Label>
+		<EditBox Name="MessageText" Width="100%" Height="70"><%=_comment%></EditBox>
+	</StackPanel>
+	<Label/>
+	
+	<StackPanel Orientation="Horizontal" Align="center" Class="actionButtonsStackPanel" Adapt="true" Width="100%">
+		<Edit Name="valueCompletionId" Hidden="true"></Edit>
+		<Button Width="100" Click="SET=valueCompletionId,1;ACTION=SendComment;CLOSEDIALOG"><%=tools.get_web_str('c_approve')%></Button>
+		<Button Click="SET=valueCompletionId,0;ACTION=SendComment;CLOSEDIALOG"><%=tools.get_web_str('c_reject')%></Button>
+		<Button Width="110" Click="SET=valueCompletionId,;ACTION=SendComment;CLOSEDIALOG"><%=tools.get_web_str('c_clear')%></Button>
+
+		<Button Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+	</StackPanel>
+	
+</SPXMLScreen>

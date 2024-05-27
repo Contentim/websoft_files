@@ -1,0 +1,123 @@
+﻿<%
+// const_start
+var sConstEducationOrgTitle = "Проводит";
+// const_end
+%>
+<SPXMLScreen>
+<%
+	bOpenSimplifiedDialogEvent = tools_web.is_true( PARAMETERS.GetOptProperty( "bOpenSimplifiedDialogEvent", "0" ) );
+	sStartDate = Trim(PARAMETERS.GetOptProperty( "start_date","" ));
+	sStartDate = Trim(PARAMETERS.GetOptProperty( "start_date","" ));
+	sFinishDate = Trim(PARAMETERS.GetOptProperty( "finish_date","" ));
+	sStatus = PARAMETERS.GetOptProperty( "status_id" );
+	sColor = PARAMETERS.GetOptProperty( "color" );
+	sDate = "";
+	var sDesc = "";
+	if(sStartDate != "")
+	{
+		dStartDate = Date(sStartDate);
+	if(sFinishDate != "")
+	{
+		dFinishDate =  Date(sFinishDate);
+		if(Day(dStartDate) == Day(dFinishDate))
+		{
+			sDate = StrDate(dStartDate, false, false) + " / " + StrTime(dStartDate) + " – " + StrTime(dFinishDate);
+		}
+		else
+		{			
+			sDate = StrInt(Day(dStartDate), 2) + "." + StrInt(Month(dStartDate), 2) + " / " + StrTime(dStartDate) + " – " + StrInt(Day(dFinishDate), 2) + "." + StrInt(Month(dFinishDate), 2) + " / " + StrTime(dFinishDate); 
+		}
+	}
+	else
+	{
+		sDate = StrDate(dStartDate, true, false);
+	}
+	}
+
+iEventID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+teEvent = OpenDoc( UrlFromDocID( iEventID ) ).TopElem;
+sColorClass = PARAMETERS.GetOptProperty( "class" );
+
+sPlace = "";
+if(teEvent.place_id.HasValue && teEvent.place_id.OptForeignElem != undefined)
+{
+					
+	sPlace = tools_web.get_cur_lng_name( teEvent.place_id.ForeignElem.name, curLng.short_id );				
+	if(teEvent.place.HasValue)
+	{
+		sPlace += ", " + teEvent.place;
+	}
+}
+else if(teEvent.place.HasValue)
+{
+	sPlace = teEvent.place;
+}
+sDesc += "<br/>" + sPlace;
+
+if ( teEvent.ChildExists( "resource_id" ) && teEvent.resource_id.HasValue )
+	sObjectImageUrl = tools_web.get_object_source_url( "resource", teEvent.resource_id );
+else
+	sObjectImageUrl = "images/" + teEvent.Name + ".png";
+
+if( bOpenSimplifiedDialogEvent )
+	sClickAction = "SET=SimplifiedDialogEvent/object_id," + iEventID + ";OPENDIALOG=SimplifiedDialogEvent;"
+else
+	sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( null, iEventID, { doc_id: curDocID } );
+sName = PARAMETERS.GetOptProperty( "name" );
+
+if( bOpenSimplifiedDialogEvent )
+{
+%>
+	<Dialog Name="SimplifiedDialogEvent" Source="<%=PARAMETERS.GetOptProperty( "sSimplifiedCustomWebTemplateCode", "0" )%>" Title="<%=tools_web.get_web_const( "c_event", curLngWeb )%>"  Width="800">
+		<Param Name="object_id" Value=""/>
+		<Param Name="show_button" Value="<%=PARAMETERS.GetOptProperty( "bShowOpenButton", "0" )%>"/>
+		<Param Name="use_timezone" Value="<%=PARAMETERS.GetOptProperty( "bUseTimezone", "0" )%>"/>
+	</Dialog>
+<%
+}
+%>
+
+<StackPanel Orientation="Vertical" Class="XAML-stack-tile XAML-stack-tile-1" Height="255">
+<!-- 	<HTMLBox Class="XAML-html-tile-status">
+		<![CDATA[<div style="background-color: <%=sColor%>; height: 5px;"></div>]]>
+	</HTMLBox> -->
+	
+	<Label Class="XAML-label-tile-status <%=sColorClass%>"><%=sStatus%></Label>
+	
+	<StackPanel Class="XAML-stack-tile-image-container">
+		<Image Click="<%=sClickAction%>" Class="XAML-image-tile-image" Source="pics/1blank.gif" Height="160" Width="216">
+		<!-- <Link Click="<%=sClickAction%>" Class="XAML-link-tile-image"> -->
+		<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>	
+		<!-- </Link> -->
+		</Image>
+		<Label Class="XAML-label-tile-image-caption"><%=sDate%></Label>
+	</StackPanel>
+	
+	<StackPanel Class="XAML-stack-tile-title-container">
+				<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+					<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+				</Link>
+	</StackPanel>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile-desc">
+	<%
+		if(teEvent.education_org_id.HasValue && teEvent.education_org_id.OptForeignElem != undefined)
+		{
+	%>	
+		<Label Class="XAML-label-tile-desc">
+			<![CDATA[<%=sConstEducationOrgTitle%>: <%=teEvent.education_org_id.ForeignElem.name%>]]>
+		</Label>
+	<%
+		}
+		
+		if(sPlace != "")
+		{
+	%>	
+		<Label Class="XAML-label-tile-desc">
+			<![CDATA[<%=tools_web.get_web_const( "c_action_place", curLngWeb )%>: <%=sPlace%>]]>
+		</Label>
+	<%
+		}
+	%>
+	</StackPanel>	
+</StackPanel>
+</SPXMLScreen>

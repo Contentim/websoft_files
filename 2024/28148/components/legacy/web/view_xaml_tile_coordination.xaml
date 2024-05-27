@@ -1,0 +1,20 @@
+﻿	<SPXMLScreen>
+		<Grid CellClass="cssGridCutifier">
+			<GridColumns>
+				<GridColumn Width="250"/>
+				<GridColumn Width="130"/>
+				<GridColumn Width="250"/>
+				<GridColumn Width="150" Align="right"/>
+				<GridColumn Width="80" Align="right"/>
+				<GridColumn Width="80" Align="right"/>
+			</GridColumns>
+			<GridRow>
+				<Link Click="<%= ((PARAMETERS.GetOptProperty("object_url") != "" && PARAMETERS.GetOptProperty("object_url") != undefined) ? "OPENURL=" + PARAMETERS.GetOptProperty("object_url") : "" )%>"><%=PARAMETERS.GetOptProperty("object_name") != undefined ? PARAMETERS.GetOptProperty("object_name") : ""%></Link>
+				<Label Width="130"><%=PARAMETERS.GetOptProperty("catalog_title") != undefined ? PARAMETERS.GetOptProperty("catalog_title") : ""%></Label>
+				<Link Click="<%= PARAMETERS.GetOptProperty("source_url") != "" && PARAMETERS.GetOptProperty("source_url") != undefined ? "OPENURL=" + PARAMETERS.GetOptProperty("source_url") : "" %>"><%=PARAMETERS.GetOptProperty("source_name") != undefined ? PARAMETERS.GetOptProperty("source_name") : ""%></Link>
+				<Edit Name="comment<%=PARAMETERS.GetOptProperty("object_id")%>" Width="150"></Edit>
+				<Button Click="CONFIRM=<%=tools_web.get_web_const( 'vcb_mess_confirm', curLngWeb )%>;SET=SubmitLink/object_id,<%=PARAMETERS.GetOptProperty("object_id")%>;SET=SubmitLink/source_catalog,<%=PARAMETERS.GetOptProperty("source_catalog")%>;SET=SubmitLink/kp_id,<%=PARAMETERS.GetOptProperty("source_id")%>;SET=SubmitLink/comment,{comment<%=PARAMETERS.GetOptProperty("object_id")%>};ACTION=SubmitLink" Width="80"><%=tools_web.get_web_const( 'vherb_submit', curLngWeb )%></Button>
+				<Button Click="CONFIRM=<%=tools_web.get_web_const( 'vcb_mess_confirm', curLngWeb )%>;SET=CancelLink/object_id,<%=PARAMETERS.GetOptProperty("object_id")%>;SET=CancelLink/source_catalog,<%=PARAMETERS.GetOptProperty("source_catalog")%>;SET=CancelLink/kp_id,<%=PARAMETERS.GetOptProperty("source_id")%>;SET=CancelLink/comment,{comment<%=PARAMETERS.GetOptProperty("object_id")%>};ACTION=CancelLink" Width="80"><%=tools_web.get_web_const( 'c_reject', curLngWeb )%></Button>
+			</GridRow>	
+		</Grid>
+	</SPXMLScreen>

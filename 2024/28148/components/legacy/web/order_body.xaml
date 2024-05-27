@@ -1,0 +1,138 @@
+﻿<SPXMLScreen>
+
+<%
+
+    aListColumns = String( tools_web.get_web_param( curParams, 'aListColumns', 'name;code;numb;cost;sum;reserved_date', true ) ).split( ';' );
+    bShowInstance = tools_web.is_true( curUrlQuery.GetOptProperty( 'show_instance' ) );
+    sShowInstance = ( bShowInstance ) ? "show_instance=1&" : "";
+
+    sStatus = ( curObject.status.HasValue ) ? curLngCommon.order_status_types.GetOptChildByKey( curObject.status.Value ).name.Value : "";
+    sDateFormed = ( curObject.formed_date.HasValue ) ? StrDate( Date( curObject.formed_date.Value ), true ) : "";
+    sDatePaid = ( curObject.paid_date.HasValue ) ? StrDate( Date( curObject.paid_date.Value ), true ) : "";
+    sComment = ( curObject.comment.HasValue ) ? curObject.comment.Value : "";
+
+%>
+
+    <Label/>
+    <Label/>
+    <Label NoWrap="false" Class="XAML-object-title-label" Align="left"> <%=tools_web.get_web_const( 'zakaz', curLngWeb )%> </Label>
+
+    <StackPanel Name='ImfoOrder' Width='100%' Adapt='true' Orientation='Horizontal' Class='XAML-stack-container'>
+        <Grid Width='100%' Adapt='true' Class='XAML-grid-info-table'>
+        
+            <GridColumns>
+                <GridColumn Adapt='true'/>
+                <GridColumn Adapt='true'/>
+            </GridColumns>
+        
+            <GridRow>
+                <Label Width='100%' Adapt='true' Align='left' Class='XAML-info-grid-title-column'> <%=tools_web.get_web_const( "c_status", curLngWeb )%>: </Label>
+                <Label Width='100%' Adapt='true' Align='left' Class='XAML-label-grid-column-name'> <%=sStatus%> </Label>
+            </GridRow>
+
+            <GridRow>
+                <Label Width='100%' Adapt='true' Align='left' Class='XAML-info-grid-title-column'> <%=tools_web.get_web_const( "dataformirovan", curLngWeb )%>: </Label>
+                <Label Width='100%' Adapt='true' Align='center' Class='XAML-label-grid-column-name'> <%=sDatePaid%> </Label>
+            </GridRow>
+
+            <GridRow>
+                <Label Width='100%' Adapt='true' Align='left' Class='XAML-info-grid-title-column'> <%=tools_web.get_web_const( "dataoplaty", curLngWeb )%>: </Label>
+                <Label Width='100%' Adapt='true' Align='center' Class='XAML-label-grid-column-name'> <%=sDateFormed%> </Label>
+            </GridRow>
+        
+        </Grid>
+    </StackPanel>
+
+    <Collection Name="OrderGoods" Source="order_goods">
+        <Param Name="order_id" Value="<%=curObjectID%>"/>
+        <Param Name="list_columns" Value="<%=tools_web.get_web_param( curParams, 'aListColumns', 'name;code;numb;cost;sum;reserved_date', true )%>"/>
+    </Collection>
+
+    <DataGrid Name="OrderGoodsTable" Source="{OrderGoods}" Width="100%" Title="<%=tools_web.get_web_const( 'tovary', curLngWeb )%>">
+<%
+    if ( ArrayOptFind( aListColumns, "This=='name'" ) )
+    {
+        if ( sShowInstance != "" )
+        {
+%>
+            <DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}', { show_instance: 1 } )%>"/>
+<%
+        }
+        else
+        {
+%>
+            <DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>" Width="100%" Type="link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, '{id}' )%>"/>
+<%
+        }
+    }
+    if ( ArrayOptFind( aListColumns, "This=='code'" ) )
+    {
+%>
+        <DataGridColumn Value="code" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_code", curLngWeb ) )%>" Width="100%" Type="string"/>
+<%
+    }
+    if ( ArrayOptFind( aListColumns, "This=='number'" ) )
+    {
+%>
+        <DataGridColumn Value="number" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_num", curLngWeb ) )%>" Width="100%" Type="string"/>
+<%
+    }
+    if ( ArrayOptFind( aListColumns, "This=='cost'" ) )
+    {
+%>
+        <DataGridColumn Value="cost" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_cost", curLngWeb ) )%>" Width="100%" Type="string"/>
+<%
+    }
+    if ( ArrayOptFind( aListColumns, "This=='sum'" ) )
+    {
+%>
+        <DataGridColumn Value="sum" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_sum", curLngWeb ) )%>" Width="100%" Type="string"/>
+<%
+    }
+    if ( ArrayOptFind( aListColumns, "This=='reserved_date'" ) )
+    {
+%>
+        <DataGridColumn Value="reserved_date" Title="<%=XmlAttrEncode( tools_web.get_web_const( "datarezervirov", curLngWeb ) )%>" Width="100%" Type="string"/>
+<%
+    }
+%>
+    </DataGrid>
+
+<%    
+	fldCustomElems = tools.get_custom_template( curObject.Name );
+	if ( fldCustomElems != null )
+	{
+		fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, "disp_web" );
+        fldWebCustomFields = ArraySelect( fldWebCustomFields, "This.type != 'heading'" );
+		if ( ArrayCount( fldWebCustomFields ) != 0 )
+		{
+			curCustomFields = 
+			{
+				"template": fldCustomElems,
+				"fields": fldWebCustomFields,
+				"source": curObject.custom_elems,
+				"modify_eval": false,
+				"context": CONTEXT,
+				// "combo_box_width": 200,
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		}
+	}
+%>
+    <StackPanel Name='ImfoOrder' Width='100%' Adapt='true' Orientation='Horizontal' Class='XAML-stack-container'>
+        <Grid Width='100%' Adapt='true' Class='XAML-grid-info-table'>
+        
+            <GridColumns>
+                <GridColumn Adapt='true'/>
+                <GridColumn Adapt='true'/>
+            </GridColumns>
+        
+            <GridRow>
+                <Label Width='100%' Adapt='true' Align='left' Class='XAML-info-grid-title-column'> <%=tools_web.get_web_const( "c_comment", curLngWeb )%>: </Label>
+                <Edit Name="comment" Enabled="0" Editable="0" Width="100%"><![CDATA[<%=tools_web.html_decode( curObject.comment )%>]]></Edit>
+            </GridRow>
+        
+        </Grid>
+    </StackPanel>
+
+</SPXMLScreen>

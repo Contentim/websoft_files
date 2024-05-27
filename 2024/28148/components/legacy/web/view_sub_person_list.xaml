@@ -1,0 +1,71 @@
+﻿<%
+iLimit = 500;
+
+curSubPersonIDsByManagerIDLimit = tools.get_sub_person_ids_by_func_manager_id( curUserID, null, null, iLimit );
+
+sSubPersonSearch = CONTEXT.GetOptProperty( 'SubPersonSearchEdit', '' );
+bHidden = curSubPersonIDsByManagerIDLimit == null && sSubPersonSearch == '';
+
+sSubpersonsCollectionCode = curParams.GetOptProperty('subpersons_collection', 'sub_person_list');
+
+curFilter = {
+	'id': 'subpersons',
+	'title': tools_web.get_web_const( 'statusizucheniya', curLngWeb ),
+	'action': 'HIDE=MessagePanel;SHOW=SubPersonPanel;UPDATE=SubPersonGrid',
+	'disp_selector': false,
+	'search_field': 'SubPersonSearchEdit'
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+<StackPanel Hidden="<%=!bHidden%>" Name="MessagePanel">
+	<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( 'vveditetekstdl', curLngWeb )%>]]></Label>
+</StackPanel>
+<StackPanel Name="SubPersonPanel" Hidden="<%=bHidden%>">
+<%
+curCollectionMenu = {
+	"id": "SubPerson",
+	"catalog_name": "collaborator",
+	"data_grid_id": "SubPersonGrid"
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+	<Collection Name="SubPersonListCollection" Source="<%=sSubpersonsCollectionCode%>">
+		<Param Name="search_fullname" Value="{SubPersonSearchEdit}"/>
+	</Collection>
+	<DataGrid Name="SubPersonGrid" Source="{SubPersonListCollection}" Selection="multiple" PageSize="50">
+		<DataGridColumn Value="icon" Title="*" ColorSource="color" Width="30" Type="fixedimage"/>
+		<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_fio", curLngWeb ) )%>" Width="100%" Type="link" Sortable="1" Click="OPENURL={url}"/>
+		<DataGridColumn Value="status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>" ClassSource="status_class" Width="150" Type="link" Sortable="0" Click="{!url_status}"/>
+		<DataGridColumn Value="last_date" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'posesheno', curLngWeb ) )%>" Width="150" Sortable="0" Type="string"/>
+<%
+if ( curObject.Name == "course" )
+{
+%>
+		<DataGridColumn Value="max_score" Title="<%=XmlAttrEncode( tools_web.get_web_const( "jpcbm5hqyn", curLngWeb ) )%>" Width="100" Sortable="0" Type="string"/>
+<%
+}
+%>
+		<DataGridColumn Value="rec" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'rekomend', curLngWeb ) )%>" Width="100" Type="string" Sortable="0" Align="Center"/>
+
+		<DataGridColumn Value="id" Hidden="1" Ghost="0"/>
+		<Menu Source="{CatalogListMenuSubPerson}"/>
+	</DataGrid>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-legend" Adapt="1">
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Image Source="pics/1blank.gif" Class="color-project" Height="17" Width="17"></Image>
+			<Label><%=tools_web.get_web_const( "neizuchalsya", curLngWeb )%></Label>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Image Source="pics/1blank.gif" Class="color-plan" Height="17" Width="17"></Image>
+			<Label><%=tools_web.get_web_const( "zayavkanasoglas", curLngWeb )%></Label>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Image Source="pics/1blank.gif" Class="color-process" Height="17" Width="17"></Image>
+			<Label><%=tools_web.get_web_const( "vprocesseizuche", curLngWeb )%></Label>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+			<Image Source="pics/1blank.gif" Class="color-finish" Height="17" Width="17"></Image>
+			<Label><%=tools_web.get_web_const( "izuchen", curLngWeb )%></Label>
+		</StackPanel>
+	</StackPanel>
+</StackPanel>

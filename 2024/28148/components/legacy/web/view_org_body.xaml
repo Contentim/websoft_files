@@ -1,0 +1,169 @@
+﻿<SPXMLScreen>
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'OrgBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'org_body.tab_list', 'main;persons;report', true ) ).split( ';' );
+%>
+<TabControl Name="OrgBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'org_body.tab_list.main_tab.block_list', 'info;desc;managers', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "org_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'info' )
+		{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+					<Label><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+				</GridRow>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_boss", curLngWeb )%>:</Label>
+					<Label><%=ArrayMerge( curObject.func_managers, "person_fullname", ", " )%></Label>
+				</GridRow>
+<%
+			if (curObject.place_id.HasValue)
+			{
+%>
+				<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+<%
+				oTemp = curObject.place_id.OptForeignElem;
+				if (oTemp != undefined)
+				{
+%>
+						<Label><%=oTemp.name%></Label>
+<%
+				}
+				else
+				{
+%>
+						<Label><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+				}
+%>
+				</GridRow>
+<%
+			}
+			if (curObject.region_id.HasValue)
+			{
+%>
+				<GridRow>
+						<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vrb_region", curLngWeb )%>:</Label>
+<%
+				oTemp = curObject.region_id.OptForeignElem;
+				if (oTemp != undefined)
+				{
+%>
+						<Label><%=oTemp.name%></Label>
+<%
+				}
+				else
+				{
+%>
+						<Label><%=tools_web.get_web_const( "c_deleted", curLngWeb )%></Label>
+<%
+				}
+%>
+				</GridRow>
+<%
+			}
+%>
+			</Grid>
+<%
+			if ( tools_web.is_true( tools_web.get_web_param( curParams, "org_body.tab_list.main_tab.disp_custom_fields", false, true ) ) )
+			{
+				fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+				curCustomFields = {
+					"id": "OrgCustomFields",
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' ),
+					"source": curObject.custom_elems,
+					"modify_eval": false
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+
+			}
+		}
+
+		if ( sTabElem == 'desc' )
+		{
+            Response.Write( tools_web.place_xaml( "block_desc" ) );
+		}
+
+		if ( sTabElem == 'managers' && curObject.show_detailed )
+		{
+			curPersonsList = ({
+				"type": "func_managers",
+			});
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_persons_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   CHILDREN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'persons' && curObject.show_children )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'org_body.tab_list.persons_tab.block_list', 'persons', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "org_body.tab_list.persons_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_collaborators", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'persons' )
+		{
+			curView = {
+				"id": "Persons",
+				"title": tools_web.get_web_const( 'c_collaborators', curLngWeb ),
+				"height": "400",
+				"catalog_name": "collaborator",
+				"xquery_qual": ( "$elem/org_id = " + curObjectID ),
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_search": "false"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   REPORT TAB   /////////////////////////////////////////////
+sReportTabPath = "org_body.tab_list.report_tab";
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_reports_tab.xaml" ) );
+
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

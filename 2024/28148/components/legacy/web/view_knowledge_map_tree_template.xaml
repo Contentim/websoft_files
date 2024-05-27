@@ -1,0 +1,558 @@
+﻿<%
+try
+{
+	tmpCurObject = null;
+	tmpCurObjectID = null;
+	//curObject.Name
+	if ( curObject.Name == "knowledge_part" || curObject.Name == "knowledge_classifier" )
+	{
+		tmpCurObject = curObject;
+		tmpCurObjectID = curObjectID;
+	}
+}
+catch(err)
+{}
+try
+{
+	typeMode = "card"
+}
+catch(err)
+{
+	typeMode = "card";
+}
+
+try
+{
+	treeCollectionName
+}
+catch(err)
+{
+	treeCollectionName = "KnowledgeMapTree";
+}
+
+try
+{
+	cur_classifier_id
+}
+catch(err)
+{
+   cur_classifier_id = undefined; 
+}
+try
+{
+	iTreeWeight
+}
+catch(err)
+{
+   iTreeWeight = 300; 
+}
+try
+{
+	default_type_visible
+}	
+catch( ex )
+{
+	default_type_visible = tools_web.get_web_param( curParams, 'default_type_visible', 'list', true );
+}
+
+try
+{
+	show_type_visible
+}	
+catch( ex )
+{
+	show_type_visible = tools_web.is_true( tools_web.get_web_param( curParams, 'show_type_visible', false, true ) );
+}
+try
+{
+	ShowAllObjects
+}	
+catch( ex )
+{
+	ShowAllObjects = tools_web.get_web_param( curParams, 'ShowAllObjects', false, true );
+}
+try
+{
+	type_show_list_knowledge
+}	
+catch( ex )
+{
+	type_show_list_knowledge = tools_web.get_web_param( curParams, 'type_show_list_knowledge', "tree", true );
+}
+
+try
+{
+	type_visible_tile_material
+}	
+catch( ex )
+{
+	type_visible_tile_material = tools_web.get_web_param( curParams, 'type_visible_tile_material', "tile_knowledge", true );
+}
+
+try
+{
+	is_open_window
+}	
+catch( ex )
+{
+	is_open_window = tools_web.is_true( tools_web.get_web_param( curParams, 'is_open_window', true, true ) );
+}
+
+try
+{
+	check_access
+}	
+catch( ex )
+{
+	check_access = tools_web.is_true( tools_web.get_web_param( curParams, 'check_access', false, true ) );
+}
+
+try
+{
+	type_visible_spisok_material
+}	
+catch( ex )
+{
+	type_visible_spisok_material = tools_web.get_web_param( curParams, 'type_visible_spisok_material', "xaml_knowledge_panel_for_spisok", true );
+}
+
+knowlPartTabListParam =  tools_web.get_web_param( curParams, "knowl_part_tab_list", "objects;experts;questions;desc", true ) ;
+arrknowlPartTabListParam = String( knowlPartTabListParam ).split( ";" );
+urlFieldArray = Array( "kc_id", "from_cdate", "to_cdate", "from_adate", "to_adate", "keyword", "tag_id", "expert_id", "status" );
+_search_param = false;
+for ( _url_aparm in urlFieldArray )
+	if ( (oParamSource.GetOptProperty( (_url_aparm )) != undefined) && (oParamSource.GetOptProperty( _url_aparm ) != "") )
+		_search_param = true;
+if ( _search_param )
+		searchPanelExpanded = true;
+		
+hide_tabitem = tools_web.get_web_param( curParams, "hide_tabitem", false, true ) && ArrayCount( arrknowlPartTabListParam ) == 1;	
+_use_hier = tools_web.get_web_param( curParams, "full_list_question_by_hier", "0", true );	
+	
+sMainFilters = new Array();
+sFilters = new Array();
+for( filter in String( "create_date;action_date;tag;expert;status;object_type" ).split( ";" ) )
+	if( OptInt( tools_web.get_web_param( curParams, "filter." + filter + ".is_active", "", true ) ) == 1 )
+		if( OptInt( tools_web.get_web_param( curParams, "filter." + filter + ".is_main", "", true ) ) == 1 )
+			sMainFilters.push( filter );
+		else
+			sFilters.push( filter );
+	
+cnt = 0;
+TypeVisible = CONTEXT.GetOptProperty( 'TypeVisible',  tools_web.get_web_param( curParams, 'visible_type', default_type_visible, true ));
+
+cur_object_id = oParamSource.GetOptProperty( "kp_id" ) != undefined ? ( oParamSource.GetOptProperty( "kp_id" ) ) : oParamSource.GetOptProperty( "kc_id" ) != undefined ? ( oParamSource.GetOptProperty( "kc_id" ) ) : "";
+cur_object_id = OptInt( cur_object_id, tmpCurObjectID )
+if( tmpCurObject == null && cur_object_id != null )
+	tmpCurObject = OpenDoc( UrlFromDocID( cur_object_id ) ).TopElem;
+
+%>
+
+<SPXMLScreen>
+	<Edit Name="ItemID" Hidden="1"></Edit>
+	<Dialog Name="ShowItem" Width="800" Source="dlg_item_check" Title="<%=XmlAttrEncode( 'Вопрос' )%>">
+		<Param Name="item_id" Value="{ItemID}"/>
+	</Dialog>
+	<Collection Name="<%=treeCollectionName%>" Source="<%=treeCollectionName%>">
+<%
+	fieldArray = Array( "start_create_date", "finish_create_date", "start_action_date", "finish_action_date", "key_word", "tag_id", "expert_id", "status" )
+	for ( _field in fieldArray )
+	{
+%>
+		<Param Name="<%=_field%>" Value="{<%=_field%>}"/>
+<%	
+	}
+%>	
+		<Param Name="context" Value="{CONTEXT}"/>
+		<Param Name="cur_object_id" Value="<%=cur_object_id%>"/>
+		<Param Name="knowledge_classifier_id" Value="{KnowledgeClassifierID}"/>
+		<Param Name="curUserID" Value="<%=curUserID%>"/>
+		<Param Name="PAGEURL" Value="<%=PAGEURL%>"/>
+		<Param Name="TypeVisible" Value="<%=TypeVisible%>"/>
+		<Param Name="knowlPartTabListParam" Value="<%=knowlPartTabListParam%>"/>
+	</Collection>
+<%
+	if( type_show_list_knowledge == "tree" )
+	{
+%>
+	<TabControl Name="KnowledgeMapTab" DisplayMode="tab" ActiveTab="<%=cur_object_id != null ? 1 : 0%>" TabsHidden="true" Height="100%">
+		<TabItem Title="<%=tools_web.get_web_const( "vkmb_tree", curLngWeb )%>">
+<%
+	}
+%>
+			<StackPanel Class="XAML-stack-container" Align="center">
+				<Edit Name="KnowledgeClassifierID" Hidden="1"><%=CONTEXT.GetOptProperty( "KnowledgeClassifierID", ( OptInt( oParamSource.GetOptProperty( "kc_id" ), "" ) ) )%></Edit>	
+				<Edit Name="KnowledgePartID" Hidden="1"><%=CONTEXT.GetOptProperty( "KnowledgePartID", ( OptInt( oParamSource.GetOptProperty( "kp_id" ), "" ) ) )%></Edit>	
+				<Edit Name="SSortTypeBasic" Hidden="1"><%=( tools_web.get_web_param( curParams, "objects_sort_type", "", true ) )%></Edit>
+				<Edit Name="TypeVisible" Hidden="1"><%=TypeVisible%></Edit>
+				<Edit Name="ExpSortType2Basic" Hidden="1"><%=( tools_web.get_web_param( curParams, "objects_sort_type", "", true ) )%></Edit>
+				<Edit Name="QuestSortTypeBasic" Hidden="1"><%=( tools_web.get_web_param( curParams, "objects_sort_type", "", true ) )%></Edit>
+				<Edit Name="KnowlPartBodyTabE" Hidden="1"><%=CONTEXT.GetOptProperty( "KnowlPartBodyTabE", ArrayOptFirstElem( arrknowlPartTabListParam ) )%></Edit>
+<%
+	if( type_show_list_knowledge == "tree" )
+	{
+%>
+				<Tree Class="XAML-tree" Name="TreeKnowledge"  Width="100%" Source="{<%=treeCollectionName%>}" DataID="id" DataParent="parent_id" DataTitle="name" DataExpanded="isExpanded" Preservable="true" DataIcon="icon_url" Click="{!on_click};SET=currentlySelectedKnowledgeTitle,{name};<%=( curDevice.disp_type == "mobile" ? "SET=MobileDesignTab,1;" : "" )%>;SET=KnowledgeMapTab,1;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};"/>//UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}Name;
+<%
+	}
+%>
+			</StackPanel>
+<%
+	if( type_show_list_knowledge == "tree" )
+	{
+%>
+		</TabItem>
+		<TabItem Title="<%=tools_web.get_web_const( "c_materials", curLngWeb )%>">
+		<Grid Width="100%" Class="XAML-grid-container">
+				<GridColumns>
+					<GridColumn/>	
+					<GridColumn Width="100%"/>
+				</GridColumns>
+
+				<GridRow>
+					<Link Click="SET=KnowledgeMapTab,0" Class="icon-arrow-left"></Link>	
+					<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedKnowledgeTitle" Editable="0"><%=tmpCurObject != null ? tmpCurObject.name : ""%></Edit>		
+			
+				</GridRow>
+			</Grid>
+<%
+	}
+%>	
+			<StackPanel Class="XAML-stack-container">
+<%
+	if( type_show_list_knowledge != "tree" && type_show_list_knowledge != "not_visible" )
+	{
+%>
+				<Panel Class="XAML-PanelKnowledge-with-top" ShowHeader="false" Name="KnowledgeMapListPart" Expanded="1" Source="panel_combo_dialog_knowledge">
+					<Param Name="type" Value="<%=type_show_list_knowledge%>"/>
+					<Param Name="collection" Value="<%=treeCollectionName%>"/>
+					<Param Name="classifier_id" Value="{KnowledgeClassifierID}"/>
+					<Param Name="knowledge_part_id" Value="{KnowledgePartID}"/>
+				</Panel>
+<%
+	}
+	
+	function add_filters_parameters( block_type )
+	{
+		sMainTempFilters = new Array()
+		sTempFilters = new Array()
+		if( block_type != "experts" )
+		{
+			if( block_type == "questions" )
+			{
+				function check_filter( name )
+				{
+					if( name != "expert_id" && name != "tag_id" )
+						return false;
+					return true;
+				}
+				sMainTempFilters = ArraySelect( sMainFilters, "check_filter( This )" );
+				sTempFilters = ArraySelect( sFilters, "check_filter( This )" )
+			}
+			else
+			{
+				sMainTempFilters = sMainFilters;
+				sTempFilters = sFilters;
+			}
+		}
+
+		function add_filter( name, is_main )
+		{
+			try{
+				is_main;
+			}
+			catch( ex ){ is_main = false; }
+			obj_filter = new Object();
+			ident = "";
+			switch( name )
+			{
+				case "action_date_s":
+					const = "vkmb_start_action_date";
+				case "action_date_f":
+					if( name == "action_date_f" )
+						const = "j87phjbjvh";
+				case "create_date":
+					obj_filter.type = "date";
+					if( name == "create_date" )
+						const = "c_create_date";
+					ident = "start_" + name;		
+					break;
+					
+				case "tag":
+					const = "vkmb_tag";
+				case "expert":
+					obj_filter.type = "foreign_elem";
+					if( name == "expert" )
+						const = "vkpb_expert";
+						
+					ident = name + "_id";
+					obj_filter.SetProperty( "default", OptInt( CONTEXT.GetOptProperty( ident, curUrlQuery.GetOptProperty( ident, "" ) ), "" ) );
+					obj_filter.SetProperty( "catalog_name", name );
+					break;
+					
+				case "status":
+					const = "c_status";
+					obj_filter.type = "combo";
+					ident = name;
+					obj_filter.items = new Array();
+					for ( _status in common.status_in_knowledge_map_types )
+						obj_filter.items.push( { value: _status.id, title: _status.name } );
+					break;
+					
+				case "object_type":
+					ident = "objectType";
+					const = "c_object_type";
+					obj_filter.type = "combo";
+
+					obj_filter.items = new Array();
+					obj_filter.items.push( { value: "all", title: tools_web.get_web_const( "xco2menws4", curLngWeb ) } );
+					for ( _obj_type in ArraySelectDistinct( knowledge_objects, "This.catalog" ) )
+						obj_filter.items.push( { value: _obj_type.catalog, title: _obj_type.catalog.ForeignElem.title } );
+					
+					break;
+
+			}
+			obj_filter.name = block_type + ident;
+			if( !is_main )
+				obj_filter.title = tools_web.get_web_const( const, curLngWeb );
+			return obj_filter;	
+		}	
+
+		cnt_filter = 0;
+		for( filter in sTempFilters )
+		{
+			if( cnt_filter >= 3 )
+			{
+				cnt_filter = 0;
+				row_filters.push( arr_filters );
+				arr_filters = new Array();
+			}
+			if( filter == "action_date" )
+			{
+				arr_filters.push( add_filter( "action_date_s" ) );
+				cnt_filter++;
+				if( cnt_filter >= 3 )
+				{
+					cnt_filter = 0;
+					row_filters.push( arr_filters );
+					arr_filters = new Array();
+				}
+				arr_filters.push( add_filter( "action_date_f" ) );
+			}
+			else
+				arr_filters.push( add_filter( filter ) );
+				
+			cnt_filter++;
+		}
+		if( cnt_filter > 0 )
+			row_filters.push( arr_filters );
+		
+		arr_filters = new Array();
+		for( filter in sMainTempFilters )
+		{
+			if( filter == "action_date" )
+			{
+				arr_filters.push( add_filter( "action_date_s", true ) );
+				arr_filters.push( add_filter( "action_date_f", true ) );
+			}
+			else
+				arr_filters.push( add_filter( filter, true ) );
+		}
+	}
+	
+	if( !hide_tabitem )
+	{
+		
+		arr_tabitems = new Array();
+		arrknowlPartTabListParam = String( knowlPartTabListParam ).split( ";" );
+		if( knowlPartTabListParam != "" )
+		{
+			/*for( tabitem in arrknowlPartTabListParam )
+			{
+				const = "";
+				switch( tabitem )
+				{
+					case "objects":
+						const = "c_materials";
+						break;
+					case "experts":
+						const = "vkpb_experts";
+						break;
+					case "questions":
+						const = "c_questions";
+						break;
+					case "desc":
+						const = "c_desc";
+						break;
+						
+				}
+				arr_tabitems.push( { name: tabitem, title: tools_web.get_web_const( const, curLngWeb ), click: "SET=KnowlPartBodyTabE," + tabitem + ";UPDATE=KnowledgeMapFilterPanel;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}" } )
+			}*/
+
+%>
+		<TabControl ActiveTab="<%=CONTEXT.GetOptProperty( "TabControlData", 0 )%>" Name="TabControlData"  Class="XAML-tabcontrol-filter XAML-tabcontrol-knowledge" Preservable="1">
+<%
+			for( elem in arrknowlPartTabListParam )
+			{
+				arr_filters = new Array();
+				row_filters = new Array();
+				add_filters_parameters( elem )
+				switch( elem )
+				{
+					case "objects":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_materials", curLngWeb ) )%>" Click="SET=KnowlPartBodyTabE,objects;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}">
+				
+<%
+						break;
+					case "experts":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "vkpb_experts", curLngWeb ) )%>" Click="SET=KnowlPartBodyTabE,experts;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}">
+<%
+
+						break;
+					case "questions":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_questions", curLngWeb ) )%> - <%=XmlAttrEncode( tools_web.get_web_const( "vtr_answers", curLngWeb ) )%>" Click="SET=KnowlPartBodyTabE,questions;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}">
+<%
+						break;
+
+					case "desc":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Click="SET=KnowlPartBodyTabE,desc;UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE}">
+<%
+						break;
+				}
+				if( elem != "desc" )
+				{
+					curFilter = {
+						'id': elem,
+						'search_field': elem + "key_word",
+						'selectors': ( show_type_visible && elem != "questions" ? 'list;tile' : '' ),
+						'search_width': 150,
+						'disp_search': tools_web.is_true( tools_web.get_web_param( curParams, "filter.key_word.is_active", "", true ) ),
+						'selectors_field': "TypeVisible" + elem,
+						'selectors_value': TypeVisible,
+						'search_action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+						'selectors_action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+						'action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+						'row_filters': row_filters,
+						'filters': arr_filters,
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+				}
+				else
+				{
+%>				
+				<StackPanel Class="XAML-stack-filters-container" Height="54" Orientation="Vertical" Adapt="1">
+				</StackPanel>
+<%	
+				}
+%>	
+				<Panel ShowHeader="false" Class="XAML-panel-margin-padding" Name="KnowledgeMapTabPanel<%=elem%>" Expanded="1" Source="xaml_knowledge_map_tab_panel">
+					<Param Name="KnowledgeClassifierID" Value="{KnowledgeClassifierID}"/>
+					<Param Name="KnowledgePartID" Value="{KnowledgePartID}"/>
+					<Param Name="KnowlPartBodyTab" Value="{KnowlPartBodyTabE}" />
+					<Param Name="TypeVisible" Value="{TypeVisible<%=elem%>}"/>
+					<Param Name="ShowAllObjects" Value="<%=ShowAllObjects%>"/>
+					<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+				</Panel>				
+			</TabItem>
+<%
+			}
+
+%>				
+		</TabControl>
+<%
+		}
+		else
+		{
+			curFilter = {
+				'selectors': ( show_type_visible ? 'list;tile' : '' ),
+				'search_width': 150,
+				'search_field': elem + "key_word",
+				'selectors_field': "TypeVisible" + elem,
+				'search_action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+				'selectors_action': "SET=TypeVisible,{TypeVisible" + elem + "};UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+				'selectors_value': TypeVisible,
+				'action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+				'row_filters': row_filters,
+				'filters': arr_filters
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+		}
+	}
+	else
+	{
+		arr_filters = new Array();
+		row_filters = new Array();
+		add_filters_parameters( knowlPartTabListParam )
+		curFilter = {
+			'selectors': ( show_type_visible ? 'list;tile' : '' ),
+			'search_width': 150,
+			'search_field': knowlPartTabListParam + "key_word",
+			'selectors_field': "TypeVisible" + knowlPartTabListParam,
+			'search_action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+			'selectors_action': "SET=TypeVisible,{TypeVisible" + knowlPartTabListParam + "};UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+			'selectors_value': TypeVisible,
+			'action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+			'row_filters': row_filters,
+			'filters': arr_filters
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>	
+				<Panel ShowHeader="false" Class="XAML-panel-margin-padding" Name="KnowledgeMapTabPanel<%=knowlPartTabListParam%>" Expanded="1" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_search_result", curLngWeb ) )%>" Source="xaml_knowledge_map_tab_panel">
+					<Param Name="KnowledgeClassifierID" Value="{KnowledgeClassifierID}"/>
+					<Param Name="KnowledgePartID" Value="{KnowledgePartID}"/>
+					<Param Name="KnowlPartBodyTab" Value="{KnowlPartBodyTabE}" />
+					<Param Name="TypeVisible" Value="{TypeVisible}"/>
+					<Param Name="ShowAllObjects" Value="<%=ShowAllObjects%>"/>
+					<Param Name="is_open_window" Value="<%=is_open_window%>"/>
+				</Panel>	
+<%
+	}
+%>	
+		<Collection Name="KnowledgeMaterialTile" Source="knowledge_collection_for_materials_tile">
+			<Param Name="KnowledgeClassifierID" Value="{KnowledgeClassifierID}"/>
+			<Param Name="KnowledgePartID" Value="{KnowledgePartID}"/>
+			<Param Name="DateCreateS" Value="{objectsstart_create_date}"/>
+			<Param Name="DateCreateF" Value="{objectsfinish_create_date}"/>
+			<Param Name="sDateEndF" Value="{objectsfinish_action_date_s}"/>
+			<Param Name="sDateEndS" Value="{objectsstart_action_date_s}"/>
+			<Param Name="fDateEndS" Value="{objectsstart_action_date_f}"/>
+			<Param Name="fDateEndF" Value="{objectsfinish_action_date_f}"/>
+			<Param Name="SearchW" Value="{objectskey_word}"/>
+			<Param Name="TagID" Value="{objectstag_id}"/>
+			<Param Name="ExpertID" Value="{objectsexpert_id}"/>
+			<Param Name="StateID" Value="{objectsstatus}"/>
+			<Param Name="FullListObjectByHier" Value="<%=tools_web.get_web_param( curParams, "full_list_object_by_hier", "0", true )%>"/>
+			<Param Name="showUnconfirmedObj" Value="<%=showUnconfirmedObjects%>"/>
+			<Param Name="sShowExpertQuestionBtn" Value="<%=sShowExpertQuestionBtn%>"/>
+			<Param Name="ShowAllObjects" Value="<%=ShowAllObjects%>"/>
+			<Param Name="objectType" Value="{objectsobjectType}"/>
+			<Param Name="CheckAccess" Value="<%=check_access%>"/>
+		</Collection>
+		<Collection Name="KnowledgeExpertTile" Source="knowledge_collection_for_experts_tile">
+			<Param Name="KnowledgeClassifierID" Value="{KnowledgeClassifierID}"/>
+			<Param Name="KnowledgePartID" Value="{KnowledgePartID}"/>
+			<Param Name="ShowAllObjects" Value="<%=ShowAllObjects%>"/>
+			<Param Name="key_word" Value="{expertskey_word}"/>
+			<Param Name="full_list_expert_by_hier" Value="<%=tools_web.get_web_param( PARAMETERS, "full_list_expert_by_hier", "0", true )%>"/>
+			<Param Name="CheckAccess" Value="<%=check_access%>"/>
+		</Collection>
+		
+						
+				</StackPanel>
+<%
+
+			if( type_show_list_knowledge == "tree" )
+			{
+%>
+
+			</TabItem>
+		</TabControl>
+<%
+			}
+%>
+</SPXMLScreen>			

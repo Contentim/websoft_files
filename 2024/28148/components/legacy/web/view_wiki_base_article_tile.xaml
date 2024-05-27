@@ -1,0 +1,69 @@
+﻿<SPXMLScreen>
+<%
+iObjectID = OptInt( PARAMETERS.GetOptProperty( "id" ) );
+if ( iObjectID != undefined )
+{
+	iMaxLen = OptInt( PARAMETERS.GetOptProperty( "max_len" ), 1000 )
+	var teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+	sName = teObject.name;
+	
+	if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+		sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+	else
+		sObjectImageUrl = '/images/' + teObject.Name + '.png';
+
+	sClickAction = "HIDE=SearchStackPanel;SHOW=SearchResultArticleStackPanel;SET=SearchResultPanelWikiArticleID," + iObjectID + ";UPDATE=SearchResultPanelWikiArticle;"
+
+	sDesc = HtmlToPlainText( teObject.text_area );
+	if( StrLen( sDesc ) > iMaxLen )
+		sDesc = StrLeftCharRange(  sDesc, iMaxLen )
+%>
+
+<Grid Width="100%" Class="XAML-grid-list-item" Adapt="1">
+	<GridColumns>
+<%
+		if(sObjectImageUrl != "")
+		{
+%>
+		<GridColumn/>
+<%
+		}
+%>
+		<GridColumn Width="100%"/>	
+	</GridColumns>
+	<GridRow>
+<%
+		if(sObjectImageUrl != "")
+		{
+%>
+		<Image Click="<%=sClickAction%>" Source="pics/1blank.gif" Class="XAML-image-list-image">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+<%
+		}
+%>
+		<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+			<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="1">
+				<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+					<![CDATA[<%=tools_web.get_cur_lng_name( sName, curLng.short_id )%>]]>
+				</Link>							
+			</StackPanel>
+<%
+		if(sDesc != "")
+		{
+%>
+			<Label Class="XAML-label-tile-desc">
+				<![CDATA[<%=sDesc%>]]>
+			</Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+%>
+	</GridRow>
+</Grid>
+<%
+}
+%>
+</SPXMLScreen>

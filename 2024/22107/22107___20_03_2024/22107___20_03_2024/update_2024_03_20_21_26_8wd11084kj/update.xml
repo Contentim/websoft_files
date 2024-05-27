@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>8wd11084kj</id>
+		<create_date>2024-03-20T21:26:17+00:00</create_date>
+		<server_version>2023.2.856 (2024-03-07)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9C</id>
+			<code>156</code>
+			<name>Вы были исключены из списка преподавателей мероприятия</name>
+			<subject>Вы были исключены из списка преподавателей мероприятия</subject>
+			<body>&lt;% if ( ObjectType(Text) == 'JsObject' ){%&gt;&#10;&lt;%&#10;sSex = Text.lector_sex == "w" ? "ая" : "ый";&#10;sAddressing = 'Уважаем' + sSex;&#10;%&gt;&#10;&lt;%=sAddressing%&gt;, &lt;%=Text.lector_fullname%&gt;, Вы были исключены из списка преподавателей мероприятия "&lt;%=Text.event_name%&gt;". &#10;&lt;% } else { %&gt;&#10;Уважаемый(ая) &lt;%= objDoc.type == "invitee" ? objDoc.lastname + objDoc.firstname + objDoc.middlename : objDoc.person_fullname%&gt;. Вы были исключены из списка преподавателей мероприятия "&lt;%=objDocSec.name%&gt;".&#10;&lt;%=Text%&gt;&#10;&lt;% } %&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>true</is_std>
+			<changed>true</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-03-20T21:03:42Z</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-03-20T21:03:42Z</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9B</id>
+			<code>155</code>
+			<name>Вы были включены в список преподавателей мероприятия</name>
+			<subject>Вы были включены в список преподавателей мероприятия</subject>
+			<body>&lt;% if ( ObjectType(Text) == 'JsObject' ){%&gt;&#10;&lt;%&#10;sSex = Text.lector_sex == "w" ? "ая" : "ый";&#10;sAddressing = 'Уважаем' + sSex;&#10;%&gt;&#10;&lt;%=sAddressing%&gt;, &lt;%=Text.lector_fullname%&gt;, Вы были включены в список преподавателей мероприятия "&lt;%=Text.event_name%&gt;", которое состоится &lt;%=StrDate(Text.event_start_date, true, false)%&gt;. &#10;&#10;Для перехода к карточке мероприятия используйте ссылку: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, Text.event_id) ) %&gt;&#10;&lt;% } else { %&gt;&#10;Уважаемый(ая) &lt;%= objDoc.type == "invitee" ? objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename : objDoc.person_fullname%&gt;. Вы были включены в список преподавателей мероприятия "&lt;%=objDocSec.name%&gt;". Для перехода к карточке мероприятия используйте ссылку: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&lt;%=Text%&gt;&#10;&#10;&lt;% } %&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>true</is_std>
+			<changed>true</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-03-20T21:08:11Z</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-03-20T21:08:11Z</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+	</notification_templates>
+</data>

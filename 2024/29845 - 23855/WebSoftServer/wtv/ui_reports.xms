@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN>
+
+<USE FORM="//wtv/ui_general.xms"/>
+
+<PANEL NAME="standard_report_actions_panel" STD-MARGINS="0" HEIGHT="48px" WIDTH="100%" SAMPLE="1">
+
+    <LINE VERT-ALIGN="center">
+        <ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'vcrb_build_report')" IMAGE-URL="//wtv/svg/elem_right.svg" CMD="Run" WEB-ID-EXPR="'report_run'"/>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        <ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'sgsvrm6x6u' )" IMAGE-URL="//wtv/svg/export.svg" WEB-ID-EXPR="'report_export'">
+            <MENU>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('w99bevhc3i') )" ACTION="
+
+                        TopElem.export_type = 'xlsx';
+                        Screen.RunCommand( 'Export' );
+
+                " WEB-ID-EXPR="'report_export_xls'"/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('8ul6b3phsx') )" ACTION="
+
+                        TopElem.export_type = 'docx';
+                        Screen.RunCommand( 'Export' );
+
+                " WEB-ID-EXPR="'report_export_docx'"/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('5wffbv7y7x') )" ACTION="
+
+                        TopElem.export_type = 'html';
+                        Screen.RunCommand( 'Export' );
+
+                " WEB-ID-EXPR="'report_export_html'"/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('vpdf') )" _CMD="ExportToPDF" ACTION="
+
+                        TopElem.export_type = 'pdf';
+                        Screen.RunCommand( 'Export' );
+
+                " WEB-ID-EXPR="'report_export_pdf'"/>
+            </MENU>
+        </ButtonToolbar>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        <ButtonToolbar TITLE-EXPR="'Параметры отчёта'" IMAGE-URL="//wtv/svg/filter.svg" CHECKED-EXPR="!TopElem.is_minimized" ACTION="
+        
+            if ( TopElem.is_minimized )
+            {
+                TopElem.is_minimized = false;
+                tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : false } ] );
+            }
+            else
+            {
+                TopElem.is_minimized = true;
+                tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : true } ] );
+            }
+
+        " WEB-ID-EXPR="'report_export_params_btn'"/>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+       <ButtonToolbar IMAGE-URL-EXPR="local_settings.tabs.ChildByKeyExists( local_settings.first_catalog_url ) ? '//wtv/svg/favorits.svg' : '//wtv/svg/nofavorits.svg'" ACTION="
+            
+            sReporName = '';
+            sReportCatalogName = '';
+
+            arrAccessBlockItems = local_settings.get_access_block_items();
+            oAccessBlockItemFirstElem = ArrayOptFirstElem(arrAccessBlockItems)
+            fldAccessBlockItem = ArrayOptFindByKey( arrAccessBlockItems, local_settings.first_catalog_url, 'href' );
+
+            tePanel = FetchDoc( 'x-local://wtv/wtv_view_panel.xml' ).TopElem;
+            for(oBlockReport in tePanel.block_reports)
+            {
+                _report = ArraySelect(oBlockReport.reports, 'This.url == local_settings.first_catalog_url');
+                
+                if(ArrayOptFirstElem(_report) != undefined)
+                {
+                    oReport = ArrayOptFirstElem(_report);
+
+                    if(oReport.title.HasValue)
+                        sReporName = oReport.title;
+                }
+            }
+
+            arrAccessBlock = ArraySelect(access_blocks, 'This.id == local_settings.tab_block_id');
+            if(ArrayOptFirstElem(arrAccessBlock) != undefined)
+            {
+                oAccessBlock = ArrayOptFirstElem(arrAccessBlock);
+                if(oAccessBlock.name.HasValue)
+                    sReportCatalogName = eval(oAccessBlock.name);
+            }     
+
+            if ( local_settings.tabs.ChildByKeyExists( local_settings.first_catalog_url ) )
+            {
+                local_settings.tabs.DeleteChilds( 'PrimaryKey==' + CodeLiteral( local_settings.first_catalog_url ) );
+            }
+            else
+            {
+                arrAccessBlockItems = local_settings.get_access_block_items();
+                fldAccessBlockItem = ArrayOptFindByKey( arrAccessBlockItems, local_settings.first_catalog_url, 'href' );
+
+                fldTabChild = local_settings.tabs.ObtainChildByKey( local_settings.first_catalog_url );
+                fldTabChild.title = 'Отчет - ' + sReporName + ' ('+ sReportCatalogName +')';
+                fldTabChild.image_url = oAccessBlockItemFirstElem.icon;
+                fldTabChild.catalog_name = oAccessBlockItemFirstElem.id;
+                fldTabChild.access_block = local_settings.tab_block_id;
+
+                if ( ArrayOptFindByKey( arrAccessBlockItems, fldTabChild.title, 'title' ) != undefined )
+                {
+                    fldAccessBlock = access_blocks.GetOptChildByKey( local_settings.tab_block_id );
+                    if ( fldAccessBlock != undefined )
+                    {
+                        fldTabChild.title += '+' + CodeLiteral( ' (' + eval( fldAccessBlock.name ) + ')' );
+                    }
+                }
+            }
+            local_settings.Doc.Save();
+
+            Screen.RunCommand( 'Refresh' );
+
+        " TIP-TEXT="##'Избранное'##" ALIGN="left" WEB-ID-EXPR="'view_header_btn_favorites'"/>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+    </LINE>
+
+</PANEL>
+
+</SPXML-SCREEN>

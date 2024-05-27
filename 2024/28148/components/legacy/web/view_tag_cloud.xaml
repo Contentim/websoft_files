@@ -1,0 +1,131 @@
+<%
+try
+{
+	if ( curTagCloud == undefined ||curTagCloud == null )
+		throw 'no_data';
+}
+catch ( err )
+{
+	curTagCloud = ({});
+}
+
+curTagCloud_sCond = '';
+curTagCloud_sCatalogName = curTagCloud.GetOptProperty( 'catalog_name', '' );
+if ( curTagCloud_sCatalogName != '' )
+{
+	curTagCloud_sXqueryQual = curTagCloud.GetOptProperty( 'xquery_qual', '' );
+	if ( curTagCloud_sXqueryQual == '' )
+	{
+		curTagCloud_sCond = ' $t_obj/catalog = \'' + curTagCloud_sCatalogName + '\'';
+	}
+	else
+	{
+		curTagCloud_sCond = ' some $elem in groups satisfies ( $t_obj/object_id = $elem/id and ' + curTagCloud_sXqueryQual + ' ) and $t_obj/catalog = \'' + curTagCloud_sCatalogName + '\'';
+	}
+}
+curTagCloud_xarrTagged = ArraySelectAll( tools.xquery( 'for $t_obj in tagged_objects' + ( curTagCloud_sCond == '' ? '' : ' where' + curTagCloud_sCond ) + ' order by $t_obj/tag_id return $t_obj' ) );
+curTagCloud_catFirstTag = ArrayOptFirstElem( curTagCloud_xarrTagged );
+if ( curTagCloud_catFirstTag != undefined )
+{
+	curTagCloud_sFieldName =  StrLowerCase( curTagCloud.GetOptProperty( 'tag_id_field_name', 'tag_id' ) );
+	curTagCloud_sUrlQuery = curTagCloud.GetOptProperty( 'url_query', '' );
+	curTagCloud_iCurTagID = OptInt( curTagCloud.GetOptProperty( 'tag_id', curUrlQuery.GetOptProperty( curTagCloud_sFieldName ) ), null );
+	curTagCloud_arrCloud = [];
+
+	curTagCloud_xarrTags = ArraySelectAll( tools.xquery( "for $elem in tags where MatchSome( $elem/id, (" + ArrayMerge( ArraySelectDistinct( curTagCloud_xarrTagged, 'This.tag_id' ), 'This.tag_id', ',' ) + ") ) return $elem/id, $elem/name" ) );
+
+	curTagCloud_oLastCloud = ({ 'tag_id': null, 'tag_name': '', 'count': 0 });
+	curTagCloud_iLostID = null;
+	for ( catTaggedElem in curTagCloud_xarrTagged )
+	{
+		if ( curTagCloud_iLostID == catTaggedElem.tag_id )
+			continue;
+		curTagCloud_catTag = ArrayOptFindByKey( curTagCloud_xarrTags, catTaggedElem.tag_id, 'id' );
+		if ( curTagCloud_catTag == undefined )
+		{
+			curTagCloud_iLostID = catTaggedElem.tag_id.Value;
+			continue;
+		}
+
+		if ( curTagCloud_catTag.id.Value != curTagCloud_oLastCloud.tag_id )
+		{
+			if ( curTagCloud_oLastCloud.count != 0 )
+				curTagCloud_arrCloud.push( curTagCloud_oLastCloud );
+
+			curTagCloud_oLastCloud = ({ 'tag_id': curTagCloud_catTag.id.Value, 'tag_name': curTagCloud_catTag.name.Value, 'count': 0 });
+		}
+		curTagCloud_oLastCloud.count++;
+	}
+	if ( curTagCloud_oLastCloud.count != 0 )
+		curTagCloud_arrCloud.push( curTagCloud_oLastCloud );
+
+	curTagCloud_iSizeMin = 10;
+	curTagCloud_iSizeMax = 30;
+	curTagCloud_bSize = ArrayCount( curTagCloud_arrCloud ) > 1;
+	if ( curTagCloud_bSize )
+	{
+		curTagCloud_iCountMax = ArrayMax( curTagCloud_arrCloud, 'count' ).count;
+		curTagCloud_iCountMin = ArrayMin( curTagCloud_arrCloud, 'count' ).count;
+		curTagCloud_bSize = curTagCloud_iCountMax != curTagCloud_iCountMin;
+		curTagCloud_rDel = curTagCloud_bSize ? Real( curTagCloud_iSizeMax - curTagCloud_iSizeMin ) / Real( curTagCloud_iCountMax - curTagCloud_iCountMin ) : 0.0;
+	}
+
+	if( curTagCloud.GetOptProperty( 'id', '' ) == "KnowledgeMap" )
+	{
+%>
+		<StackPanel Orientation="Horizontal" UsePadding="false">
+<%
+		cnt = 0;
+		for ( oTagElem in curTagCloud_arrCloud )
+		{
+			curTagCloud_iSize = ( curTagCloud_bSize ? curTagCloud_iSizeMin + Int( ( oTagElem.count - curTagCloud_iCountMin ) * curTagCloud_rDel ) : curTagCloud_iSizeMin );
+			cnt += StrLen( oTagElem.tag_name )*curTagCloud_iSize;
+			if( cnt > 3500 )
+			{
+				cnt = 0;
+%>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" UsePadding="false">
+<%
+			}
+			curTagCloud_iSize = ( curTagCloud_bSize ? curTagCloud_iSizeMin + Int( ( oTagElem.count - curTagCloud_iCountMin ) * curTagCloud_rDel ) : curTagCloud_iSizeMin );
+%>
+<HTMLBox><![CDATA[
+	<style>
+		.XAML-KnowledgeMap-<%=oTagElem.tag_id%> { font-size: <%=curTagCloud_iSize%>px; }
+	</style>
+]]></HTMLBox>
+			<Link NoWrap="true" Class="XAML-KnowledgeMap-<%=oTagElem.tag_id%>" Click="SHOW=KnowledgeMapTagStackPanel;HIDE=KnowledgeMapTagStackPanelLoad;SET=QuestionsCollection\iTagId,<%=oTagElem.tag_id%>;SET=KnowledgeMapTagPanel_tag_id,<%=oTagElem.tag_id%>;UPDATE=KnowledgeMapTagPanel"><%=oTagElem.tag_name%></Link>
+			<Label>,</Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+	}
+	else
+	{
+		curTagCloud_sNewUrl = tools_web.convert_mode_clean_url( tools_web.get_query_string_from_url( PAGEURL, true, curTagCloud_sUrlQuery + '&' + curTagCloud_sFieldName ) ) + curTagCloud_sUrlQuery + ( curTagCloud_sUrlQuery == '' || StrEnds( curTagCloud_sUrlQuery, '&' ) || StrEnds( curTagCloud_sUrlQuery, '/' ) ? '' : '/' );
+%>
+<HTMLBox><![CDATA[
+
+<div>
+	<span><a style="font-size: <%=curTagCloud_iSizeMax%>px;" href="<%=curTagCloud_sNewUrl%>">- <%=tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb )%> -</a></span>
+<%
+	for ( oTagElem in curTagCloud_arrCloud )
+	{
+		curTagCloud_iSize = ( curTagCloud_bSize ? curTagCloud_iSizeMin + Int( ( oTagElem.count - curTagCloud_iCountMin ) * curTagCloud_rDel ) : curTagCloud_iSizeMin );
+%>
+	<span><a style="font-size: <%=curTagCloud_iSize%>px;<%=( curTagCloud_iCurTagID == oTagElem.tag_id ? ' font-style: italic;' : '' )%>" href="<%=( curTagCloud_sNewUrl + curTagCloud_sFieldName + '/' + oTagElem.tag_id )%>"><%=HtmlEncode( tools_web.get_cur_lng_name( oTagElem.tag_name, curLng.short_id ) )%></a></span>
+<%
+	}
+%>
+</div>
+
+]]></HTMLBox>
+<%
+	}
+}
+
+curTagCloud = undefined;
+%>

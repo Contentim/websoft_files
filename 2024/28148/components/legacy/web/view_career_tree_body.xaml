@@ -1,0 +1,86 @@
+﻿<%
+// const_start
+sConstAllFamilies = tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb );; //TODO
+// const_end
+%>
+<SPXMLScreen>
+<%
+try
+{
+	sStartNodeType;
+}
+catch(x)
+{
+	sStartNodeType = tools_web.get_web_param(curParams, "career_tree.start_node", "all", true);
+}
+try
+{
+	iSelectedId;
+}
+catch(x)
+{
+	iSelectedId = (curUser.position_id.HasValue && curUser.position_id.OptForeignElem != undefined && curUser.position_id.ForeignElem.position_common_id.HasValue) ? curUser.position_id.ForeignElem.position_common_id : 0;
+}
+try
+{
+	sTreeOrientation;
+}
+catch(x)
+{
+	sTreeOrientation = "right";
+}
+try
+{
+	bShowPositionFamilyFilter;
+}
+catch(x)
+{
+	bShowPositionFamilyFilter = tools_web.is_true(tools_web.get_web_param(curParams, "career_tree.show_position_family_filter", false, true));
+}
+try
+{
+	iDefaultPositionFamilyId;
+}
+catch(x)
+{
+	iDefaultPositionFamilyId = OptInt(tools_web.get_web_param(curParams, "career_tree.default_position_family_id", "0", true),0);	
+}
+try
+{
+	bShowTitle;
+}
+catch(x)
+{
+	bShowTitle = true;
+}
+if(bShowTitle)
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+%>
+
+<StackPanel Class="XAML-stack-filter" Hidden="<%=!bShowPositionFamilyFilter%>">
+	
+		<ComboBox Name="SelectFamily" Width="240" Change="UPDATE=PlanOfPowerAssumption" SelectedItem="<%=iDefaultPositionFamilyId%>">								
+					<ComboBoxItem Value="0"><%=XmlAttrEncode( sConstAllFamilies )%></ComboBoxItem>
+		<%
+					for(catFamily in position_familys)
+					{
+		%>
+			<ComboBoxItem Value="<%=catFamily.PrimaryKey%>"><%=tools_web.get_cur_lng_name( catFamily.name, curLng.short_id )%></ComboBoxItem>
+		<%
+					}
+		%>
+		</ComboBox>	
+</StackPanel>
+<%
+%>
+	<Collection Name="CareerCollection" Source="career_tree">
+		<Param Name="sStartNodeType" Value="<%=sStartNodeType%>"/>
+		<Param Name="iSelectedId" Value="<%=iSelectedId%>"/>
+		<Param Name="iPositionFamilyId" Value="{SelectFamily}"/>
+	</Collection>
+		
+	<!--<OrgChart Name="PlanOfPowerAssumption1" Width="100%" Height="500" Source="{CareerCollection}" DataID="id" DataParent="parent" DataTitle="title"/>
+	-->
+	<WTTree Type="tree" MultiPath="true" Orientation="<%=sTreeOrientation%>" DisplayToggle="false" MarkerEnd="circle" MarkerStart="arrow" ElementFontIcon="icon-user-ico" ElementLayout="fonticon|text=title" Name="PlanOfPowerAssumption" Width="100%" Source="{CareerCollection}" NodeClick="OPENURL=<%=tools_web.get_mode_clean_url( null, "{id}", { doc_id: curDocID } )%>" DataParent="parent" DataID="id" DataTitle="title"/>
+
+</SPXMLScreen>

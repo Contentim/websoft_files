@@ -1,0 +1,46 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	curDescObject;
+	curDescObjectID;
+}
+catch(_netu_)
+{
+	curDescObject = curDoc;
+	curDescObjectID = curDocID;
+}
+try
+{
+	curDescDispPanel;
+}
+catch(_netu_)
+{
+	curDescDispPanel = true;
+}
+if ( curDescObject != null )
+{
+	curDescObject = tools_web.obtain_text_area( curDescObjectID, curDescObject );
+	if ( curDescObject.text_area.HasValue )
+	{
+		if ( curDescDispPanel )
+		{
+%>
+<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Expanded="1" Width="100%">
+<%
+		}
+%>
+	<HTMLBox>
+		<%=HtmlEncode( tools_web.get_web_desc( curDescObject.text_area, ({'mode':'data'}) ) )%>
+	</HTMLBox>
+<%
+		if ( curDescDispPanel )
+		{
+%>
+</Panel>
+<%
+		}
+	}
+}
+%>
+</SPXMLScreen>

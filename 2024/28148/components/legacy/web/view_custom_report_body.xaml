@@ -1,0 +1,384 @@
+﻿<SPXMLScreen>
+<%
+	var bThinMode = curDevice.disp_type == "mobile";
+	/*
+	curTitle = {
+		"type": "simple",
+		"title": tools_web.get_cur_lng_name(curObject.name, curLng.short_id)
+	}
+	*/
+	Response.Write(EvalCodePageUrl(global_settings.web_path + "view_object_title.xaml"));
+	
+	var sParamActiveTab = CONTEXT.GetOptProperty("CustomReportTab", (curObject.show_table && curObject.web_settings.default_mode == "chart" ? "1" : "0")) + "";
+	
+	var iChainCount, vParamsList, fldVirtualField, fldChain, fldCritterElem, aCriterions = curObject.criterions.Clone();
+	var vTemp, fldTemp, sParamName, sParamValue, iN = 0;
+	
+	var sVolatileDataKey = "custom-report-params_" + curUserID + "" + curObjectID;
+	var oVolatile = tools_web.get_user_data(sVolatileDataKey);
+	
+	if (oVolatile == null || oVolatile.GetOptProperty("_chsh") != curObject.get_crit_hash())
+	{
+		oVolatile = curObject.extractVolatileData();
+	}
+	else
+	{
+		for (fldCritterElem in aCriterions)
+		{
+			sParamValue = oVolatile.c[fldCritterElem.ChildIndex];
+			if (sParamValue != undefined)
+				fldCritterElem.value = sParamValue;
+		}
+	}
+	
+	var sIntID = "";
+	if (oVolatile.GetOptProperty("iv", null) != null)
+		sIntID = oVolatile.iv;
+		
+		
+	aCriterions = ArraySelect(aCriterions , "This.flag_is_parameter == true && This.flag_value_filter == false && This.flag_active == true");
+	
+	if (ArrayOptFirstElem(aCriterions) != undefined)
+	{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="300"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+		vParamsList = Array();
+		for (fldCritterElem in aCriterions)
+		{
+			iChainCount = ArrayCount(fldCritterElem.catalog_chains);
+			if (iChainCount > 0)
+			{
+				fldChain = fldCritterElem.catalog_chains.Child(iChainCount - 1);
+
+				if (!fldChain.field.HasValue && iChainCount > 1)
+				{
+					fldChain = fldCritterElem.catalog_chains.Child(iChainCount - 2);
+				}
+				if ( fldChain.field.HasValue && !fldCritterElem.is_custom_field )
+				{
+					fldCritterElem.flag_hierarchy = 0;
+				}
+
+				tools.fill_field_names(fldChain.field_names, fldChain.catalog_name);
+				fldVirtualField = fldChain.field_names.GetChildByKey( fldChain.field );
+			}
+			else
+			{
+				fldVirtualField = null;
+				continue;
+			}
+			
+			if (fldCritterElem.flag_hierarchy == 2 || fldCritterElem.flag_hierarchy > 0 && fldVirtualField.foreign_catalog != 'subdivision')
+			{
+				continue;
+			}
+
+			
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=(fldCritterElem.column_title.HasValue ? fldCritterElem.column_title.Value : (fldVirtualField.title.HasValue ? fldVirtualField.title : fldVirtualField.name))%>:</Label>
+<%
+			sParamName = "p" + iN + "_" + fldChain.field;
+			
+			switch(fldVirtualField.type)
+			{
+				case "bool":
+					sParamValue = CONTEXT.GetOptProperty(sParamName);
+					if (sParamValue == undefined)
+						sParamValue = (fldCritterElem.value == "true" ? "1" : "0");
+%>
+					<CheckBox Name="<%=sParamName%>" Value="1" Checked="<%=sParamValue%>"/>
+<%
+					break;
+				case "integer":
+				case "string":
+				case "foreign_elem":
+					sParamValue = CONTEXT.GetOptProperty(sParamName, fldCritterElem.value);
+					if (fldVirtualField.foreign_array.HasValue)
+					{
+						if (fldVirtualField.foreign_catalog.HasValue)
+						{
+							curSelector = {
+								"id": sParamName, //suffix_id
+								"width": "100%",
+								"catalog_name": fldVirtualField.foreign_catalog.Value,
+								"object_id": sParamValue, //element_value
+								"object_id_item_name": sParamName, //element_id
+								"can_be_empty": true
+							};
+							Response.Write(EvalCodePageUrl(global_settings.web_path + "view_selector.xaml"));
+						}
+						else
+						{
+%>
+					<ComboBox Name="<%=sParamName%>">
+						<ComboBoxItem Value=""> </ComboBoxItem>
+<%
+							for(vTemp in fldVirtualField.foreign_array.Object)
+							{
+%>
+						<ComboBoxItem Value="<%=vTemp.PrimaryKey%>" Selected="<%=(vTemp.PrimaryKey == sParamValue)%>"><%=(vTemp.ChildExists("name") ? vTemp.name : vTemp.PrimaryKey)%></ComboBoxItem>
+<%
+							}
+%>
+					</ComboBox>
+<%
+						}
+					}
+					else
+					{
+						if (fldVirtualField.type == "integer")
+						{
+%>
+					<Edit Name="<%=sParamName%>" Width="100"><%=OptInt(sParamValue, "")%></Edit>
+<%
+						}
+						else
+						{
+%>
+					<Edit Name="<%=sParamName%>" Width="100%"><%=sParamValue%></Edit>
+<%
+						}
+					}
+					break;
+				case "date":
+					sParamValue = CONTEXT.GetOptProperty(sParamName, fldCritterElem.value);
+%>
+					<DatePicker Name="<%=sParamName%>" Format="d.m.Y H:i:s"><%=sParamValue%></DatePicker>
+<%					
+					break;
+				case "combo":
+					sParamValue = CONTEXT.GetOptProperty(sParamName, fldCritterElem.value);
+					if (fldCritterElem.is_custom_field && custom_templates.ChildExists(fldChain.catalog_name))
+					{
+						try
+						{
+							fldTemp = custom_templates.Child(fldChain.catalog_name).fields.GetOptChildByKey(fldChain.field).entries;
+						}
+						catch(_x_)
+						{
+							fldTemp = null;
+						}
+						if (fldTemp != null)
+						{
+%>
+						<ComboBox Name="<%=sParamName%>">
+<%
+							for (vTemp in fldTemp)
+							{
+%>
+							<ComboBoxItem Value="<%=XmlAttrEncode(vTemp.value)%>" Selected="<%=(vTemp.value == sParamValue ? 1 : 0)%>"><%=HtmlEncode(vTemp.value)%></ComboBoxItem>
+<%
+							}
+%>
+						</ComboBox>
+<%
+						}
+						else
+						{
+%>
+						<Edit Name="<%=sParamName%>" Width="100%">
+							<%=HtmlEncode(sParamValue)%>
+							<HTMLTip><![CDATA[<%=tools_web.get_web_const("znacheniyapolyane", curLngWeb )%>]]></HTMLTip>
+						</Edit><Label>*</Label>
+<%
+						}
+					}
+					break;
+				default:
+					sParamValue = CONTEXT.GetOptProperty(sParamName, fldCritterElem.value);
+%>
+					<Edit Name="<%=sParamName%>" Width="100%"><%=sParamValue%></Edit>
+<%
+			}
+			vParamsList[ArrayCount(vParamsList)] = sParamName;
+%>
+				</GridRow>
+<%
+			iN++;
+		}
+		vParamsList = ArrayMerge(vParamsList, "This", ",");
+%>
+			</Grid>
+<%
+	}
+	else
+		vParamsList = "";
+%>
+	<ContextGroup Name="ParamsContext" Items="<%=((vParamsList != "" ? vParamsList + "," : "") + "bForceCRRefresh,bNotFirstLoad")%>"/>
+	<Edit Name="bForceCRRefresh" Hidden="1"/>
+	<Edit Name="bNotFirstLoad" Hidden="1"><%=CONTEXT.GetOptProperty("bNotFirstLoad", "")%></Edit>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+		<Button Class="XAML-button XAML-button-refresh" Click="CONTEXT=ParamsContext;SET=bForceCRRefresh,1;SET=bNotFirstLoad,1;UPDATE=CustomReportDataGrid,CustomReportChart;SET=bForceCRRefresh,"><%=tools_web.get_web_const("vcrb_build_report", curLngWeb)%></Button>
+<%
+	if (!bThinMode)
+	{
+%>
+		<Button Click="OPENWINDOW=assessment_excel_export.html?mode=custom_report_data&custom_report_id=<%=curObjectID%>&header=vnd.openxmlformats-officedocument.spreadsheetml.sheet" Class="XAML-button XAML-button-excel-download"><%=tools_web.get_web_const("c_export_to_excel", curLngWeb )%></Button>
+		<Button Click="OPENWINDOW=assessment_excel_export.html?mode=custom_report_data&custom_report_id=<%=curObjectID%>&header=pdf&ext=pdf&cdt=attachment" Class="XAML-button XAML-button-pdf-download"><%=tools_web.get_web_const("c_export_to_pdf", curLngWeb )%></Button>
+<%
+	}
+%>
+	</StackPanel>
+	
+	<TabControl Name="CustomReportTab" ActiveTab="<%=sParamActiveTab%>">
+<%
+	if (curObject.show_table)
+	{
+%>
+		 <TabItem Title="<%=tools_web.get_web_const( "vcrb_table", curLngWeb )%>" Reload="1" Class="icon-list">
+<%
+		var aConnnectedReps = XQuery("for $elem in custom_reports where $elem/connect_2_object = '" + curObject.object_name + "' order by $elem/name return $elem");
+		//var bHasSmth2Connect = (ArrayOptFirstElem(aConnnectedReps) != undefined);
+		var curCollectionMenu = {
+			"id": "CustomReport",
+			"catalog_name": curObject.object_name,
+			"data_grid_id": "CustomReportDataGrid",
+			"source_type": "",
+			"id_field_name": "record_id"
+		};
+		Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list_menu.xaml"));
+		
+		var vPagingSize = OptInt(tools_web.get_web_param(curParams, "custom_report.iPagingSize", null, true ), "");
+		
+		if (sParamActiveTab == "0")
+		{
+%>
+			<Collection Name="CUSTOM_REPORT_DATA" Source="CUSTOM_REPORT_DATA">
+				<Param Name="custom_report_id" Value="<%=curObjectID%>"/>
+				<Param Name="int_id" Value="<%=sIntID%>"/>
+				<Param Name="parameters_list" Value="<%=vParamsList%>"/>
+				<Param Name="context" Value="{CONTEXT}"/>
+				<Param Name="sReportMode" Value="table"/>
+			</Collection>
+			<DataGrid Name="CustomReportDataGrid" Source="{CUSTOM_REPORT_DATA}" Height="<%=(curObject.web_settings.table_height.HasValue ? curObject.web_settings.table_height : "")%>" <%=(curObject.categorize ? "Categorized=\"!id:parent_id\"" : "")%> Selection="<%=(true ? "single": "none")%>" PageSize="<%=vPagingSize%>" >
+<%
+/*
+			if (bHasSmth2Connect)
+			{
+				Response.Write("<Menu>");
+				for (vTemp in aConnnectedReps)
+				{
+					Response.Write('<MenuItem Title="' + XmlAttrEncode(vTemp.name) + '" Click="OPENURL=' + tools_web.get_mode_clean_url(null, vTemp.PrimaryKey.Value, ({"int_id": "{record_id}","doc_id": curDocID})) + '"/>');
+				}
+				Response.Write("</Menu>");
+			}
+*/
+%>
+				<Menu Source="{CatalogListMenuCustomReport}"/>
+			</DataGrid>
+<%
+		}
+%>
+		 </TabItem>
+<%
+	}
+	if (curObject.show_chart)
+	{
+%>
+		 <TabItem Title="<%=tools_web.get_web_const( "diagramma", curLngWeb )%>" Reload="1" Class="icon-th-large">
+<%
+		if (sParamActiveTab == "1" || !curObject.show_table)
+		{
+			var b3d = false;
+			
+			var sCommonChartElem = CONTEXT.GetOptProperty("crc_type", oVolatile.chart);
+			if (sCommonChartElem != "" && sCommonChartElem != null)
+				sCommonChartElem = ArrayOptFindByKey(common.charts, sCommonChartElem, "chart_type");
+			else
+				sCommonChartElem = curObject.chart_id.OptForeignElem;
+				
+			if (sCommonChartElem != undefined)
+			{
+				b3d = (sCommonChartElem.chart_subtypes.GetOptChildByKey("3D") != undefined);
+				sCommonChartElem = sCommonChartElem.chart_type.Value;
+			}
+			else
+				sCommonChartElem = "Line";
+		
+			var aAggregations = ArraySelect(curObject.aggregations, "This.flag_graph == true && This.aggregate_function.HasValue && This.aggregate_column.HasValue");
+			var iAggroLen =ArrayCount(aAggregations);
+			var bChartSwitch = (iAggroLen > 1);
+			var bShowLabels = CONTEXT.GetOptProperty("crc_show_labels", (curObject.flag_showvalues ? "1" : "0"));
+			var sChartList = "";
+			var sChartOptions = "";
+			if ((sCommonChartElem == "Pie" || sCommonChartElem == "Doughnut") && bShowLabels)
+				sChartOptions = "'padding':100";
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-filters-container" Align="right">
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+			<Label><%=tools_web.get_web_const( "diagramma", curLngWeb )%></Label>
+			<ComboBox Name="crc_type" SelectedItem="<%=CONTEXT.GetOptProperty("crc_type", sCommonChartElem)%>" Class="XAML-combo-view" Change="REFRESH">
+				<ComboBoxItem Value="Line"><%=tools_web.get_web_const( "ass_report_graph_line", curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="Area"><%=tools_web.get_web_const( "soblastyami", curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="Column"><%=tools_web.get_web_const( "stolb", curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="Pie"><%=tools_web.get_web_const( "krugovaya", curLngWeb )%></ComboBoxItem>
+				<ComboBoxItem Value="Doughnut"><%=tools_web.get_web_const( "kolcevaya", curLngWeb )%></ComboBoxItem>
+			</ComboBox>
+			
+<%
+		if (bThinMode)
+		{
+%>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+<%
+		}
+%>
+			
+			<CheckBox Name="crc_show_legend" Value="<%=(bThinMode ? "n": "e")%>" Change="REFRESH" Checked="<%=(CONTEXT.GetOptProperty("crc_show_legend", (curObject.disp_legend ? (bThinMode ? "n": "e") : ""))  == (bThinMode ? "n": "e"))%>"/>
+			<Label><%=tools_web.get_web_const( "vcrb_show_legend", curLngWeb )%></Label>
+			<CheckBox Name="crc_show_labels" Value="1" Change="REFRESH" Checked="<%=bShowLabels%>"/>
+			<Label><%=tools_web.get_web_const( "pokazatmetki", curLngWeb )%></Label>
+<%
+		if (bThinMode)
+		{
+%>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-filter">
+<%
+		}
+%>			
+			<CheckBox Name="view_3d" Value="1" Change="REFRESH" Checked="<%=CONTEXT.GetOptProperty("view_3d", b3d)%>"/>
+			<Label><%=tools_web.get_web_const( "view_iso", curLngWeb )%></Label>
+<%
+			if (bChartSwitch)
+			{
+				var iAggro;
+				for (iAggro = 0; iAggro < iAggroLen; iAggro++)
+				{
+					vTemp = (CONTEXT.GetOptProperty("c" + iAggro, "1") == "1" ? "1" : "0");
+					sChartList += vTemp;
+%>
+				<CheckBox Name="c<%=iAggro%>" Value="1" Change="REFRESH" Checked="<%=vTemp%>"/>
+				<Label><%=("#" + (iAggro + 1))%></Label>
+<%					
+				}
+			}
+%>
+		</StackPanel>
+		</StackPanel>
+		<Collection Name="CUSTOM_REPORT_CHART_DATA" Source="CUSTOM_REPORT_DATA">
+			<Param Name="custom_report_id" Value="<%=curObjectID%>"/>
+			<Param Name="chart_type" Value="{crc_type}"/>
+			<Param Name="int_id" Value="<%=sIntID%>"/>
+			<Param Name="parameters_list" Value="<%=vParamsList%>"/>
+			<Param Name="context" Value="{CONTEXT}"/>
+			<Param Name="sReportMode" Value="chart"/>
+			<Param Name="charts_list" Value="<%=sChartList%>"/>
+		</Collection>
+		<Chart Name="CustomReportChart" Width="100%" Height="400" DataChartID="caption" DataCategory="x" DataValue="y" Source="{CUSTOM_REPORT_CHART_DATA}" Hidden="0" ShowLabels="<%=bShowLabels%>" Legend="<%=CONTEXT.GetOptProperty("crc_show_legend", (curObject.disp_legend ? (bThinMode ? "n": "e") : ""))%>" View3D="<%=CONTEXT.GetOptProperty("view_3d", b3d)%>" Options="<%=sChartOptions%>"/>
+<%
+		}
+%>
+		 </TabItem>
+<%
+	}
+%>
+	</TabControl>
+</SPXMLScreen>

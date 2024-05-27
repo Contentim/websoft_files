@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>3sdoqry261</id>
+		<server_version>3.0.0.1 (2014-10-22)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x60BD4459C7F48427</id>
+			<code>AddResponseContinuousFeedbackAll</code>
+			<name VALUE="##'Непрерывная обратная связь / Дать обратную связь (универсальное)'##"/>
+			<type>eval</type>
+			<catalog_name>response</catalog_name>
+			<link_name>response</link_name>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/AddResponseContinuousFeedbackAll.bs</code_url>
+			</exec_code>
+			<wvars>
+				<wvar>
+					<name>sNotifyResponse</name>
+					<value>default</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>send</id>
+							<name VALUE="##'Отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>not_send</id>
+							<name VALUE="##'Не отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>default</id>
+							<name VALUE="##'По параметрам приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Отправлять уведомления о получении обратной связи'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iNotificationID</name>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений о получении обратной связи (если не задано, берется из приложения)'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/AddResponseContinuousFeedbackAll</load_path>
+				<code>components/continuous_feedback/remote_action/AddResponseContinuousFeedbackAll</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x60BFD930ABC77C91</id>
+			<code>GetRequestContinuousFeedbackAll</code>
+			<name VALUE="##'Непрерывная обратная связь / Запросить обратную связь (универсальное)'##"/>
+			<type>eval</type>
+			<catalog_name>request</catalog_name>
+			<link_name>request</link_name>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/GetRequestContinuousFeedbackAll.bs</code_url>
+			</exec_code>
+			<wvars>
+				<wvar>
+					<name>sNotifyResponse</name>
+					<value>default</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>send</id>
+							<name VALUE="##'Отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>not_send</id>
+							<name VALUE="##'Не отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>default</id>
+							<name VALUE="##'По параметрам приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Отправлять уведомления о получении обратной связи'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iNotificationID</name>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений о получении обратной связи (если не задано, берется из приложения)'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iDaysPlanning</name>
+					<value>7</value>
+					<type>integer</type>
+					<description lang-ru:VALUE="##'Дней на заполнение отзыва по умолчанию'##"/>
+					<silent>0</silent>
+					<position>3</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/GetRequestContinuousFeedbackAll</load_path>
+				<code>components/continuous_feedback/remote_action/GetRequestContinuousFeedbackAll</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x60CC748AA7F9E418</id>
+			<code>EditResponseContinuousFeedback</code>
+			<name VALUE="##'Непрерывная обратная связь / Просмотреть, изменить отзыв'##"/>
+			<type>eval</type>
+			<catalog_name>response</catalog_name>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/EditResponseContinuousFeedback.bs</code_url>
+			</exec_code>
+			<wvars>
+				<wvar>
+					<name>bCanChange</name>
+					<value>0</value>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Можно изменять'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>bCanChangeScore</name>
+					<parent_wvar_name>bCanChange</parent_wvar_name>
+					<value>0</value>
+					<type>bool</type>
+					<description lang-ru:VALUE="##'Можно изменять оценку'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sResponseID</name>
+					<type>string</type>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/EditResponseContinuousFeedback</load_path>
+				<code>components/continuous_feedback/remote_action/EditResponseContinuousFeedback</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x60F9982AFFF9F595</id>
+			<code>ResponseChangeState</code>
+			<name lang-ru:VALUE="##'Изменить статус отзыва'##"/>
+			<type>eval</type>
+			<catalog_name>response</catalog_name>
+			<link_name>response</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/ResponseChangeState.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_actions/ResponseChangeState.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>sState</name>
+					<value>cancel</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>cancel</id>
+							<name lang-ru:VALUE="##'Отменить'##"/>
+						</entry>
+						<entry>
+							<id>return_to_work</id>
+							<name lang-ru:VALUE="##'Вернуть в работу'##"/>
+						</entry>
+					</entries>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/ResponseChangeState</load_path>
+				<code>components/continuous_feedback/remote_action/ResponseChangeState</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x60F9982AFFF9F59E</id>
+			<code>GetRequestContinuousFeedbackCollaborator</code>
+			<name lang-ru:VALUE="##'Запросить обратную связь по сотруднику'##"/>
+			<type>eval</type>
+			<catalog_name>collaborator</catalog_name>
+			<link_name>collaborator</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/GetRequestContinuousFeedbackCollaborator.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_actions/GetRequestContinuousFeedbackCollaborator.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>sNotifyResponse</name>
+					<value>default</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>send</id>
+							<name lang-ru:VALUE="##'Отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>not_send</id>
+							<name lang-ru:VALUE="##'Не отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>default</id>
+							<name lang-ru:VALUE="##'По параметрам приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Отправлять уведомления о получении обратной связи'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iNotifyResponseType</name>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений о получении обратной связи (если не задано, берется из приложения)'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sDaysPlanning</name>
+					<value>7</value>
+					<type>integer</type>
+					<silent>0</silent>
+					<position>3</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/GetRequestContinuousFeedbackCollaborator</load_path>
+				<code>components/continuous_feedback/remote_action/GetRequestContinuousFeedbackCollaborator</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x60F9982AFFF9F5D3</id>
+			<code>GetRequestContinuousFeedbackProjectParticipant</code>
+			<name lang-ru:VALUE="##'Запросить обратную связь по участнику проекта'##"/>
+			<type>eval</type>
+			<catalog_name>project_participant</catalog_name>
+			<link_name>project_participant</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/GetRequestContinuousFeedbackProjectParticipant.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_actions/GetRequestContinuousFeedbackProjectParticipant.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>sNotifyResponse</name>
+					<value>default</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>send</id>
+							<name lang-ru:VALUE="##'Отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>not_send</id>
+							<name lang-ru:VALUE="##'Не отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>default</id>
+							<name lang-ru:VALUE="##'По параметрам приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Отправлять уведомления о получении обратной связи'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iNotifyResponseType</name>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений о получении обратной связи (если не задано, берется из приложения)'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>sDaysPlanning</name>
+					<value>7</value>
+					<type>integer</type>
+					<silent>0</silent>
+					<position>3</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/GetRequestContinuousFeedbackProjectParticipant</load_path>
+				<code>components/continuous_feedback/remote_action/GetRequestContinuousFeedbackProjectParticipant</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x61066F0B7B1DE536</id>
+			<code>AddResponseContinuousFeedbackCollaborator</code>
+			<name lang-ru:VALUE="##'Непрерывная обратная связь / Дать обратную связь сотруднику'##"/>
+			<type>eval</type>
+			<catalog_name>collaborator</catalog_name>
+			<link_name>collaborator</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://components/continuous_feedback/spxml/remote_actions/AddResponseContinuousFeedbackCollaborator.bs</code_url>
+			</exec_code>
+			<url>x-local://components/continuous_feedback/spxml/remote_actions/AddResponseContinuousFeedbackCollaborator.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>sNotifyResponse</name>
+					<value>default</value>
+					<type>combo</type>
+					<entries>
+						<entry>
+							<id>send</id>
+							<name lang-ru:VALUE="##'Отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>not_send</id>
+							<name lang-ru:VALUE="##'Не отправлять уведомления'##"/>
+						</entry>
+						<entry>
+							<id>default</id>
+							<name lang-ru:VALUE="##'По параметрам приложения'##"/>
+						</entry>
+					</entries>
+					<description lang-ru:VALUE="##'Отправлять уведомления о получении обратной связи'##"/>
+					<silent>0</silent>
+					<position>1</position>
+					<required>0</required>
+				</wvar>
+				<wvar>
+					<name>iNotifyResponseType</name>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description lang-ru:VALUE="##'Тип уведомлений о получении обратной связи (если не задано, берется из приложения)'##"/>
+					<silent>0</silent>
+					<position>2</position>
+					<required>0</required>
+				</wvar>
+			</wvars>
+			<i18n_param>
+				<load_path>x-local://components/continuous_feedback/i18n/remote_action/AddResponseContinuousFeedbackCollaborator</load_path>
+				<code>components/continuous_feedback/remote_action/AddResponseContinuousFeedbackCollaborator</code>
+			</i18n_param>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+	<notifications>
+		<notification>
+			<id>0x60C3E2072BEFE243</id>
+			<code>continuous_feedback_response</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление сотрудника о получении обратной связи'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x60C3E308D3FE7A00</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+		<notification>
+			<id>0x644CE2D129CD12ED</id>
+			<code>continuous_feedback_response</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление сотрудника о запросе обратной связи'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x60C3E67A03DD3626</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+		<notification>
+			<id>0x60CD8439E7FB70D8</id>
+			<code>continuous_feedback_request_initiator</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление инициатора об оставленной обратной связи'##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>0x60CD85401FF95CC4</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>0x53C3B5592328196F</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>0</is_std>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+	<notification_templates>
+		<notification_template>
+			<id>0x60C3E308D3FE7A00</id>
+			<code>continuous_feedback_response</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление сотрудника о получении обратной связи'##"/>
+			<subject VALUE="##'Уведомление сотрудника о получении обратной связи'##"/>
+			<body>Уважаем[ый/ая], &lt;%=objDoc.fullname%&gt;.&#10;&#10;Вам была оставлена обратная связь.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/continuous_feedback" )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<main_object>
+				<catalog_name>collaborator</catalog_name>
+			</main_object>
+		</notification_template>
+		<notification_template>
+			<id>0x60C3E67A03DD3626</id>
+			<code>continuous_feedback_response</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление сотрудника о запросе обратной связи'##"/>
+			<subject VALUE="##'Уведомление сотрудника о получении обратной связи'##"/>
+			<body>Уважаем[ый/ая], &lt;%=objDoc.fullname%&gt;.&#10;&#10;Вам предложено дать обратную связь сотруднику &lt;%=objDocSec.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/continuous_feedback" )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<main_object>
+				<catalog_name>collaborator</catalog_name>
+			</main_object>
+		</notification_template>
+		<notification_template SPXML-FORM="x-local://wtv/wtv_notification_template.xmd">
+			<id>0x60CD85401FF95CC4</id>
+			<code>continuous_feedback_request_initiator</code>
+			<name VALUE="##'Непрерывная обратная связь / Уведомление инициатора об оставленной обратной связи'##"/>
+			<subject VALUE="##'Уведомление инициатора об оставленной обратной связи'##"/>
+			<body>Уважаем[ый/ая], &lt;%=objDoc.fullname%&gt;.&#10;&#10;&lt;%=objDocSec.fullname%&gt;, котор[ого/ую] вы просили оставить обратную связь работнику &lt;%=Text%&gt;, заполни[л/ла] отзыв.</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<main_object>
+				<catalog_name>collaborator</catalog_name>
+			</main_object>
+		</notification_template>
+	</notification_templates>
+</data>

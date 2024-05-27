@@ -1,0 +1,188 @@
+﻿<SPXMLScreen>
+
+<Label Class="XAML-object-title-label"><%=tools_web.get_cur_lng_name( curObject.name, curLng.short_id )%></Label>
+<%
+xarrOperations = [];
+if ( curObject.education_org_id.HasValue && ArrayOptFirstElem( XQuery( "for $elem in education_org_lectors where $elem/education_org_id = " + curObject.education_org_id + " and $elem/person_id = " + curUserID + " return $elem" ) ) != undefined )
+{
+	xarrProviderBossTypes = XQuery( "for $elem in boss_types where $elem/code = 'course_provider' return $elem" );
+	xarrOperations = tools.get_relative_operations_by_boss_types( xarrProviderBossTypes );
+}
+
+bShowCourseHelpdesc = tools.check_operation_rights( xarrOperations, curUser, 'show_course_helpdesc' );
+
+if ( ! bShowCourseHelpdesc && ArrayOptFindByKey( curObject.persons, curUserID, 'person_id' ) == undefined )
+{
+	curMessageBox = {
+		"type": "error_access"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'CourseBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'course_expert_body.tab_list', 'add;history;helpdesc', true ) ).split( ';' );
+%>
+<TabControl Name="CourseBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   ADD TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'add' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_expert_body.tab_list.add_tab.block_list', 'catalogs;files;forums', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_expert_body.tab_list.add_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'materialykursa', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'catalogs' )
+		{
+			Response.Write( tools_web.place_xaml( "list_catalogs" ) );
+		}
+
+		if ( sTabElem == 'files' )
+		{
+			Response.Write( tools_web.place_xaml( "list_files" ) );
+		}
+
+		if ( sTabElem == 'forums' )
+		{
+			curView = {
+				"id": "Forums",
+				"title": tools_web.get_web_const( 'c_forums', curLngWeb ),
+				"height": "200",
+				"catalog_name": "forum",
+				"xquery_qual": (  "$elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"disp_filter": "false",
+				"disp_search": "false"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+
+///////////////////////////////////////////////   HISTORY TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'history' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_expert_body.tab_list.history_tab.block_list', 'all_learnings', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_expert_body.tab_list.history_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'istoriyaobucheniya', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'all_learnings' )
+		{
+%>
+		<Panel Title="<%=XmlAttrEncode( tools_web.get_web_const( 'kuriruemyeobuch', curLngWeb ) )%>" Width="100%">
+<%
+			curView = {
+				"id": "ActiveLearnings",
+				"title": tools_web.get_web_const( 'aktivnyeobuchen', curLngWeb ),
+				"height": "200",
+				"catalog_name": "active_learning",
+				"xquery_qual": ( "$elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_menu": "true",
+				"data_fields": "person_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+
+			curView = {
+				"id": "Learnings",
+				"title": tools_web.get_web_const( 'zavershennyeobu', curLngWeb ),
+				"height": "200",
+				"catalog_name": "learning",
+				"xquery_qual": ( "$elem/course_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_mode": "learning_stat",
+				"disp_filter": "false",
+				"disp_search": "false",
+				"disp_menu": "true",
+				"data_fields": "person_id"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+		</Panel>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+
+///////////////////////////////////////////////   HELPDESC TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'helpdesc' && bShowCourseHelpdesc )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'course_expert_body.tab_list.helpdesc_tab.block_list', 'requests', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "course_expert_body.tab_list.helpdesc_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'c_requests', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="1">
+<%
+	if ( iDefaultTab == iCurTab )
+	{
+		for ( sTabElem in arrBlockListParam )
+		{
+			if ( sTabElem == 'requests' )
+			{
+				catRequestType = ArrayOptFirstElem( XQuery( "for $elem in request_types where $elem/code = 'request_course_bug_report' return $elem" ) );
+				if ( catRequestType != undefined )
+				{
+					curView = {
+						"id": "WF",
+						"height": "",
+						"disp_paging": true,
+						"paging_size": 100,
+						"catalog_name": "request",
+						"external_eval": "workflow_condition_requests",
+						"xquery_qual": ( "$elem/object_id = " + curObjectID + " and $elem/request_type_id = " + catRequestType.id ),
+						"disp_search": true,
+						"sort_index": 1,
+						"sort_direct": "-",
+						"disp_filter": true,
+						"filter_mode": "custom",
+						"filter_items": ([
+							{ "id": "status_id_switcher_work", "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": CONTEXT.GetOptProperty( 'status_id_switcher_work', 'active' ), "action": "REFRESH" }
+						]),
+						"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) )
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+				}
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

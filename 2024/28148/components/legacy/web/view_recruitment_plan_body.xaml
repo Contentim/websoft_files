@@ -1,0 +1,740 @@
+﻿<%
+
+    var sRedirectUrl  = '';
+    var bObjectExists = true;
+
+    try
+    {
+        docPlan = OpenDoc( UrlFromDocID( curObjectID ) );
+    }
+    catch( e )
+    {
+        bObjectExists = false;
+        sRedirectUrl = 'OPENURL=' + tools_web.get_mode_clean_url( 'recruitment_plans', null, { doc_id : curUrlQuery.GetOptProperty( 'doc_id' ) } );
+    }
+
+    if ( bObjectExists )
+    {
+%>
+
+    <SPXMLScreen>
+
+<%
+
+    sConstVacancyType         = tools_web.get_web_const( 'tipvakansii',       curLngWeb );
+    sConstQuantity            = tools_web.get_web_const( 'obshayachislennos', curLngWeb );
+    sConstPeriodsDetalization = tools_web.get_web_const( 'detalizaciyapop',   curLngWeb );
+    sConstRecruitmentMethods  = tools_web.get_web_const( 'sposobypodbora',    curLngWeb );
+    sConstCandidateSources    = tools_web.get_web_const( 'istochnikikandi',   curLngWeb );
+    sConstCoordinators        = tools_web.get_web_const( 'soglasuyushie',     curLngWeb );
+    sConstQuantity            = tools_web.get_web_const( 'chislennost',       curLngWeb );
+
+    bAllowBudgetPeriodChange = tools_web.is_true(tools_web.get_web_param( curParams, "recruitment_plan_body.allow_budget_period_change", "true", true ));
+    sAvailableSubdivisions   = tools_web.get_web_param( curParams, "recruitment_plan_body.available_subdivisions", "all", true );
+    arrFuncManagers          = tools.get_object_relative_boss_types( curUserID, curObjectID );
+    xarrOperations           = tools.get_relative_operations_by_boss_types( arrFuncManagers );
+    arrActions               = ArraySelect( xarrOperations, "operation_type == 0 && ArrayOptFind( String( This.operation_catalog_list ).split( ',' ), 'This == \"recruitment_plan\"') != undefined" );
+    arrPriveleges            = ArraySelectByKey( xarrOperations, 1, "operation_type" );
+
+    bShowAll = ArrayOptFindByKey( arrPriveleges, "show_all", "action" ) != undefined;
+
+    if ( ArrayOptFirstElem( arrActions ) != undefined )
+    {
+        curCollectionMenu = {
+            "id": "RecruitmentPlanBody",
+            "catalog_name": "recruitment_plan",
+            "selected_data": UrlEncode( '[{"id":' + curObjectID + '}]' )
+        };
+
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+        
+        oParam = {
+            "name_id": "RecruitmentPlanBody",
+            "curUserID": curUserID,
+            "curUser": curUser
+        };
+%>
+    <Toolbar Class="XAML-toolbar" Width="100%">
+<%
+        for ( catActionElem in arrActions )
+        {
+            if ( catActionElem.use_access_eval )
+            {
+                teOperation = OpenDoc( UrlFromDocID( catActionElem.id ) ).TopElem;
+                sFirstSelectIdField = curObjectID;
+                if ( ! tools.safe_execution( teOperation.access_eval_code ) )
+                    continue;
+            }
+            sClick = tools_web.eval_operation_script( catActionElem.id, 'xaml', oParam );
+%>
+            <Button Class="XAML-button XAML-button--<%=catActionElem.action%>" Click="<%=sClick%>"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></Button>
+<%
+        }
+%>
+    </Toolbar>
+<%
+    }
+
+    bIsEditable = curObject.coordinators.GetOptChildByKey( curUserID ) != undefined;
+
+    if ( bIsEditable )
+    {
+%>
+
+    <Action Name="SaveRecruitmentPlan" Source="recruitment_plan_change" Success="REFRESH" Failure="ALERT={messageText}">
+        <Param Name="CONTEXT" Value="{CONTEXT}"/>
+    </Action>
+
+    <Collection Name="CollectionPeriodsReadOnly">
+        <Data>
+<%
+        for(fldPeriod in curObject.budget_periods)
+        {
+%>
+            <Row>
+                <Cell Id="budget_period_id" Value="<%=fldPeriod.budget_period_id%>"/>
+                <Cell Id="budget_period_name" Value="<%=fldPeriod.budget_period_name%>"/>
+                <Cell Id="quantity" Value="<%=fldPeriod.quantity%>"/>
+                <Cell Id="comment" Value="<%=fldPeriod.comment%>"/>
+            </Row>
+<%
+        }
+%>
+        </Data>
+    </Collection>
+
+    <TabControl Name="RecruitmentPlanTabControl" ActiveTab="<%=OptInt( CONTEXT.GetOptProperty( "RecruitmentPlanTabControl" ), 0 )%>">
+        <TabItem Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+            <Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+                <GridColumns>
+                    <GridColumn/>
+                    <GridColumn/>
+                </GridColumns>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_state")%>:</Label>
+                    <Label><%=curLngCommon.recruitment_plan_state_types.GetChildByKey( curObject.state ).name%></Label>
+                </GridRow>
+<%
+                if ( curObject.position_type == "name" )
+                {
+                    if ( curObject.position_name.HasValue )
+                    {
+%>
+                    <GridRow>
+                        <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+                        <Label><%=tools_web.get_cur_lng_name( curObject.position_name , curLng.short_id )%></Label>
+                    </GridRow>
+<%
+                    }
+                }
+                else
+                {
+                    if ( curObject.position_common_id.HasValue && curObject.position_common_id.OptForeignElem != undefined )
+                    {
+%>
+                    <GridRow>
+                        <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+                        <Label><%=tools_web.get_cur_lng_name( curObject.position_common_id.ForeignElem.name , curLng.short_id )%></Label>
+                    </GridRow>
+<%
+                    }
+                }
+
+                if ( curDevice.disp_type != "mobile" )
+                {
+                    if ( curObject.budget_period_id.HasValue && curObject.budget_period_id.OptForeignElem != undefined )
+                    {
+%>
+                    <GridRow>
+                        <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>
+                        <Label><%=tools_web.get_cur_lng_name( curObject.budget_period_id.ForeignElem.name , curLng.short_id )%></Label>
+                    </GridRow>
+<%
+                    }
+
+                    if ( ArrayOptFirstElem( curObject.budget_periods ) != undefined )
+                    {
+%>
+                    <GridRow>
+                        <Label Class="XAML-grid-label-name"><%=sConstPeriodsDetalization%>:</Label>	
+                        
+                            <DataGrid Name="PeriodsDetailsReadOnly" Source="{CollectionPeriodsReadOnly}"  Width="100%" Height="150">
+                                <DataGridColumn Title="Id" Value="budget_period_id" Type="string" Hidden="1" Ghost="0"/>
+                                <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Type="string"/>
+                                <DataGridColumn Title="<%=sConstQuantity%>" Value="quantity" Width="100" Type="string"/>
+                                <DataGridColumn Title="<%=tools.get_web_str("c_comment")%>" Value="comment" Width="100" Type="string"/>
+                                <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Width="100%" Type="string"/>
+                                
+                            </DataGrid>
+                        
+                    </GridRow>
+<%
+                    }
+                }
+
+                if ( curObject.subdivision_id.HasValue && curObject.subdivision_id.OptForeignElem != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+                    <Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.subdivision_id, { doc_id : curDocID } )%>"><%=tools_web.get_cur_lng_name( curObject.subdivision_id.ForeignElem.name , curLng.short_id )%></Link>
+                </GridRow>
+<%
+                }
+
+                if ( curObject.subdivision_group_id.HasValue && curObject.subdivision_group_id.OptForeignElem != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "1akgrp8ook", curLngWeb )%>:</Label>
+                    <Label><%=tools_web.get_cur_lng_name( curObject.subdivision_group_id.ForeignElem.name , curLng.short_id )%></Label>
+                </GridRow>
+<%
+                }
+
+                if ( curObject.position_family_id.HasValue && curObject.position_family_id.OptForeignElem != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "re7n9mti11", curLngWeb )%>:</Label>
+                    <Label><%=tools_web.get_cur_lng_name( curObject.position_family_id.ForeignElem.name , curLng.short_id )%></Label>
+                </GridRow>
+<%
+                }
+
+                if ( curObject.vacancy_type_id.HasValue && curObject.vacancy_type_id.OptForeignElem != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=sConstVacancyType%>:</Label>
+                    <Label><%=tools_web.get_cur_lng_name( curObject.vacancy_type_id.ForeignElem.name , curLng.short_id )%></Label>
+                </GridRow>
+<%
+                }
+
+                if ( ArrayOptFirstElem( curObject.recruitment_methods ) != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=sConstRecruitmentMethods%>:</Label>
+                    <StackPanel Class="XAML-stack-no-padding" Adapt="true">
+<%
+                        for(fldMethod in curObject.recruitment_methods)
+                        {
+%>
+                        <Label><%=tools_web.get_cur_lng_name( fldMethod.PrimaryKey.ForeignElem.name , curLng.short_id )%></Label>
+<%
+                        }
+%>
+                    </StackPanel>
+                </GridRow>
+<%
+                }
+
+                if ( ArrayOptFirstElem( curObject.candidate_sources ) != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=sConstCandidateSources%>:</Label>
+                    <StackPanel Class="XAML-stack-no-padding" Adapt="true">
+<%
+                    for ( fldSource in curObject.candidate_sources )
+                    {
+%>
+                        <Label><%=tools_web.get_cur_lng_name( fldSource.PrimaryKey.ForeignElem.name , curLng.short_id )%></Label>
+<%
+                    }
+%>
+                    </StackPanel>
+                </GridRow>
+<%
+                }
+
+                if ( ArrayOptFirstElem( curObject.coordinators ) != undefined )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=sConstCoordinators%>:</Label>
+                    <StackPanel Class="XAML-stack-no-padding" Adapt="true">
+<%
+                        for(fldSource in curObject.coordinators)
+                        {
+%>
+                        <Label><%=tools_web.get_cur_lng_name( fldSource.person_fullname , curLng.short_id )%></Label>
+<%
+                        }
+%>
+                    </StackPanel>
+                </GridRow>
+<%
+                }
+
+                if ( curObject.quantity.HasValue )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=sConstQuantity%>:</Label>
+                    <Label><%=curObject.quantity%></Label>
+                </GridRow>
+<%
+                }
+
+                if ( curObject.comment.HasValue )
+                {
+%>
+                <GridRow>
+                    <Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_comment")%>:</Label>
+                    <Label><%=curObject.comment%></Label>
+                </GridRow>
+<%
+                }
+
+                if ( curDevice.disp_type == "mobile" )
+                {
+                    if ( curObject.budget_period_id.HasValue && curObject.budget_period_id.OptForeignElem != undefined )
+                    {
+%>
+                    <GridRow>
+                        <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>
+                        <Label><%=tools_web.get_cur_lng_name( curObject.budget_period_id.ForeignElem.name , curLng.short_id )%></Label>
+                    </GridRow>
+<%
+                    }
+                }
+%>
+            </Grid>
+<%
+            if ( curDevice.disp_type == "mobile" )
+            {
+                if ( ArrayOptFirstElem( curObject.budget_periods ) != undefined )
+                {
+%>
+                <StackPanel Class="XAML-stack-no-padding" Orientation="vertical" Adapt="true">	
+                    <Label Class="XAML-grid-label-name"><%=sConstPeriodsDetalization%>:</Label>	
+                    <DataGrid Name="PeriodsDetailsReadOnly2" Source="{CollectionPeriodsReadOnly}"  Width="100%" Height="150">
+                        <DataGridColumn Title="Id" Value="budget_period_id" Type="string" Hidden="1" Ghost="0"/>
+<%
+                        if ( curDevice.disp_type != "mobile" )
+                        {
+%>
+                        <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Type="string"/>
+                        <DataGridColumn Title="<%=sConstQuantity%>" Value="quantity" Width="100" Type="string"/>
+                        <DataGridColumn Title="<%=tools.get_web_str("c_comment")%>" Value="comment" Width="100" Type="string"/>
+<%
+                        }
+                        else
+                        {
+%>
+                        <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Width="100%" Type="string"/>
+<%
+                        }
+%>
+                    </DataGrid>
+                </StackPanel>
+<%
+                }
+            }
+
+            arrCustomFieldNames = Array();
+            fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+            if ( fldCustomElems != null )
+            {
+                curCustomFields = {
+                    "id": "customFieldsViewGrid",
+                    "fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+                    "source": curObject.custom_elems,
+                    "modify_eval": false
+                };
+                Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+            }
+%>
+        </TabItem>
+
+        <TabItem Title="<%=tools_web.get_web_const( "vdb_files", curLngWeb )%>">
+<%
+                allowChangeFiles = true;
+                Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+        </TabItem>
+<%
+
+/*-------------------------- Редактирование ------------------------------*/
+
+    if ( bIsEditable )
+    {
+%>
+    <Collection Name="CollectionPeriodsEdit">
+        <Data>
+<%
+        for ( fldPeriod in curObject.budget_periods )
+        {
+%>
+        <Row>
+            <Cell Id="budget_period_id" Value="<%=fldPeriod.budget_period_id%>"/>
+            <Cell Id="budget_period_name" Value="<%=fldPeriod.budget_period_name%>"/>
+            <Cell Id="quantity" Value="<%=fldPeriod.quantity%>"/>
+            <Cell Id="comment" Value="<%=fldPeriod.comment%>"/>									
+        </Row>
+<%
+        }
+%>
+        </Data>
+    </Collection>
+
+    <TabItem Title="<%=tools_web.get_web_const( "kjwesxtn5m", curLngWeb )%>">
+        <Toolbar Class="XAML-toolbar">
+            <Button Class="XAML-button XAML-button-save" Click="ACTION=SaveRecruitmentPlan;"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+        </Toolbar>
+        <Grid Class="XAML-grid-info-table" Width="100%" Adapt="true">
+            <GridColumns>
+                <GridColumn Align="Right"/>
+                <GridColumn/>
+            </GridColumns>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_state")%>:</Label>
+                <ComboBox Name="state" SelectedItem="<%=curObject.state%>">
+<%
+                for(catState in curLngCommon.recruitment_plan_state_types)
+                {
+%>
+                <ComboBoxItem Value="<%=catState.id%>"><%=curLngCommon.recruitment_plan_state_types.GetChildByKey( catState.id ).name%></ComboBoxItem>
+<%
+                }
+%>
+                </ComboBox>
+            </GridRow>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>*:</Label>						
+                <StackPanel Orientation="Horizontal" Adapt="true">
+                    <StackPanel Orientation="Vertical" Adapt="true">
+                        <RadioButton Name="position_type" Change="Hide=PositionCommonIdContainer; Show=PositionNameContainer" Value="name" Checked="<%=(curObject.position_type == "name")%>"><%=tools_web.get_web_const( "c_name", curLngWeb )%></RadioButton>
+                        <RadioButton Name="position_type" Change="Show=PositionCommonIdContainer; Hide=PositionNameContainer" Value="id" Checked="<%=(curObject.position_type == "id")%>"><%=tools_web.get_web_const( "tqwun6evkc", curLngWeb )%></RadioButton>
+                    </StackPanel>
+                    <StackPanel Name="PositionNameContainer" Hidden="<%=(curObject.position_type != "name" ? "1" : "0")%>" Adapt="true">
+                        <Edit Name="position_name" Width="200"><%=curObject.position_name%></Edit>	
+                    </StackPanel>
+                    
+                    <StackPanel Name="PositionCommonIdContainer" Hidden="<%=(curObject.position_type == "name" ? "1" : "0")%>" Adapt="true">
+<%
+                        curSelector = {
+                            "id": "position_common_id",
+                            "object_id_item_name": "position_common_id",
+                            "object_id": curObject.position_common_id,
+                            "object_name":  (curObject.position_common_id.HasValue && curObject.position_common_id.OptForeignElem != undefined ? curObject.position_common_id.ForeignElem.name : " "),
+                            "multi_select": "false",
+                            "catalog_name": "position_common",
+                            "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                            "selected_object_ids": curObject.position_common_id
+                        };
+                        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+                    </StackPanel>
+                </StackPanel>
+            </GridRow>
+<%
+        if ( curDevice.disp_type != "mobile" )
+        {
+%>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>							
+<%
+            if ( bAllowBudgetPeriodChange )
+            {
+                curSelector = {
+                    "id": "budget_period_id",
+                    "object_id_item_name": "budget_period_id",
+                    "object_id": curObject.budget_period_id,
+                    "object_name":  (curObject.budget_period_id.HasValue && curObject.budget_period_id.OptForeignElem != undefined ? curObject.budget_period_id.ForeignElem.name : " "),
+                    "multi_select": "false",
+                    "catalog_name": "budget_period",
+                    "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                    "selected_object_ids": curObject.budget_period_id
+                };
+                Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+            }
+            else if ( curObject.budget_period_id.OptForeignElem != undefined )
+            {
+%>
+            <Label><%=tools_web.get_cur_lng_name( curObject.budget_period_id.ForeignElem.name , curLng.short_id )%></Label>
+<%
+            }
+            else
+            {
+%>
+            <Label></Label>
+<%
+            }
+%>
+        </GridRow>
+<%
+            if ( ArrayOptFirstElem( curObject.budget_periods ) != undefined )
+            {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=sConstPeriodsDetalization%>:</Label>	
+                <DataGrid Name="PeriodsDetails" Source="{CollectionPeriodsEdit}" Height="150" Width="100%">
+                    <DataGridColumn Title="Id" Value="budget_period_id" Type="string" Hidden="1" Ghost="0"/>
+                    <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Type="string"/>
+                    <DataGridColumn Title="<%=sConstQuantity%>" Value="quantity" Width="100" Type="string" Editable="<%=bIsEditable%>"/>
+                    <DataGridColumn Title="<%=tools.get_web_str("c_comment")%>" Value="comment" Width="100" Type="string" Editable="<%=bIsEditable%>"/>
+                    <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Width="100%" Type="string"/>
+                </DataGrid>
+            </GridRow>
+<%
+            }
+        }
+%>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+<%
+            sQueryQual = "";
+
+            switch ( sAvailableSubdivisions )
+            {
+                case "own":
+                    sQueryQual = "$elem/id=" + curUser.position_parent_id;
+                    break;
+                case "child":
+                    if ( curUser.position_parent_id.HasValue )
+                    {
+                        xarrSubs = XQuery( "CatalogHierSubset('subs'," + curUser.position_parent_id + ")" );
+                        sQueryQual += "$elem/id=" + curUser.position_parent_id;
+
+                        for ( catSub in xarrSubs )
+                        {
+                            if ( catSub.type != "subdivision" )
+                                continue;
+                            sQueryQual += " or $elem/id=" + catSub.id;
+                        }
+                        if ( ArrayOptFirstElem( xarrSubs ) != undefined )
+                            sQueryQual = "(" + sQueryQual + ")";
+                    }
+                    break;
+                case "all":
+                    sQueryQual = "";
+                    break;
+            }
+
+            curSelector = {
+                "id": "subdivision_id",
+                "object_id_item_name": "subdivision_id",
+                "object_id": curObject.subdivision_id,
+                "object_name":  (curObject.subdivision_id.HasValue && curObject.subdivision_id.OptForeignElem != undefined ? curObject.subdivision_id.ForeignElem.name : " "),
+                "multi_select": "false",
+                "catalog_name": "subdivision",
+                "xquery_qual": sQueryQual,
+                "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                "selected_object_ids": curObject.subdivision_id
+            };
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "1akgrp8ook", curLngWeb )%>:</Label>
+<%
+            curSelector = {
+                "id": "subdivision_group_id",
+                "object_id_item_name": "subdivision_group_id",
+                "object_id": curObject.subdivision_group_id,
+                "object_name":  (curObject.subdivision_group_id.HasValue && curObject.subdivision_group_id.OptForeignElem != undefined ? curObject.subdivision_group_id.ForeignElem.name : " "),
+                "multi_select": "false",
+                "catalog_name": "subdivision_group",
+                "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                "selected_object_ids": curObject.subdivision_group_id
+            };
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "re7n9mti11", curLngWeb )%>:</Label>
+<%
+            curSelector = {
+                "id": "position_family_id",
+                "object_id_item_name": "position_family_id",
+                "object_id": curObject.position_family_id, 
+                "object_name":  (curObject.position_family_id.HasValue && curObject.position_family_id.OptForeignElem != undefined ? curObject.position_family_id.ForeignElem.name : " "),
+                "multi_select": "false",
+                "catalog_name": "position_family",
+                "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                "selected_object_ids": curObject.position_family_id
+            };
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=sConstVacancyType%>:</Label>
+<%
+            curSelector = {
+                "id": "vacancy_type_id",
+                "object_id_item_name": "vacancy_type_id",
+                "object_id": curObject.vacancy_type_id,
+                "object_name":  (curObject.vacancy_type_id.HasValue && curObject.vacancy_type_id.OptForeignElem != undefined ? curObject.vacancy_type_id.ForeignElem.name : " "),
+                "multi_select": "false",
+                "catalog_name": "vacancy_type",
+                "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                "selected_object_ids": curObject.vacancy_type_id
+            };
+            Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=sConstQuantity%>:</Label>
+            <Edit Name="quantity"><%=curObject.quantity%></Edit>
+        </GridRow>
+        <GridRow>
+            <Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_comment")%>:</Label>
+            <EditBox Name="comment" <%=(curDevice.disp_type != "mobile" ? "Width='400'" : "Width='200'")%>><%=curObject.comment%></EditBox>
+        </GridRow>
+<%
+            if ( ArrayOptFirstElem( curObject.coordinators ) != undefined )
+            {
+%>
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=sConstCoordinators%>:</Label>
+                <StackPanel Class="XAML-stack-no-padding">
+<%
+                for(fldSource in curObject.coordinators)
+                {
+%>
+                <Label><%=tools_web.get_cur_lng_name( fldSource.person_fullname , curLng.short_id )%></Label>
+<%
+                }
+%>
+                </StackPanel>
+            </GridRow>
+<%
+            }
+
+            if ( curDevice.disp_type == "mobile" )
+            {
+%>	
+            <GridRow>
+                <Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>							
+<%
+                if ( bAllowBudgetPeriodChange )
+                {
+                    curSelector = {
+                        "id": "budget_period_id",
+                        "object_id_item_name": "budget_period_id",
+                        "object_id": curObject.budget_period_id,
+                        "object_name":  (curObject.budget_period_id.HasValue && curObject.budget_period_id.OptForeignElem != undefined ? curObject.budget_period_id.ForeignElem.name : " "),
+                        "multi_select": "false",
+                        "catalog_name": "budget_period",
+                        "width": (curDevice.disp_type != "mobile" ? "250" : "200"),
+                        "selected_object_ids": curObject.budget_period_id
+                    };
+                    Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+                }
+                else if ( curObject.budget_period_id.OptForeignElem != undefined )
+                {
+%>
+                <Label><%=tools_web.get_cur_lng_name( curObject.budget_period_id.ForeignElem.name , curLng.short_id )%></Label>
+<%
+                }
+                else
+                {
+%>
+                <Label></Label>
+<%
+                }
+%>
+            </GridRow>
+<%
+            }
+%>
+        </Grid>
+<%
+        if ( curDevice.disp_type == "mobile" )
+        {
+            if ( ArrayOptFirstElem( curObject.budget_periods ) != undefined )
+            {
+%>
+            <StackPanel Class="XAML-stack-no-padding" Orientation="vertical" Adapt="true">	
+                    <Label Class="XAML-grid-label-name"><%=sConstPeriodsDetalization%>:</Label>	
+                    <DataGrid Name="PeriodsDetails" Source="{CollectionPeriodsEdit}" Height="150" Width="100%">
+                        <DataGridColumn Title="Id" Value="budget_period_id" Type="string" Hidden="1" Ghost="0"/>
+                        <DataGridColumn Title="<%=tools.get_web_str("c_period")%>" Value="budget_period_name" Type="string"/>
+                    </DataGrid>
+            </StackPanel>	
+<%
+            }
+        }
+%>
+        <Toolbar Class="XAML-toolbar" Width="100%">
+            <Button Class="XAML-button" Click="OPENDIALOG=SelectDialogrecruitment_methods"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+        </Toolbar>
+        
+        <Edit Name="selected_recruitment_methods" Hidden="1">["<%=ArrayMerge( ArrayExtract( curObject.recruitment_methods, 'PrimaryKey' ), 'This', "\",\"" )%>"]</Edit>
+<%
+        sID = "recruitment_methods";
+        sDispNameEditName = "TempDestinationEdit" + sID;
+        
+        curSelectorList = {
+            "id": sID,
+            "title": sConstRecruitmentMethods,
+            "selected_object_ids": ArrayMerge( ArrayExtract( curObject.recruitment_methods, "PrimaryKey" ), "This", ";" ),
+            "height": "250",
+            "catalog_name": "recruitment_method",
+            "disp_search": "false",
+            "disp_filter": "false",
+            "sort_direct": "-",
+            "show_all": true,
+            "cur_object_type": "recruitment_method",
+            "is_data_grid": "true",
+            "typein": "false",
+            "close_action": "SET=selected_recruitment_methods,{CatalogListDataGridSelList/id};"
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+        <Toolbar Class="XAML-toolbar" Width="100%">
+            <Button Class="XAML-button" Click="OPENDIALOG=SelectDialogcandidate_sources"><%=tools_web.get_web_const( "c_choose", curLngWeb )%></Button>
+        </Toolbar>
+        <Edit Name="selected_candidate_sources" Hidden="1">["<%=ArrayMerge( ArrayExtract( curObject.candidate_sources, "PrimaryKey" ), "This", "\",\"" )%>"]</Edit>
+<%
+        sID = "candidate_sources";
+        sDispNameEditName = "TempDestinationEdit" + sID;
+
+        curSelectorList = {
+            "id": sID,
+            "title": sConstCandidateSources,
+            "selected_object_ids": ArrayMerge( ArrayExtract( curObject.candidate_sources, "PrimaryKey" ), "This", ";" ),
+            "height": "250",
+            "catalog_name": "candidate_source",
+            "disp_search": "false",
+            "disp_filter": "false",
+            "sort_direct": "-",
+            "show_all": true,
+            "cur_object_type": "candidate_source",
+            "is_data_grid": "true",
+            "typein": "false",
+            "close_action": "SET=selected_candidate_sources,{CatalogListDataGridSelList/id};"
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+    </TabItem>
+<%
+    }
+%>
+    </TabControl>
+
+<%
+    }
+    else
+    {	
+        curMessageBox = {
+            "type": "error",
+            "text": tools_web.get_web_const( "vap_message", curLngWeb )
+        };
+        Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+    }
+
+    }
+    else
+    {
+%>
+    <SPXMLScreen Ready="<%=sRedirectUrl%>">
+<%
+    }
+%>
+
+    </SPXMLScreen>

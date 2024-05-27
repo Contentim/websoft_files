@@ -1,0 +1,150 @@
+﻿<SPXMLScreen Class="news_block">
+<%
+	iCount = Int(tools_web.get_web_param( curParams, "news.iCount", "5", true ));
+	sName = tools_web.get_web_param( curParams, "news.sHeaderText", tools_web.get_web_const( 'novostiportala', curLngWeb ), true );
+	sCode = tools_web.get_web_param( curParams, "news.sHeaderCode", "hotnews", true );
+	bImage= tools_web.get_web_param( curParams, "news.bShowImage", "1", true ) == "1";
+	bShowStroke = tools_web.is_true( tools_web.get_web_param( curParams, "news.bShowStroke", "1", true ) );
+	bShowVertical = tools_web.is_true( tools_web.get_web_param( curParams, "news.bShowVertical", "0", true ) );
+	iImageWidth = Int(tools_web.get_web_param( curParams, "news.iImageWidth", "100", true ));
+	bDate = tools_web.get_web_param( curParams, "news.bShowDate", "1", true ) == "1";
+	bShowTime = tools_web.get_web_param( curParams, "news.bShowTime", "0", true ) == "1";
+	bShowDesc = tools_web.get_web_param( curParams, "news.bShowDesc", "0", true ) == "1";
+	bShowAllNewsLink = tools_web.get_web_param( curParams, "news.bShowAllNewsLink", "1", true ) == "1";
+	bUseKnowledgeProfile = tools_web.is_true( tools_web.get_web_param( curParams, "news.bUseKnowledgeProfile", "0", true ) );
+
+    catDocument = ArrayOptFirstElem(XQuery( "for $elem in documents where $elem/code = '" + sCode + "' return $elem" ));
+	if (catDocument != undefined)
+	{
+		xarrHotNews = XQuery( "for $elem in documents where $elem/parent_document_id =  " + catDocument.PrimaryKey + " order by $elem/create_date descending return $elem" );
+		if( bUseKnowledgeProfile )
+		{
+			user_kp_array = tools.get_knowledge_parts_by_person_id( curUserID );
+			if( ArrayOptFirstElem( user_kp_array ) != undefined )
+			{
+				xarrProfileKnowledgeObjects = XQuery( "for $i in knowledge_objects where MatchSome( $i/knowledge_part_id, ( " + ArrayMerge( user_kp_array, "This.id", "," ) + " ) ) and $i/catalog = 'document' return $i" );
+				xarrHotNews = ArrayIntersect( xarrHotNews, xarrProfileKnowledgeObjects, "This.id", "This.object_id" );
+			}
+			else
+				xarrHotNews = new Array();
+		}
+		if ( bShowStroke )
+		{
+%>
+		<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-block">
+<%
+		}
+		else
+		{
+%>
+		<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-block XAML-news-container">
+<%
+		}
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+			<Label Class="XAML-label-block-header"><![CDATA[<%=sName%>]]></Label>
+		</StackPanel>
+<%
+	if ( bShowStroke )
+	{
+%>	
+		<StackPanel Class="XAML-grid-list-container">
+<%
+	}
+	if (ArrayCount(xarrHotNews)>0)
+	{
+		curCount = 0;
+		for ( catHotNews in xarrHotNews )
+		{
+			if ( !tools_web.check_access( catHotNews, curUserID, curUser, Session ) )
+				continue;
+			curCount++;
+			if ( curCount <= iCount )
+			{
+	sFullNewsUrl = XmlAttrEncode( tools_web.doc_link( catHotNews ) );
+	if ( bShowVertical )
+	{
+%>
+		<StackPanel Orientation="Vertical" Class="News-Item XAML-stack-article-container">
+<%
+		newsCard = OpenDoc(UrlFromDocID(catHotNews.id)).TopElem;
+		if ( bImage && newsCard.resource_id != null && newsCard.resource_id !='' && newsCard.resource_id != undefined )
+		{
+			sImageUrl = "download_file.html?file_id=" + newsCard.resource_id + "&sid=" + tools_web.get_sum_sid( newsCard.resource_id, Request.Session.sid );
+%>
+		<Image Source="<%=sImageUrl%>" Click="OPENURL=<%=sFullNewsUrl%>" Width="100%" />
+<%
+		}
+	}
+	else
+	{
+%>
+		<StackPanel Orientation="Horizontal" Class="News-Item XAML-stack-article-container">
+<%
+		newsCard = OpenDoc(UrlFromDocID(catHotNews.id)).TopElem;
+		if ( bImage && newsCard.resource_id != null && newsCard.resource_id !='' && newsCard.resource_id != undefined )
+		{
+			sImageUrl = "download_file.html?file_id=" + newsCard.resource_id + "&sid=" + tools_web.get_sum_sid( newsCard.resource_id, Request.Session.sid );
+%>
+		<Image Source="<%=sImageUrl%>" Click="OPENURL=<%=sFullNewsUrl%>" Width="<%=iImageWidth%>" />
+<%	
+		}
+	}
+%>
+		<StackPanel Orientation="Vertical" Class="News-Item XAML-stack-article">
+<%
+			if ( bDate )
+			{
+				if ( bShowTime )
+				{
+%>
+				<Label Class="News-Date XAML-label-article-date"><![CDATA[<%=catHotNews.create_date%>]]></Label>
+
+<%
+				}
+				else
+				{
+						newDate = StrDate (catHotNews.create_date,false,false);
+%>
+				<Label Class="News-Date XAML-label-article-date"><![CDATA[<%=newDate%>]]></Label>
+<%
+				}
+			}
+%>
+				<Link Click="OPENURL=<%=sFullNewsUrl%>" Class="XAML-label-article-title"><![CDATA[<%=catHotNews.name%>]]></Link>
+<%
+			if ( bShowDesc )
+			{
+%>
+				<Label Class="News-Desc XAML-label-article-desc"><![CDATA[<%=newsCard.comment%>]]></Label>
+<%
+			}
+%>
+			</StackPanel>
+		</StackPanel>
+<%
+			}
+		}
+		if ( bShowAllNewsLink )
+		{
+			sAllNewsUrl = XmlAttrEncode( tools_web.doc_link( catDocument ) );
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-news-all-link XAML-stack-article-all-container">
+			<Link Click="OPENURL=<%=sAllNewsUrl%>"><%=tools_web.get_web_const( "vnp_all_news", curLngWeb )%></Link>
+		</StackPanel>
+<%
+		}
+	}
+	if ( bShowStroke )
+	{
+%>	
+	</StackPanel>
+<%
+	}
+%>	
+	</StackPanel>
+<%
+	}
+%>
+
+</SPXMLScreen>

@@ -1,0 +1,32 @@
+﻿<%
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+	iObjectId = Int(oParamSource.GetOptProperty( 'iObjectId' ));
+	strFilesPath=String(oParamSource.GetOptProperty( 'strFilesPath',''))
+	strFileObjectSubArrayID=String(oParamSource.GetOptProperty( 'strFileObjectSubArrayID',''))
+%>
+<SPXMLScreen>
+	<Action Name="AddFile" Source="file_add" Success="CLOSEDIALOG">
+		<Param Name="iObjectId" Value="<%=iObjectId%>"/>
+		<Param Name="iSelectedObject" Value="{SelectedFile}"/>
+		<Param Name="strFilesPath" Value="<%=strFilesPath%>"/>
+		<Param Name="strFileObjectSubArrayID" Value="<%=strFileObjectSubArrayID%>"/>
+	</Action>
+	<StackPanel Orientation="Horizontal" Adapt="true" Class="XAML-resource-field">
+			<Label Width="120" Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>:</Label>
+			<ResourceField Name="SelectedFile" Width="100%" Source="resources" Class="icon-folder-open-o"/>
+	</StackPanel>
+		
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=AddFile">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

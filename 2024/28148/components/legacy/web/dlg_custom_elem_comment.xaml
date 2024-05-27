@@ -1,0 +1,70 @@
+﻿<SPXMLScreen>
+<%
+sLabel = PARAMETERS.GetOptProperty( "label", "" );
+sCatalogName = PARAMETERS.GetOptProperty( "catalog_name", "" );
+sObjectCode = PARAMETERS.GetOptProperty( "object_code", "" );
+fldWebCustomFields = new Array();
+switch( sCatalogName )
+{
+	case "request_type":
+		teObject = OpenNewDoc( 'x-local://wtv/wtv_request.xmd' ).TopElem;
+		curRequestTypeID = ArrayOptFirstElem( XQuery( "for $i in " + sCatalogName + "s where $i/code = " + XQueryLiteral( sObjectCode ) + " return $i" ) )
+		if ( curRequestTypeID != undefined )
+		{
+			curRequestTypeID = curRequestTypeID.id
+			curRequestType = OpenDoc( UrlFromDocID( curRequestTypeID ) ).TopElem;
+			tools.common_filling( 'request_type', teObject, curRequestTypeID, curRequestType );
+		}
+		
+		break;
+}
+fldCustomElems = tools.get_custom_template( teObject.Name, null, teObject );
+if ( fldCustomElems != null )
+	fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+if ( ArrayCount( fldWebCustomFields ) != 0 )
+{
+	arrCustomFieldNames = Array();
+	curCustomFields = {
+		"template": fldCustomElems,
+		"fields": fldWebCustomFields,
+		"source": teObject.custom_elems,
+		"modify_eval": true,
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+}
+%>
+<StackPanel Orientation="Vertical">
+<%
+	if ( sLabel != '' )
+	{
+%>	
+	<Label><![CDATA[*<%=sLabel%>]]></Label>
+<%
+	}
+%>	
+	<EditBox Class="XAML-dialog-edit-text" Name="DialogText" Width="100%" Height="100"></EditBox>
+	<CheckBox Name="DialogIsCritical"><%=HtmlEncode( "Критичные изменения" )%></CheckBox>
+	<Action Name="CheckCustomElemAction" Source="wiki_article_action" Success="{!messageText};">
+		<Param Name="action" Value="check_custom_fields"/>
+		<Param Name="object_id" Value="<%=sObjectCode%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="wiki_base_id" Value="<%=PARAMETERS.GetOptProperty( "wiki_base_id", "" )%>"/>
+		<Param Name="tmp" Value="<%=sCatalogName%>"/>
+	</Action>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=CheckCustomElemAction"><%=tools_web.get_web_const( "tkhz90n4pi", curLngWeb )%></Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+
+</StackPanel>
+
+</SPXMLScreen>

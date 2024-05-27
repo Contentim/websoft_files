@@ -1,0 +1,71 @@
+﻿<SPXMLScreen>
+<%
+catOperation = ArrayOptFirstElem(XQuery("for $elem in operations where $elem/action='new_event' return $elem"));
+
+bShowCreateButton = tools_web.is_true( tools_web.get_web_param( curParams, "event_create_buttons.show_create_button", "1", true ) );
+bShowCreateByModelButton = tools_web.is_true( tools_web.get_web_param( curParams, "event_create_buttons.show_create_by_model_button", "1", true ) );
+
+bCreateButtonText = tools_web.get_web_param( curParams, "event_create_buttons.show_create_button.button_text", tools_web.get_web_const( 'vmpb_create_event', curLngWeb ), true );
+bCreateByModelButtonText = tools_web.get_web_param( curParams, "event_create_buttons.show_create_by_model_button.button_text", tools_web.get_web_const( 'sozdatmeropriya_1', curLngWeb ), true );
+
+iDefaultTypeId = tools_web.get_web_param( curParams,"event_create_button.default_type", "", true );
+if(catOperation != undefined)
+{
+	
+	if(bShowCreateButton)
+	{
+		oParamCreate = {
+			"name_id": "CreateEvent",
+			"bCreateByModel": false,
+			"iDefaultTypeId": iDefaultTypeId,
+			"curUserID": curUserID,
+			"curUser": curUser
+		};
+		curCollectionMenu = {
+				"id": "CreateEvent",
+				"catalog_name": "event",
+				"iDefaultTypeId": iDefaultTypeId,
+				"bCreateByModel": false,
+				"selected_data": UrlEncode( "[]" )
+			};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+	}
+	
+	if(bShowCreateByModelButton )
+	{
+		oParamCreateByModel = {
+			"name_id": "CreateEventByModel",
+			"bCreateByModel": true,
+			"curUserID": curUserID,
+			"curUser": curUser
+		};
+		curCollectionMenu = {
+				"id": "CreateEventByModel",
+				"catalog_name": "event",
+				"bCreateByModel": true,
+				"selected_data": UrlEncode( "[{\"id\":" + curObjectID + "}]" )
+			};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+	}
+%>
+	<Toolbar Class="XAML-toolbar"> 
+<%
+	if(bShowCreateButton)
+	{	
+%>
+		<Button Class="XAML-button XAML-button-plus" Click="<%=tools_web.eval_operation_script( catOperation.id, "xaml", oParamCreate )%>"><%=bCreateButtonText%></Button>	
+<%
+	}
+	
+	if(bShowCreateByModelButton )
+	{
+%>		
+		<Button Class="XAML-button XAML-button-plus" Click="<%=tools_web.eval_operation_script( catOperation.id, "xaml", oParamCreateByModel )%>"><%=bCreateByModelButtonText%></Button>	
+<%
+	}
+%>
+	</Toolbar>
+<%
+}
+%>
+</SPXMLScreen>

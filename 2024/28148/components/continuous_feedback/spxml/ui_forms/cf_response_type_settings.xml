@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/ms_general.xmd"/>
+
+<cf_response_type_settings>
+	<name TYPE="string" DEFAULT="Типы обратной связи"/>
+	<use_instance TYPE="bool" DEFAULT="false"/>
+	<options>
+		<option MULTIPLE="1">
+			<name TYPE="string"/>
+			<INHERIT TYPE="web_variables_base"/>
+		</option>
+	</options>
+</cf_response_type_settings>
+
+</SPXML-INLINE-FORM>

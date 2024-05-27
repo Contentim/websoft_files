@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>c48ay7ndc6</id>
+		<create_date>2024-02-15T15:49:50+00:00</create_date>
+		<server_version>2023.2.841 (2024-02-14)</server_version>
+	</basic>
+	<notifications>
+		<notification>
+			<id>0x0AAAAAAAAAAAAA19</id>
+			<code>25</code>
+			<name VALUE="##ms_tools.get_const('podchinennyysot')##"/>
+			<recipients>
+				<recipient>
+					<recipient_type>in_doc</recipient_type>
+					<notification_template_id>768614336404564605</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<changed>0</changed>
+			<notification_template_id>768614336404564605</notification_template_id>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+	<notification_templates>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7D</id>
+			<code>125</code>
+			<name VALUE="##'Подчиненный сотрудник был включен в состав участников мероприятия'##"/>
+			<subject VALUE="##'Подчиненный сотрудник был включен в состав участников мероприятия'##"/>
+			<body>Подчиненный сотрудник - &lt;%=Text.collaborator_fullname%&gt;, был включен в состав участников мероприятия "&lt;%=Text.event_name%&gt;", которое состоится &lt;%=StrDate(Text.event_start_date, true, false)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7B</id>
+			<code>123</code>
+			<name VALUE="##'Вы были включены в состав участников мероприятия'##"/>
+			<subject VALUE="##'Вы были включены в состав участников мероприятия'##"/>
+			<body>Вы были включены в состав участников мероприятия "&lt;%=Text.event_name%&gt;", которое состоится &lt;%=StrDate(Text.event_start_date, true, false)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

@@ -1,0 +1,109 @@
+﻿<SPXMLScreen>
+<%
+	var sPictUrl = PARAMETERS.GetOptProperty("image_url");
+	var iResourceID = OptInt(PARAMETERS.GetOptProperty("id"));
+	var iSID = OptInt(PARAMETERS.GetOptProperty("sid"));
+	var iSupposedWidth = PARAMETERS.GetOptProperty("supposed_width","");
+	var iIndex = OptInt(PARAMETERS.GetOptProperty("index"), 0);
+	var bDownloadUrl = (PARAMETERS.GetOptProperty("is_download_url") == "1");
+	var aInfoShow = ArraySelect(String(PARAMETERS.GetOptProperty("infoshow", "")).split(";"), "This != ''");
+	var sShowMode = (PARAMETERS.GetOptProperty("show_mode"));
+%>
+		<Dialog Name="PicShow" Source="gallery_dialog" Title="<%=tools_web.get_web_const( "prosmotr", curLngWeb )%>" Width="auto" Height="" Close="" ShowHeader="0" Class="XAML-dialog-gallery">
+			<Param Name="repositorium_id" Value="<%=PARAMETERS.GetOptProperty("repositorium_id", "")%>"/>
+			<Param Name="pic_mode" Value="<%=PARAMETERS.GetOptProperty("pic_mode", "")%>"/>
+			<Param Name="source" Value="<%=PARAMETERS.GetOptProperty("source", "")%>"/>
+			<Param Name="pic_idx" Value=""/>
+		</Dialog>
+	
+			<Grid>
+				<GridColumns>
+					<GridColumn Width="<%=iSupposedWidth%>"/>
+<%
+	if (ArrayOptFirstElem(aInfoShow) != undefined)
+	{
+%>
+					<GridColumn/>
+<%
+	}
+%>
+				</GridColumns>
+				<GridRow>
+					<StackPanel Orientation="Vertical">
+<%
+	switch (sShowMode)
+	{
+		case "video":
+			sPictUrl = StrReplace(sPictUrl, "&amp;", "&");
+%>
+			<HTMLBox>
+				<![CDATA[
+				<div style="display: block; z-index: 1000; zoom: 1; opacity: 1">
+					<object id="WMPlay" classid="CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6" standby="<%=tools_web.get_web_const( "c_loading", curLngWeb )%>" type="application/x-oleobject" height="<%=400%>" width="<%=iSupposedWidth%>" style="display: block; z-index: 1000; zoom: 1; opacity: 1">
+						<param name="URL" value="<%=sPictUrl%>"/>
+						<param name="filename" value="<%=sPictUrl%>"/>
+						<param name="AllowChangeDisplaySize" value="False"/>
+						<param name="TransparentatStart" value="0"/>
+						<param name="ShowControls" value="1"/>
+						<param name="ShowDisplay" value="1"/>
+						<param name="ShowStatusBar" value="1"/>
+						<param name="AutoStart" value="0"/>
+						<param name="InvokeURLS" value="False"/>
+						<param name="WindowlessVideo" value="0"/>
+						<param name="wmode" value="window"/>
+						<embed name="WMplay" type="application/x-mplayer2" autostart="False" height="<%=400%>" width="<%=iSupposedWidth%>" src="<%=sPictUrl%>"></embed>
+					</object>
+				</div>
+				]]>
+			</HTMLBox>
+<%
+			break;
+		case "stream_video":
+			sPictUrl = StrReplace(sPictUrl, "&amp;", "&") + "&autoplay=false";
+%>
+			<HTMLBox>
+				<![CDATA[
+					<script src="scripts/swfobject_modified.js" type="text/javascript"></script>
+					<object style="visibility: visible" id="flvplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="<%=iSupposedWidth%>" height="400">
+						<param name="FlashVars" value="flv=<%=UrlEncode(sPictUrl)%>"/>
+						<param name="Movie" value="mpw_player.swf"/>
+						<param name="AllowFullScreen" value="true"/>
+					</object>
+				]]>
+			</HTMLBox> 
+<%
+			break;
+		default:
+%>
+						<Image Source="<%=sPictUrl%>" UpdateOnLoad="1" Width="<%=iSupposedWidth%>" Click="SET=PicShow/pic_idx,<%=iIndex%>;OPENDIALOG=PicShow"/>
+<%
+	}
+	if (ArrayOptFirstElem(aInfoShow) != undefined)
+	{
+		if (ArrayOptFind(aInfoShow, "This == 'title'") != undefined)
+		{
+%>
+						<Link Click="OPENURL=<%=(bDownloadUrl ? "/download_file.html?file_id=" + iResourceID + "&sid=" + iSID : tools_web.get_mode_clean_url(null, iResourceID, ({"doc_id": curDocID})))%>"><%=PARAMETERS.GetOptProperty("name")%></Link>
+<%
+		}
+		if (ArrayOptFind(aInfoShow, "This == 'size'") != undefined)
+		{
+%>
+						<Label><%=PARAMETERS.GetOptProperty("size_str")%></Label>
+<%
+		}
+		if (ArrayOptFind(aInfoShow, "This == 'desc'") != undefined)
+		{
+%>
+						<Label><%=PARAMETERS.GetOptProperty("desc")%></Label>
+<%
+		}
+	}
+%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+<%
+	
+%>
+</SPXMLScreen>

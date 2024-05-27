@@ -1,0 +1,619 @@
+﻿<SPXMLScreen>
+<%
+curCourseID = curObject.course_id.Value;
+curCourse = OpenDoc( UrlFromDocID( curCourseID ) ).TopElem;
+fLearningMaxScore = ( curObject.max_score > 0.0 ? curObject.max_score.Value : curCourse.max_score.Value );
+
+curTitle = {
+	"object": curCourse,
+	"object_title": tools_web.get_web_const( 'y4rl42np7n', curLngWeb )
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+if ( curUserID != curObject.person_id && curUser.access.access_role != "admin" )
+{
+	arrPersonIDs = tools.get_sub_person_ids_by_func_manager_id( curUserID );
+	if ( ArrayOptFind( arrPersonIDs, "This==" + curObject.person_id ) == undefined )
+	{
+		curMessageBox = {
+			"type": "error_access"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+}
+%>
+<StackPanel Name="ToolBarPanel">
+<Toolbar Name="ToolBarPanel" Class="XAML-toolbar-actions" Adapt="true">
+<%
+if ( curObject.person_id == curUserID )
+{
+	if ( curCourse.default_response_type_id.HasValue && ArrayOptFirstElem( XQuery( "for $elem in responses where $elem/object_id = " + curCourseID + " and $elem/person_id = " + curUserID + " return $elem" ) ) == undefined )
+	{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=tools_web.get_mode_clean_url( "response", null, { response_type_id: curCourse.default_response_type_id.Value, response_object_id: curCourseID, doc_id: curDocID } )%>"><%=tools_web.get_web_const( 'c_text_create_response', curLngWeb )%></Button>
+<%
+	}
+}
+
+catForum = ArrayOptFirstElem( XQuery( "for $elem in forums where $elem/course_id = " + curCourseID + " return $elem/Fields('id')" ) );
+if ( catForum != undefined )
+{
+%>
+	<Button Class="XAML-button" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, catForum.id, { doc_id: curDocID } )%>"><%=tools_web.get_web_const( 'vcorb_go_forum', curLngWeb )%></Button>
+<%
+}
+%>
+</Toolbar>
+</StackPanel>
+<%
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'LearningStatTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) );
+iCurTab = 0-1;
+
+if ( curDevice.disp_type != "" )
+{
+	arrTabListParam = ["main"];
+}
+else
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, "learning_stat.tab_list", "main;map", true ) ).split( ";" );
+}
+%>
+<TabControl Name="LearningStatTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="w" TabsWidth="216" Adapt="true">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == "main" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "learning_stat.tab_list.main_tab.block_list", "info", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "learning_stat.tab_list.main_tab", "", true );
+%>
+	<TabItem Class="icon-info2" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'osnovnyesveden', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "info" )
+		{
+			curInformers = ({
+				"informers": []
+			});
+			if ( curDevice.disp_type != "" )
+			{
+				arrTiles = ["status","score"];
+			}
+			else
+			{
+				arrTiles = String( tools_web.get_web_param( curParams, "learning_stat.tab_list.main_tab.block_list.info_block.tile_list", "status;score;parts;info", true ) ).split( ";" );
+			}
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-tiles-container" Adapt="true">
+<%
+			for ( sTileElem in arrTiles )
+			{
+				if ( sTileElem == 'status' )
+				{
+					curInformers.informers.push( {
+						"type": "status",
+						"state_id": curObject.state_id.Value
+					} );
+				}
+
+				if ( sTileElem == 'score' )
+				{
+					curInformers.informers.push( {
+						"type": "score",
+						"score": Real( StrReal( curObject.score.Value, 1 ) ),
+						"max_score": fLearningMaxScore,
+						"mastery_score": curCourse.mastery_score.Value
+					} );
+				}
+
+				if ( sTileElem == 'parts' && curObject.parts.ChildNum > 1 )
+				{
+					arrParts = ArraySelect( curObject.parts, "This.type!='folder'" );
+					iCompletePartsCount = ArrayCount( ArraySelect( arrParts, "This.state_id>1" ) );
+					iPartsCount = ArrayCount( arrParts );
+
+					curInformers.informers.push( {
+						"type": "scale_number",
+						"title": tools_web.get_web_const( 'moduli', curLngWeb ),
+						"count": iCompletePartsCount,
+						"max_count": iPartsCount
+					} );
+				}
+
+				if ( sTileElem == 'info' )
+				{
+					curInformers.informers.push( {
+						"type": "info",
+						"last_usage_date": curObject.last_usage_date.Value,
+						"start_learning_date": curObject.start_learning_date.Value,
+						"max_end_date": curObject.max_end_date.Value
+					} );
+				}
+
+				if ( sTileElem == 'course_image' && curCourse.resource_id.HasValue )
+				{
+					sUrl = tools_web.get_object_source_url( 'resource', curCourse.resource_id );
+
+					curInformers.informers.push( {
+						"type": "image",
+						"url": sUrl
+					} );
+				}
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_learning_informers.xaml" ) );
+%>
+			</StackPanel>
+<%
+			if ( curObject.person_id != curUserID || curObject.event_id.HasValue || curObject.group_id.HasValue )
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+				if ( curObject.person_id != curUserID )
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_coll', curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.person_id, { doc_id: curDocID } )%>"><![CDATA[<%=curObject.person_fullname%>]]></Link>
+				</GridRow>
+<%
+				}
+				if ( curObject.event_id.HasValue )
+				{
+					catEvent = curObject.event_id.OptForeignElem;
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_event', curLngWeb )%>:</Label>
+<%
+					if ( catEvent == undefined )
+					{
+%>
+					<Label Class="XAML-deleted"><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+<%
+					}
+					else
+					{
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.event_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catEvent.name, curLng.short_id )%>]]></Link>
+<%
+					}
+%>
+				</GridRow>
+<%
+				}
+				if ( curObject.group_id.HasValue )
+				{
+					try
+					{
+						catGroup = curObject.group_id.ForeignElem;
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_group', curLngWeb )%>:</Label>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, curObject.group_id, { doc_id: curDocID } )%>"><![CDATA[<%=tools_web.get_cur_lng_name( catGroup.name, curLng.short_id )%>]]></Link>
+				</GridRow>
+<%
+					}
+					catch ( err )
+					{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'c_group', curLngWeb )%>:</Label>
+					<Label Class="XAML-deleted"><%=tools_web.get_web_const( 'c_deleted', curLngWeb )%></Label>
+				</GridRow>
+<%
+					}
+				}
+%>
+			</Grid>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+
+///////////////////////////////////////////////   MAP TAB   /////////////////////////////////////////////
+if ( sTabListParam == "map" )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "learning_stat.tab_list.map_tab.block_list", "map", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "learning_stat.tab_list.map_tab", "", true );
+%>
+	<TabItem Class="icon-tasks" Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'protokol', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "map" )
+		{
+			sStatusType = tools_web.get_web_param( curParams, 'learning_stat.tab_list.map_tab.block_list.map_block.state_view', 'text', true );
+			sScoreFormat = StrLowerCase( tools_web.get_web_param( curParams, 'learning_stat.tab_list.map_tab.block_list.map_block.score_format', '{cur} {from} {max} ( {per}% )', true ) );
+
+/////////////////////////////////////////////
+	function get_launch_action( fldPartParam )
+	{
+		sPartCodeParam = fldPartParam.code;
+		sLaunchUrlSuffix = "course_id=" + curObject.course_id + "&object_id=" + curObjectID + ( sPartCodeParam != "" ? "&part_code=" + sPartCodeParam : "" ) + "&doc_id=" + curDocID + "&sid=" + tools_web.get_sum_sid( curObject.course_id, Session.sid );
+		if ( fldPartParam.type == "test" )
+		{
+			var oLaunchUrlParams = {
+				course_id: curObject.course_id.Value,
+				sid: tools_web.get_sum_sid( curObject.course_id, Session.sid ),
+				doc_id: curDocID
+			};
+			if ( sPartCodeParam != "" )
+			{
+				oLaunchUrlParams.SetProperty( "part_code", UrlEncode16( UrlEncode16( sPartCodeParam ) ) );
+			}
+			return "OPENURL=" + tools_web.get_mode_clean_url( "test_learning_from_course_proc", curObjectID, { doc_id: curDocID } );
+		}
+		else
+		{
+			return "OPENWINDOW=course_launch.html?" + sLaunchUrlSuffix + ",WIDTH=" + curCourse.Width( sPartCodeParam ) + ",HEIGHT=" + curCourse.Height( sPartCodeParam ) + ",SCROLL=" + curCourse.DispScrolling( sPartCodeParam ) + ",RESIZABLE=" + curCourse.Resizable( sPartCodeParam ) + ";";
+		}
+	}
+
+
+
+
+
+
+	function drawInfoBarScore( iScoreParam, iMaxScoreParam, iMasteryScoreParam )
+	{
+%>
+		<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle">
+<%
+		if( iMaxScoreParam != null && iMaxScoreParam != 0 )
+		{
+%>
+			<ProgressBar FullScale="100" Value="<%=StrReal( iScoreParam * 100.0 / iMaxScoreParam, 0 )%>" Size="60" Vertical="false" FitContainer="false" Class="wt-progress-plain"/>
+			<Label NoWrap="true" Align="center" Class="wt-progress-bar-string"><%=( StrReal( iScoreParam, 1 ) + ( iMaxScoreParam != null ? '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxScoreParam : '' ) )%></Label>
+<%
+		}
+		else
+		{
+%>
+			<ProgressBar FullScale="100" Value="0" Size="60" Vertical="false" FitContainer="false" Class="wt-progress-plain wt-progress-hidden"/>
+			<Label NoWrap="true" Align="center"><%=tools_web.get_web_const( 'kap670sd4x', curLngWeb )%> <%=( StrReal( iScoreParam, 1 )/* + ( iMaxScoreParam != null ? '&nbsp;' + StrNonTitleCase( tools_web.get_web_const( 'iz', curLngWeb ) ) + '&nbsp;' + iMaxScoreParam : '' )*/ )%></Label>
+<%
+		}
+%>
+		</StackPanel>
+<%
+	}
+
+	function drawInfoBarStatus( iStateParam )
+	{
+		iStatusToScale = 0;
+		sAddClass = "";
+		switch ( iStateParam )
+		{
+			case 3:
+			{
+				iStatusToScale = 2;
+				sAddClass = "wt-course-status-failed";
+				break;
+			}
+			case 4:
+			{
+				sAddClass = "wt-course-status-passed";
+				iStatusToScale = 2;
+				break;
+			}
+			case 5:
+			{
+				sAddClass = "wt-course-status-browsed";
+				iStatusToScale = 2;
+				break;
+			}
+			default:
+			{
+				iStatusToScale = iStateParam; //curObject.state_id;
+				break;
+			}
+		}
+%>
+		<StackPanel Orientation="Vertical" Class="wt-info-body wt-info-body-center-middle">
+			<ProgressBar FullScale="2" Value="<%=iStateParam%>" Title="<%=curLngCommon.learning_states.GetChildByKey( iStateParam ).name%>" Size="60" Vertical="false" FitContainer="false" Class="wt-course-status wt-course-status-<%=iStateParam%>"/>
+			<Label NoWrap="true" Align="center" Class="wt-progress-bar-string"><%=curLngCommon.learning_states.GetChildByKey( iStateParam ).name%></Label>
+		</StackPanel>
+<%
+	}
+
+	function put_doc_xml( _code, iIdentParam )
+	{
+		var arrChildParts = ArraySelectByKey( curObject.parts, _code, 'parent_part_code' );
+
+		for ( fldPartElem in arrChildParts )
+		{
+			sPartIdent = tools.random_string( 6 );
+			fldCoursePart = curCourse.parts.GetOptChildByKey( fldPartElem.code );
+			switch ( fldPartElem.type )
+			{
+				case 'lesson':
+				{
+					sImgText = tools_web.get_web_const( 'c_course_module', curLngWeb );
+					break;
+				}
+				case 'test':
+				{
+					sImgText = tools_web.get_web_const( 'c_test', curLngWeb );
+					break;
+				}
+				case 'inline':
+				{
+					sImgText = tools_web.get_web_const( 'vfb_text', curLngWeb );
+					break;
+				}
+				case 'activity':
+				{
+					sImgText = tools_web.get_web_const( 'c_activity', curLngWeb );
+					break;
+				}
+				default:
+				{
+					sImgText = tools_web.get_web_const( 'c_folder', curLngWeb );
+					break;
+				}
+			}
+			sImgUrl = "/pics/1blank.gif";
+
+			if ( fldPartElem.type == 'folder' )
+			{
+%>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Adapt="true"/>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+					<GridRow>
+						<Image Source="/pics/1blank.gif" Class="XAML-course-map-indent XAML-course-map-indent-<%=iIdentParam%>"/>
+						<Label Class="wt-course-element-switch wt-course-element-switch-expanded XAML-label-switch XAML-label-switch-expanded"/>
+						<StackPanel Orientation="Vertical" Class="">
+							<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+						</StackPanel>
+					</GridRow>
+				</Grid>
+<%
+			}
+			else
+			{
+%>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Adapt="true"/>
+						<GridColumn Width="100%"/>
+						<GridColumn Adapt="true"/>
+						<GridColumn Adapt="true"/>
+					</GridColumns>
+					<GridRow>
+						<Image Source="/pics/1blank.gif" Class="XAML-course-map-indent XAML-course-map-indent-<%=iIdentParam%> XAML-image-indent-<%=iIdentParam%>"/>
+						<Label Class="wt-course-element-switch wt-course-element-switch-collapsed XAML-label-switch XAML-label-switch-collapsed"/>
+
+						<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+							<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+							<Label Class="XAML-label-normal"><%=sImgText%>. <%=( fldCoursePart == undefined ? '' : ( fldCoursePart.is_mandatory ? tools_web.get_web_const( 'vceb_is_mandatory', curLngWeb ) : tools_web.get_web_const( 'neobyazatelnyyr', curLngWeb ) ) )%>.</Label>
+							<StackPanel Orientation="Horizontal" Class="XAML-stack-container-long" Adapt="1">
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+									<Label Class="wt-course-map-info-name XAML-label-info-name" NoWrap="true"><%=tools_web.get_web_const( 'vanb_active', curLngWeb )%></Label>
+									<Label Class="wt-course-map-info-value XAML-label-info-value" NoWrap="true"><%=( fldPartElem.start_usage_date.HasValue ? StrDate( fldPartElem.start_usage_date, true, false ) : '--' )%></Label>
+								</StackPanel>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+									<Label Class="wt-course-map-info-name XAML-label-info-name" NoWrap="true"><%=tools_web.get_web_const( 'posledniyvhod', curLngWeb )%></Label>
+									<Label Class="wt-course-map-info-value XAML-label-info-value" NoWrap="true"><%=( fldPartElem.last_usage_date.HasValue ? StrDate( fldPartElem.last_usage_date, true, false ) : '--' )%></Label>
+								</StackPanel>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+									<Label Class="wt-course-map-info-name XAML-label-info-name" NoWrap="true"><%=tools_web.get_web_const( 'c_time', curLngWeb )%></Label>
+									<Label Class="wt-course-map-info-value XAML-label-info-value" NoWrap="true"><%=( fldPartElem.time.HasValue ? tools.str_time_from_mseconds( fldPartElem.time ) : '--' )%></Label>
+								</StackPanel>
+							</StackPanel>
+
+
+<%
+				bDispObjectives = tools_web.get_web_param( curParams, 'learning_stat.tab_list.map_tab.block_list.map_block.disp_objectives', false, true );
+				if ( bDispObjectives && fldPartElem.objectives.ChildNum != 0 )
+				{
+%>
+							<Link Class="" Click="TOGGLE=PartDataGridObjectives<%=XmlAttrEncode( fldPartElem.code )%>"><![CDATA[<%=tools_web.get_web_const( 'ehk3iekzof', curLngWeb )%>]]></Link>
+
+<Collection Name="LearningObjectivesCollection<%=sPartIdent%>">
+<Data>
+<%
+					for ( fldObjectiveElem in fldPartElem.objectives )
+					{
+						sObjectiveStatus = curLngCommon.objective_status_types.GetOptChildByKey( fldObjectiveElem.completion_status );
+						sObjectiveStatus = sObjectiveStatus == undefined ? fldObjectiveElem.completion_status : sObjectiveStatus.name;
+						sSuccessStatus = curLngCommon.objective_success_status_types.GetOptChildByKey( fldObjectiveElem.success_status );
+						sSuccessStatus = sSuccessStatus == undefined ? fldObjectiveElem.success_status : sSuccessStatus.name;
+%>
+<Row>
+<Cell Id="name" Value="<%=XmlAttrEncode( fldObjectiveElem.description.HasValue ? fldObjectiveElem.description : fldObjectiveElem.objective_id )%>"/>
+<Cell Id="score" Value="<%=( fldObjectiveElem.score.HasValue ? fldObjectiveElem.score : ArrayMerge( fldObjectiveElem.score, 'Value', ',' ) )%>"/>
+<Cell Id="obj_status" Value="<%=XmlAttrEncode( sObjectiveStatus )%>"/>
+<Cell Id="suc_status" Value="<%=XmlAttrEncode( sObjectiveStatus )%>"/>
+<Cell Id="desc" Value="<%=XmlAttrEncode( fldObjectiveElem.description )%>"/>
+</Row>
+<%
+					}
+%>
+</Data>
+</Collection>
+							<DataGrid Name="PartDataGridObjectives<%=XmlAttrEncode( fldPartElem.code )%>" Class="XAML-datagrid-compact" Source="{LearningObjectivesCollection<%=sPartIdent%>}" MaxHeight="400" Hidden="true">
+								<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="score" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_score', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="obj_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'bfuibkfp1w', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="suc_status" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'k6n55hdzx7', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Width="100%" Type="string"/>
+							</DataGrid>
+<%
+				}
+
+				bDispInteractions = tools_web.get_web_param( curParams, 'learning_stat.tab_list.map_tab.block_list.map_block.disp_interactions', false, true );
+				if ( bDispInteractions && fldPartElem.interactions.ChildNum != 0 )
+				{
+%>
+							<Link Class="" Click="TOGGLE=PartDataGridInteractions<%=XmlAttrEncode( fldPartElem.code )%>"><![CDATA[<%=tools_web.get_web_const( 'sa5v98plxs', curLngWeb )%>]]></Link>
+
+<Collection Name="LearningInteractionsCollection<%=sPartIdent%>">
+<Data>
+<%
+					for ( fldInteractionElem in fldPartElem.interactions )
+					{
+						sType = curLngCommon.interaction_types.GetOptChildByKey( fldInteractionElem.type_interaction );
+						sType = sType == undefined ? fldInteractionElem.type_interaction : sType.name;
+%>
+<Row>
+<Cell Id="name" Value="<%=XmlAttrEncode( fldInteractionElem.interaction_id )%>"/>
+<Cell Id="time" Value="<%=StrReplace( StrReplace( fldInteractionElem.time, 'T', ' ' ), 'Z', '' )%>"/>
+<Cell Id="objectives" Value="<%=XmlAttrEncode( ArrayMerge( fldInteractionElem.objectives.objective_id, 'This', ', '  ) )%>"/>
+<Cell Id="type" Value="<%=XmlAttrEncode( sType )%>"/>
+<Cell Id="corr" Value="<%=XmlAttrEncode( ArrayMerge( fldInteractionElem.correct_responses.pattern, 'This', ', ' ) )%>"/>
+<Cell Id="resp" Value="<%=XmlAttrEncode( fldInteractionElem.student_response )%>"/>
+<Cell Id="result" Value="<%=XmlAttrEncode( fldInteractionElem.result )%>"/>
+<Cell Id="weighting" Value="<%=XmlAttrEncode( fldInteractionElem.weighting )%>"/>
+<Cell Id="latency" Value="<%=( fldInteractionElem.latency.HasValue ? tools.get_period_from_iso( fldInteractionElem.latency ) / 1000 : '' )%>"/>
+<Cell Id="desc" Value="<%=XmlAttrEncode( fldInteractionElem.description )%>"/>
+</Row>
+<%
+					}
+%>
+</Data>
+</Collection>
+							<DataGrid Name="PartDataGridInteractions<%=XmlAttrEncode( fldPartElem.code )%>" Class="XAML-datagrid-compact" Source="{LearningInteractionsCollection<%=sPartIdent%>}" MaxHeight="400" Hidden="true">
+								<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="time" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_time', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="objectives" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vsb_purposes', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="type" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_type', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="corr" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'hid3vb4cn2', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="resp" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'xahay8meiw', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="result" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_result', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="weighting" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'ques_score', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="latency" Title="<%=XmlAttrEncode( tools_web.get_web_const( '3c9n8xs4j2', curLngWeb ) )%>" Width="100" Type="string"/>
+								<DataGridColumn Value="desc" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_desc', curLngWeb ) )%>" Width="100" Type="string"/>
+							</DataGrid>
+<%
+				}
+
+				if ( curCourse.start_after_finish && ( fldPartElem.type == 'lesson' || fldPartElem.type == 'inline' || fldPartElem.type == 'cl_module' || fldPartElem.type == 'library_material' || fldPartElem.type == 'resource' ) )
+				{
+%>
+						<Button Class="XAML-button" Click="<%=XmlAttrEncode( get_launch_action( fldPartElem ) )%>"><%=( fldPartElem.state_id == 2 ? tools_web.get_web_const( 'vlpb_show', curLngWeb ) : tools_web.get_web_const( 'vlpb_next', curLngWeb ) )%></Button>
+<%
+				}
+%>
+
+
+						</StackPanel>
+<%
+							if ( fldPartElem.state_id != 0 || ( fldCoursePart != undefined && fldCoursePart.max_score.HasValue ) )
+							{
+								if ( fldCoursePart == undefined )
+								{
+									rMaxScore = null;
+									rMasteryScore = null;
+								}
+								else
+								{
+									rMaxScore = fldCoursePart.max_score.Value;
+									rMasteryScore = fldCoursePart.mastery_score.Value;
+								}
+								drawInfoBarScore( fldPartElem.score.Value, rMaxScore, rMasteryScore );
+							}
+							else
+							{
+%>
+								<Label Class="wt-course-progress-tangle"/>
+<%
+							}
+							drawInfoBarStatus( fldPartElem.state_id.Value );
+%>
+					</GridRow>
+				</Grid>
+<%
+			}
+
+			put_doc_xml( fldPartElem.code, iIdentParam + 1 );
+		}
+	}
+%>
+			<StackPanel Name="CoursePartsTiles" Orientation="Vertical" Height="100%" Class="XAML-stack-treemap XAML-course-map XAML-stack-list-container">
+<%
+			put_doc_xml( '', 0 );
+%>
+			</StackPanel>
+<%
+			if ( curObject.events.ChildNum != 0 )
+			{
+%>
+			<Collection Name="LearningEventsCollection">
+				<Data>
+<%
+				for ( fldEventElem in curObject.events )
+				{
+					catEvent = fldEventElem.event_id.OptForeignElem;
+					if ( catEvent == undefined )
+					{
+						sName = tools_web.get_web_const( 'c_deleted', curLngWeb );
+						sStatrDate = "";
+						sFinishDate = "";
+						sStatus = "";
+					}
+					else
+					{
+						sName = tools_web.get_cur_lng_name( catEvent.name, curLng.short_id );
+						sStatrDate = StrDate( catEvent.start_date, true, false );
+						sFinishDate = StrDate( catEvent.finish_date, true, false );
+						sStatus = curLngCommon.event_status_types.GetChildByKey( catEvent.status_id ).name;
+					}
+%>
+					<Row>
+						<Cell Id="name" Value="<%=XmlAttrEncode( sName )%>"/>
+						<Cell Id="start" Value="<%=sStatrDate%>"/>
+						<Cell Id="finish" Value="<%=sFinishDate%>"/>
+						<Cell Id="status" Value="<%=sStatus%>"/>
+						<Cell Id="score" Value="<%=StrReal( fldEventElem.score, 1 )%>"/>
+						<Cell Id="url" Value="<%=tools_web.get_mode_clean_url( null, fldEventElem.event_id, { doc_id: curDocID } )%>"/>
+					</Row>
+<%
+				}
+%>
+				</Data>
+			</Collection>
+			<DataGrid Name="LearningEventsGrid" Source="{LearningEventsCollection}" Height="200">
+				<DataGridColumn Value="name" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_name', curLngWeb ) )%>" Width="100%" Type="link" URL="{url}"/>
+				<DataGridColumn Value="start" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_start_date', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="finish" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_finish_date', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="status" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_status', curLngWeb ) )%>" Width="100" Type="string"/>
+				<DataGridColumn Value="score" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'c_score', curLngWeb ) )%>" Width="50" Type="string"/>
+			</DataGrid>
+<%
+			}
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

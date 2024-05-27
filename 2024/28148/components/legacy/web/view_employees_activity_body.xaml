@@ -1,0 +1,680 @@
+﻿<SPXMLScreen>
+<!---------------------------------------- Variables -------------------------------------------->
+<%
+iDaysToShow = Int( tools_web.get_web_param( curParams, "employees_activity.iDaysToShow", "1", true ));
+iItemsToShow = Int( tools_web.get_web_param( curParams, "employees_activity.iItemsToShow", "1", true ));
+
+bShowActiveLearnings = ( tools_web.get_web_param( curParams, "employees_activity.bShowActiveLearnings", "1", true ) == "1");
+bShowLearnings = ( tools_web.get_web_param( curParams, "employees_activity.bShowLearnings", "1", true ) == "1");
+bShowActiveTestLearnings = ( tools_web.get_web_param( curParams, "employees_activity.bShowActiveTestLearnings", "1", true ) == "1");
+bShowTestLearnings = ( tools_web.get_web_param( curParams, "employees_activity.bShowTestLearnings", "1", true ) == "1");
+bShowEventsParticipaints = ( tools_web.get_web_param( curParams, "employees_activity.bShowEventsParticipaints", "1", true ) == "1");
+bShowForumEntries = ( tools_web.get_web_param( curParams, "employees_activity.bShowForumEntries", "1", true ) == "1");
+bShowHireEmployees = ( tools_web.get_web_param( curParams, "employees_activity.bShowHireEmployees", "1", true ) == "1");
+bShowDismissedEmployees = ( tools_web.get_web_param( curParams, "employees_activity.bShowDismissedEmployees", "1", true ) == "1");
+bShowBirthdays = ( tools_web.get_web_param( curParams, "employees_activity.bShowBirthdays", "1", true ) == "1");
+iCollaboratorsNum = Int( tools_web.get_web_param( curParams, "employees_activity.iCollaboratorsNum", 100, true ));
+bShowPhoto = ( tools_web.get_web_param( curParams, "employees_activity.bShowPhoto", "1", true ) == "1");
+bShowUserSelect = ( tools_web.get_web_param( curParams, "employees_activity.bShowUserSelect", "0", true ) == "1");
+
+iUserID = (CONTEXT.HasProperty("selected_user_id") && CONTEXT.GetProperty("selected_user_id") != "" && bShowUserSelect) ? Int(CONTEXT.GetProperty("selected_user_id")) : undefined;
+
+dDateToShow = RawSecondsToDate(DateToRawSeconds(Date()) -  86400 * iDaysToShow);
+
+sModificationStartDate = CONTEXT.GetOptProperty( "modification_start_date", curUrlQuery.GetOptProperty( "modification_start_date", null ) );
+if ( sModificationStartDate != "" && sModificationStartDate != null )
+	sModificationStartDate = DateNewTime(Date(sModificationStartDate),00,00,00);
+if ( sModificationStartDate == "" )
+	sModificationStartDate = null;
+
+sModificationFinishDate = CONTEXT.GetOptProperty( "modification_finish_date", curUrlQuery.GetOptProperty( "modification_finish_date", null ) );
+if ( sModificationFinishDate != "" && sModificationFinishDate != null )
+	sModificationFinishDate = DateNewTime(Date(sModificationFinishDate),23,59,59);
+if ( sModificationFinishDate == "" )
+	sModificationFinishDate = null;
+
+curFilter = {
+	'action': 'REFRESH',
+	'disp_search': false,
+	'row_filters': [
+		[
+			{ 'name': 'modification_start_date', 'type': 'date', 'title': 'Показывать события с' },
+			{ 'name': 'modification_finish_date', 'type': 'date', 'title': 'Показывать события по' }
+		]
+	]
+};
+
+arrItems = new Array();
+if(iUserID == undefined)
+{
+	arrCollaborators = tools.get_sub_person_ids_by_func_manager_id( curUserID );
+	arrCollaborators = ArrayRange( arrCollaborators, 0, iCollaboratorsNum);
+	arrCollaborators = ArraySelect( arrCollaborators, "This != " + curUserID);
+}
+else
+{
+	arrCollaborators = new Array();
+	arrCollaborators.push(iUserID);
+}
+sPersons = ArrayMerge( arrCollaborators, "This", "," );
+
+%>
+
+<!-------------------------------------- Назначенные курсы -------------------------------------------->
+<%
+	if(bShowActiveLearnings)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/start_usage_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/start_usage_date >= date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/start_usage_date <= date('" + sModificationFinishDate + "')";
+
+		xarrLearnings = XQuery("for $elem in active_learnings where $elem/start_usage_date != null()" + sCondition + "and MatchSome( $elem/person_id, (" + sPersons + ") ) order by $elem/max_end_date ascending return $elem");
+		if(ArrayOptFirstElem(xarrLearnings) != undefined)
+		{
+			i=0;
+			for(catLearning in xarrLearnings)
+			{
+				if(catLearning.course_id.OptForeignElem != undefined && catLearning.person_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catLearning.person_id;
+					oItem.pic = catLearning.person_id.ForeignElem.pict_url;
+					oItem.type = "active_learning";
+					oItem.username = catLearning.person_fullname;
+					oItem.name = tools_web.get_cur_lng_name(catLearning.course_id.ForeignElem.name, curLng.short_id);
+					oItem.date = catLearning.start_usage_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'course', catLearning.course_id, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Пройденные курсы -------------------------------------------->
+<%
+	if(bShowLearnings)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/last_usage_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/last_usage_date >= date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/last_usage_date <= date('" + sModificationFinishDate + "')";
+
+		xarrLearnings = XQuery("for $elem in learnings where $elem/start_usage_date != null() " + sCondition + " and MatchSome( $elem/person_id, (" + sPersons + ") ) order by $elem/max_end_date ascending return $elem");
+		if(ArrayOptFirstElem(xarrLearnings) != undefined)
+		{
+			i=0;
+			for(catLearning in xarrLearnings)
+			{
+				if(catLearning.course_id.OptForeignElem != undefined && catLearning.person_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catLearning.person_id;
+					oItem.pic = catLearning.person_id.ForeignElem.pict_url;
+					oItem.type = "learning";
+					oItem.username = catLearning.person_fullname;
+					oItem.name = tools_web.get_cur_lng_name(catLearning.course_id.ForeignElem.name, curLng.short_id);
+					oItem.date = catLearning.last_usage_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'course', catLearning.course_id, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Назначенные тесты -------------------------------------------->
+<%
+	if(bShowActiveTestLearnings)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/start_usage_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/start_usage_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/start_usage_date < date('" + sModificationFinishDate + "')";
+
+		xarrTestLearnings = XQuery("for $elem in active_test_learnings where $elem/start_usage_date != null() " + sCondition + " and MatchSome( $elem/person_id, (" + sPersons + ") ) order by $elem/max_end_date ascending return $elem");
+		if(ArrayOptFirstElem(xarrTestLearnings) != undefined)
+		{
+			i=0;
+			for(catLearning in xarrTestLearnings)
+			{
+				if(catLearning.assessment_id.OptForeignElem != undefined && catLearning.person_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catLearning.person_id;
+					oItem.pic = catLearning.person_id.ForeignElem.pict_url;
+					oItem.type = "active_test";
+					oItem.username = catLearning.person_fullname;
+					oItem.name = tools_web.get_cur_lng_name(catLearning.assessment_id.ForeignElem.title, curLng.short_id);
+					oItem.date = catLearning.start_usage_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'assessment', catLearning.assessment_id, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+
+<!-------------------------------------- Завершенные тесты -------------------------------------------->
+<%
+	if(bShowTestLearnings)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/start_usage_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/start_usage_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/start_usage_date < date('" + sModificationFinishDate + "')";
+
+		xarrTestLearnings = XQuery("for $elem in test_learnings where $elem/start_usage_date != null()" + sCondition + " and MatchSome( $elem/person_id, (" + sPersons + ") ) return $elem");
+		if(ArrayOptFirstElem(xarrTestLearnings) != undefined)
+		{
+			i=0;
+			for(catLearning in xarrTestLearnings)
+			{
+				if(catLearning.assessment_id.OptForeignElem != undefined && catLearning.person_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catLearning.person_id;
+					oItem.pic = catLearning.person_id.ForeignElem.pict_url;
+					oItem.type = "finished_test";
+					oItem.username = catLearning.person_fullname;
+					oItem.name = tools_web.get_cur_lng_name(catLearning.assessment_id.ForeignElem.title, curLng.short_id);
+					oItem.date = catLearning.last_usage_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'assessment', catLearning.assessment_id, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Участие в мероприятии -------------------------------------------->
+<%
+	if(bShowEventsParticipaints)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/finish_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/finish_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/finish_date < date('" + sModificationFinishDate + "')";
+
+		xarrEventResults = XQuery("for $elem in event_collaborators where $elem/status_id='close'" + sCondition + " and MatchSome( $elem/collaborator_id, (" + sPersons + ") ) return $elem");
+
+		if(ArrayOptFirstElem(xarrEventResults) != undefined)
+		{
+			i=0;
+			for(catEventResult in xarrEventResults)
+			{
+				if(catEventResult.collaborator_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catEventResult.collaborator_id;
+					oItem.pic = catEventResult.collaborator_id.ForeignElem.pict_url;
+					oItem.type = "event";
+					oItem.username = catEventResult.person_fullname;
+					oItem.name = tools_web.get_cur_lng_name(catEventResult.name, curLng.short_id);
+					oItem.date = catEventResult.finish_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'event', catEventResult.event_id, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Сообщения форумов -------------------------------------------->
+<%
+	if(bShowForumEntries)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/create_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/create_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/create_date < date('" + sModificationFinishDate + "')";
+
+		xarrForumEntries = XQuery("for $elem in forum_entrys where MatchSome( $elem/user_id, (" + sPersons + ") )" + sCondition + " return $elem");
+		if(ArrayOptFirstElem(xarrForumEntries) != undefined)
+		{
+			i=0;
+			for(catForumEntry in xarrForumEntries)
+			{
+				if(catForumEntry.forum_id.OptForeignElem != undefined && catForumEntry.forum_id.OptForeignElem != undefined && catForumEntry.user_id.OptForeignElem != undefined)
+				{
+					oItem = new Object();
+					oItem.userId = catForumEntry.user_id;
+					oItem.pic = catForumEntry.user_id.ForeignElem.pict_url;
+					oItem.type = "forum_entry";
+					oItem.username = catForumEntry.author_info;
+					oItem.name = catForumEntry.forum_id.ForeignElem.name;
+					oItem.date = catForumEntry.create_date;
+					oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+					oItem.itemAction = tools_web.get_mode_clean_url( 'forum_entry', catForumEntry.PrimaryKey, {} );
+					arrItems[ArrayCount(arrItems)] = oItem;
+				}
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Прием на работу -------------------------------------------->
+<%
+	if(bShowHireEmployees)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/hire_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/hire_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/hire_date < date('" + sModificationFinishDate + "')";
+
+		xarrPersons = XQuery("for $elem in collaborators where $elem/hire_date != null()" + sCondition + " and MatchSome( $elem/id, (" + sPersons + ") ) return $elem");
+		if(ArrayOptFirstElem(xarrPersons) != undefined)
+		{
+			i=0;
+			for(catPerson in xarrPersons)
+			{
+				oItem = new Object();
+				oItem.userId = catPerson.PrimaryKey;
+				oItem.pic = catPerson.pict_url;
+				oItem.type = "hired";
+				oItem.username = catPerson.fullname;
+				oItem.name = catPerson.fullname;
+				oItem.date = catPerson.hire_date;
+				oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+				oItem.itemAction = tools_web.get_mode_clean_url( 'collaborator', catPerson.PrimaryKey, {} );
+				arrItems[ArrayCount(arrItems)] = oItem;
+
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Увольнения -------------------------------------------->
+<%
+	if(bShowDismissedEmployees)
+	{
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+			sCondition = " and $elem/dismiss_date > date('" + dDateToShow + "')";
+		else
+			sCondition = "";
+		if ( sModificationStartDate != null )
+			sCondition += " and $elem/dismiss_date > date('" + sModificationStartDate + "')";
+		if ( sModificationFinishDate != null )
+			sCondition += " and $elem/dismiss_date < date('" + sModificationFinishDate + "')";
+
+		xarrPersons = XQuery("for $elem in collaborators where $elem/dismiss_date != null()" + sCondition + " and MatchSome( $elem/id, (" + sPersons + ") ) return $elem");
+		if(ArrayOptFirstElem(xarrPersons) != undefined)
+		{
+			i=0;
+			for(catPerson in xarrPersons)
+			{
+				oItem = new Object();
+				oItem.userId = catPerson.PrimaryKey;
+				oItem.pic = catPerson.pict_url;
+				oItem.type = "dismissed";
+				oItem.username = catPerson.fullname;
+				oItem.name = catPerson.fullname;
+				oItem.date = catPerson.dismiss_date;
+				oItem.rest = DateDiff( Date(),oItem.date) / 86400;
+				oItem.itemAction = tools_web.get_mode_clean_url( 'collaborator', catPerson.PrimaryKey, {} );
+				arrItems[ArrayCount(arrItems)] = oItem;
+
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+%>
+<!-------------------------------------- Дни рождения -------------------------------------------->
+<%
+	if(bShowBirthdays)
+	{
+		xarrPersons = new Array();
+
+		if ( sModificationStartDate == null && sModificationFinishDate == null )
+		{
+			dDateToShowBirthdays = RawSecondsToDate(DateToRawSeconds(Date()) +  86400 * iDaysToShow);
+
+			iMonthCount = iDaysToShow / 31 + 1;
+			iCurMonth = Month(Date());
+			iCurDay = Day(Date());
+
+			arrPersons = new Array()
+
+			for(i=0; i < iMonthCount; i++)
+			{
+				sCurMonth = (iCurMonth < 10) ? ("0" + iCurMonth) : String(iCurMonth);
+
+				if ( (tools.sys_db_capability & tools.UNI_CAP_MSSQL) != 0)
+				{
+					sQuery = "for $elem in collaborators where $elem/birth_date != null() and datepart(month,$elem/birth_date)= " + iCurMonth + "  and $elem/is_dismiss = false() and MatchSome( $elem/id, (" + sPersons + ") ) return $elem";
+					xarrPersons = ArraySelectAll( XQuery(sQuery) );
+				}
+				else
+				{
+
+					/*
+					Serg: Неоптимальный вариант "на коленке" для помощи Филиппу [205516]
+					Желающие могут сделать нормальную вилку под каждую БД.
+					*/
+
+					sQuery = "for $elem in collaborators where $elem/birth_date != null() and $elem/is_dismiss = false() and MatchSome( $elem/id, (" + sPersons + ") ) return $elem";
+
+					xarrPersons = ArraySelect( XQuery(sQuery), "Month(This.birth_date) == " + iCurMonth );
+
+				}
+
+				arrPersons = ArraySort(xarrPersons, "Day(This.birth_date)", "+");
+
+				/*
+				for( j = iCurDay; j < 31; j++ )
+				{
+					sCurDay = (iCurDay < 10) ? ("0" + iCurDay) : String(iCurDay);
+					arrPersons = ArrayUnion( arrPersons, ArraySelect(xarrPersons, "StrContains(This.birth_date, '" + sCurDay + "." + sCurMonth + ".')" ));
+					iCurDay++;
+				}
+				*/
+				if(iCurMonth != 12)
+					iCurMonth++;
+				else
+					iCurMonth = 1;
+				iCurDay = 1;
+			}
+		}
+		else
+		{
+			function daysToDate(birth_date)
+			{
+			   try
+			   {
+				  curDate = DateNewTime( CurDate );
+				  birthDate = Date( Year( curDate ), Month( birth_date ), Day( birth_date ) );
+
+				  if ( Month( birthDate ) * 100 + Day( birthDate ) >= Month( curDate ) * 100 + Day( curDate ) )
+								return DateDiff( birthDate, curDate ) / 86400;
+
+				  return DateDiff( Date( Year( curDate ) + 1, Month( birth_date ), Day( birth_date ) ), curDate ) / 86400;
+			   }
+			   catch(_brrrr_)
+			   {
+				  return null;
+			   }
+			}
+
+			var iDaysLow = ( sModificationStartDate != null ? daysToDate(Date(sModificationStartDate)) : null);
+			var iDaysHigh = (sModificationFinishDate != null ? daysToDate(Date(sModificationFinishDate)) : null);
+			var dModificationStartDate = sModificationStartDate != null ? Date(sModificationStartDate) : null;
+			var dModificationFinishDate = sModificationFinishDate != null ? Date(sModificationFinishDate) : null;
+			if (iDaysLow != null && iDaysHigh !=null && iDaysLow > iDaysHigh)
+			{
+
+			   var _i = iDaysLow;
+			   iDaysLow = iDaysHigh;
+			   iDaysHigh = _i;
+
+
+			}
+
+			bShowDismissed = false;
+
+//			if ((tools.sys_db_capability & tools.UNI_CAP_BASIC) != 0)
+//			{
+//			   tools.spxml_unibridge.Object.provider.SetSecurityContext('dbo',0,null);
+//			   if ((tools.sys_db_capability & tools.UNI_CAP_ORACLE) != 0)
+//			   {
+//					  arrPersons = XQuery('sql: SELECT c."id", c."fullname", c."pict_url",c."position_name", c."birth_date", c."position_parent_name", c."birth_date_rest_days_num" FROM (SELECT CAST(c."id" AS varchar2(40)) as "id", c."fullname", c."pict_url",c."position_name", c."birth_date", c."position_parent_name", mod((ADD_MONTHS(c."birth_date" ,12 * GREATEST ((EXTRACT (YEAR FROM SYSDATE) - EXTRACT (YEAR FROM c."birth_date")),1))- TRUNC(SYSDATE)) + 365, 365) birth_date_rest_days_num FROM "collaborators" c WHERE c."birth_date" IS NOT NULL ' +(bShowDismissed ? '' : 'and c."is_dismiss" != 1')+ ') c WHERE 1=1 ' + (iDaysHigh != null ? 'and c.birth_date_rest_days_num <= ' + iDaysHigh : '') + (iDaysHigh != null ? ' and c.birth_date_rest_days_num >= ' + iDaysLow : '') + ' order by c."fullname"' );
+//			   }
+//			   else
+//			   {
+//					  arrPersons = XQuery("sql: declare @scuryear as varchar(4); declare @snextyear as varchar(4); declare @icurmonth as int; declare @icurday as int; set @scuryear = convert(varchar(4), datepart(year, getdate())); set @snextyear = convert(varchar(4), datepart(year, getdate()) + 1); set @icurmonth = datepart(month, getdate()); set @icurday = datepart(day, getdate()); select c.* from (select /*+ALL_ROWS*/ c.id, c.fullname, c.pict_url,c.position_name, c.birth_date, c.position_parent_name, ((DATEDIFF(day, getdate(), dateadd(year, datepart(year,getdate()) - datepart(year, c.birth_date),c.birth_date)) + 365) % 365) birth_date_rest_days_num from collaborators as c where c.birth_date IS NOT NULL" +(bShowDismissed ? "" :" and c.is_dismiss != 1")+ ") c where 1=1" + (iDaysHigh != null ? " and c.birth_date_rest_days_num <= " +iDaysHigh : "")+ (iDaysLow != null ? " and c.birth_date_rest_days_num >= " +iDaysLow :"")+ " order by c.fullname;");
+//			   }
+//			   tools.spxml_unibridge.Object.provider.ReleaseSecurityContext();
+//			}
+//			else
+			{
+				function check_birth_date( catElem )
+				{
+					if( !catElem.birth_date.HasValue )
+					{
+						return false;
+					}
+					if( dModificationStartDate != null && dModificationFinishDate != undefined )
+					{
+						var dBirtdate = Date( Year( dModificationStartDate ), Month( catElem.birth_date ), Day( catElem.birth_date ) );
+						if( dBirtdate < dModificationStartDate )
+						{
+							dBirtdate = Date( Year( dModificationStartDate ) + 1, Month( catElem.birth_date ), Day( catElem.birth_date ) );
+						}
+						return dBirtdate >= dModificationStartDate && dBirtdate <= dModificationFinishDate;
+					}
+					return true;
+					
+				}
+				//arrPersons = XQuery("for $elem in collaborators where $elem/birth_date_rest_days_num >= 0" + (iDaysHigh != null ? " and $elem/birth_date_rest_days_num <= " + iDaysHigh: "") + (iDaysLow != null ? " and $elem/birth_date_rest_days_num >= " + iDaysLow: "") + (bShowDismissed ? "" : " and $elem/is_dismiss != true()") + " and MatchSome( $elem/id, (" + sPersons + ") ) order by $elem/fullname return $elem");
+				arrPersons = XQuery( "for $elem in collaborators where MatchSome( $elem/id, (" + sPersons + ") )" + (bShowDismissed ? "" : " and $elem/is_dismiss != true()") + " and $elem/birth_date != null() order by $elem/fullname return $elem" );
+
+				arrPersons = ArraySelect( arrPersons, "check_birth_date( This )" );
+			}
+		}
+
+		if(ArrayOptFirstElem(arrPersons) != undefined)
+		{
+			i=0;
+			for(catPerson in arrPersons)
+			{
+				oItem = new Object();
+				oItem.userId = catPerson.PrimaryKey;
+				oItem.pic = catPerson.pict_url;
+				oItem.type = "birthday";
+				oItem.username = catPerson.fullname;
+				oItem.name = catPerson.fullname;
+				dTmpDate = ParseDate(StrReplace(StrDate(catPerson.birth_date, false, false), Year(catPerson.birth_date), Year(Date())));
+				oItem.date = StrInt( Day( catPerson.birth_date ), 2 ) + "." + StrInt( Month( catPerson.birth_date ), 2 );
+				oItem.rest = DateDiff(Date(), dTmpDate) / 86400;
+				oItem.itemAction = tools_web.get_mode_clean_url( 'collaborator', catPerson.PrimaryKey, {} );
+				arrItems[ArrayCount(arrItems)] = oItem;
+				i++;
+				if(i==iItemsToShow)
+					break;
+			}
+		}
+	}
+
+	arrItems = ArraySort(arrItems,"rest","+");
+	arrItems = ArrayRange(arrItems, 0, iItemsToShow)
+%>
+<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-container XAML-stack-block" >
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+		<Label Class="XAML-label-block-header"><%=tools_web.get_web_const( "aktivnostpodchi", curLngWeb )%></Label>
+	</StackPanel>
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<StackPanel Class="XAML-grid-list-container">
+<%
+	if(bShowUserSelect)
+	{
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-grid-list-item XAML-employee-activity-select">
+		<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+				<Edit Name="selected_user_id" Hidden="1"></Edit>
+		<%
+						sID = "selected_user_id";
+						curSelector = {
+							"id": sID,
+							"catalog_name": "collaborator",
+							"multi_select": "false",
+							"show_all": "false",
+							"close_action": ("SET=selected_user_id,{CatalogListDataGridFullList:^/id};REFRESH")
+						};
+						if(iUserID != undefined)
+							curSelector.object_id = iUserID;
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+		%>
+		<Button Class="XAML-button XAML-button-cancel" Click="Set=selected_user_id,;REFRESH"><%=tools_web.get_web_const( "c_clear", curLngWeb )%></Button>
+	</StackPanel>
+<%
+	}
+	if(ArrayOptFirstElem(arrItems) == undefined)
+	{
+%>
+<Label Class="XAML-label-empty-data"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+<%
+	}
+	for(oItem in arrItems)
+	{
+		sActionLabel = "";
+		sIcon = "";
+		switch(oItem.type)
+		{
+			case "learning":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "proshelelektron", curLngWeb ) );
+				sIcon = "icons/16png/learning.png";
+				break;
+			case "active_learning":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "naznachenelektr", curLngWeb ) );
+				sIcon = "icons/16png/active_learning.png";
+				break;
+			case "active_test":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "naznachentest", curLngWeb ) );
+				sIcon = "icons/16png/active_test_learning.png";
+				break;
+			case "finished_test":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "prosheltest", curLngWeb ) );
+				sIcon = "icons/16png/test_learning.png";
+				break;
+			case "event":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "prinyaluchastiev", curLngWeb ) );
+				sIcon = "icons/16png/event.png";
+				break;
+			case "forum_entry":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "napisalsoosheni", curLngWeb ) );
+				sIcon = "/icons/16png/forum_entry.png";
+				break;
+			case "hired":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "prinyatnarabotu", curLngWeb ) );
+				sIcon = "/icons/16png/collaborator.png";
+				break;
+			case "dismissed":
+				sActionLabel = StrNonTitleCase( tools_web.get_web_const( "c_dismiss", curLngWeb ) );
+				sIcon = "icons/16png/collaborator_deleted.png";
+				break;
+			case "birthday":
+				sActionLabel = tools_web.get_web_const( "prazdnuetdenro", curLngWeb );
+				sIcon = "/icons/16png/birthday.png";
+				break;
+		}
+
+		sDays = "";
+		if(oItem.rest > 0)
+		{
+			iDays = oItem.rest + 10;
+			switch(iDays % 10)
+			{
+				case 1:
+				{
+					if( iDays < 20 || iDays > 30) sDays = StrNonTitleCase( tools_web.get_web_const( "w6n76t3f75", curLngWeb ) );
+					break;
+				}
+				case 2:
+				case 3:
+				case 4:
+				{
+					if( iDays < 20 || iDays > 30) sDays = StrNonTitleCase( tools_web.get_web_const( "dnya", curLngWeb ) );
+					break;
+				}
+				default:
+				{
+					sDays = StrNonTitleCase( tools_web.get_web_const( "2kaidfx9na", curLngWeb ) );
+					break;
+				}
+			}
+			sDays = (oItem.type != "birthday") ? tools_web.get_date_passed_string(oItem.date, curLngWeb) : oItem.date;
+			sActionLabel = sDays + " " + sActionLabel;
+		}
+		else if(oItem.type != "birthday")
+		{
+			sActionLabel = StrDate(oItem.date, false, false) + " " + sActionLabel;
+		}
+		else
+		{
+			sActionLabel = oItem.date + " " + sActionLabel;
+		}
+%>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container XAML-stack-card XAML-activity-item XAML-grid-list-item">
+<%
+			if(bShowPhoto)
+			{
+%>
+			<StackPanel Width="38px" Height="38px" Class="XAML_activity_image">
+				<BackgroundImage Source="<%=(oItem.pic == "" ? "/pics/nophoto.png" : oItem.pic)%>" Width="38" Height="38" Class="XAML_activity_background" />
+			</StackPanel>
+<%
+			}
+%>
+			<HTMLBox Width="100%">
+<%
+// since ExtJS cannot detect width of nested stackpanels correctly, HTML box is used instead of a lot of panels - TO FIX IN FUTURE
+				sUrl = tools_web.get_mode_clean_url( 'collaborator', oItem.userId, {} );
+				sHTML = '<div class="XAML-stack-no-spacing"><a href="' + sUrl + '" class="XAML-stack-card-user-link" target="_top">' + oItem.username + '</a>';
+				sHTML = sHTML + '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%; vertical-align: top;"><tr><td style="width: 100%; vertical-align: top;" class="XAML-stack-card-activity"><span>' + sActionLabel + '</span>';
+				if(oItem.type != "birthday" && oItem.type != "hired" && oItem.type != "dismissed")
+				{
+					sHTML = sHTML + ' <a href="' + oItem.itemAction + '">&laquo;' + oItem.name + '&raquo;</a>';
+				}
+				sHTML = sHTML + '</td></tr></table></div>';
+%>
+				<%=HtmlEncode( sHTML )%>
+			</HTMLBox>
+		</StackPanel>
+<%
+	}
+%>
+	</StackPanel>
+</StackPanel>
+</SPXMLScreen>

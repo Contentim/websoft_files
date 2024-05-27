@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>t5h7gz0rao</id>
+		<create_date>2024-02-13T16:59:01+00:00</create_date>
+		<server_version>2023.2.805 (2023-12-19)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7B</id>
+			<code>123</code>
+			<name>Вы были включены в состав участников мероприятия</name>
+			<subject>Вы были включены в состав участников мероприятия</subject>
+			<body>Вы были включены в состав участников мероприятия "&lt;%=Text%&gt;", которое состоится &lt;%=StrDate(objDocSec.start_date, true, false)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>true</is_std>
+			<changed>true</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-02-13T16:28:42Z</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-02-13T16:28:42Z</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7D</id>
+			<code>125</code>
+			<name>Подчиненный сотрудник был включен в состав участников мероприятия</name>
+			<subject>Подчиненный сотрудник был включен в состав участников мероприятия</subject>
+			<body>Подчиненный сотрудник - &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=objDoc.middlename%&gt;, был включен в состав участников мероприятия "&lt;%=Text%&gt;", которое состоится &lt;%=StrDate(objDocSec.start_date, true, false)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>true</is_std>
+			<changed>true</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-02-13T16:57:44Z</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>6148914691236517121</user_id>
+					<date>2024-02-13T16:57:44Z</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+	</notification_templates>
+</data>

@@ -1,0 +1,114 @@
+﻿<SPXMLScreen>
+<%
+// const_start
+var sConstProjectTreeItemInfo = tools_web.get_web_const( 'zdesotobrazhaet', curLngWeb );
+// const_end
+
+iObjectID= undefined;
+strTempID=PARAMETERS.GetOptProperty( 'iObjectID' )
+strContext=PARAMETERS.GetOptProperty( 'strContext','' )
+iOverrideTamplateID=OptInt(PARAMETERS.GetOptProperty( 'iOverrideTamplateID',null ),null)
+
+if (strTempID!=undefined&&Trim(strTempID)!='')
+{
+	iObjectID = OptInt( strTempID ,null );
+}
+
+if (strContext!='')
+{
+	strContext=(StrBegins(strContext,'{')?'':'{')+strContext+(StrEnds(strContext,'}')?'':'}')
+}
+
+if (iObjectID!=undefined)
+{
+	strError=null
+	if (iObjectID!=null)
+	{
+		teObject = null
+		try
+		{
+			teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+		}
+		catch(ex)
+		{
+		}
+		
+		if (teObject == null)
+		{
+			strError=tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+		}
+		
+	}
+	else
+	{
+		strError=tools_web.get_web_const( 'dsctp_err1_mess', curLngWeb )
+	}
+	
+	if (strError!=null)
+	{
+		curMessageBox = {
+					"type": "error",
+					"text": strError
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	else
+	{
+%>
+		<StackPanel Orientation="Horizontal" Align="right" Class="XAML-stack-container">
+<%
+		if (curDevice.disp_type=='mobile')
+		{
+%>
+			<Link Click="SET=sliderTab,0" Class="XAML-link-block-header-no-border icon-arrow-left"></Link>
+<%
+		}
+		curTitle={ 'type':'simple','title': teObject.name };
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+%>
+		</StackPanel>
+<%
+
+		if (teObject.Name=='project')
+		{
+			curProjectObject = {
+					"curObjectID": iObjectID,
+					"curObject": teObject,
+					"curContext":strContext,
+				};
+				
+			temp_teOverrideWebTemplate = tools_web.get_override_web_template( iOverrideTamplateID, Session, Env.GetOptProperty( 'curUserID', null ), Env.GetOptProperty( 'curUser', null ), Env.curAnonymousAccess, curActiveWebTemplate, true );
+			if ( temp_teOverrideWebTemplate != undefined )
+			{
+				curParams = new SafeObject;
+				tools_web.set_web_params(curParams, temp_teOverrideWebTemplate.wvars, true );
+				Request.Session.Env.SetProperty("curParams", curParams);
+				sRes= tools_web.insert_custom_code( temp_teOverrideWebTemplate.custom_web_template_id, null);
+				Response.Write( sRes );
+			}
+			else
+			{
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_project_body.xaml" ) );
+			}
+		}
+		else if (teObject.Name=='task')
+		{
+			curTaskObject = {
+					"curObjectID": iObjectID,
+					"curObject": teObject,
+					"curContext":strContext
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_project_task.xaml" ) );	
+		}
+	}
+}
+else
+{
+%>
+
+		<Label Class="XAML-grid-label-name"><%=sConstProjectTreeItemInfo%></Label>
+<%
+}
+
+%>
+</SPXMLScreen>

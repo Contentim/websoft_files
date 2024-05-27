@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<wtv_view_tasks>
+
+	<!-- MAIN -->
+		<report_name TYPE="string" DEFAULT="wtv_view_tasks"/>
+		<is_minimized TYPE="bool" DEFAULT="false"/>
+		<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+		<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+		<hier_show TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<disp_tree_selector TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<!-- Объектов в списке -->
+		<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+		<!-- Выбрано объектов -->
+		<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+	<!-- Задачи -->
+		<tasks>
+			<task MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="integer" FOREIGN-ARRAY="tasks"/>
+				<name TYPE="string"/>
+				<end_date_plan TYPE="date"/>
+				<date_fact TYPE="date"/>
+				<value TYPE="real"/>
+				<status TYPE="string" FOREIGN-ARRAY="common.task_statuses" TITLE="const=c_status"/>
+				<task_type TYPE="string"/>
+				<comment TYPE="string"/>
+
+				<!-- ID сотрудника -->
+				<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+
+				<!-- «Сотрудник» - ФИО сотрудника -->
+				<person_fullname TYPE="string"/>
+
+				<!-- «Должность» - наименование должности сотрудника -->
+				<person_position_name TYPE="string"/>
+
+				<!-- «Подразделение» - наименование подразделения, к которому относится должность -->
+				<person_subdivision_name TYPE="string"/>
+
+				<!-- «Организация» - наименование организации, к которой относится подразделение -->
+				<person_org_name TYPE="string"/>
+
+			</task>
+		</tasks>
+
+	<!-- FILTERS -->
+		<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+		<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+		<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+		<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+		<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<assessment_appraise_id TYPE="integer" FOREIGN-ARRAY="assessment_appraises"/>
+		<task_type_id TYPE="integer" FOREIGN-ARRAY="task_types"/>
+
+
+	<set_sel_action PROPERTY="1" PARAM="List" PARAM="Screen" EXPR="
+		TopElem = Child(0).Parent;
+		iSelrowsCount = ArrayCount( List.SelRows );
+		TopElem.count_sel = iSelrowsCount;
+		Screen.FindItem( 'StatusPanel' ).Update();
+	"/>
+
+</wtv_view_tasks>
+
+<OnInit PROPERTY="1" EXPR="
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

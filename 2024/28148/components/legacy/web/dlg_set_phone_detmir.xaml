@@ -1,0 +1,17 @@
+﻿<SPXMLScreen>
+	<StackPanel Orientation="Horizontal" Class="XAML-without-padding-and-margin">
+		<Label Width="25">+7 </Label>
+		<Edit Name="dlg_phone" Width="200" KeyPress="#!1-31:STOP;#!33-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-39:STOP;#!S42:STOP;#!S44-47:STOP;#!S58-10000:STOP;#13:CLOSEDIALOG"><%=PARAMETERS.GetOptProperty( "dlg_phone", "" )%></Edit>
+	</StackPanel>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons" >
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Click="CLOSEDIALOG" Width="100">OK</Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

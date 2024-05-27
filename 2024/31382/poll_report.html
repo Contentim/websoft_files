@@ -1,0 +1,164 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+<%
+	oQuestion = ArrayOptFirstElem(Ps.questions);
+
+	if (Ps.disp_answers)
+	{
+%>
+
+<h2>Опрос: <%=oQuestion.title%></h2>
+<table border="1" cellpadding="2" cellspacing="0">
+	<tr>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('wrm4ebg7c9')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+
+		<% for(oEntry in oQuestion.entries){ %>
+			<td align="center" bgcolor="#FFCC99"><b><%=oEntry.value%></b></td>
+		<% } %>
+
+		<% if(Ps.show_comments_in_report){ %>
+			<td width="95" align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vkpb_comment')%></b></td>
+		<% } %>
+
+		<% if(Ps.collaborator_fullname_has_count.Value){ %>
+			<td width="95" align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_coll')%></b></td>
+		<% } %>
+	</tr>
+
+	<%
+	for ( _poll in Ps.polls )
+	{
+		_questElem_entries = ArrayOptFirstElem(ArrayExtract(Ps.questions, 'This.entries'));
+		_entryElem = ArrayOptFirstElem(ArrayExtract(_poll.questions, 'This.entries'));
+		oQuestion = ArrayOptFirstElem(_poll.questions);
+	%>
+	<tr valign="top">
+		<td width="300" align="center"><%=_poll.person_fullname%></td>
+		<td width="100" align="center"><%=_poll.person_code%></td>
+		<td width="110" align="center"><%=StrDate( Date( _poll.start_date ), true, false )%></td>
+
+		<%
+			for(_questElem_entry in _questElem_entries)
+			{
+				_score = ArrayOptFindByKey(_entryElem, _questElem_entry.id, 'id'); 
+		%>
+			<% if(_score.value != ''){ %>
+				<td width="100" align="center" bgcolor="#e6ffe6"><%=_score.value%></td>
+			<% } else { %>
+				<td width="100" align="center"><%=_score.value%></td>
+			<% } %>
+
+				
+		<%
+			}
+		%>
+
+		<% if(Ps.show_comments_in_report){ %>
+			<% if(oQuestion != undefined){ %>
+				<td width="100" align="center"><%=oQuestion.comment%></td>
+			<% } %>
+		<% } %>
+
+		<%if(Ps.collaborator_fullname_has_count.Value){%>
+			<td width="95" align="center" bgcolor="#FFCC99"><b><%=_poll.collaborator_fullname%></b></td>
+		<%}%>
+	</tr>	
+	<%
+	}
+	%>
+</table>
+
+<%
+}
+else
+{
+%>
+<table border="1" cellpadding="2" cellspacing="0">
+	<tr>  
+<%
+		if(!Ps.show_comments_in_report)
+		{
+%>	
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('wrm4ebg7c9')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+<%
+		}
+		else
+		{
+%>
+		<td align="center" bgcolor="#FFCC99">&nbsp;</td>
+		<td align="center" bgcolor="#FFCC99">&nbsp;</td>
+		<td align="center" bgcolor="#FFCC99">&nbsp;</td>
+<%
+		}
+	
+		for ( _elem in Ps.questions )
+		{
+%>		
+		<td align="center" bgcolor="#FFCC99" <%=(Ps.show_comments_in_report?'colspan="2"':'')%>><b><%=_elem.title%></b></td>
+<%		
+		}
+%>	
+	</tr>
+<%
+	if(Ps.show_comments_in_report)
+	{
+
+%>	
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('wrm4ebg7c9')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+		<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+<%	
+		for ( _elem in Ps.questions )
+		{
+%>		
+		<td width="80" bgcolor="#FFCC99" align="center"><%=ms_tools.get_const('c_answer')%></td>
+		<td width="95" bgcolor="#FFCC99" align="center"><%=ms_tools.get_const('vkpb_comment')%></td>
+<%		
+		}
+%>	
+	</tr>
+<%	
+	}
+
+	for ( _poll in Ps.polls )
+	{
+%>
+	<tr valign="top">
+		<td width="300" align="center"><%=_poll.person_fullname%></td>
+		<td width="100" align="center"><%=_poll.person_code%></td>
+		<td width="110" align="center"><%=StrDate( Date( _poll.start_date ), true, false )%></td>
+<%		
+		for ( _elem in _poll.questions )
+		{
+%>		
+		<td width="80" align="center"><%=_elem.answers%></td>
+<%				
+			if(Ps.show_comments_in_report)
+			{
+%>		
+		<td width="80" align="center"><%=_elem.comment%></td>
+<%					
+			}
+		}
+%>		
+	</tr>	
+<%
+	}
+%>
+</table>
+<%
+}
+%>
+</body>
+</html>

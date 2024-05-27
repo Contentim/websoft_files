@@ -1,0 +1,85 @@
+﻿<%
+// const_start
+var oConstCollTile = ({
+	"desc": tools_web.get_web_const( 'c_desc', curLngWeb ),
+	"position": tools_web.get_web_const( 'c_position', curLngWeb ),
+	"sub": tools_web.get_web_const( 'c_subd', curLngWeb ),
+	"email": "Email"
+});
+// const_end
+
+iResourceID = OptInt( PARAMETERS.GetOptProperty( "resource_id" ) );
+sObjectImageUrl = iResourceID != undefined ? tools_web.get_object_source_url( 'resource', iResourceID ) : "/pics/nophoto.jpg";
+
+%>
+<SPXMLScreen>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile" Height="290">
+
+		<TabControl DisplayMode="concertina" TabsHidden="true" Name="tiletab" Height="216">
+		<TabItem Title="Info">
+
+			<Link  Click="SET=tiletab,1" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+
+			<StackPanel Class="XAML-stack-tile-image-container" Height="216">
+<%
+if( tools_web.is_true( PARAMETERS.GetOptProperty( "is_main" ) ) )
+{
+%>
+				<Label Class="XAML-label-tile-status color-process"><%=tools_web.get_web_const( "e03z6dxrvq", curLngWeb )%></Label>
+<%
+}
+%>
+				<Image Class="XAML-image-tile-image" Source="pics/1blank.gif" Height="216">
+					<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+				</Image>
+			</StackPanel>
+<%
+			function drawInfoPersonExpInfo()
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table-compact">
+				<GridColumns>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=PARAMETERS.GetOptProperty( "contact_position" )%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name">E-mail:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=PARAMETERS.GetOptProperty( "email" )%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column XAML-label-grid-column-name"><%=tools_web.get_web_const( "dd2zo2k2mj", curLngWeb )%>:</Label>
+				</GridRow>
+				<GridRow>
+					<Label><![CDATA[<%=PARAMETERS.GetOptProperty( "telephone_work" )%>]]></Label>
+				</GridRow>
+
+			</Grid>				
+<%
+			}
+	%>
+		</TabItem>
+		<TabItem Title="<%=oConstCollTile.desc%>" Class="XAML-tabitem-tile-info">
+			<Link  Click="SET=tiletab,0" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+	<%
+			drawInfoPersonExpInfo();
+	%>
+		</TabItem>
+		</TabControl>
+
+		<StackPanel Class="XAML-stack-tile-title-container" Height="55">
+			<Label Class="XAML-link-tile-title">
+				<%=PARAMETERS.GetOptProperty( "contact_fullname", "" )%>
+			</Label>
+		</StackPanel>
+		
+	</StackPanel>
+
+</SPXMLScreen>

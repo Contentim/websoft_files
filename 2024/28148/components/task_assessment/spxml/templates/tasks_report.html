@@ -1,0 +1,48 @@
+﻿<HTML>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+		<table border="1" cellpadding="2" cellspacing="0">
+		  <tr valign="middle">
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_coll')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+			<td width="300px" bgcolor="#FFCC99">Тип задачи</td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vdb_aim_task')%></td>
+			<td width="300px" bgcolor="#FFCC99">Дата завершения план.</td>
+			<td width="110px" bgcolor="#FFCC99">Дата завершения факт.</td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_status')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('ass_mark')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_comment')%></td>
+		  </tr>
+		<%
+
+		arrTasks = Ps.tasks
+
+		for (var i = 0; i < ArrayCount(arrTasks); i++) {
+			_task = arrTasks[i]
+		%>
+
+		<%if (i % 2 === 0) { %>
+			<tr valign="middle">
+		<% } else { %>
+			<tr valign="middle" bgcolor="#f1f0f0">
+		<% } %>
+			<td><%=_task.person_fullname%></td>
+			<td><%=_task.person_position_name%></td>
+			<td><%=_task.person_subdivision_name%></td>
+			<td><%=_task.person_org_name%></td>
+			<td><%=_task.task_type%></td>
+			<td><%=_task.name%></td>
+			<td><%=_task.end_date_plan%></td>
+			<td><%=_task.date_fact%></td>
+			<td><%=_task.status%></td>
+			<td><%=_task.value%></td>
+			<td><%=_task.comment%></td>
+		  </tr>
+		<%
+		}
+		%>
+		</table>
+	</body>
+</HTML>

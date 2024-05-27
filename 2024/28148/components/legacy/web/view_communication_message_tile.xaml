@@ -1,0 +1,41 @@
+﻿<SPXMLScreen>
+	<Grid Width="100%" Class="XAML-grid-list-item">
+		<GridColumns>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<StackPanel Orientation="Horizontal" Class="XAML-user-tile XAML-stack-container chat-tile">
+				<Image Class="XAML-image-tile-image XAML-image-container" Source="pics/1blank.gif" Width="64" Height="64">
+					<BackgroundImage Source="<%=PARAMETERS.GetOptProperty("photoUrl")%>"/>
+				</Image>	
+				<StackPanel Orientation="Vertical">	
+					<Link Class="XAML-person-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( null, PARAMETERS.GetOptProperty("senderId"), { doc_id: curDocID } )%>"><%=PARAMETERS.GetOptProperty("fullname")%></Link>
+					
+		<%
+			if(PARAMETERS.GetOptProperty("timePast") != "")
+			{
+		%>
+					<Label><%=PARAMETERS.GetOptProperty("timePast")%>
+						<HTMLTip>
+							<![CDATA[
+								<%=PARAMETERS.GetOptProperty("date")%>
+							]]>
+						</HTMLTip>
+					</Label>
+			
+		<%
+			}
+		%>
+					<StackPanel Orientation="Horizontal">
+						<Label Class="<%=(PARAMETERS.GetOptProperty("senderId")==String(curUserID) ? "icon-arrow-right-ico" : "icon-arrow-left-ico")%>"/>
+						<HTMLBox Class="XAML-chat-html">
+							<![CDATA[
+								<%=PARAMETERS.GetOptProperty("text")%>
+							]]>
+						</HTMLBox> 
+					</StackPanel>	
+				</StackPanel>											
+			</StackPanel>	
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

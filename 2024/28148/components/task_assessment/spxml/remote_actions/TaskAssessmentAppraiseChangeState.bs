@@ -1,0 +1,154 @@
+﻿function TaskAssessmentAppraiseChangeState()
+{
+	function getParam(_oFormFields, _sName)
+	{
+		result = "";
+		try
+		{
+			_tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+			result = _tmpFld != undefined ? String(_tmpFld.value)+"" : PARAMETERS.GetOptProperty(_sName);
+		}
+		catch (_err)
+		{
+			result = "";
+			return result;
+		}
+		return result;
+	}
+	function get_objects_id()
+	{
+		var sObjectIDs = "";
+		if ( getParam( oFormFields, "selected_objects_id" ) == undefined || getParam( oFormFields, "selected_objects_id" ) == "" )
+		{
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = SELECTED_OBJECT_IDS + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if (sObjectIDs == "")
+			{
+				try
+				{
+					sObjectIDs = OBJECT_ID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+			if ( sObjectIDs == "" )
+			{
+				try
+				{
+					sObjectIDs = curObjectID + "";
+				}
+				catch (_err)
+				{
+					sObjectIDs = "";
+				}
+			}
+		}
+		else
+		{
+			sObjectIDs = getParam(oFormFields, "selected_objects_id");
+		}
+
+		return ( sObjectIDs != "" ? String( sObjectIDs ).split( ";" ) : [] );
+	}
+
+	var teApplication = task_assessment.get_component_application();
+
+	var arrContextObjectIDs = get_objects_id();
+	var iContextObjectID = ArrayOptFirstElem(arrContextObjectIDs);
+	var bContextError = false;
+	if ( iContextObjectID == undefined )
+	{
+		bContextError = true;
+	}
+	else
+		{
+			var docObject= tools.open_doc(iContextObjectID);
+			if ( iContextObjectID == undefined )
+			{
+				bContextError = true;
+			}
+			else
+			{
+				var teContextObject = docObject.TopElem;
+				if (teContextObject.Name != 'assessment_appraise')
+				{
+					bContextError = true;
+				}
+			}
+
+		}
+	if (bContextError)
+	{
+		return {command: "close_form", msg: i18n.t( 'snachalavyberiteprotceduruocenki' )};
+	}
+
+	iCountAll = ArrayCount(arrContextObjectIDs);
+    oRes = tools.call_code_library_method("libTaskAssessment", "TaskAssessmentAppraiseChangeState", [arrContextObjectIDs, sState]);
+
+	if ( oRes.error != 0 )
+	{
+		oResAction = {
+			command: "alert",
+			msg: "ERROR: libGame: TaskAssessmentAppraiseChangeState: " + oRes.errorText,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+	else
+	{
+		if (sState != "1")
+		{
+			if (iCountAll == 1)
+				_Msg = i18n.t( 'statusprotceduryocenkiizmenen' );
+			else
+				_Msg = i18n.t( 'statusprotcedurocenkiizmenen' );
+		}
+		else
+		{
+			if (iCountAll == 1)
+				_Msg = i18n.t( 'protceduraocenkizavershena' );
+			else
+				_Msg = i18n.t( 'protceduryocenkizaversheny' );
+		}
+		oResAction = {
+			command: "close_form",
+			msg: _Msg,
+			confirm_result: {
+				command: "reload_page"
+			}
+		}
+	}
+
+	return oResAction;
+}
+
+var oResAction = new Object();
+try
+{
+	oFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch ( _err )
+{
+	try
+	{
+		oFormFields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+	}
+	catch ( _err )
+	{
+		oFormFields = [];
+	}
+}
+
+RESULT = TaskAssessmentAppraiseChangeState();

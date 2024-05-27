@@ -1,0 +1,112 @@
+﻿<%
+
+var bDisplaySubdivisions = tools_web.is_true( tools_web.get_web_param( curParams, "game_leader.bDisplaySubdivisions", "0", true ) );
+var bShowAllLevel = tools_web.is_true( tools_web.get_web_param( curParams, "game_leader.all_level", "0", true ) );
+var iChunkQty = OptInt( tools_web.get_web_param( curParams, "game_leader.iChunkQty", "10", true ), 10 )
+var iSubDepth = tools_web.get_web_param( curParams, "game_leader.iSubDepth", 1, true );
+var sZone = tools_web.get_web_param( curParams, "game_leader.zone", "main", true );
+var bCheckLevel = tools_web.is_true( tools_web.get_web_param( curParams, "game_leader.check_level", "0", true ) );
+var sCurrencyType = tools_web.get_web_param( curParams, "game_leader.currency_type", "", true );
+
+var bRangeRating = tools_web.is_true( tools_web.get_web_param( curParams, "bRangeRating", false, true ) );
+var iAmntCollsRating = tools_web.get_web_param( curParams, "iAmntCollsRating", null, true );
+var oGroupRating = tools_web.get_web_param( curParams, "oGroupRating", null, true );
+var sTitleRating = tools_web.get_web_param( curParams, "sTitleRating", "Лидеры", true );
+var bShowTitleTable = tools_web.get_web_param( curParams, "bShowTitleTable", true, true );
+
+var bShowLvlName = tools_web.get_web_param( curParams, "bShowLvlName", true, true );
+var bShowStatus = tools_web.get_web_param( curParams, "bShowStatus", true, true );
+var sGap = tools_web.get_web_param( curParams, "sGap", "...", true );
+var bSamePlace = tools_web.get_web_param( curParams, "bSamePlace", false, true );
+var bShowTopRating = tools_web.get_web_param( curParams, "bShowTopRating", false, true );
+%>
+<SPXMLScreen>
+	<Collection Name="LeaderCollection" Source="game_qualification_collection">
+		<Param Name="type" Value="leader"/>
+		<Param Name="disp_sub" Value="<%=bDisplaySubdivisions%>"/>
+		<Param Name="sub_depth" Value="<%=iSubDepth%>"/>
+		<Param Name="all_level" Value="<%=bShowAllLevel%>"/>
+		<Param Name="zone" Value="<%=sZone%>"/>
+		<Param Name="check_level" Value="<%=bCheckLevel%>"/>
+		<Param Name="currency_type" Value="<%=sCurrencyType%>"/>
+
+		<Param Name="range_rating" Value="<%=bRangeRating%>"/>
+		<Param Name="amnt_colls_rating" Value="<%=iAmntCollsRating%>"/>
+		<Param Name="group_rating" Value="<%=oGroupRating%>"/>
+		<Param Name="title_rating" Value="<%=sTitleRating%>"/>
+		<Param Name="show_title_table" Value="<%=bShowTitleTable%>"/>
+		<Param Name="s_gap" Value="<%=sGap%>"/>
+		<Param Name="same_place" Value="<%=bSamePlace%>"/>
+		<Param Name="show_top_rating" Value="<%=bShowTopRating%>"/>
+	</Collection>
+<%
+if ( sZone == "left_right" )
+{
+%>	
+	<StackPanel Class="XAML-game-panel">
+		<StackPanel Class="XAML-game-block">
+			<Label Class="XAML-label-header-2"><%=sTitleRating%></Label>
+		</StackPanel>
+<%
+}
+else
+{
+%>
+		<StackPanel>
+			<Label/>
+			<Label/>
+			<Label Class="XAML-label-header-2"><%=sTitleRating%></Label>
+<%
+}
+if ( sZone == "main" )
+{
+	teLevel = null;
+	function set_person_level()
+	{
+		if ( ! curUser.level_id.HasValue )
+		{
+			return false;
+		}
+		teLevel = OpenDoc( UrlFromDocID( curUser.level_id ) ).TopElem;
+		if ( ! teLevel.currency_type_id.HasValue )
+		{
+			return false;
+		}
+		return true;
+	}
+	if ( set_person_level() )
+	{
+		sCurrencyTypeIDs = new Array();
+						
+		if( !bCheckLevel )
+		{
+			sCurrencyTypeIDs = ArrayExtract( teLevel.currency_types, "This.currency_type_id" );
+		}
+		else
+			sCurrencyTypeIDs.push( sCurrencyType );
+							
+		sCurrencyTypeIDs = ArrayIntersect( lists.currency_types, sCurrencyTypeIDs, "This.id", "This" );
+	}
+}
+	sPageSize = ( bRangeRating ) ? "" : "PageSize='" + iChunkQty + "'";
+%>
+		<TileView Name="LeaderTile" Class="XAML-tileview-list leader" Width="100%" DataSource="{LeaderCollection}" TemplateSource="game_qualification_tile" <%=sPageSize%> Rows="1">
+			<Param Name="type" Value="person"/>
+			<Param Name="zone" Value="<%=sZone%>"/>
+			<Param Name="range_rating" Value="<%=bRangeRating%>"/>
+			<Param Name="amnt_colls_rating" Value="<%=iAmntCollsRating%>"/>
+			<Param Name="check_level" Value="<%=bCheckLevel%>"/>
+			<Param Name="show_lvl_name" Value="<%=bShowLvlName%>"/>
+			<Param Name="show_status" Value="<%=bShowStatus%>"/>
+		</TileView>
+<%
+if ( sZone == "left_right" )
+{
+	sAllLeadersUrl = tools_web.get_mode_clean_url( "game_leader" );
+%>
+		<Link Class="XAML-game-list-all" Click="OPENURL=<%=sAllLeadersUrl%>">Все лидеры</Link>
+<%
+}
+%>
+	</StackPanel>
+</SPXMLScreen>

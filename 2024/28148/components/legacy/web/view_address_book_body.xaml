@@ -1,0 +1,419 @@
+﻿<SPXMLScreen>
+<%
+	var bThinMode = curDevice.disp_type == "mobile";
+
+	var bShowOnInit = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_on_init", "0", true));
+	var bShowDismissed = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_dismissed", "0", true));
+	var iOrgID;
+	switch (tools_web.get_web_param(curParams, "address_book_body.org_select", "all", true))
+	{
+		case "current":
+			iOrgID = curUser.org_id.Value;
+			break;
+		case "selected":
+			iOrgID = OptInt(tools_web.get_web_param(curParams, "address_book_body.org_select.org_id", "", false), null);
+			break;
+		default:
+			iOrgID = null;
+			break;
+	}
+	var bShowLetters = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_alphabet", "0", true));
+	var sViewMode = bThinMode ? "list" : tools_web.get_web_param(curParams, "address_book_body.view_mode", "list", true);
+	var bShowTree = (sViewMode != "tree" && tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.show_tree", "0", true)));
+	
+	if (sViewMode == "tree")
+	{
+		var sURLCategoryExpanded = "/pics/minus.jpg";
+		var sURLCategoryCollapsed = "/pics/plus.jpg";
+	}
+	
+	
+	
+	
+	var sElemsShowList = String(tools_web.get_web_param(curParams, "address_book_body.view_mode.fields", "name;email", true));
+	var aElemsShowList = sElemsShowList.split(";");
+	
+	var bShowName, bShowSub, bShowPosition, bShowOrg, bShowMail, bShowPhone, bShowPhoto;
+	
+	if (bThinMode)
+	{
+		bShowName = true;
+		bShowSub = false;
+		bShowPosition = false;
+		bShowOrg = false;
+		bShowMail = false;
+		bShowPhone = false;
+		bShowPhoto = false;
+	}
+	else
+	{
+		bShowName = (ArrayOptFind(aElemsShowList, "This == 'fullname'") != undefined);
+		bShowSub = (ArrayOptFind(aElemsShowList, "This == 'subdivision'") != undefined);
+		bShowPosition = (ArrayOptFind(aElemsShowList, "This == 'position'") != undefined);
+		bShowOrg = (ArrayOptFind(aElemsShowList, "This == 'org'") != undefined);
+		bShowMail = (ArrayOptFind(aElemsShowList, "This == 'email'") != undefined);
+		bShowPhone = (ArrayOptFind(aElemsShowList, "This == 'phone'") != undefined);
+		bShowPhoto = (ArrayOptFind(aElemsShowList, "This == 'pict_url'") != undefined);
+	}
+	/*
+	if (sViewMode == "tile" && !bShowPhoto)
+	{
+		bShowPhoto = true;
+		sElemsShowList += ";pict_url";
+		aElemsShowList.push("pict_url");
+	}
+	*/
+	
+	var iPageSize = OptInt(tools_web.get_web_param(curParams, "address_book_body.view_mode.page_size", "0", true), 0);
+	var sLinkString, sUpdateControl = "FoundPersons" + (sViewMode == "tile" ? "Tile":"List");
+	
+	var bControlOnTop = bThinMode? true : tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.toolbar_on_top", "0", true));
+	var bUseCollaboratorInfoTuning = tools_web.is_true(tools_web.get_web_param(curParams, "address_book_body.use_collaborator_tuning", "0", true));
+	
+	var curUrlQuery = UrlQuery(PAGEURL);
+	var sSearchStr = curUrlQuery.GetOptProperty("search" , "");
+	if (sSearchStr == "")
+		sSearchStr = CONTEXT.GetOptProperty("DocSearchInput", "");
+		
+	var sSearchType = tools_web.get_web_param(curParams, "address_book_body.advanced_search", "", true);
+%>
+	<Collection Name="SearchPeople" Source="address_book">
+		<Param Name="org_id" Value="<%=(iOrgID != null ? iOrgID : "")%>"/>
+		<Param Name="sub_id" Value=""/>
+		<Param Name="search_string" Value="<%=sSearchStr%>"/>
+		<Param Name="firstletter_code" Value=""/>
+		<Param Name="advanced_search_url" Value="showdsmsd=<%=(bShowDismissed ? "1": "0")%>"/>
+		<Param Name="advanced_search_type" Value="<%=sSearchType%>"/>
+		<Param Name="search_required" Value="<%=(bShowOnInit ? 0 : 1)%>"/>
+		<Param Name="column_list" Value="<%=sElemsShowList%>"/>
+		<Param Name="use_collaborator_tuning" Value="<%=(bUseCollaboratorInfoTuning ? 1 : 0)%>"/>
+	</Collection>
+	
+	<Action Source="ExcelExporterAction" Name="excelExportAction" Success="OPENWINDOW=/assessment_excel_export.html?mode=htmlfileurl&htmlfileurl={xls_url}&header=vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+		<Param Name="sCollection" Value=""/>
+		<Param Name="sCollectionData" Value=""/>
+		<Param Name="sData" Value=""/>
+		<Param Name="sMode" Value=""/>
+		<Param Name="sColumnList" Value=""/>
+	</Action>
+	
+	<Grid Width="100%" Class="XAML-grid-content-hor-container">
+		<GridColumns>
+<%
+		if (bControlOnTop)
+		{
+%>
+			<GridColumn Width="100%"/>
+<%
+		}
+		else
+		{
+%>		
+			<GridColumn Width="150"/>
+			<GridColumn Width="100%"/>
+<%
+		}
+%>
+		</GridColumns>
+		<GridRow>
+			<StackPanel>
+<%
+		if (bShowTree)
+		{
+%>
+				<Collection Name="SearchSubTree" Source="address_book_tree">
+					<Param Name="org_id" Value="<%=(iOrgID != null ? iOrgID : "")%>"/>
+				</Collection>
+			
+				<Tree Name="SubdivisionTree" Source="{SearchSubTree}" DataID="id" DataParent="parent_id" DataTitle="name" DataIcon="icon" Click="SET=SearchPeople/sub_id,{id};UPDATE=FoundPersons<%=(sViewMode == "tile" ? "Tile":"List")%>" Width="300"/>
+<%
+		}
+%>
+				<StackPanel Orientation="Horizontal" Class="XAML-panel-search">
+					<Edit Width="200" Name="DocSearchInput"><%=sSearchStr%></Edit>
+<%
+		if (sViewMode == "tree")
+		{
+%>
+					<Button Click="REFRESH" Class="XAML-button-content icon-search"></Button>
+<%
+		}
+		else
+		{
+%>
+					<Button Click="SET=SearchPeople/search_string,{DocSearchInput};SET=SearchPeople/advanced_search_url,fio={AdvancedSearchName}&email={AdvancedSearchEmail}&phone={AdvancedSearchPhone}&sub={AdvancedSearchSub}&showdsmsd=<%=(bShowDismissed ? "1": "0")%>;UPDATE=FoundPersons<%=(sViewMode == "tile" ? "Tile":"List")%>"  Class="XAML-button-content icon-search"></Button>
+<%
+		}
+%>
+				</StackPanel>
+<%
+	if (sSearchType != "universal")
+	{
+%>
+				<Panel Name="AdvancedSearchPanel" Title="<%=tools_web.get_web_const( "c_adv_search", curLngWeb )%>" Expanded="0">
+					<Label><%=tools_web.get_web_const( "c_fio", curLngWeb )%></Label>
+					<Edit Width="200" Name="AdvancedSearchName"><%=CONTEXT.GetOptProperty("AdvancedSearchName","")%></Edit>
+					<Label><%=tools_web.get_web_const( "uf_email", curLngWeb )%></Label>
+					<Edit Width="200" Name="AdvancedSearchEmail"><%=CONTEXT.GetOptProperty("AdvancedSearchEmail","")%></Edit>
+					<Label><%=tools_web.get_web_const( "uf_phone", curLngWeb )%></Label>
+					<Edit Width="200" Name="AdvancedSearchPhone"><%=CONTEXT.GetOptProperty("AdvancedSearchPhone","")%></Edit>
+					<Label><%=tools_web.get_web_const( "c_subd", curLngWeb )%></Label>
+					<Edit Width="200" Name="AdvancedSearchSub"><%=CONTEXT.GetOptProperty("AdvancedSearchSub","")%></Edit>
+				</Panel>
+<%
+	}
+%>
+			</StackPanel>
+<%
+	if (bControlOnTop)
+	{
+%>
+		</GridRow>
+		<GridRow>
+<%
+	}
+%>
+			<StackPanel>
+<%
+	if (bShowLetters)
+	{
+		var sLetterActionPrfx;
+		if (sViewMode == "tree")
+			sLetterActionPrfx = "SET=AdvancedSearchFirstLetter,@;REFRESH";
+		else
+			sLetterActionPrfx = "SET=SearchPeople/firstletter_code,@;UPDATE=" + sUpdateControl;
+%>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+					<Link Click="<%=StrReplace(sLetterActionPrfx, "@", "")%>">*</Link>
+<%
+					var sL;
+					for (sL in ArraySort(ArraySelectDistinct(ArrayExtract(XQuery("for $elem in collaborators where "+(bShowDismissed ? "": "$elem/is_dismiss = false() and ")+ " " + (iOrgID != null ? " $elem/org_id = " + iOrgID + " and": "") + " $elem/fullname != '' return $elem"), "StrToCharCodesArray(This.fullname.Value)[0]"), "This"), "This", "+"))
+					{
+%>
+					<Link Click="<%=StrReplace(sLetterActionPrfx, "@", sL)%>"><%=StrFromCharCodesArray([sL])%></Link>
+<%
+					}
+%>
+				</StackPanel>
+<%
+	}
+	
+	var oColumn, aColumns = new Array();
+	if (bShowPhoto)
+		aColumns.push(({"id": "pict_url", "title": " ", "width": 150, "type": "image", "sortable": false}));
+	if (bShowName)
+		aColumns.push(({"id": "fullname", "title": tools_web.get_web_const( "c_fio", curLngWeb ), "width": "", "type": "string", "sortable": true}));
+	if (bShowMail)
+		aColumns.push(({"id": "email", "title": "E-mail", "width": 150, "type": "string", "sortable": true}));
+	if (bShowPhone)
+		aColumns.push(({"id": "phone", "title": tools_web.get_web_const( "uf_phone", curLngWeb ), "width": 150, "type": "string", "sortable": true}));
+	if (bShowPosition)
+		aColumns.push(({"id": "position", "title": tools_web.get_web_const( "c_position", curLngWeb ), "width": 120, "type": "string", "sortable": true}));
+	if (bShowSub)
+		aColumns.push(({"id": "subdivision", "title": tools_web.get_web_const( "c_subd", curLngWeb ), "width": 120, "type": "string", "sortable": true}));
+	if (bShowOrg)
+		aColumns.push(({"id": "org", "title": tools_web.get_web_const( "c_org", curLngWeb ), "width": 120, "type": "string", "sortable": true}));
+	
+	
+	if (sViewMode == "tree")
+	{
+		var teCollection = OpenDoc(UrlFromDocID(ArrayOptFirstElem(XQuery("for $elem in remote_collections where $elem/code = 'address_book' return $elem")).PrimaryKey)).TopElem;
+		teCollection.wvars.ObtainChildByKey("org_id").value = (iOrgID != null ? iOrgID : "");
+		teCollection.wvars.ObtainChildByKey("search_string").value = sSearchStr;
+		teCollection.wvars.ObtainChildByKey("firstletter_code").value = CONTEXT.GetOptProperty("AdvancedSearchFirstLetter", "");
+		teCollection.wvars.ObtainChildByKey("advanced_search_url").value = "fio=" +CONTEXT.GetOptProperty("AdvancedSearchName", "")+ "&email=" +CONTEXT.GetOptProperty("AdvancedSearchEmail", "")+ "&phone=" +CONTEXT.GetOptProperty("AdvancedSearchPhone", "")+ "&sub=" +CONTEXT.GetOptProperty("AdvancedSearchSub", "")+ "&showdsmsd=" + (bShowDismissed ? "1": "0");
+		
+		teCollection.wvars.ObtainChildByKey("advanced_search_type").value = sSearchType;
+		teCollection.wvars.ObtainChildByKey("search_required").value = (bShowOnInit ? 0 : 1);
+		teCollection.wvars.ObtainChildByKey("column_list").value = sElemsShowList;
+		teCollection.wvars.ObtainChildByKey("use_collaborator_tuning").value = (bUseCollaboratorInfoTuning ? 1 : 0);
+		
+		var oResult = teCollection.evaluate("raw", Request);
+		
+		if (iPageSize > 0 && ArrayCount(oResult.result) > iPageSize)
+		{
+			curMessageBox = ({
+				"type": "info",
+				"text": tools_web.get_web_const( 'vozvrashenoslish', curLngWeb )
+			});
+			Response.Write(EvalCodePageUrl(global_settings.web_path + "view_message_box.xaml"));
+		}
+		else
+		{
+			var catSub, xarrSubs = QueryCatalogByKeys("subdivisions", "id", ArrayExtract(ArraySelectDistinct(oResult.result, "This.sub_id"), "OptInt(This.sub_id)"));
+			var aSubArray = new Array();
+			
+			function goUpLeaveCrumbs(catSubdivision)
+			{
+				var oSub, catParentSub = undefined;
+				if (ArrayOptFindByKey(aSubArray, catSubdivision.id, "id") == undefined)
+				{
+					oSub = ({"id": catSubdivision.id.Value, "name": catSubdivision.name.Value, "parent_id": null, "type": catSubdivision.Name});
+					if (catSubdivision.Name != "org")
+					{
+						if (catSubdivision.parent_object_id.HasValue)
+							catParentSub = catSubdivision.parent_object_id.OptForeignElem;
+						if (catParentSub == undefined)
+						{
+							catParentSub = catSubdivision.org_id.OptForeignElem;
+						}
+					}
+					
+					if (catParentSub != undefined)
+					{
+						oSub.parent_id = catParentSub.PrimaryKey.Value;
+						goUpLeaveCrumbs(catParentSub);
+					}
+					aSubArray.push(oSub);
+				}
+			}
+			
+			for (catSub in xarrSubs)
+				goUpLeaveCrumbs(catSub);
+			
+			aSubArray = ArraySort(aSubArray, "This.name", "+");
+			
+			var bExpanded = false;
+			
+			function printEntry(catSubdivision)
+			{
+		
+%>
+			<StackPanel Orientation="Vertical">
+				<StackPanel Orientation="Horizontal" UsePadding="false">
+					<StackPanel Name="expandImg<%=catSubdivision.id%>" UsePadding="false">
+						<Image Source="<%=sURLCategoryCollapsed%>" Click="HIDE=expandImg<%=catSubdivision.id%>;SHOW=collapseImg<%=catSubdivision.id%>,spPeopleOf<%=catSubdivision.id%>" Hidden="<%=bExpanded%>"/>
+					</StackPanel>
+					<StackPanel Name="collapseImg<%=catSubdivision.id%>" Hidden="<%=!bExpanded%>" UsePadding="false">
+						<Image Source="<%=sURLCategoryExpanded%>" Click="HIDE=collapseImg<%=catSubdivision.id%>,spPeopleOf<%=catSubdivision.id%>;SHOW=expandImg<%=catSubdivision.id%>"/>
+					</StackPanel>
+					<Label> </Label>
+					<StackPanel UsePadding="false">
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url(null,catSubdivision.PrimaryKey.Value, ({"doc_id": curDocID}))%>"><%=tools_web.get_cur_lng_name(catSubdivision.name, curLng.short_id)%></Link>
+					</StackPanel>
+				</StackPanel>
+				<StackPanel Name="spPeopleOf<%=catSubdivision.id%>" Hidden="<%=!bExpanded%>">
+<%
+				if (catSubdivision.type != "org")
+				{
+%>
+				<Grid Class="XAML-grid-table">
+					<GridColumns>
+<%
+					for (oColumn in aColumns)
+					{
+%>
+						<GridColumn Width="<%=oColumn.width%>"/>
+<%
+					}
+%>
+					</GridColumns>
+					<GridRow Class="XAML-gridrow-header">
+<%
+					for (oColumn in aColumns)
+					{
+%>
+						<Label Class="XAML-grid-header-text"><%=oColumn.title%></Label>
+<%
+					}
+%>
+					</GridRow>
+<%
+					var oPerson, sLinkStr;
+					for (oPerson in ArraySelectByKey(oResult.result, catSubdivision.id + "", "sub_id"))
+					{
+						
+%>
+					<GridRow>
+<%
+					sLinkStr = "OPENURL=" + tools_web.get_mode_clean_url("collaborator", "{object_id}", ({"doc_id": curDocID}));
+					for (oColumn in aColumns)
+					{
+						if (oColumn.type == "image")
+						{
+%>
+						<Image Source="<%=oPerson.GetOptProperty(oColumn.id, "")%>"/>
+<%
+						}
+						else if (sLinkStr != "")
+						{
+%>
+						<Link Click="<%=StrReplace(sLinkStr, "{object_id}", oPerson.id)%>"><%=oPerson.GetOptProperty(oColumn.id, "")%></Link>
+<%
+							sLinkStr = "";
+						}
+						else
+						{
+%>
+						<Label><%=oPerson.GetOptProperty(oColumn.id, "")%></Label>
+<%
+						}
+					}
+%>					
+					</GridRow>
+<%
+					}
+%>
+				</Grid>
+<%
+				}
+				var catSubChild;
+				for (catSubChild in ArraySelectByKey(aSubArray, catSubdivision.id, "parent_id"))
+					printEntry(catSubChild);
+%>
+				</StackPanel>
+			</StackPanel>
+<%
+			}
+			
+			for (catSub in ArraySelectByKey(aSubArray, null, "parent_id"))
+				printEntry(catSub);
+		}
+	}
+	else if (sViewMode == "tile")
+	{
+%>
+				<TileView Name="FoundPersonsTile" Width="100%" Height="400" DataSource="{SearchPeople}" TemplateSource="group_member_tile" PageSize="<%=iPageSize%>" Columns="2" Rows="2">
+					<Param Name="columns_list" Value="<%=sElemsShowList%>"/>
+				</TileView>
+<%
+	}
+	else
+	{
+				var curCollectionMenu = {
+					"id": "AddressMenu",
+					"catalog_name": "collaborator",
+					"data_grid_id": "FoundPersonsList",
+					"source_type": "",
+					"id_field_name": "id"
+				};
+				Response.Write(EvalCodePageUrl(global_settings.web_path + "view_catalog_list_menu.xaml"));
+%>
+				<DataGrid Name="FoundPersonsList" Title="" Source="{SearchPeople}" Height="500" PageSize="<%=iPageSize%>" Selection="multiple">
+					<DataGridColumn Value="id" Hidden="1" Ghost="0"/>
+<%
+				sLinkString = 'Type="link" Click="OPENURL=" + tools_web.get_mode_clean_url("collaborator", "{id}", ({"doc_id": curDocID}))+ '"';
+				for (oColumn in aColumns)
+				{
+%>
+					<DataGridColumn Title="<%=oColumn.title%>" Value="<%=oColumn.id%>" Sortable="<%=oColumn.sortable%>" Width="<%=oColumn.width%>" <%=(oColumn.type == "string" ? sLinkString : "Type=" + String.fromCharCode(34) + oColumn.type + String.fromCharCode(34))%>/>
+<%
+					if (oColumn == "string")
+						sLinkString = "";
+				}
+%>
+					<Menu Source="{CatalogListMenuAddressMenu}"/>
+				</DataGrid>
+<%
+	}
+	if (tools_web.get_web_param(curParams, "address_book_body.bExportButton", "0", true) == "1")
+	{
+%>
+				<Button Click="SET=excelExportAction/sCollection,address_book;SET=excelExportAction/sCollectionData,org_id=<%=(iOrgID != null ? iOrgID : "")%>&sub_id={SearchSubTree/id}&search_string={DocSearchInput}&advanced_search_url=fio={AdvancedSearchName}%26email={AdvancedSearchEmail}%26phone={AdvancedSearchPhone}%26sub={AdvancedSearchSub}&advanced_search_type=<%=sSearchType%>&search_required=0&column_list=<%=UrlEncode(sElemsShowList)%>;SET=excelExportAction/sData,;SET=excelExportAction/sMode,datagrid;SET=excelExportAction/sColumnList,c1_data=fullname&c1_title=<%=UrlEncode( tools_web.get_web_const( "c_fio", curLngWeb ) )%>&c1_width=200&c1_type=string&c2_data=email&c2_title=<%=UrlEncode("E-mail")%>&c2_width=180&c2_type=string&c3_data=phone&c3_title=<%=UrlEncode(tools_web.get_web_const( "uf_phone", curLngWeb ))%>&c3_width=180&c4_data=position&c4_title=<%=UrlEncode(tools_web.get_web_const( "c_position", curLngWeb ))%>&c4_width=200&c5_data=subdivision&c5_title=<%=UrlEncode(tools_web.get_web_const( "c_subd", curLngWeb ))%>&c5_width=200&c6_data=org&c6_title=<%=UrlEncode(tools_web.get_web_const( "c_org", curLngWeb ))%>&c6_width=200;ACTION=excelExportAction" Width="100" Class="icon-file-excel-o"><%=tools_web.get_web_const( "sgsvrm6x6u", curLngWeb )%></Button>
+<%
+	}
+%>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

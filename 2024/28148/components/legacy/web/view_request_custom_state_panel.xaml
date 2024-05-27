@@ -1,0 +1,83 @@
+﻿<SPXMLScreen>
+<%
+sCustomStateActionID = PARAMETERS.GetProperty( 'state_action_id' );
+%>
+<Action Name="CustomStateAction" Source="request_custom_state" Success="CONTEXT=NULL;UPDATE=RequestCustomStatePanel" Failure="ALERT={messageText}">
+	<Param Name="action" Value=""/>
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+	<Param Name="person_id" Value=""/>
+	<Param Name="state_name" Value="{CustomStateName}"/>
+	<Param Name="state_action_id" Value=""/>
+	<Param Name="custom_state_id" Value=""/>
+</Action>
+<Dialog Name="CustomStatePersonSelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( 'vyborsoglasuyush', curLngWeb ) )%>" Close="
+	SET=CustomStateAction/person_id,{CatalogListDataGridFullList:^/id};
+	ACTION=CustomStateAction;
+">
+	<Param Name="catalog_name" Value="collaborator"/>
+	<Param Name="multi_select" Value="false"/>
+	<Param Name="check_access" Value="true"/>
+	<Param Name="can_be_empty" Value="false"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+	<GridColumns>
+		<GridColumn Width="250"/>
+		<GridColumn/>
+	</GridColumns>
+
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( 'nwmmcin88k', curLngWeb )%>:</Label>
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+			<Edit Name="CustomStateName" Width="300"/>
+			<Button Click="
+				SET=CustomStateAction/action,add_state;
+				SET=CustomStateAction/state_action_id,<%=sCustomStateActionID%>;
+				ACTION=CustomStateAction;
+			"><%=tools_web.get_web_const( 'vw_set_custom_states', curLngWeb )%></Button>
+		</StackPanel>
+	</GridRow>
+<%
+	for ( fldCustomStateElem in curObject.workflow_custom_states )
+	{
+%>
+	<GridRow>
+		<Label Class="XAML-info-grid-title-column"><%=HtmlEncode( fldCustomStateElem.name )%>:</Label>
+		<StackPanel Orientation="Vertical">
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+				<Button Click="
+					SET=CustomStateAction/action,add_state_person;
+					SET=CustomStateAction/custom_state_id,<%=fldCustomStateElem.PrimaryKey%>;
+					OPENDIALOG=CustomStatePersonSelectDialog;
+				"><%=tools_web.get_web_const( 'vw_add_reconciler', curLngWeb )%></Button>
+				<Button Click="
+					SET=CustomStateAction/action,delete_state;
+					SET=CustomStateAction/custom_state_id,<%=fldCustomStateElem.PrimaryKey%>;
+					ACTION=CustomStateAction;
+				"><%=tools_web.get_web_const( 'c_delete', curLngWeb )%></Button>
+			</StackPanel>
+<%
+		for ( fldConditionElem in fldCustomStateElem.conditions )
+			if ( fldConditionElem.type == 'if_cur_user' && fldConditionElem.cur_user_type == 'cur_person' && fldConditionElem.person_id.HasValue )
+			{
+%>
+			<StackPanel Orientation="Horizontal">
+				<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldConditionElem.person_id, { doc_id: curDocID } )%>" Width="300"><%=HtmlEncode(  tools.get_foreign_field( fldConditionElem.person_id, 'fullname', global_settings.object_deleted_str ) )%></Link>
+				<Button Click="
+					SET=CustomStateAction/action,delete_state_person;
+					SET=CustomStateAction/custom_state_id,<%=fldCustomStateElem.PrimaryKey%>;
+					SET=CustomStateAction/person_id,<%=fldConditionElem.person_id%>;
+					ACTION=CustomStateAction;
+				"><%=tools_web.get_web_const( 'c_delete', curLngWeb )%></Button>
+			</StackPanel>
+<%
+			}
+%>
+		</StackPanel>
+	</GridRow>
+<%
+	}
+%>
+</Grid>
+
+</SPXMLScreen>

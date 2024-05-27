@@ -1,0 +1,127 @@
+﻿<SPXMLScreen>
+<%
+	var bHasActions = (tools_web.get_web_param( curParams, "org_chart_body.btn_actions", "0", true) == "1");
+%>
+	<Collection Name="OrgChartCollection" Source="org_chart_collection">
+		<Param Name="color" Value="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.html_colors.common", "gray", true)%>"/>
+		<Param Name="boss_color" Value="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.html_colors.direct", "gray", true)%>"/>
+		<Param Name="func_color" Value="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.html_colors.functional", "gray", true)%>"/>
+		<Param Name="field_list" Value="<%=tools_web.get_web_param( curParams, "org_chart_body.field_list", "", true)%>"/>
+		<Param Name="level_cut" Value="<%=tools_web.get_web_param( curParams, "org_chart_body.max_depth", "10", true)%>"/>
+		<Param Name="chosen_king_id" Value="<%=(tools_web.get_web_param( curParams, "org_chart_body.root_from_cur_user", "0", true) == "1" ? curUserID : "")%>"/>
+		<Param Name="governing_type" Value="<%=tools_web.get_web_param(curParams, "org_chart_body.governing_type", "org;subdivision;position", true)%>"/>
+		<Param Name="include_funcmanagement" Value="<%=tools_web.get_web_param(curParams, "org_chart_body.include_funcmanagement", "0", true)%>"/>
+		<Param Name="try_pop_boss" Value="<%=tools_web.get_web_param(curParams, "org_chart_body.try_pop_boss", "0", true)%>"/>
+	</Collection>
+<%
+	if (bHasActions)
+	{
+		var curCollectionMenu = {
+			"catalog_name": "collaborator",
+			"data_grid_id": "OrgChartAlpha",
+			"selected_data": "{OrgChartAlpha}",
+			"id": "OrgChartAlpha"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+%>
+	<!--<Button Width="100">
+		<%=tools_web.get_web_const( "td61vzpvze", curLngWeb )%>
+		<Menu Source="{CatalogListMenuOrgChartAlpha}"/>
+	</Button>-->
+<%
+	}
+%>
+<!--
+			Type="tree" 				tree|map , default: tree
+			Class="" 					 additional container's CSS class, default "" 
+			ElementForm="roundrect"		 element form: rect|roundrect|ellipse, default rect 
+			Connector="rect"			 connectors type: plain|rect|curve, default: curve 
+			MarkerStart="circle" 		 marker on connector's start: circle|square|arrow|none, default: circle 
+			MarkerEnd="arrow"			 marker on connector's end: circle|square|arrow|none, default: arrow 
+			ElementClass=""				 additional item's CSS class, default "" 
+			ElementColor=""				 item's background color to override CSS, default "" 
+			ElementClassSelected=""		 additional item's CSS class in selected mode to override CSS, default "" 
+			ElementColorSelected=""	 	item's background color in selected mode to override CSS, default "" 
+			ElementWidth="200" 			 item's width, default 200 
+			ElementHeight="100"			 item's height, default 100 
+			InterElement="25"			 distance between items within level, default 25 
+			InterLevel="200"			 distance between levels, default 200 
+			BorderWidth="2"				 item's border width to override CSS, default "" 
+			BorderColor=""				 item's border color to override CSS, default "" 
+			LineClass=""				 additional connector's CSS class, default "" 
+			LineWidth="2"				 connector's line width, default 1 
+			LineColor=""				 connector's line color,  to override CSS, default "" 
+			AllowToggle="true"			 allow toggle children display, default "true" 
+			TogglerClass=""				 additional toggler's CSS class, default "" 
+			TogglerRadius="8"			 toggler radius, default 10 
+			TogglerColor=""				 toggler's border and text color,  to override CSS, default "" 
+			DisplayTips="true"			 allow display of item's tips, default "true" 
+			TipClass=""					 additional tip's CSS class, default "" 
+			TipColor=""					 tip's background color, to override CSS, default "" 
+			TipBorderColor=""			 tip's border color, to override CSS, default "" 
+			TipBorderWidth=""			 tip's border width, to override CSS, default "" 
+			AllowZoom="true" 			 allow display of zoom controls, default "true" 
+			UniformZoom="true"			 uniform zoom by X and Y, default "true" 
+			Aspect="0.7"				 height/width ratio in case height is not defined, default 0.66 
+-->
+	<WTTree
+
+			Type="tree" 				
+			Class="" 					
+			ElementForm="roundrect"		
+			Connector="rect"			
+			MarkerStart="circle" 		
+			MarkerEnd="arrow"			
+			ElementClass=""				
+			ElementColor=""				
+			ElementClassSelected=""		
+			ElementColorSelected=""	
+			ElementWidth="240" 			
+			ElementHeight="120"			
+			InterElement="25"			
+			InterLevel="100"			
+			BorderWidth="1"				
+			BorderColor=""				
+			LineClass=""				
+			LineWidth="1"				
+			LineColor=""				
+			AllowToggle="true"			
+			TogglerClass=""				
+			TogglerRadius=""			
+			TogglerColor=""				
+			DisplayTips="true"			
+			TipClass=""					
+			TipColor=""					
+			TipBorderColor=""			
+			TipBorderWidth=""			
+			AllowZoom="true" 			
+			UniformZoom="true"			
+			Aspect="0.7"				
+			TipLayout="title=title;image=image|text=desc" 
+			DisplayToggle="true" 
+			
+			Name="OrgChartAlpha"
+			Width="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.size.width", "1200", true)%>"
+			Height="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.size.height", "800", true)%>"
+			Source="{OrgChartCollection}"
+
+			DataID="hier_id"
+			DataParent="parent" 
+			DataSister="sister" 
+			DataTitle="title" 
+			DataText="text" 
+			DataColor="color" 
+			DataImage="image"
+			
+			DataLink="url"
+			DataElemId="id"
+			DataElementForm="form"
+
+			Selectable="<%=bHasActions%>"
+			Orientation="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.orientation", "top", true)%>"
+			Alignment="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.alignment", "center", true)%>"
+			NodeMode="<%=tools_web.get_web_param( curParams, "org_chart_body.org_chart_tuning.node_mode", "dot", true)%>"
+			NodeClick<%=((tools_web.get_web_param(curParams, "org_chart_body.click_new_king", "0", true) != "1") ? "_" : "")%>="SET=OrgChartCollection/chosen_king_id,{id};UPDATE=OrgChartAlpha"
+			/>
+	
+</SPXMLScreen>

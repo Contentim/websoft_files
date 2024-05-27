@@ -1,0 +1,2742 @@
+﻿<SPXMLScreen Class="Wiki-article-panel" Ready="{!ActionReady}">
+<%
+	function search_block( name, ids, mode, hide_paging, query_qual, title )
+	{
+		try
+		{
+			ids
+		}
+		catch( ex )
+		{
+			ids = ""
+		}
+		try
+		{
+			query_qual
+		}
+		catch( ex )
+		{
+			query_qual = ""
+		}
+		try
+		{
+			mode
+		}
+		catch( ex )
+		{
+			mode = ( name == "SearchResult" || name == "MainBlock" ? "search" : "" )
+		}
+		try
+		{
+			hide_paging = tools_web.is_true( hide_paging )
+		}
+		catch( ex )
+		{
+			hide_paging = true;
+		}
+		sClearAction = "";
+		if( bSearchResult )
+			name = "SearchResult" + name;
+%>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+
+		<StackPanel Name="<%=name%>StackPanel" Class="XAML-stack-container">
+<%
+		var fldWikiArticleCustomElems = new Array();
+		var iFilterWikiArticleID = undefined;
+		arrFilters = String( tools_web.get_web_param( curParams,"wiki_base_body.filters", "status;wiki_article_type;create_date", true ) ).split( ";" );
+		if( name == "SearchResult" || name == "MainBlock" || mode == "sogl_requests" || mode == "acquaints" || mode == "my_article" )
+		{
+			
+			if( !bOpenArticleByUrl )
+			{
+				sAction = "SET=" + name + "ShowResult,1;HIDE=" + name + "ButtonsStackPanel;SET=" + name + "Action,;SET=" + name + "PageNum,1;UPDATE=" + name + "Panel";
+			}
+			else
+			{
+				sSearchFields = "search_page_num;wiki_mode;show_result;search;status;wiki_article_type;start_create_date;finish_create_date;search_page_num";
+				sCustomFieldsUrl = "";
+				if( name == "SearchResult" || name == "MainBlock" )
+				{
+					iFilterWikiArticleID = OptInt( CONTEXT.GetOptProperty( ( "wiki_article_type" + name + "Panel" ), curUrlQuery.GetOptProperty( "wiki_article_type", "" ) ) );
+					if( iFilterWikiArticleID != undefined && ( ArrayOptFind( arrFilters, "This == 'wiki_article_type_custom_field'" ) != undefined || true ) )
+					{
+						var teNewWikiArticle = OpenNewDoc( "x-local://wtv/wtv_wiki_article.xmd" ).TopElem;
+							
+						teNewWikiArticle.wiki_article_type_id = iFilterWikiArticleID;
+						fldWikiArticleCustomElems = tools.get_custom_template( teNewWikiArticle.Name, null, teNewWikiArticle );
+						if( fldWikiArticleCustomElems != null )
+						{
+							fldWikiArticleCustomElems = ArraySelectByKey( fldWikiArticleCustomElems.fields, true, 'disp_web' );
+							for( _field in fldWikiArticleCustomElems )
+							{
+								sSearchFields += ";" + _field.name;
+								sCustomFieldsUrl +="&" + _field.name + "={custom_field" + _field.name + name + "Panel}"
+								
+							}
+						}
+					}
+				}
+				
+				sAction = "OPENURL=" + tools_web.convert_mode_clean_url( tools_web.get_query_string_from_url( PAGEURL, true, sSearchFields ) + "&wiki_mode=" + ( name == "SearchResult" || name == "MainBlock" ? "search" : mode ) + "&show_result=1&search={" + name + "WikiBaseSearch" + "}&status={status" + name + "Panel}&wiki_article_type={wiki_article_type" + name + "Panel}&start_create_date={start_create_date" + name + "Panel}&finish_create_date={finish_create_date" + name + "Panel}&knowledge_part={knowledge_part" + name + "Panel}&tag={tag" + name + "Panel}&search_page_num={" + name + "PageNum}" + sCustomFieldsUrl );
+				
+			}
+			function add_filter( name, ident, is_main, cond, fldCustomField )
+			{
+				try
+				{
+					cond
+				}
+				catch( ex )
+				{
+					cond = "";
+				}
+				obj_filter = new Object();
+				obj_filter.title = "";
+				const = "";
+				var sUpdateAction = sAction;
+				aResultArray = null;
+				sDefaultValue = "";
+				switch( name )
+				{
+					case "wiki_article_type":
+						obj_filter.type = "combo";
+						obj_filter.items = new Array();
+						obj_filter.items.push( { value: "all", title: get_filter_name_all( name, is_main ) } );
+						for ( catElem in XQuery( "for $i in " + name + ( StrEnds( name, "s" ) ? "" : "s" ) + ( cond != "" ? " where " + cond : "" ) + " return $i" ) )
+						{
+							obj_filter.items.push( { value: catElem.id.Value, title: String( tools_web.get_cur_lng_name( tools.get_disp_name_value( catElem ), curLng.short_id ) ) } );
+						}
+						sUpdateAction =  "SET=CONTEXT,{CONTEXT};REFRESH;";
+						obj_filter.change = sUpdateAction;
+						
+						sDefaultValue = "all";
+						break;
+					
+					case "status":
+						aResultArray = curLngCommon.status_in_knowledge_map_types;
+						
+					case "status_request":
+						if( name == "status_request" )
+						{
+							aResultArray = curLngCommon.request_status_types;
+							name = "status";
+						}
+					case "status_acquaint":
+						obj_filter.items = new Array();
+						if( name == "status_acquaint" )
+						{
+							aResultArray = curLngCommon.acquaint_states;
+							name = "status";
+							obj_filter.items.push( { value: "all", title: get_filter_name_all( name, is_main ) } );
+							obj_filter.items.push( { value: "active", title: tools_web.get_web_const( "vmkpb_need_to_acquaint", curLngWeb ) } );
+							obj_filter.items.push( { value: "finish", title: tools_web.get_web_const( "sajgjv1xmw", curLngWeb ) } );
+						}
+						
+						obj_filter.type = "combo";
+						if( is_main )
+							obj_filter.width = 200;
+						if( ArrayOptFirstElem( obj_filter.items ) == undefined )
+						{
+							obj_filter.items.push( { value: "all", title: get_filter_name_all( name, is_main ) } );
+							for ( catElem in aResultArray )
+								if( catElem.id != "project" || mode == "my_article" )
+									obj_filter.items.push( { value: catElem.id.Value, title: catElem.name.Value } );
+						}
+						sDefaultValue = "active";
+						break;
+						
+					case "start_create_date":
+					case "finish_create_date":
+						obj_filter.type = "date";
+						if( is_main )
+							obj_filter.width = 180;
+						break;
+					case "tag":
+					case "knowledge_part":
+						obj_filter.type = "foreign_elem";
+						obj_filter.catalog_name = name;
+						obj_filter.xquery_qual = tools_web.get_web_param( curParams, "wiki_base_body.filters." + name + ".xquery_qual", "", true );
+						obj_filter.SetProperty( "value", CONTEXT.GetOptProperty( name, UrlDecode( curUrlQuery.GetOptProperty( name, sDefaultValue ) ) ) )
+						obj_filter.SetProperty( "default", CONTEXT.GetOptProperty( name, UrlDecode( curUrlQuery.GetOptProperty( name, sDefaultValue ) ) ) )
+						break;
+					case "custom_field":
+						obj_filter.title = fldCustomField.title.Value;
+						switch( fldCustomField.type )
+						{
+							case "bool":
+								obj_filter.type = "button_combo";
+								obj_filter.items = new Array();
+								obj_filter.items.push( { value: "1", title: tools_web.get_web_const( "c_yes", curLngWeb ) } );
+								obj_filter.items.push( { value: "0", title: tools_web.get_web_const( "c_no", curLngWeb ) } );
+								break;
+							case "combo":
+								obj_filter.type = "combo";
+								obj_filter.items = new Array();
+								obj_filter.items.push( { value: "", title: tools_web.get_web_const( "b48nitvdz2", curLngWeb ) } );
+								for ( fldEntryElem in fldCustomField.entries )
+								{
+									obj_filter.items.push( { value: fldEntryElem.value, title: tools_web.get_cur_lng_name( fldEntryElem.value, curLng.short_id ) } );
+								}
+								break;
+							case "list":
+								return null;
+								break;
+							case "date":
+								obj_filter.type = "date";
+								break;
+							case 'integer':
+							case 'number':
+							case 'real':
+							case 'float':
+								obj_filter.type = "number";
+								break;
+							case "text":
+							case "richtext":
+								obj_filter.type = "string";
+								break;
+							case "file":
+							case "foreign_elem":
+								obj_filter.type = "foreign_elem";
+								obj_filter.catalog_name = fldCustomField.type == "file" ? "resource" : fldCustomField.catalog;
+								obj_filter.xquery_qual = fldCustomField.xquery_qual;
+								break;
+							default:
+								return null
+						}
+						obj_filter.SetProperty( "value", CONTEXT.GetOptProperty( fldCustomField.name, UrlDecode( curUrlQuery.GetOptProperty( fldCustomField.name, sDefaultValue ) ) ) )
+						obj_filter.SetProperty( "default", CONTEXT.GetOptProperty( fldCustomField.name, UrlDecode( curUrlQuery.GetOptProperty( fldCustomField.name, sDefaultValue ) ) ) )
+						break;
+				}
+				if( obj_filter.GetOptProperty( "value", "" ) == "" )
+				{
+					obj_filter.SetProperty( "value", CONTEXT.GetOptProperty( name, UrlDecode( curUrlQuery.GetOptProperty( name, sDefaultValue ) ) ) );
+				}
+				if( obj_filter.GetOptProperty( "default", "" ) == "" )
+				{
+					obj_filter.SetProperty( "default", CONTEXT.GetOptProperty( name, UrlDecode( curUrlQuery.GetOptProperty( name, sDefaultValue ) ) ) );
+				}
+				obj_filter.name = name + ident;
+				if( !is_main )
+				{
+					if( obj_filter.title == "" )
+						obj_filter.title = get_filter_name( name, is_main );
+				}
+				else
+				{
+					obj_filter.change = sUpdateAction;
+				}
+				
+				return obj_filter;	
+			}
+			function get_filter_name( name )
+			{
+				switch( name )
+				{
+					case "wiki_article_type":
+						return 'Тип статьи';
+					case "tag":
+						return tools_web.get_web_const( "vkmb_tag", curLngWeb );
+					case "knowledge_part":
+						return tools_web.get_web_const( "c_knowledge_part", curLngWeb );
+					case "status":
+						return tools_web.get_web_const( "c_status", curLngWeb );
+					case "start_create_date":
+						return tools_web.get_web_const( "c_create_date", curLngWeb ) + " " + tools_web.get_web_const( "vppb_from", curLngWeb );
+					case "finish_create_date":
+						return tools_web.get_web_const( "mkly6lmeds", curLngWeb );
+					
+				}
+				return "";
+			}
+				
+			function get_filter_name_all( name, is_main )
+			{
+				if( !is_main )
+					return tools_web.get_web_const( "f0j4vfoxrb", curLngWeb );
+				switch( name )
+				{
+					case "wiki_article_type":
+						return 'Все типы статей';
+					case "status":
+						return tools_web.get_web_const( "vsestatusy", curLngWeb );
+				}
+				return "";
+			}
+			row_filters = new Array();
+			if( name == "SearchResult" || name == "MainBlock" )
+			{
+				row_filters = new Array();
+				row_tmp_filters = new Array();
+					
+				if( ArrayOptFind( arrFilters, "This == 'status'" ) != undefined )
+				{
+					sClearAction += "SET=status" + name + "Panel,active;"
+					row_tmp_filters.push( add_filter( "status", name + "Panel", false ) );
+				}
+					
+				if( ArrayOptFind( arrFilters, "This == 'wiki_article_type'" ) != undefined )
+				{
+					sClearAction += "SET=wiki_article_type" + name + "Panel,all;"
+					row_tmp_filters.push( add_filter( "wiki_article_type", name + "Panel", false, "MatchSome( $i/id, ( " + ArrayMerge( ArraySelectDistinct( XQuery( "for $i in wiki_articles where $i/wiki_base_id = " + iWikiBaseID + " and $i/wiki_article_type_id != null() return $i" ), "This.wiki_article_type_id" ), "This.wiki_article_type_id", "," ) + " ) )" ) );
+					if( iFilterWikiArticleID != undefined && ( ArrayOptFind( arrFilters, "This == 'wiki_article_type_custom_field'" ) != undefined || true ) && fldWikiArticleCustomElems != null && ArrayOptFirstElem( fldWikiArticleCustomElems ) != undefined )
+					{
+						for( fldCustomField in fldWikiArticleCustomElems )
+						{
+							_filter = add_filter( "custom_field", fldCustomField.name + name + "Panel", false, "", fldCustomField );
+
+							if( _filter != null )
+							{
+								if( ArrayCount( row_tmp_filters ) > 1 )
+								{
+									row_filters.push( row_tmp_filters );
+									row_tmp_filters = new Array();
+								}
+								row_tmp_filters.push( _filter );
+							}
+						}
+					}
+
+				}
+				
+				
+				if( ArrayCount( row_tmp_filters ) > 1 )
+				{
+					row_filters.push( row_tmp_filters );
+					row_tmp_filters = new Array();
+				}
+				if( ArrayOptFind( arrFilters, "This == 'create_date'" ) != undefined )
+				{
+					sClearAction += "SET=start_create_date" + name + "Panel,;"
+					row_tmp_filters.push( add_filter( "start_create_date", name + "Panel", false ) );
+					if( ArrayCount( row_tmp_filters ) > 1 )
+					{
+						row_filters.push( row_tmp_filters );
+						row_tmp_filters = new Array();
+					}
+					sClearAction += "SET=finish_create_date" + name + "Panel,;"
+					row_tmp_filters.push( add_filter( "finish_create_date", name + "Panel", false ) );
+				}
+				if( ArrayCount( row_tmp_filters ) > 1 )
+				{
+					row_filters.push( row_tmp_filters );
+					row_tmp_filters = new Array();
+				}
+				if( ArrayOptFind( arrFilters, "This == 'tag'" ) != undefined )
+				{
+					sClearAction += "SET=tag" + name + "Panel,;"
+					row_tmp_filters.push( add_filter( "tag", name + "Panel", false ) );
+				}
+				if( ArrayCount( row_tmp_filters ) > 1 )
+				{
+					row_filters.push( row_tmp_filters );
+					row_tmp_filters = new Array();
+				}
+				if( ArrayOptFind( arrFilters, "This == 'knowledge_part'" ) != undefined )
+				{
+					sClearAction += "SET=knowledge_part" + name + "Panel,;"
+					row_tmp_filters.push( add_filter( "knowledge_part", name + "Panel", false ) );
+				}
+						
+				if( ArrayCount( row_tmp_filters ) > 0 )
+					row_filters.push( row_tmp_filters );
+			}
+			else if( mode == "sogl_requests" || mode == "my_article"  )
+			{
+				row_tmp_filters = new Array();
+				sClearAction += "SET=start_create_date" + name + "Panel,;"
+				row_tmp_filters.push( add_filter( "start_create_date", name + "Panel", false ) );
+				sClearAction += "SET=finish_create_date" + name + "Panel,;"
+				row_tmp_filters.push( add_filter( "finish_create_date", name + "Panel", false ) );
+				row_filters.push( row_tmp_filters );
+			}
+
+					
+			curFilter = {
+				'id': name + 'Panel',
+				'search_value': UrlDecode( curUrlQuery.GetOptProperty( "search", "" ) ),
+				'disp_search': ( name == "SearchResult" || name == "MainBlock" ),
+				'disp_search_field': true,
+				'search_width': "300",
+				'search_field': name + "WikiBaseSearch",
+				'search_action': sAction,
+				'clear_action': sClearAction + sAction,
+				'action': sAction,
+				'disp_row_filters_field': ( name == "SearchResult" ),
+				'row_filters': row_filters
+			};
+			if( mode == "sogl_requests" )
+			{
+				curFilter.SetProperty( "filters", [ add_filter( "status_request", name + "Panel", true ) ] )
+				curFilter.SetProperty( "title", title )
+			}
+			
+			if( mode == "acquaints" )
+			{
+				curFilter.SetProperty( "filters", [ add_filter( "status_acquaint", name + "Panel", true ) ] )
+				curFilter.SetProperty( "title", title )
+			}
+			if( mode == "my_article" )
+			{
+				curFilter.SetProperty( "filters", [ add_filter( "status", name + "Panel", true ) ] )
+				curFilter.SetProperty( "title", title )
+			}
+			if( ( mode == "sogl_requests" || mode == "acquaints" || mode == "search" || mode == "my_article" ) && curDevice.disp_type == "mobile" )
+				curFilter.SetProperty( "buttons", [ { title: "Показать дерево", click: "SHOW=WikiBaseTreeStackPanel,WikiBaseNameStackPanel;HIDE=PanelWikiArticle" } ] )
+			
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+		}
+		
+		bShowResult = tools_web.is_true( curUrlQuery.GetOptProperty( "show_result", false ) );
+		bShowResult = bShowResult ? bShowResult : !( name == "SearchResult" || name == "MainBlock" );
+%>
+
+			<Edit Name="<%=name%>Action" Hidden="1"></Edit>
+			<Edit Name="<%=name%>ShowResult" Hidden="1"><%=bShowResult%></Edit>
+			<Panel Name="<%=name%>Panel" Source="wiki_base_search_result_panel" ShowHeader="false">
+				<Param Name="search" Value="{<%=name%>WikiBaseSearch}"/>
+				<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+				<Param Name="page_num" Value="{<%=name%>PageNum}"/>
+				<Param Name="action" Value="{<%=name%>Action}"/>
+				<Param Name="status" Value="{status<%=name%>Panel}"/>
+				<Param Name="wiki_article_type" Value="{wiki_article_type<%=name%>Panel}"/>
+				<Param Name="start_create_date" Value="{start_create_date<%=name%>Panel}"/>
+				<Param Name="finish_create_date" Value="{finish_create_date<%=name%>Panel}"/>
+				<Param Name="tag" Value="{tag<%=name%>Panel}"/>
+				<Param Name="knowledge_part" Value="{knowledge_part<%=name%>Panel}"/>
+				<Param Name="panel_name" Value="<%=name%>"/>
+				<Param Name="show_result" Value="{<%=name%>ShowResult}"/>
+				<Param Name="mode" Value="<%=mode%>"/>
+				<Param Name="object_ids" Value="<%=ids%>"/>
+				<Param Name="query_qual" Value="<%=XmlAttrEncode( query_qual )%>"/>
+				<Param Name="base_wiki_article_type_id" Value="{BaseWikiArticleId}"/>
+				<Param Name="CONTEXTSTR" Value="{CONTEXT}"/>
+			</Panel>
+<%
+		if( !hide_paging )
+		{
+%>
+			<StackPanel Name="<%=name%>ButtonsStackPanel" Hidden="1"  Orientation="Horizontal" Class="XAML-stack-container XAML-paging-container">
+				<StackPanel Name="<%=name%>NotBack" Class="XAML-stack-container x-tbar-page-prev x-bnt-container">
+					<Label Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Label>
+				</StackPanel>
+				<StackPanel Name="<%=name%>Back" Class="XAML-stack-container x-tbar-page-prev x-bnt-container">
+					<Link Class="x-tbar-page-btn" Click="SET=<%=name%>Action,back;UPDATE=<%=name%>Panel"><%=XmlAttrEncode( "" )%></Link>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal">
+					<Edit Name="<%=name%>PageNum" Class="XAML-edit-label" Width="50" Editable="0"><%=name == "SearchResult" ? curUrlQuery.GetOptProperty( "page_num", "" ) : ""%></Edit>	
+					<Label Class="XAML-paging-divider"><%=XmlAttrEncode( "/" )%></Label>
+					<Edit Class="XAML-edit-label" Width="50" Name="<%=name%>Pages" Editable="0"></Edit>	
+				</StackPanel>
+				<StackPanel Name="<%=name%>NotNext" Class="XAML-stack-container x-tbar-page-next x-bnt-container">
+					<Label Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Label>
+				</StackPanel>
+				<StackPanel Name="<%=name%>Next" Class="XAML-stack-container x-tbar-page-next x-bnt-container">
+					<Link Click="SET=<%=name%>Action,next;UPDATE=<%=name%>Panel" Class="x-tbar-page-btn"><%=XmlAttrEncode( "" )%></Link>
+				</StackPanel>
+			</StackPanel>
+<%
+		}
+%>
+		</StackPanel>
+<%
+			if( name == "SearchResult" )
+			{
+%>
+		<StackPanel Hidden="1" Name="<%=name%>ArticleStackPanel" Class="XAML-stack-container">
+			<Edit Name="<%=name%>PanelWikiArticleID" Hidden="1"/>
+			<Edit Name="<%=name%>PanelMode" Hidden="1"/>
+			<Edit Name="<%=name%>bEditArticle" Hidden="1"/>
+			<Panel Name="<%=name%>PanelWikiArticle" Source="wiki_article_panel" ShowHeader="false">
+				<Param Name="mode" Value="{<%=name%>PanelMode}"/>
+				<Param Name="wiki_article_id" Value="{<%=name%>PanelWikiArticleID}"/>
+				<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+				<Param Name="search_result" Value="1"/>
+				<Param Name="search" Value="{<%=name%>WikiBaseSearch}"/>
+				<Param Name="status" Value="{status<%=name%>Panel}"/>
+				<Param Name="wiki_article_type" Value="{wiki_article_type<%=name%>Panel}"/>
+				<Param Name="start_create_date" Value="{start_create_date<%=name%>Panel}"/>
+				<Param Name="finish_create_date" Value="{finish_create_date<%=name%>Panel}"/>
+				<Param Name="edit" Value="{<%=name%>bEditArticle}"/>
+			</Panel>
+		</StackPanel>
+<%
+			}
+%>
+	</StackPanel>
+<%
+	}
+	function title_block( teObject )
+	{
+		if( curDevice.disp_type != "mobile" )
+		{
+			curTitle = {
+				"object": teObject
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+		}
+		else
+		{
+		
+%>
+	<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+		<Link Click="SHOW=WikiBaseTreeStackPanel,WikiBaseNameStackPanel;HIDE=PanelWikiArticle" Class="icon-arrow-left"></Link>
+		<Label Class="XAML-label-header-2"><%=tools_web.get_cur_lng_name( XmlAttrEncode( teObject.name ), curLng.short_id )%></Label>
+	</StackPanel>
+<%
+		}
+	}
+	function desc_block( teObject, iObjectID )
+	{
+		if( bEditArticle && teObject.Name == "wiki_article" )
+		{
+%>
+		<Label Class="XAML-label-header-4"><%= tools_web.get_web_const( "c_annatatsiya", curLngWeb )%></Label>
+		<EditBox Name="field_annotation" Width="100%"><%=XmlAttrEncode( teObject.annotation )%></EditBox>
+		<Label/>
+		<Label Class="XAML-label-header-4"><%= tools_web.get_web_const( "vbecb_body", curLngWeb )%></Label>
+		<RichEdit Name="text_area" Width="100%" Height="500" RepositoriumID="<%=teWikiBase.repositorium_id%>" AllowLinks="true" LinkToWTObject="wiki_article|$elem/wiki_base_id=<%=iWikiBaseID%> and $elem/status_id='active'">
+			<![CDATA[<%=iObjectID != undefined ? ( sMode == "object_version" ? tools.call_code_library_method( "libKnowledge", "get_article_desc", [ teObject.text_area, "/", "", true, false ] ) : tools_web.get_web_desc( teObject.text_area, UrlFromDocID( iObjectID ), "wiki_article.text_area" ) ) : ""%>]]>
+		</RichEdit>
+<%
+		}
+		else
+		{
+%>
+		<Edit Name="iObjectVersionID<%=iPanelKey%>" Hidden="1"/>
+		<Panel Name="PanelDescObject<%=iPanelKey%>" Source="panel_desc_wiki_article" ShowHeader="false">
+			<Param Name="object_id" Value="<%=sMode == "object_version" ? docObjectVersion.DocID : iObjectID%>"/>
+			<Param Name="object_version_id" Value="{iObjectVersionID<%=iPanelKey%>}"/>
+			<Param Name="iPanelKey" Value="<%=iPanelKey%>"/>
+		</Panel>
+<%
+		}
+	}
+	function button_block()
+	{
+%>
+	<StackPanel Orientation="Wrap">
+		<Action Name="ExportListArticleAction" Source="wiki_article_action" Success="OPENWINDOW={url}" Failure="ALERT={messageText}">
+			<Param Name="action" Value="export_pdf"/>
+			<Param Name="object_id" Value=""/>
+		</Action>
+		<Edit Name="SubscribeActionType" Hidden="1"/>
+		<Action Name="SubscribeWikiBaseAction" Source="wiki_article_action" Success="{!messageText};REFRESH;" Failure="ALERT={messageText}">
+			<Param Name="action" Value="{SubscribeActionType}"/>
+			<Param Name="object_id" Value=""/>
+			<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+		</Action>
+		<Dialog Name="SelectWikiArticleToExport" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите статьи для экспорта" )%>" Close="SET=ExportListArticleAction/object_id,{CatalogListDataGridSelList};ACTION=ExportListArticleAction;">
+			<Param Name="catalog_name" Value="wiki_article"/>
+			<Param Name="multi_select" Value="true"/>
+			<Param Name="xquery_qual" Value="<%=UrlEncode( "$elem/status_id = 'active' and $elem/wiki_base_id = " + iWikiBaseID )%>"/>
+		</Dialog>
+		<Button Class="XAML-button" Click="OPENDIALOG=SelectWikiArticleToExport"><%=XmlAttrEncode( tools_web.get_web_const( "c_export_to_pdf", curLngWeb ) )%></Button>
+<%
+		if( ArrayOptFirstElem( XQuery( "for $elem in subscriptions where $elem/person_id = " + curUserID + " and $elem/document_id = " + iWikiBaseID + " and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) return $elem/Fields('id')" ) ) == undefined )
+		{
+%>
+		<Button Class="XAML-button" Click="SET=SubscribeActionType,subscribe_base;ACTION=SubscribeWikiBaseAction"><%=XmlAttrEncode( "Подписаться" )%></Button>
+<%
+		}
+		else
+		{
+%>
+		<Button Class="XAML-button" Click="SET=SubscribeActionType,unsubscribe_base;ACTION=SubscribeWikiBaseAction"><%=XmlAttrEncode( "Отписаться" )%></Button>
+<%
+		}
+		if( ArrayOptFirstElem( arrWikiArticleTypes ) != undefined )
+		{
+%>
+	<StackPanel Class="XAML-stack-block">
+		<ComboBox Width="250" SelectedItem="start">
+			<ComboBoxItem Value="start"><%=XmlAttrEncode( "Создать новую статью" )%></ComboBoxItem>	
+<%
+			for( article_type in arrWikiArticleTypes )
+			{
+%>
+			<ComboBoxItem Value="<%=article_type.id%>" Change="<%=bShowTree ? "HIDE=WikiBaseTreeStackPanel;" : ""%>SET=WikiArticleType,<%=article_type.id%>;SET=PanelMode,new_article;SET=bEditArticle,1;SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];UPDATE=PanelWikiArticle"><%=XmlAttrEncode( article_type.name )%></ComboBoxItem>	
+<%
+			}
+%>				
+		</ComboBox>
+	</StackPanel>
+<%
+		}
+%>
+	</StackPanel>
+<%
+	}
+	function statistics_block( teObject, iObjectID )
+	{
+		arr_informers = new Array();
+		if( curUser != null )
+		{
+			xarrArticleAcquaints = XQuery( "for $i in wiki_articles where $i/acquaint_type_id != 'none' and $i/wiki_base_id = " + iWikiBaseID + " and $i/status_id = 'active' return $i" );
+			if( ArrayOptFirstElem( xarrArticleAcquaints ) != undefined )
+			{
+				xarrAcquainAssigns = ArraySelectAll( XQuery( "for $i in acquaint_assigns where $i/person_id = " + curUserID + " and $i/state_id = 'familiar' and $i/object_type = 'wiki_article' and MatchSome( $i/object_id, ( " + ArrayMerge( xarrArticleAcquaints, "This.id", "," ) + " ) ) return $i" ) );
+				iCntOk = 0;
+				
+				for( elem in xarrArticleAcquaints )
+				{
+					if( ArrayOptFind( xarrAcquainAssigns, "This.object_id == elem.id && ( !elem.critical_publicate_date.HasValue || elem.critical_publicate_date < This.finish_date )" ) != undefined )
+						iCntOk++;
+				}
+				//alert( iCntOk )
+				oStat = new Object();
+				oStat.id = tools.random_string( 10 );
+				oStat.title = "% ознакомления";
+				oStat.output_type = "percent";
+				oStat.schema = "";
+				oStat.action = "";
+				oStat.icon = "";
+				oStat.value = Real( iCntOk*100 )/Real( ArrayCount( xarrArticleAcquaints ) );
+				oStat.value_str = StrReal( oStat.value, 1 ) + " %";
+				arr_informers.push( oStat );
+			}
+		}
+		curStatistics = {
+			"object_id": iObjectID,
+			"te_object": teObject,
+			"statistics_periods": [],
+			"arr_added_informers": arr_informers
+		};
+			
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_cur_statistics.xaml" ) );
+	}
+	function news_block()
+	{
+		//xarrChanges = XQuery( "for $i in changes where some $art in wiki_articles satisfies ( $art/id = $i/object_id and $art/wiki_base_id = " + iWikiBaseID + " ) order by $i/create_date descending return $i" );
+		/*sAction = "SET=PanelMode,news;SET=WikiArticleID,;UPDATE=PanelWikiArticle;";
+		
+			
+		sViewType = tools_web.get_web_param( curParams, "wiki_base_body.main.block_list.news.view_type", "tile", true );
+		if( sViewType == "" )
+			sViewType = "tile";
+		sTileTemplate = tools_web.get_web_param( curParams, "wiki_base_body.main.block_list.news.tile_template", "change_tile", true );
+		if( sTileTemplate == "" )
+			sTileTemplate = "change_tile";
+		curView = {
+			"id": "WikiBaseNews",
+			"catalog_name": "change",
+			"height": "",
+			"title": sTitle,
+			"buttons": [ { "title": tools_web.get_web_const( "vnp_all_news", curLngWeb ), "click": sAction } ],
+			"disp_filter": "false",
+			"disp_search": "false",
+			"disp_paging": "true",
+			"collection": { "name" :"wiki_base_changes_collection", "params": [ { "name": "wiki_base_id", "value": iWikiBaseID } ] },
+			"disp_type": sViewType,
+			"tile_template": sTileTemplate,
+			"tile_columns": OptInt( tools_web.get_web_param( curParams, "wiki_base_body.main.block_list.news.tile_columns", "1", true ), 1 ),
+			"tile_rows": tools_web.get_web_param( curParams, "wiki_base_body.main.block_list.news.tile_rows", "", true ),
+			"tile_height": tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.tile_height", "", true ),
+			"paging_size": 10
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );*/
+		sTitle = tools_web.get_web_param( curParams, "wiki_base_body.main.block_list.news", "", true )
+		if( sTitle == "" )
+			sTitle = tools_web.get_web_const( "vnp_news", curLngWeb );
+			
+		bOpenArticleByUrl = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.open_article_by_url", "1", true ) )
+%>
+	<StackPanel Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+		<Grid Width="100%" Class="XAML-grid-filter">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+				<GridColumn/>
+			</GridColumns>
+
+			<GridRow>
+				<Label Class="XAML-label-filters-title"><![CDATA[<%=XmlAttrEncode( sTitle )%>]]></Label>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="true">
+					<Button Class="XAML-button XAML-button-view" Click="<%=bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, iWikiBaseID, { wiki_mode: "news", base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : "SET=CopyObjectVersionID,;SET=PanelMode,news;SET=WikiArticleID,;UPDATE=PanelWikiArticle;"%>" ><![CDATA[<%=tools_web.get_web_const( "vnp_all_news", curLngWeb )%>]]></Button>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+		search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", "news", true, "" )
+%>
+	<!--<Grid Width="100%" Class="XAML-grid-object-title-container XAML-grid-container-gl" Adapt="1">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow Class__="XAML-object-title">
+			<Label Class="XAML-label-header-4"><![CDATA[<%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>]]></Label>	
+			<Link Click=""><%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%></Link>
+		</GridRow>
+	</Grid>
+	<Collection Name="WikiBaseNewsCollection" Source="wiki_base_changes_collection">
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+	</Collection>
+	<TileView Name="WikiBaseNewsTile" Class="XAML-tileview-list" DataSource="{WikiBaseNewsCollection}" TemplateSource="change_tile" Columns="1" PageSize="10"/>-->
+<%
+	}
+	
+	function cut_name( sName )
+	{
+
+		if( StrCharCount( sName ) > 40 )
+			return StrCharRangePos( sName, 0, 40 ) + "...";
+		return sName;
+	}
+	function base_menu_block()
+	{
+		sCustomTile = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.base_menu.tile_template", "", true );
+		if( sCustomTile != "" )
+		{
+%>
+	<Collection Name="WikiBaseBaseMenuCollection">
+		<Data>
+<%
+		}
+		else
+		{
+%>
+	<StackPanel Orientation="Wrap" Class="XAML-stack-container">
+<%
+		}
+		
+		arrMenuParam = String( tools_web.get_web_param( curParams, "wiki_base_body.base_menu", "news;subscribe;search;my_versions;sogl_requests", true ) ).split( ";" );
+		for( catMenu in arrMenuParam )
+		{
+			sTitle = tools_web.get_web_param( curParams, "wiki_base_body.base_menu." + catMenu, "", true );
+			if( sTitle == "" )
+				sTitle = get_default_title( catMenu );
+			switch( catMenu )
+			{
+				case "subscribe":
+					if( curUser == null )
+						continue;
+					break;
+				case "my_versions":
+					if( ( !teWikiBase.free_access_edit && ArrayOptFind( teWikiBase.wiki_article_types, "This.free_access_edit" ) == undefined ) && ArrayOptFind( xarrOperations, "This.action == 'edit_wiki_article'" ) == undefined )
+						continue;
+					break;
+					
+				case "sogl_requests":
+					sEvalCode = tools_web.get_web_param( curParams, "wiki_base_body.eval_code_request", "", true );
+					bShowRequest = false;
+					if( sEvalCode != "" )
+					{
+						bShowRequest = SafeEval( sEvalCode, [ { 'xarrOperations': xarrOperations, 'teWikiBase': teWikiBase } ] );
+					}
+					else
+						bShowRequest = ArrayOptFind( xarrOperations, "This.action == 'moderator_wiki_article'" ) != undefined;
+						
+					if( !bShowRequest )
+						continue;
+					break;
+			}
+			if( sCustomTile != "" )
+			{
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catMenu%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( sTitle )%>"/>
+			</Row>
+<%
+			}
+			else
+			{
+%>
+			<StackPanel >
+				<Link Class="XAML-Stack-Panel-Wiki-Gray" Click="<%=bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, iWikiBaseID, { wiki_mode: catMenu, base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : "SET=CopyObjectVersionID,;SET=PanelMode," + catMenu + ";SET=WikiArticleID,;UPDATE=PanelWikiArticle;"%>"><%=XmlAttrEncode( cut_name( sTitle ) )%></Link>
+			</StackPanel>
+<%
+			}
+		}
+		
+		if( sCustomTile != "" )
+		{
+%>
+		</Data>
+	</Collection>
+	<TileView Name="WikiBaseBaseMenuTile" Class_="XAML-tileview-list" DataSource="{WikiBaseBaseMenuCollection}" TemplateSource="<%=sCustomTile%>" Columns="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.base_menu.tile_columns", "", true ), 4 )%>" TileHeight="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.base_menu.tile_height", "", true ), 216 )%>" TileWidth="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.base_menu.tile_width", "", true ), 216 )%>"/>
+<%
+		}
+		else
+		{
+%>
+	</StackPanel>
+<%
+		}
+	}
+	function structure_block( teObject, iObjectID )
+	{
+		sCustomTile = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.structure.tile_template", "", true );
+		if( sCustomTile != "" )
+		{
+%>
+	<Collection Name="WikiBaseStructureCollection">
+		<Data>
+<%
+		}
+		else
+		{
+%>
+	<StackPanel Orientation="Wrap" Class="XAML-stack-container">
+<%
+		}
+		function check_hier( xarr, iValue )
+		{
+			return ArrayOptFindBySortedKey( xarrCommunications, iValue, 'child_wiki_article_id' ) == undefined;
+		}
+		base_wiki_article_type_id = OptInt( tools_web.get_web_param( PARAMETERS, "base_wiki_article_type_id", "", true ) )
+		if( ArrayCount( arrNavigators ) <= 1 )
+		{
+			var xarrArticles = XQuery( "for $i in wiki_articles where $i/wiki_base_id = " + iWikiBaseID + " and $i/wiki_article_type_id = " + base_wiki_article_type_id + " and $i/status_id = 'active' return $i" );
+			var xarrCommunications = ArrayDirect( XQuery( "for $i in wiki_article_communications where some $wa in wiki_articles satisfies ( $wa/id = $i/child_wiki_article_id and $wa/status_id = 'active' ) and MatchSome( $i/base_wiki_article_id, ( " + ArrayMerge( xarrArticles, "This.id", "," ) + " ) ) order by $i/base_wiki_article_id return $i" ) );
+		
+			xarrHierComms = XQuery( "for $i in wiki_article_communication_types where $i/child_wiki_article_type_id = " + base_wiki_article_type_id + " and $i/wiki_communication_type_id = 'hier' return $i" );
+			if( ArrayOptFirstElem( xarrHierComms ) != undefined )
+				xarrArticles = ArraySelect( xarrArticles, "check_hier( xarrCommunications, This.id )" )
+		}
+		else
+		{
+			catLastElem = arrNavigators[ ArrayCount( arrNavigators ) - 1 ];
+			var arrStructures = XQuery( "for $i in wiki_article_communications where $i/base_wiki_article_id = " + catLastElem.id + " order by $i/position return $i" );
+			var xarrArticles = ArrayDirect( XQuery( "for $i in wiki_articles where $i/wiki_base_id = " + iWikiBaseID + " and MatchSome( $i/id, ( " + ArrayMerge( arrStructures, "This.child_wiki_article_id", "," ) + " ) ) and $i/status_id = 'active' order by $i/id ascending return $i" ) )
+			var xarrCommunications = ArrayDirect( XQuery( "for $i in wiki_article_communications where some $wa in wiki_articles satisfies ( $wa/id = $i/child_wiki_article_id and $wa/status_id = 'active' ) and MatchSome( $i/base_wiki_article_id, ( " + ArrayMerge( xarrArticles, "This.id", "," ) + " ) ) order by $i/base_wiki_article_id return $i" ) );
+		}
+		
+		
+		for( catElem in xarrArticles )
+		{
+			if( catElem.id == iObjectID )
+				continue
+			if( sCustomTile != "" )
+			{
+%>
+			<Row>
+				<Cell Id="id" Value="<%=catElem.id%>"/>
+				<Cell Id="name" Value="<%=XmlAttrEncode( catElem.name )%>"/>
+			</Row>
+<%
+			}
+			else
+			{
+%>
+			<StackPanel  >
+				<Link Class="XAML-Stack-Panel-Wiki-Color" Click="<%=bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, catElem.id, { wiki_mode: "article", base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : "SET=CopyObjectVersionID,;SET=PanelMode,article;SET=WikiArticleID,;UPDATE=PanelWikiArticle;"%>"><%=XmlAttrEncode( cut_name( ( ArrayOptFind( xarrCommunications, "This.base_wiki_article_id == catElem.id" ) != undefined ? "+ " : "" ) + catElem.name ) )%></Link>
+			</StackPanel>
+<%
+			}
+		}
+		
+		if( sCustomTile != "" )
+		{
+%>
+		</Data>
+	</Collection>
+	<TileView Name="WikiBaseStructureTile" Class_="XAML-tileview-list" DataSource="{WikiBaseStructureCollection}" TemplateSource="<%=sCustomTile%>" Columns="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.structure.tile_columns", "", true ), 4 )%>" TileHeight="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.structure.tile_height", "", true ), 216 )%>" TileWidth="<%=OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.structure.tile_width", "", true ), 216 )%>"/>
+<%
+		}
+		else
+		{
+%>
+	</StackPanel>
+<%
+		}
+	}
+	function title_article_block( teObject, iObjectID )
+	{
+		if( bEditArticle )
+		{
+%>
+	<Edit Name="field_wiki_article_type_id" Hidden="1"><%=teObject.wiki_article_type_id%></Edit>
+	<Edit Name="field_critical_change" Hidden="1"><%=teObject.critical_change%></Edit>
+	<Grid Width="100%" Adapt="true" Class="XAML-Wiki-grid">
+		<GridColumns>
+			<GridColumn />
+			<GridColumn Width="300"/>
+		</GridColumns>
+		<GridRow>
+			<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="20%"/>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_code", curLngWeb ) )%>:</Label>	
+					<Edit Width="100%" Name="field_code"><%=XmlAttrEncode( CONTEXT.GetOptProperty( "field_code", teObject.code ) )%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_name", curLngWeb ) )%>:</Label>	
+					<Edit Width="100%" Name="field_name"><%=XmlAttrEncode( CONTEXT.GetOptProperty( "field_name", teObject.name ) )%></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>:</Label>	
+					<ComboBox Name="field_status_id" Width="250" SelectedItem="<%=CONTEXT.GetOptProperty( "field_status_id", ( iObjectID == undefined ? "project" : teObject.status_id ) )%>">
+<%
+			for( _status in curLngCommon.status_in_knowledge_map_types )
+			{
+%>
+						<ComboBoxItem Value="<%=_status.id%>"><%=XmlAttrEncode( _status.name )%></ComboBoxItem>	
+<%
+			}
+%>		
+					</ComboBox>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( "Тип статьи" )%>:</Label>	
+					<Label><%=teObject.wiki_article_type_id.HasValue ? XmlAttrEncode( teObject.wiki_article_type_id.ForeignElem.name ) : ""%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( "Тип ознакомления" )%>:</Label>	
+					<ComboBox Name="field_acquaint_type_id" Width="250" SelectedItem="<%=CONTEXT.GetOptProperty( "field_acquaint_type_id", (iObjectID == undefined ? "none" : teObject.acquaint_type_id) )%>">
+<%
+			for( _type in curLngCommon.acquaint_types )
+			{
+%>
+						<ComboBoxItem Value="<%=_type.id%>" Change="<%=_type.id == "items" ? "SHOW" : "HIDE"%>=StackPanelQuestions;<%=_type.id != "none" ? "SHOW" : "HIDE"%>=AcquaintGroups"><%=XmlAttrEncode( _type.name )%></ComboBoxItem>	
+<%
+			}
+%>		
+					</ComboBox>
+				</GridRow>
+			</Grid>
+			
+			<StackPanel Class="Wiki-article-image">
+				<Panel Name="ResourceField" Source="panel_show_image" ShowHeader="false">
+					<Param Name="resource_id" Value="{field_resource_id}"/>
+					<Param Name="field_name" Value="field_resource_id"/>
+					<Param Name="object_type" Value="<%=teObject.Name%>"/>
+				</Panel>
+				<Edit Hidden="1" Name="field_resource_id"><%=XmlAttrEncode( CONTEXT.GetOptProperty( "field_acquaint_type_id", teObject.resource_id ) )%></Edit>
+			</StackPanel>
+		</GridRow>
+	</Grid>
+	<StackPanel Name="AcquaintGroups" Hidden="<%=teObject.acquaint_type_id == "none"%>">
+		<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogListAcquaintGroups"><%='Группы для ознакомления'%></Button>
+
+<%
+			curSelectorList = {
+				"id": 'ListAcquaintGroups',
+				"selected_object_ids": CONTEXT.GetOptProperty( "TempDestinationEditListAcquaintGroups", ArrayMerge( teObject.acquaint_groups, "This.PrimaryKey", ";" ) ),
+				"catalog_name": "group"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+	</StackPanel>
+	<StackPanel Name="AccessGroups">
+		<Button Class="XAML-button" Click="OPENDIALOG=SelectDialogListAccessGroups"><%='Группы прав доступа'%></Button>
+
+<%
+			if( iObjectID == undefined )
+				try
+				{
+
+					arrParametersCommunications = tools.read_object( PARAMETERS.GetOptProperty( "wiki_article_communications", "[]" ) );
+					for( elem in arrParametersCommunications )
+					{
+						if( elem.GetOptProperty( "wiki_article_comm_type_id" ) == undefined || elem.GetOptProperty( "base_wiki_article_id" ) == undefined )
+							continue;
+						iId = OptInt( elem.GetOptProperty( "base_wiki_article_id" ) );
+						for( _group in OpenDoc( UrlFromDocID( iId ) ).TopElem.access.access_groups )
+							teObject.access.access_groups.ObtainChildByKey( _group.PrimaryKey );
+					}
+					xarrCommunications = teObject.adding_objects.wiki_article_communications;
+				}
+				catch( ex )
+				{
+					alert( ex )
+				}
+			curSelectorList = {
+				"id": 'ListAccessGroups',
+				"selected_object_ids": CONTEXT.GetOptProperty( "TempDestinationEditListAccessGroups", ArrayMerge( teObject.access.access_groups, "This.PrimaryKey", ";" ) ),
+				"catalog_name": "group",
+				"height": ""
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+	</StackPanel>
+	<Edit Name="QuestionXml" Hidden="1"><%=UrlEncode( CONTEXT.GetOptProperty( "QuestionXml", teObject.questions.Xml ) )%></Edit>
+	<Edit Name="EditAction" Hidden="1"></Edit>
+	<Edit Name="iItemID" Hidden="1"></Edit>
+	<Edit Name="sQuestionID" Hidden="1"></Edit>
+	<Action Name="CreateUpdateQuestionsAction" Source="acquaint_assign_action" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="action" Value="{EditAction}"/>
+		<Param Name="object_id" Value="{iItemID}"/>
+		<Param Name="question_id" Value="{sQuestionID}"/>
+	</Action>
+			
+	<Dialog Name="SelectAcquaintItem" Source="dlg_select" Title="<%=XmlAttrEncode( "Выберите вопрос" )%>" Close="SET=EditAction,add_select_item;SET=iItemID,{CatalogListDataGridFullList:^/id};ACTION=CreateUpdateQuestionsAction;">
+		<Param Name="catalog_name" Value="item"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="xquery_qual" Value="<%=UrlEncode( "MatchSome( $elem/type_id, ('multiple_choice','multiple_response','gap_fill','numerical_fill_in_blank') ) and $elem/status = 'active'" )%>"/>
+	</Dialog>
+			
+	<Dialog Name="DialogEditQuestion" Source="dlg_question_edit" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_question", curLngWeb ) )%>" Close="SET=QuestionXml,{EditQuestionsXml};UPDATE=PanelQuestions">
+		<Param Name="questions_xml" Value="{QuestionXml}"/>
+		<Param Name="question_id" Value=""/>
+	</Dialog>
+			
+	
+	<StackPanel Name="StackPanelQuestions" Hidden="<%=teObject.acquaint_type_id != "items"%>">
+		<Toolbar>
+			<Button Class="XAML-button" Width="200" Click="SET=DialogEditQuestion/question_id,;OPENDIALOG=DialogEditQuestion;"><%=XmlAttrEncode( tools_web.get_web_const( "vhvkmjgt8a", curLngWeb ) )%></Button>
+			<Button Class="XAML-button" Width="200" Click="SET=sQuestionID,;OPENDIALOG=SelectAcquaintItem;"><%=XmlAttrEncode( "Добавить из списка" )%></Button>
+		</Toolbar>
+		<Panel Name="PanelQuestions" Source="panel_edit_questions" ShowHeader="false">
+			<Param Name="questions_xml" Value="{QuestionXml}"/>
+			<Param Name="can_edit" Value="1"/>
+			<Param Name="can_delete" Value="1"/>
+		</Panel>
+	</StackPanel>
+<%
+		}
+		else
+		{
+			sObjectImageUrl = '/images/' + teObject.Name + '.png';
+			if( teObject.resource_id.HasValue )
+				sObjectImageUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+			else if( teObject.wiki_article_type_id.HasValue )
+			{
+				feArticleType = teObject.wiki_article_type_id.OptForeignElem;
+				if( feArticleType != undefined && feArticleType.resource_id.HasValue )
+					sObjectImageUrl = tools_web.get_object_source_url( 'resource', feArticleType.resource_id );
+			}
+			sDesc = "";
+			sType = ""
+			aDesc = new Array();
+			if( curDevice.disp_type != "mobile" && teObject.wiki_article_type_id.HasValue )
+				sType = tools_web.get_cur_lng_name( teObject.wiki_article_type_id.ForeignElem.name, curLng.short_id );
+			if( teObject.authors.ChildNum > 0 )
+			{
+				arrAuthors = teObject.authors;
+				if( arrAuthors.ChildNum > 3 )
+				{
+					arrAuthors = ArrayRange( arrAuthors, 0, 3 )
+				}
+				aDesc.push( ArrayMerge( arrAuthors, "This.person_fullname", ", " ) );
+			}
+			if( curDevice.disp_type != "mobile" && teObject.create_date.HasValue )
+				aDesc.push( tools_web.get_web_const( 'c_create_date', curLngWeb ) + ": " + StrDate( teObject.create_date, false ) + ( teObject.publicate_date.HasValue ? ( " ( " + "обновлена" + " " + StrDate( teObject.publicate_date, true, false ) + " )" ) : "" ) );
+			//sDesc = ArrayMerge( aDesc, "This", ", " );
+%>
+<Grid Width="100%" Class="XAML-grid-object-title-container XAML-grid-container-gl" Adapt="1">
+	<GridColumns>
+<%
+			if( curDevice.disp_type != "mobile" )
+			{
+%>
+		<GridColumn/>
+<%
+			}
+%>
+		<GridColumn Width="100%"/>
+		<GridColumn Width="100"/>
+	</GridColumns>
+
+	<GridRow Class__="XAML-object-title">
+<%
+			if( curDevice.disp_type != "mobile" )
+			{
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-image-container">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</StackPanel>
+<%
+			}
+%>
+		<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+			if( curDevice.disp_type == "mobile" )
+			{
+%>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+				<Link Click="SHOW=WikiBaseTreeStackPanel,WikiBaseNameStackPanel;HIDE=PanelWikiArticle" Class="icon-arrow-left"></Link>
+<%
+			}
+%>
+			<Label Class="XAML-label-header-2"><%=tools_web.get_cur_lng_name( XmlAttrEncode( teObject.name ), curLng.short_id )%></Label>
+<%
+			if( curDevice.disp_type == "mobile" )
+			{
+%>
+			</StackPanel>
+<%
+			}
+%>
+<%
+			if( sType != "" )
+			{
+%>
+			<Label Class="XAML-label-header-4"><%=XmlAttrEncode( sType )%></Label>
+<%
+			}
+			for( _desc in aDesc )
+			{
+%>
+			<Label Class="XAML-label-header-6"><%=XmlAttrEncode( _desc )%></Label>
+<%
+			}
+%>
+		</StackPanel>
+<%
+			if( teObject.status_id.HasValue )
+			{
+				feStatus = teObject.status_id.OptForeignElem;
+				if( feStatus != undefined )
+				{
+%>
+		<Label Class="XAML-label-status <%=tools_web.get_class_for_status( teObject.status_id )%>"><%=XmlAttrEncode( feStatus.name )%></Label>
+<%
+				}
+			}
+%>
+	</GridRow>
+</Grid>
+<%
+		
+					
+			if( bSearchResult )
+			{
+				curMessageBox = {
+					"id": "SearchWikiArticle",
+					"type": "info",
+					"buttons": []
+				};
+					
+				oParamSource = bOpenArticleByUrl ? curUrlQuery : PARAMETERS
+				sSearch = UrlDecode( tools_web.get_web_param( oParamSource, "search", "", true ) );
+				iArticleTypeID = OptInt( tools_web.get_web_param( oParamSource, "wiki_article_type", "", true ), "all" );
+				sStatus = tools_web.get_web_param( oParamSource, "status", "", true )
+				try
+				{
+					dStartCreateDate = Date( tools_web.get_web_param( oParamSource, "start_create_date", "", true ) )
+				}
+				catch( ex )
+				{
+					dStartCreateDate = "";
+				}
+				try
+				{
+					dFinishCreateDate = Date( tools_web.get_web_param( oParamSource, "finish_create_date", "", true ) )
+				}
+				catch( ex )
+				{
+					dFinishCreateDate = "";
+				}
+				
+				sActionSearch = "";
+				if( !bOpenArticleByUrl )
+				{
+					if( bSearchResult )
+						sActionSearch = "HIDE=SearchResultArticleStackPanel;SHOW=SearchResultStackPanel;"
+					else
+						sActionSearch = "SET=CopyObjectVersionID,;SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=PanelMode,search;SET=WikiArticleID,;UPDATE=PanelWikiArticle;"
+				}
+				else
+				{
+					_params = new Object();
+					_params.SetProperty( "wiki_mode", "search" );
+					_params.SetProperty( "show_result", 1 );
+					_params.SetProperty( "search", sSearch );
+					_params.SetProperty( "status", sStatus );
+					_params.SetProperty( "wiki_article_type", iArticleTypeID );
+					_params.SetProperty( "start_create_date", dStartCreateDate );
+					_params.SetProperty( "finish_create_date", dFinishCreateDate );
+					_params.SetProperty( "search_page_num", curUrlQuery.GetOptProperty( "search_page_num", "" ) );
+
+					sActionSearch = "OPENURL=" + tools_web.get_mode_clean_url( curMode, iWikiBaseID, _params );
+				}
+				aConds = new Array();
+				if( sSearch != "" )
+					aConds.push( "фразе" + " '" + sSearch + "'" );
+				if( sStatus != "" && sStatus != "all" )
+					aConds.push( "статусу " + "'" + curLngCommon.status_in_knowledge_map_types.GetOptChildByKey( sStatus ).name + "'" );
+				if( OptInt( iArticleTypeID ) != undefined )
+				{
+					catArticleType = ArrayOptFirstElem( XQuery( "for $i in wiki_article_types where $i/id = " + iArticleTypeID + " return $i" ) );
+					if( catArticleType != undefined )
+						aConds.push( "типу статьи" + " '" + catArticleType.name + "'" );
+				}
+				if( dStartCreateDate != "" || dFinishCreateDate != "" )
+					aConds.push( tools_web.get_web_const( 'c_create_date', curLngWeb ) + ( dStartCreateDate != "" ? ( " " + tools_web.get_web_const( 'vppb_from', curLngWeb ) + " " + dStartCreateDate ) : "" ) + ( dFinishCreateDate != "" ? ( " " + tools_web.get_web_const( 'mkly6lmeds', curLngWeb ) + " " + dFinishCreateDate ) : "" ) );
+				
+				if( !bHideButton )
+				{
+					curMessageBox.SetProperty( "text", "Вы искали по" + " : " + ArrayMerge( aConds, "This", ", " ) );
+					if( sActionSearch != "" )
+						curMessageBox.buttons.push( {
+							"title": "Вернуться к поиску",
+							"click": sActionSearch
+						} );
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+				}
+			}
+		}
+	}
+	function button_article_block( teObject, iObjectID )
+	{
+		bCanCreateAcquaint = ArrayOptFind( xarrOperations, "This.action == 'create_acquaint_wiki_article'" ) != undefined;
+		bCanAssignAcquaint = ArrayOptFind( xarrOperations, "This.action == 'assign_acquaint_wiki_article'" ) != undefined;
+		bCanEdit = teWikiBase.free_access_edit || ( teWikiBase.wiki_article_types.GetOptChildByKey( teWikiArticle.wiki_article_type_id ) != undefined && teWikiBase.wiki_article_types.GetOptChildByKey( teWikiArticle.wiki_article_type_id ).free_access_edit ) || ArrayOptFind( xarrOperations, "This.action == 'edit_wiki_article'" ) != undefined;
+		
+%>
+	<StackPanel Orientation="Wrap">
+<%
+		bShowAcquaintMessage = false;
+		if( bEditArticle )
+		{
+			if( sMode == "object_version" )
+				sCancelAction = "SET=CopyObjectVersionID,;SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=bEditArticle,0;SET=PanelMode,my_versions;SET=WikiArticleID,;UPDATE=PanelWikiArticle;"
+			else
+				sCancelAction = ( bShowTree ? "SHOW=WikiBaseTreeStackPanel;" : "" ) + "SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];" + ( OptInt( PARAMETERS.GetOptProperty( "last_wiki_article_id" ) ) != undefined ? "SET=WikiArticleID," + PARAMETERS.GetOptProperty( "last_wiki_article_id" ) + ";SET=PanelMode,article;" : iWikiArticleID == undefined ? "SET=PanelMode,main;" : "" ) + "SET=" + ( bSearchResult && !bOpenArticleByUrl ? "SearchResult": "" ) + "bEditArticle,0;UPDATE=" + ( bSearchResult && !bOpenArticleByUrl ? "SearchResult": "" ) + "PanelWikiArticle"
+%>
+		<Button Class="XAML-button" Click="SET=ArticleActionEdit,save_article;ACTION=ArticleAction"><%=XmlAttrEncode( "Сохранить версию" )%></Button>
+		<Button Class="XAML-button" Click="SET=ArticleActionEdit,check_article;ACTION=ArticleAction"><%=XmlAttrEncode( "Опубликовать" )%></Button>
+<%
+			if( sMode == "object_version" && docObjectVersion.TopElem.status == "project" && docObjectVersion.TopElem.person_id == curUserID && bCanEdit )
+			{
+%>
+		<Button Class="XAML-button" Click="SET=ArticleActionEdit,delete_version;ACTION=ArticleAction"><%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%></Button>
+<%
+			}
+%>
+		<Button Class="XAML-button" Click="<%=sCancelAction%>"><%=XmlAttrEncode( tools_web.get_web_const( "c_cancel", curLngWeb ) )%></Button>
+<%
+			if( bAutoSave )
+			{
+%>
+		<Edit  Name="LastAutoSave" Class="XAML-edit-label XAML-edit-label-title" Editable="0"></Edit>
+<%
+			}
+		}
+		else if( sMode == "object_version" )
+		{
+			if( false )
+			{
+%>
+		<Button Class="XAML-button" Click="<%=bShowTree ? "HIDE=WikiBaseTreeStackPanel;" : ""%>SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=PanelMode,article;SET=WikiArticleID,<%=iObjectID%>;SET=CopyObjectVersionID,<%=docObjectVersion.DocID%>;SET=bEditArticle,1;UPDATE=PanelWikiArticle;"><%=XmlAttrEncode( "Опубликовать" )%></Button>
+<%
+			}
+		}
+		else
+		{
+%>
+		<Edit Name="SubscribeArticleEdit" Hidden="1"/>
+
+		<Action Name="SubscribeArticleAction" Source="wiki_article_action" Success="{!messageText};<%=bShowTree ? "SHOW=WikiBaseTreeStackPanel;" : ""%>SET=<%=bSearchResult ? "SearchResult": ""%>bEditArticle,0;UPDATE=<%=bSearchResult ? "SearchResult": ""%>PanelWikiArticle">
+			<Param Name="action" Value="{SubscribeArticleEdit}"/>
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			<Param Name="object_id" Value="<%=iWikiArticleID%>"/>
+			<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+		</Action>
+		<Action Name="ExportArticleAction" Source="wiki_article_action" Success="OPENWINDOW={url}" Failure="ALERT={messageText}">
+			<Param Name="action" Value="export_pdf"/>
+			<Param Name="object_id" Value="<%=iWikiArticleID%>"/>
+		</Action>
+		<Button Class="XAML-button" Click="ACTION=ExportArticleAction"><%=XmlAttrEncode( tools_web.get_web_const( "c_export_to_pdf", curLngWeb ) )%></Button>
+<%
+			if( curDevice.disp_type != "mobile" )
+			{
+				if( ArrayOptFirstElem( XQuery( "for $elem in subscriptions where $elem/person_id = " + curUserID + " and $elem/document_id = " + iWikiArticleID + " and ( $elem/date_to = null() or $elem/date_to > " + XQueryLiteral( Date() ) + " ) return $elem/Fields('id')" ) ) != undefined )
+				{
+%>
+		<Button Class="XAML-button" Click="SET=SubscribeArticleEdit,unsubscribe;ACTION=SubscribeArticleAction"><%=XmlAttrEncode( "Удалить из избранного" )%></Button>
+<%
+				}
+				else
+				{
+%>
+		<Button Class="XAML-button" Click="SET=SubscribeArticleEdit,subscribe;ACTION=SubscribeArticleAction"><%=XmlAttrEncode( "Добавить в избранное" )%></Button>
+<%
+				}
+				if( bCanEdit )
+				{
+%>
+		<Button Class="XAML-button" Click="<%=bShowTree ? "HIDE=WikiBaseTreeStackPanel;" : ""%>SET=<%=!bOpenArticleByUrl && bSearchResult ? "SearchResult" : ""%>bEditArticle,1;UPDATE=<%=!bOpenArticleByUrl && bSearchResult ? "SearchResult" : ""%>PanelWikiArticle;"><%=XmlAttrEncode( tools_web.get_web_const( "c_edit", curLngWeb ) )%></Button>
+<%
+					if( sMode == "article" && StrContains( String( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list", "content;history;files;catalogs;object_versions", true ) ), "content" ) )
+					{
+						arrObjectVersions = XQuery( "for $i in object_versions where $i/object_id = " + iObjectID + " and $i/status = 'archive' order by $i/creation_date descending return $i" );
+						if( ArrayOptFirstElem( arrObjectVersions ) != undefined )
+						{
+%>
+		<StackPanel Class="XAML-stack-block">
+			<ComboBox Name="ComboCheckVersion" Width="250" SelectedItem="check">
+				<ComboBoxItem Value="check"><%=XmlAttrEncode( "Сравнить с версией" )%></ComboBoxItem>	
+<%
+							for( _version in arrObjectVersions )
+							{
+%>
+				<ComboBoxItem Value="<%=_version.id%>" Change="{!ActionCheckVersion<%=iPanelKey%>};SET=iObjectVersionID<%=iPanelKey%>,<%=_version.id%>;UPDATE=PanelDescObject<%=iPanelKey%>"><%=XmlAttrEncode( _version.creation_date )%></ComboBoxItem>	
+<%
+							}
+%>				
+			</ComboBox>
+		</StackPanel>
+<%
+						}
+					
+					}
+				}
+				if( bCanAssignAcquaint && sMode == "article" && false )
+				{
+					xarrAcquaints =  XQuery( "for $i in acquaints where $i/object_id = " + iObjectID + " return $i" );
+					if( ArrayOptFirstElem( xarrAcquaints ) != undefined )
+					{
+						iAcquainID = "";
+						sAcquaintAction = "";
+						if( ArrayCount( xarrAcquaints ) > 1 )
+						{
+							sAcquaintAction = "OPENDIALOG=SelectObjectAcquaint;"
+%>
+		<Dialog Name="SelectObjectAcquaint" Source="dlg_select" Title="<%="Выберите ознакомление"%>" Close="SET=SelectedAcquaintID,{CatalogListDataGridFullList:^/id};OPENDIALOG=SelectObjectCollaborators;">
+			<Param Name="catalog_name" Value="acquaint"/>
+			<Param Name="multi_select" Value="false"/>
+			<Param Name="xquery_qual" Value="<%=UrlEncode( "$elem/object_id = " + iObjectID )%>"/>
+		</Dialog>
+<%
+						}
+						else
+						{
+							iAcquainID = ArrayOptFirstElem( xarrAcquaints ).id
+							sAcquaintAction = "OPENDIALOG=SelectObjectCollaborators;"
+						}
+%>
+		<Dialog Name="SelectObjectCollaborators" Source="dlg_select" Title="<%="Выберите сотрудников"%>" Close="SET=ListCollaboratorAssign,{CatalogListDataGridSelList};CONTEXT=AcquaintGroup;ACTION=AcquaintAssignAction;">
+			<Param Name="catalog_name" Value="collaborator"/>
+			<Param Name="multi_select" Value="true"/>
+			<Param Name="xquery_qual" Value=""/>
+		</Dialog>
+		<ContextGroup Name="AcquaintGroup" Items="ListCollaboratorAssign"/>
+		<Edit Hidden="1" Name="SelectedAcquaintID"><%=iAcquainID%></Edit>
+		<Edit Hidden="1" Name="ListCollaboratorAssign"></Edit>
+		<Action Name="AcquaintAssignAction" Source="acquaint_assign_action" Success="{!messageText};CONTEXT=;" Failure="ALERT={messageText};CONTEXT=;">
+			<Param Name="CONTEXT" Value="{CONTEXT}"/>
+			<Param Name="acquaint_id" Value="{SelectedAcquaintID}"/>
+			<Param Name="action" Value="assign_collaborators_acquaint"/>
+		</Action>
+		
+		<Button Class="XAML-button" Click="<%=sAcquaintAction%>"><%=XmlAttrEncode( "Назначить ознакомление" )%></Button>
+<%
+	
+					}
+				}
+				if( ArrayOptFirstElem( arrWikiArticleTypes ) != undefined )
+				{
+					arrWikiArticleCommunicationTypes = XQuery( "for $i in wiki_article_communication_types where $i/base_wiki_article_type_id = " + teWikiArticle.wiki_article_type_id + " and MatchSome( $i/child_wiki_article_type_id, ( " + ArrayMerge( arrWikiArticleTypes, "This.id", "," ) + " ) ) return $i" );
+					if( ArrayOptFirstElem( arrWikiArticleCommunicationTypes ) != undefined )
+					{
+%>
+		<StackPanel Class="XAML-stack-block">
+			<ComboBox Width="250" SelectedItem="start">
+				<ComboBoxItem Value="start"><%=XmlAttrEncode( "Создать статью" )%></ComboBoxItem>	
+<%
+						for( article_communication_type in arrWikiArticleCommunicationTypes )
+						{
+							feArticleType = article_communication_type.child_wiki_article_type_id.OptForeignElem;
+							if( feArticleType == undefined )
+								continue;
+%>
+				<ComboBoxItem Value="<%=article_communication_type.id%>" Change="<%=bShowTree ? "HIDE=WikiBaseTreeStackPanel;" : ""%>SET=WikiArticleID,;SET=WikiArticleType,<%=article_communication_type.child_wiki_article_type_id%>;SET=PanelMode,new_article;SET=bEditArticle,1;SET=LastWikiArticleID,<%=iWikiArticleID%>;SET=WikiArticleCommunications,<%=UrlEncode( "[{'wiki_article_comm_type_id': " + article_communication_type.id + ", 'base_wiki_article_id': " + iWikiArticleID + "}]" )%>;UPDATE=PanelWikiArticle"><%=XmlAttrEncode( feArticleType.name )%></ComboBoxItem>	
+<%
+					}
+%>				
+			</ComboBox>
+		</StackPanel>
+<%
+					}
+					if( false && teWikiArticle.wiki_article_type_id.HasValue )
+					{
+						if( ArrayOptFirstElem( XQuery( "for $i in wiki_article_communication_types where $i/base_wiki_article_type_id = " + teWikiArticle.wiki_article_type_id + " return $i" ) ) != undefined )
+						{
+%>
+		<Button Class="XAML-button" Click="SET=ArticleActionEdit,select_child_article_communication_type;SET=SelectObjectCommunicationType/xquery_qual,<%=UrlEncode( "$elem/base_wiki_article_type_id = " + teWikiArticle.wiki_article_type_id )%>;OPENDIALOG=SelectObjectCommunicationType;"><%=XmlAttrEncode( "Добавить дочернюю статью" )%></Button>
+<%
+						}
+						if( ArrayOptFirstElem( XQuery( "for $i in wiki_article_communication_types where $i/child_wiki_article_type_id = " + teWikiArticle.wiki_article_type_id + " return $i" ) ) != undefined )
+						{
+%>
+		<Button Class="XAML-button" Click="SET=ArticleActionEdit,select_base_article_communication_type;SET=SelectObjectCommunicationType/xquery_qual,<%=UrlEncode( "$elem/child_wiki_article_type_id = " + teWikiArticle.wiki_article_type_id )%>;OPENDIALOG=SelectObjectCommunicationType;"><%=XmlAttrEncode( "Добавить родительскую статью" )%></Button>
+<%
+						}
+					}
+				}
+			}
+			if( teWikiArticle.acquaint_type_id != "none" )
+			{
+				oResAcquaint = tools.call_code_library_method( 'libWiki', 'check_acquaint_access_wiki_article', [ null, teWikiArticle, curUserID, Session ] );
+				if( oResAcquaint.result )
+				{
+					acquaint_conds = new Array();
+					acquaint_conds.push( "$i/person_id = " + curUserID );
+					acquaint_conds.push( "$i/object_id = " + iObjectID );
+					//acquaint_conds.push( "$i/state_id = 'familiar'" );
+					if( teWikiArticle.critical_publicate_date.HasValue && teWikiArticle.critical_publicate_date <= Date() )
+						acquaint_conds.push( "$i/finish_date > date( '" + teWikiArticle.critical_publicate_date + "' )" );
+					xarrAssignAcquaints = XQuery( "for $i in acquaint_assigns where " + ArrayMerge( acquaint_conds, "This", " and " ) + " return $i" );
+					if( ArrayOptFind( xarrAssignAcquaints, "This.state_id == 'familiar'" ) == undefined )
+					{
+						catAcquaintAssign = ArrayOptFirstElem( xarrAssignAcquaints );
+						if( catAcquaintAssign == undefined )
+						{
+%>
+		<Action Name="ConfirmAcquaintAction" Source="ConfirmAcquaintAction" Success="{!messageText};REFRESH;" Failure="{!messageText}">
+			<Param Name="curUserID" Value="<%=curUserID%>"/>
+			<Param Name="acquaintAssignID" Value=""/>
+			<Param Name="action" Value=""/>
+			<Param Name="acquaint_id" Value=""/>
+			<Param Name="tmp" Value="<%=iObjectID%>"/>
+		</Action>
+		<Dialog Name="QuestionAcquaint<%=iObjectID%>" Source="dlg_question_acquaint" Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_questions", curLngWeb ))%>" Close="REFRESH;">
+			<Param Name="AcquaintAssignID" Value=""/>
+		</Dialog>
+		<Dialog Name="QuestionAcquaintUpdate<%=iObjectID%>" Source="dlg_question_acquaint" Title="<%=XmlAttrEncode(tools_web.get_web_const( "c_questions", curLngWeb ))%>" Close="REFRESH;">
+			<Param Name="AcquaintAssignID" Value=""/>
+		</Dialog>
+		<Button Class="XAML-button" Click="SET=ConfirmAcquaintAction/acquaintAssignID,;SET=ConfirmAcquaintAction/action,confirm_object;SET=ConfirmAcquaintAction/tmp,<%=iObjectID%>;ACTION=ConfirmAcquaintAction"><%=XmlAttrEncode( tools_web.get_web_const( "vab_acquaint_this", curLngWeb ) )%></Button>
+<%
+						}
+					}
+					else
+					{
+						bShowAcquaintMessage = true;
+						curMessageBox = {
+							"type": "info",
+							"text": "Вы подтвердили ознакомление с данной статьей"
+						};
+						
+					}
+				}
+			}
+		}
+%>
+	</StackPanel>
+<%
+		if( bShowAcquaintMessage )
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+	function get_boss_type( teObject, teSubObject )
+	{
+		arrBossTypes = new Array();
+		if( teObject.func_managers.GetOptChildByKey( curUserID ) != undefined )
+			arrBossTypes.push( teObject.func_managers.GetOptChildByKey( curUserID ).boss_type_id )
+			
+		if( teSubObject != null && teSubObject.wiki_article_type_id.HasValue && teObject.wiki_article_types.GetOptChildByKey( teSubObject.wiki_article_type_id ) != undefined )
+		{
+			if( teObject.wiki_article_types.GetOptChildByKey( teSubObject.wiki_article_type_id ).func_managers.GetOptChildByKey( curUserID ) != undefined )
+				arrBossTypes.push( teObject.wiki_article_types.GetOptChildByKey( teSubObject.wiki_article_type_id ).func_managers.GetOptChildByKey( curUserID ).boss_type_id )
+		}
+		arrBossTypes.push( ArrayOptFirstElem( XQuery( "for $i in boss_types where $i/code = 'current_user' return $i" ) ).id )
+		return QueryCatalogByKeys( 'boss_types', 'id', ArraySelectDistinct( arrBossTypes, 'This' ) );
+	}
+	function child_block( teObject, iObjectID )
+	{
+		if( sMode == "object_version" )
+		{
+			if( bEditArticle || teObject.adding_objects.wiki_article_communications.ChildNum > 0 )
+			{
+%>
+	<Edit Name="EditWikiArticleCommunication" Hidden="1">true</Edit>
+	<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="20%"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+				xarrCommunicationTypes = XQuery( "for $i in wiki_article_communication_types where $i/child_wiki_article_type_id = " + teObject.wiki_article_type_id + " and $i/base_wiki_article_type_id != null() return $i" );
+				for( catCommunicationType in xarrCommunicationTypes )
+				{
+					feWikiArticleCommunicationType = catCommunicationType;
+					if( feWikiArticleCommunicationType == undefined )
+						continue;
+						
+					arrCommunications = ArraySelect( teObject.adding_objects.wiki_article_communications, "This.wiki_article_comm_type_id == feWikiArticleCommunicationType.id" );
+					if( ArrayOptFirstElem( arrCommunications ) == undefined && !bEditArticle )
+						continue
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=feWikiArticleCommunicationType.is_mandatory ? "*" : ""%><%=XmlAttrEncode( feWikiArticleCommunicationType.name )%>:</Label>	
+			<StackPanel Class="XAML-stack-container">
+<%
+					
+					arr = new Array();
+					bContextEdit = tools_web.is_true( CONTEXT.GetOptProperty( "EditWikiArticleCommunication" ) );
+
+					if( bContextEdit )
+					{
+						for( elem in CONTEXT )
+						{
+							if( StrContains( elem, "DeleteSelectoradding_selector_object_" + catCommunicationType.id ) && !tools_web.is_true( CONTEXT.GetOptProperty( elem ) ) )
+							{
+								feObject = undefined;
+								if( OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ) != null )
+								{
+									feObject = ArrayOptFirstElem( XQuery( "for $elem in wiki_articles where $elem/id = " + OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ) + " return $elem" ) );
+								}
+								oAdding = ({ "object_id": OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ), "object_name": ( feObject != undefined ? feObject.name.Value : "" ), "position": OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "AdditionalFieldsposition" ) ), "" ) });
+								if( true )
+								{
+									oAdding.SetProperty( "id", OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "FieldID" ) ), "" ) );
+								}
+								arr.push( oAdding );
+							}
+						}
+					}
+					else
+					{
+						for( catElem in arrCommunications )
+						{
+							feObject = undefined;
+							if( catElem.base_wiki_article_id.HasValue )
+							{
+								feObject = catElem.base_wiki_article_id.OptForeignElem;
+							}
+							oAdding = { "object_id": catElem.base_wiki_article_id.Value, "object_name": ( feObject != undefined ? feObject.name.Value : "" ), "position": catElem.position.Value };
+							if( true )
+							{
+								oAdding.SetProperty( "id", catElem.id.Value )
+							}
+							arr.push( oAdding )
+						}
+					}
+					curAddingSelector = {
+						"id": feWikiArticleCommunicationType.id.Value,
+						"show": true,
+						"catalog_name": "wiki_article",
+						"xquery_qual": ( "$elem/wiki_base_id = " + iWikiBaseID + " and $elem/wiki_article_type_id = " + feWikiArticleCommunicationType.base_wiki_article_type_id ),
+						"arr_selecting_objects": arr,
+						"show_next": ( feWikiArticleCommunicationType.wiki_communication_type_id != "one_one" ),
+						"additional_fields": [{id: "position", width: 100}],
+						"can_change": true,
+						"editable": bEditArticle
+					};
+					
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_panel_adding_selector.xaml" ) );
+%>
+			</StackPanel>
+		</GridRow>
+<%	
+				}
+%>
+	</Grid>
+<%			
+			}
+		}
+		else if( !bEditArticle )
+		{
+			xarrChildCommunications = ArraySelectAll( XQuery( "for $i in wiki_article_communications where $i/base_wiki_article_id = " + iObjectID + " and $i/child_wiki_article_id != null() order by $i/position, $i/child_wiki_article_id return $i" ) );
+			if( ArrayOptFirstElem( xarrChildCommunications ) == undefined )
+				return;
+			xarrChilds = ArraySelectAll( XQuery( "for $i in wiki_articles where MatchSome( $i/id, ( " + ArrayMerge( xarrChildCommunications, "This.child_wiki_article_id", "," ) + " ) ) and $i/status_id = 'active' order by $i/id return $i" ) );
+			if( ArrayOptFirstElem( xarrChilds ) == undefined )
+				return;
+			
+%>
+	<TabControl Adapt="1">
+<%
+			for( tab in ArraySelectDistinct( xarrChilds, "This.wiki_article_type_id" ) )
+			{
+				feArticleType = tab.wiki_article_type_id.OptForeignElem;
+				if( feArticleType == undefined )
+					continue
+					
+				if( !bShowToAnonymous && !tools_web.check_access( OpenDoc( UrlFromDocID ( tab.wiki_article_type_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem , curUserID, curUser, Session ) )
+					continue;
+%>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( feArticleType.name, curLng.short_id ) )%>">
+<%
+				search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), ArrayMerge( ArrayIntersect( xarrChildCommunications, ArraySelect( xarrChilds, "This.wiki_article_type_id == tab.wiki_article_type_id" ), "This.child_wiki_article_id", "This.id" ), "This.child_wiki_article_id", ";" ), "", false, "$i/status_id = 'active'" )
+%>
+		</TabItem>
+<%
+			}
+%>
+	</TabControl>
+<%
+		}
+		else if( teObject.wiki_article_type_id.HasValue )
+		{
+			xarrCommunicationTypes = XQuery( "for $i in wiki_article_communication_types where $i/child_wiki_article_type_id = " + teObject.wiki_article_type_id + " and $i/base_wiki_article_type_id != null() return $i" );
+			if( ArrayOptFirstElem( xarrCommunicationTypes ) != undefined )
+			{
+%>
+	<Edit Name="EditWikiArticleCommunication" Hidden="1">true</Edit>
+	<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+		<GridColumns>
+			<GridColumn Width="20%"/>
+			<GridColumn/>
+		</GridColumns>
+<%
+				xarrCommunications = new Array();
+				if( iObjectID != undefined )
+				{
+					xarrCommunications = ArraySelectAll( XQuery( "for $i in wiki_article_communications where $i/child_wiki_article_id = " + iObjectID + " return $i" ) );
+				}
+				else
+				{
+					try
+					{
+
+						arrParametersCommunications = tools.read_object( PARAMETERS.GetOptProperty( "wiki_article_communications", "[]" ) );
+						for( elem in arrParametersCommunications )
+						{
+							if( elem.GetOptProperty( "wiki_article_comm_type_id" ) == undefined || elem.GetOptProperty( "base_wiki_article_id" ) == undefined )
+								continue;
+							_child = teObject.adding_objects.wiki_article_communications.AddChild();
+							_child.wiki_article_comm_type_id = elem.GetOptProperty( "wiki_article_comm_type_id" );
+							_child.base_wiki_article_id = elem.GetOptProperty( "base_wiki_article_id" );
+						}
+						xarrCommunications = teObject.adding_objects.wiki_article_communications;
+					}
+					catch( ex )
+					{
+						alert( ex )
+					}
+				}
+				bContextEdit = tools_web.is_true( CONTEXT.GetOptProperty( "EditWikiArticleCommunication" ) );
+				for( catCommunicationType in xarrCommunicationTypes )
+				{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=catCommunicationType.is_mandatory ? "*" : ""%><%=XmlAttrEncode( catCommunicationType.name )%>:</Label>	
+			<StackPanel Class="XAML-stack-container">
+<%
+
+					arrCommunications = ArraySelect( xarrCommunications, "This.wiki_article_comm_type_id == catCommunicationType.id" );
+					arr = new Array();
+					if( bContextEdit )
+					{
+						for( elem in CONTEXT )
+						{
+							if( StrContains( elem, "DeleteSelectoradding_selector_object_" + catCommunicationType.id ) && !tools_web.is_true( CONTEXT.GetOptProperty( elem ) ) )
+							{
+								feObject = undefined;
+								if( OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ) != null )
+								{
+									feObject = ArrayOptFirstElem( XQuery( "for $elem in wiki_articles where $elem/id = " + OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ) + " return $elem" ) );
+								}
+								oAdding = ({ "object_id": OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "" ) ), null ), "object_name": ( feObject != undefined ? feObject.name.Value : "" ), "position": OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "AdditionalFieldsposition" ) ), "" ) });
+								if( true )
+								{
+									oAdding.SetProperty( "id", OptInt( CONTEXT.GetOptProperty( StrReplace( elem, "DeleteSelector", "FieldID" ) ), "" ) );
+								}
+								arr.push( oAdding );
+							}
+						}
+					}
+					else
+					{
+						for( catElem in arrCommunications )
+						{
+							feObject = undefined;
+							if( catElem.base_wiki_article_id.HasValue )
+							{
+								feObject = catElem.base_wiki_article_id.OptForeignElem;
+							}
+							oAdding = { "object_id": catElem.base_wiki_article_id.Value, "object_name": ( feObject != undefined ? feObject.name.Value : "" ), "position": catElem.position.Value };
+							if( true )
+							{
+								oAdding.SetProperty( "id", catElem.id.Value )
+							}
+							arr.push( oAdding )
+						}
+					}
+					
+					curAddingSelector = {
+						"id": catCommunicationType.id.Value,
+						"show": true,
+						"catalog_name": "wiki_article",
+						"xquery_qual": ( "$elem/wiki_base_id = " + iWikiBaseID + " and $elem/wiki_article_type_id = " + catCommunicationType.base_wiki_article_type_id ),
+						"arr_selecting_objects": arr,
+						"show_next": ( catCommunicationType.wiki_communication_type_id != "one_one" ),
+						"additional_fields": [{id: "position", width: 100}],
+						"can_change": true,
+						"editable": true,
+						"select_action": ( sMode == "new_article" ? "ACTION=AddingSelectorAction" : "" )
+					};
+
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_panel_adding_selector.xaml" ) );
+%>
+			</StackPanel>
+		</GridRow>
+<%	
+				}
+%>
+	</Grid>
+<%			
+			}			
+		}
+	}
+	function get_tab_name( name )
+	{
+		switch( name )
+		{
+			case "content":
+				sTabTitle = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.content", "", true );
+				return sTabTitle == "" ? tools_web.get_web_const( "c_desc", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id );
+			case "history":
+				sTabTitle = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history", "", true );
+				return sTabTitle == "" ? tools_web.get_web_const( "uz1fiq5fsf", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id );
+			case "files":
+				sTabTitle = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.files", "", true );
+				return sTabTitle == "" ? tools_web.get_web_const( "vdb_files", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id );
+			case "catalogs":
+				sTabTitle = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.catalogs", "", true );
+				return sTabTitle == "" ? tools_web.get_web_const( "prikreplennyeo", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id );
+			case "object_versions":
+				return "Версии статьи";
+			case "tags":
+				return tools_web.get_web_const( "tegi", curLngWeb );
+			case "knowledge_parts":
+				return tools_web.get_web_const( "kartaznaniy", curLngWeb );
+		}
+		return "";
+	}
+	function main_block( teObject, iObjectID )
+	{
+		arrTabListParam = String( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list", "content;history;files;catalogs;object_versions", true ) ).split( ";" );
+		if( bEditArticle || sMode != "article" )
+			arrTabListParam = ArraySelect( arrTabListParam, "This != 'object_versions'" );
+		if( bEditArticle )
+		{
+			//arrTabListParam.push( "tags" );
+			//arrTabListParam.push( "knowledge_parts" );
+		}
+			
+		arrTabListParam = ArraySelect( arrTabListParam, "!( ( !bEditArticle && ( ( This == 'catalogs' && teObject.catalogs.ChildNum == 0 ) || ( This == 'files' && teObject.files.ChildNum == 0 ) || ( This == 'content' && !teObject.text_area.HasValue ) ) ) || ( ( bEditArticle || sMode == 'object_version' ) && This == 'history' ) )" )
+		if( bEditArticle )
+			arrTabListParam = ArraySelect( arrTabListParam, "check_access_block( This )" );
+		else if( curDevice.disp_type == "mobile" )
+			arrTabListParam = ArraySelect( arrTabListParam, "This == 'content'" );
+		if( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabControl Name="ArticleTabControl<%=iPanelKey%>" Adapt="1">
+<%
+		}
+		iCount = 0 - 1;
+		for( elemTab in arrTabListParam )
+		{
+			if( ArrayCount( arrTabListParam ) > 1 )
+			{
+				iCount++;
+%>
+		<TabItem Title="<%=XmlAttrEncode( get_tab_name( elemTab ) )%>">
+<%
+			}
+			
+			switch( elemTab )
+			{
+				case "content":
+%>
+			<Edit Hidden="1" Name="ActionCheckVersion<%=iPanelKey%>">SET=ArticleTabControl<%=iPanelKey%>,<%=iCount%>;</Edit>
+<%
+					desc_block( teObject, iObjectID );
+					break;
+				case "history":
+					history_block( teObject, iObjectID );
+					break;
+				case "catalogs":
+					block_catalogs( "wiki_base_body.article.block_list.main.tab_list.catalogs", teObject, iObjectID )
+					break;
+				case "files":
+					files_tab( teObject, iObjectID );
+					break;
+				case "object_versions":
+					object_versions_tab( teObject, iObjectID );
+					break;
+				case "tags":
+					tags_tab( teObject, iObjectID )
+					break;		
+				case "knowledge_parts":
+					knowledge_parts_tab( teObject, iObjectID )
+					break;	
+
+			}
+			if( ArrayCount( arrTabListParam ) > 1 )
+			{
+%>
+		</TabItem>
+<%
+			}
+					
+		}
+					
+		if( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabControl>
+<%
+		}
+	}
+	function tags_tab( teObject, iObjectID )
+	{
+		curSelectorList = {
+						"id": "WikiArticleTags",
+						"title": "",
+						"selected_object_ids": CONTEXT.GetOptProperty( "TempDestinationEditWikiArticleTags", ArrayMerge( ArrayExtract( teObject.tags, "PrimaryKey" ), "This", ";" ) ),
+						"height": "",
+						"catalog_name": "tag",
+						"disp_search": false,
+						"disp_filter": false,
+						"disp_paging": true,
+						"paging_size": 15,
+						"sort_direct": "-",
+						"show_all": true,
+						"list_columns": "name",
+						"is_data_grid": true
+		};
+		if( bEditArticle )
+		{
+			curSelectorList.SetProperty( 'buttons', [
+				{ 'title': tools_web.get_web_const( "izmenit", curLngWeb ), "click": "OPENDIALOG=SelectDialogWikiArticleTags" }
+			])
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+	}
+	function knowledge_parts_tab( teObject, iObjectID )
+	{
+		curSelectorList = {
+						"id": "WikiArticleKnowledgeParts",
+						"title": "",
+						"selected_object_ids": CONTEXT.GetOptProperty( "TempDestinationEditWikiArticleKnowledgeParts", ArrayMerge( ArrayExtract( teObject.knowledge_parts, "PrimaryKey" ), "This", ";" ) ),
+						"height": "",
+						"catalog_name": "knowledge_part",
+						"disp_search": false,
+						"disp_filter": false,
+						"disp_paging": true,
+						"paging_size": 15,
+						"sort_direct": "-",
+						"show_all": true,
+						"list_columns": "name",
+						"is_data_grid": true
+		};
+		if( bEditArticle )
+		{
+			curSelectorList.SetProperty( 'buttons', [
+				{ 'title': tools_web.get_web_const( "izmenit", curLngWeb ), "click": "OPENDIALOG=SelectDialogWikiArticleKnowledgeParts" }
+			])
+		}
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+	}
+	function object_versions_tab( teObject, iObjectID )
+	{
+		search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", "object_versions", false, "$i/object_id = " + iObjectID + " and ( $i/status = 'archive' )" )
+	}
+	function custom_elem_block( teObject, iObjectID )
+	{
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn Width="100%" Align="left"/>
+		</GridColumns>
+		<GridRow>
+<%
+		fldCustomElems = tools.get_custom_template( teObject.Name, iObjectID, teObject );
+		if ( fldCustomElems != null )
+		{
+			fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+			if ( ArrayCount( fldWebCustomFields ) != 0 )
+			{
+				arrCustomFieldNames = Array();
+				curCustomFields = {
+					"template": fldCustomElems,
+					"fields": fldWebCustomFields,
+					"source": teObject.custom_elems,
+					"modify_eval": bEditArticle,
+					"condition_action": 'SET=PanelWikiArticle/CONTEXTSTR,{CONTEXT};UPDATE=PanelWikiArticle'
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+			}
+		}
+%>
+		</GridRow>
+	</Grid>
+<%
+	}
+	function history_block( teObject, iObjectID )
+	{
+		sViewType = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.view_type", "tile", true );
+		if( sViewType == "" )
+			sViewType = "tile";
+		sTileTemplate = tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.tile_template", "change_tile", true );
+		if( sTileTemplate == "" )
+			sTileTemplate = "change_tile";
+		curView = {
+			"id": "WikiBaseHistory" + iObjectID,
+			"catalog_name": "change",
+			"height": "",
+			"disp_filter": "false",
+			"disp_search": "false",
+			"disp_paging": "true",
+			"collection": { "name" :"wiki_base_changes_collection", "params": [ { "name": "object_id", "value": iObjectID } ] },
+			"disp_type": sViewType,
+			"tile_template": sTileTemplate,
+			"tile_columns": OptInt( tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.tile_columns", "1", true ), 1 ),
+			"tile_rows": tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.tile_rows", "", true ),
+			"tile_height": tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.history.tile_height", "", true ),
+			"paging_size": OptInt( tools_web.get_web_param( curParams, "wiki_base_body.page_size", "", true ), 6 )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		
+	}
+	function link_search_block( action, text )
+	{
+%>
+	<Grid Width="100%">
+		<GridColumns>
+			<GridColumn Width="100" Align="right"/>
+		</GridColumns>
+		<GridRow>
+			<Link Click="<%=action%>"><%=text%></Link>
+		</GridRow>
+	</Grid>
+<%
+	}
+	
+	function next_prev( teObject, iObjectID )
+	{
+		if( ArrayCount( arrNavigators ) > 0 )
+		{
+			_article = arrNavigators[ 0 ]
+			arrWikiArticleCommunications = XQuery( "for $i in wiki_article_communications where $i/base_wiki_article_id = " + _article.id + " order by $i/position return $i" );
+			arrWikiArticleCommunications = ArraySort( ArraySelectDistinct( arrWikiArticleCommunications, "This.child_wiki_article_id" ), "This.position", "+", "This.child_wiki_article_id", "+" )
+			catLast = null;
+			catNext = null;
+			bThis = false;
+			arrButtons = new Array();
+			for( wac in arrWikiArticleCommunications )
+			{
+				if( bThis )
+				{
+					catNext = wac;
+					break;
+				}
+				if( wac.child_wiki_article_id == iObjectID )
+				{
+					bThis = true;
+					continue;
+				}
+				catLast = wac;
+			}
+			
+			
+%>
+		<Grid Width="100%">
+			<GridColumns>
+				<GridColumn Width="100%" Align="left"/>
+				<GridColumn Width="100%" Align="right"/>
+			</GridColumns>
+			<GridRow>
+<%
+			if( catLast != null )
+			{
+				sActionSearch = bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, catLast.child_wiki_article_id, { base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : "SET=CopyObjectVersionID,;SET=bEditArticle,0;SET=PanelMode,article;SET=WikiArticleID," + catLast.child_wiki_article_id + ";UPDATE=PanelWikiArticle;"
+%>
+				<Button Width="150" Click="<%=sActionSearch %>"><![CDATA[<%=tools_web.get_web_const( "vbb_prev", curLngWeb )%>]]></Button>
+<%
+			}
+			else
+			{
+%>
+				<Label/>
+<%
+			}
+			if( catNext != null )
+			{
+				sActionSearch = bOpenArticleByUrl ? "OPENURL=" + tools_web.get_mode_clean_url( curMode, catNext.child_wiki_article_id, { base_wiki_article_type_id: "{BaseWikiArticleId}" } ) : "SET=CopyObjectVersionID,;SET=bEditArticle,0;SET=PanelMode,article;SET=WikiArticleID," + catNext.child_wiki_article_id + ";UPDATE=PanelWikiArticle;"
+%>
+				<Button Width="150" Click="<%=sActionSearch %>"><![CDATA[<%=tools_web.get_web_const( "vbb_next", curLngWeb )%>]]></Button>
+<%
+			}
+
+%>
+			</GridRow>
+		</Grid>
+<%
+		}
+	
+	}
+	
+	function get_navigator_list( teObject, iObjectID )
+	{
+		function build_navigator_list( iId, arr, cnt )
+		{
+			if( cnt > 10 )
+				return false;
+			var xarrCommunications =  XQuery( "for $i in wiki_article_communications where $i/child_wiki_article_id = " + iId + " return $i" );
+			if( bFirstElem && iWikiParentID != undefined )
+			{
+				xarrCommunications = ArraySelect( xarrCommunications, "This.base_wiki_article_id == iWikiParentID" )
+				bFirstElem = false;
+				
+			}
+			if( ArrayOptFirstElem( xarrCommunications ) == undefined )
+				return false;
+			
+			var arrTemp;
+			for( catCommunication in xarrCommunications )
+			{
+				arrTemp = arr;
+				if( ArrayOptFind( arrTemp, "This.id == catCommunication.base_wiki_article_id" ) != undefined )
+					continue;
+				feArticle = catCommunication.base_wiki_article_id.OptForeignElem;
+				if( feArticle == undefined )
+					continue;
+					
+				arrTemp.push( { id: catCommunication.base_wiki_article_id.Value, name: feArticle.name.Value, type_id: feArticle.wiki_article_type_id.Value } )
+				if( iBaseWikiArticleTypeID == feArticle.wiki_article_type_id )
+					return arrTemp;
+				
+				
+				if( build_navigator_list( catCommunication.base_wiki_article_id, arrTemp, ( cnt + 1 ) ) != false )
+					return arrTemp;
+			}
+			return false
+		}
+		function check_hier_communication( iObjectID, teObject )
+		{
+			var xarrCommunicationTypes = XQuery( "for $elem in wiki_article_communication_types where $elem/wiki_communication_type_id = 'hier' and $elem/base_wiki_article_type_id = " + teObject.wiki_article_type_id + " return $elem" );
+			if( ArrayOptFirstElem( xarrCommunicationTypes ) != undefined )
+			{
+				var xarrCommunications =  XQuery( "for $elem in wiki_article_communications where MatchSome( $elem/wiki_article_comm_type_id, ( " + ArrayMerge( xarrCommunicationTypes, "This.id", "," ) + " ) ) and $elem/child_wiki_article_id = " + iObjectID + " return $elem" );
+				return ArrayOptFirstElem( xarrCommunications ) != undefined
+			}
+			return false;
+		}
+		bFirstElem = true;
+		iWikiParentID = OptInt( curUrlQuery.GetOptProperty( "parent_id" ) );
+		arrBaseWikiArticleTypes = ArraySelect( teWikiBase.base_wiki_article_types, "This.base_wiki_article_type_id.HasValue" );
+		iBaseWikiArticleTypeID = OptInt( curUrlQuery.GetOptProperty( "base_wiki_article_type_id", ( ArrayOptFirstElem( arrBaseWikiArticleTypes ) != undefined ? ArrayOptFirstElem( arrBaseWikiArticleTypes ).base_wiki_article_type_id : null ) ) );
+		
+		iWikiArticleNavigatorID = iObjectID;
+
+		if( teObject.wiki_article_type_id != iBaseWikiArticleTypeID || check_hier_communication( iObjectID, teObject ) )
+		{
+			build_navigator_list( iWikiArticleNavigatorID, arrNavigators, 0 );
+		}
+		if( ArrayCount( arrNavigators ) <= 0 )
+		{
+			return false;
+		}
+		iWikiArticleTypeNavigatorID = arrNavigators[ ArrayCount( arrNavigators ) - 1 ].type_id;
+		iWikiArticleNavigatorID = arrNavigators[ ArrayCount( arrNavigators ) - 1 ].id;
+		xarrHierComms = XQuery( "for $i in wiki_article_communication_types where $i/child_wiki_article_type_id = " + iWikiArticleTypeNavigatorID + " and $i/wiki_communication_type_id = 'hier' return $i" )
+		if( ArrayOptFirstElem( xarrHierComms ) != undefined )
+		{
+			while( true )
+			{
+				catCommunication = ArrayOptFirstElem( XQuery( "for $i in wiki_article_communications where $i/child_wiki_article_id = " + iWikiArticleNavigatorID + " and MatchSome( $i/wiki_article_comm_type_id, ( " + ArrayMerge( xarrHierComms, "This.id", "," )  + " ) ) return $i" ) );
+				if( catCommunication == undefined )
+					break;
+				if( ArrayOptFind( arrNavigators, "This.id == catCommunication.base_wiki_article_id" ) != undefined )
+					break;
+				feArticle = catCommunication.base_wiki_article_id.OptForeignElem;
+				if( feArticle == undefined )
+					break;
+				arrNavigators.push( { id: catCommunication.base_wiki_article_id.Value, name: feArticle.name.Value } )
+				iWikiArticleTypeNavigatorID = feArticle.wiki_article_type_id;
+				iWikiArticleNavigatorID = catCommunication.base_wiki_article_id;
+			}
+		}
+		if( ArrayCount( arrNavigators ) > 7 )
+		{
+			arrNavigators = ArrayRange( arrNavigators, 0, 7 );
+		}
+	}
+	
+	function navigator_block( teObject, iObjectID )
+	{
+		if( teObject.Name != "wiki_article" )
+			return;
+		
+		if( ArrayOptFirstElem( arrNavigators ) != undefined || !bShowTree )
+		{
+%>		
+		<StackPanel Orientation="Wrap" Class="Wiki-path">
+<%
+				
+			bOpenArticleByUrl = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.open_article_by_url", "1", true ) )
+			var arrTmp = arrNavigators;
+			if( !bShowTree )
+				arrTmp.push( { id: iWikiBaseID, name: teWikiBase.name.Value, type_id: "wiki_base" } )
+			for( i = ( ArrayCount( arrNavigators ) - 1 ); i >= 0; i-- )
+			{
+				_article = arrNavigators[ i ]
+				if( bOpenArticleByUrl )
+					sClickAction = "OPENURL=" + tools_web.get_mode_clean_url( curMode, _article.id, { base_wiki_article_type_id: "{BaseWikiArticleId}" } );
+				else	
+					sClickAction = "SET=CopyObjectVersionID,;SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=bEditArticle,0;SET=PanelMode," + ( _article.GetOptProperty( "type_id" ) != "wiki_base" ? "article" : "main" ) + ";SET=WikiArticleID," + ( _article.GetOptProperty( "type_id" ) != "wiki_base" ? _article.id : "" ) + ";UPDATE=PanelWikiArticle;"
+%>
+				<Link Class="path-parent" Click="<%=sClickAction%>"><%=XmlAttrEncode( _article.name )%></Link>
+<%
+				if( i > 0 )
+				{
+%>
+				<Label Class="Wiki-divider"></Label>
+<%
+				}
+			}
+%>
+		</StackPanel>
+<%
+		}
+		
+	}
+	
+	function block_catalogs( prefix, teObject, iObjectID )
+	{
+		if( bEditArticle )
+		{
+			sDataStr = CONTEXT.GetOptProperty( "EditBlockObjectCatalogs" );
+			curObjectCatalogs = {
+				"teObjectCatalogs": ( sDataStr != undefined ? OpenDocFromStr( sDataStr, "form=x-local://wtv/wtv_catalog_list_base.xmd;ignore-top-elem-name=1" ).TopElem : ( iObjectID != undefined ? OpenDocFromStr( teObject.Xml, "form=x-local://wtv/wtv_catalog_list_base.xmd;ignore-top-elem-name=1" ).TopElem : OpenNewDoc( "x-local://wtv/wtv_catalog_list_base.xmd" ).TopElem ) ),
+				"show": true,
+				"add_catalog": false,
+				"catalog_name": ""
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_panel_object_catalogs.xaml" ) );
+		}
+		else if( teObject.catalogs.ChildNum > 0 )
+		{
+			curCatalogs = {
+				"id": tools.random_string( 10 ),
+				"objects_view_type": tools_web.get_web_param( curParams, prefix + ".view_type", "list", true ),
+				"disp_view_selector": tools_web.get_web_param( curParams, prefix + ".disp_view_selector", false, true ),
+				"list_adv_components": tools_web.get_web_param( curParams, prefix + ".list_adv_components", "date;like;dislike;image", true ),
+			};
+			curCatalogsDoc = teObject;
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalogs.xaml" ) );
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%="Нет прикрепленных объектов"%>]]></Label>
+<%
+		}
+	}
+	function files_tab( teObject, iObjectID )
+	{
+		if( bEditArticle )
+		{
+			curFilter = {
+				'id': 'FilesEditTab',
+				'disp_search': false,
+				'disp_search_field': false,
+				'disp_row_filters_field': false,
+				'buttons': [ { "title": tools_web.get_web_const( "vdb_add_file", curLngWeb ), "click": "UPLOADFILES;SET=ArticleEditNewFile,{resourceIDs};SET=ArticleActionEdit,add_file;ACTION=ArticleAction;" }, { "title": tools_web.get_web_const( "c_delete_file", curLngWeb ), "click": "SET=ArticleActionEdit,delete_files;ACTION=ArticleAction" } ]
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+	<Edit Name="ArticleEditFiles" Hidden="1"><%=XmlAttrEncode( CONTEXT.GetOptProperty( "ArticleEditFiles", teObject.files.Xml ) )%></Edit>
+	<Edit Name="ArticleEditNewFile" Hidden="1"></Edit>
+	<Dialog Name="SelectFile" Source="dlg_select_file" Width="600" Title="<%=tools_web.get_web_const( "vyberitefayl", curLngWeb )%>" Close="SET=ArticleEditNewFile,{SelectedFile};ACTION=ArticleAction;">
+		<Param Name="can_select" Value="<%=tools_web.get_web_param( curParams, "wiki_base_body.can_select_file", false, true )%>"/>
+	</Dialog>
+	<Collection Name="ArticleEditFilesCollection" Source="temp_files_collection">
+		<Param Name="data_files" Value="{ArticleEditFiles}"/>
+	</Collection>
+	<DataGrid Name="ArticleEditFilesDataGrid" Source="{ArticleEditFilesCollection}" Selection="Multiple">
+		<Menu>
+			<MenuItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_delete", curLngWeb ) )%>" Click="SET=ArticleActionEdit,delete_files;ACTION=ArticleAction"/>
+		</Menu>
+	</DataGrid>
+<%
+		}
+		else if( teObject.files.ChildNum > 0 )
+		{
+			curFiles = {
+				"param_preffix": "wiki_base_body.article.block_list.main.tab_list.files",
+				"objects_view_type": tools_web.get_web_param( curParams, "wiki_base_body.article.block_list.main.tab_list.files.view_type", "", true ),
+			}
+			dummyObjectID = iObjectID;
+			dummyObject = teObject;
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+		}
+		else
+		{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%="Нет файлов"%>]]></Label>
+<%
+		}
+	}	
+	function set_error( sError )
+	{
+		curMessageBox = {
+			"type": "error",
+			"text": sError
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+		Cancel();
+	}
+	function get_default_title( name )
+	{
+		switch( name )
+		{
+			case "news":
+				return tools_web.get_web_const( "vnp_news", curLngWeb );
+			case "subscribe":
+				return "Избранное";
+			case "search":
+				return tools_web.get_web_const( "vkpb_search", curLngWeb );
+			case "my_versions":
+				return "Мои версии";
+			case "sogl_requests":
+				return "Статьи на согласовании";
+			case "acquaints":
+				return "Статьи для ознакомления";
+			case "my_article":
+				return "Мои статьи";
+		}
+		return "";
+	}
+	function get_title( type )
+	{
+		var sTitle = tools_web.get_web_param( curParams, "wiki_base_body.base_menu." + type, "", true );
+		if( sTitle == "" )
+			sTitle = get_default_title( type );
+		return sTitle;
+	}
+	
+	function check_access_block( sBlockName )
+	{
+		if( bEditArticle )
+			switch( sBlockName )
+			{
+				case "title":
+				case "custom_elem":
+				case "child":
+				case "content":
+				case "files":
+				case "tags":
+				case "knowledge_parts":
+				case "catalogs":
+					return ArrayOptFind( xarrOperations, "This.action == 'edit_wiki_article_" + sBlockName + "'" ) != undefined;
+			}
+		return true;
+	}
+	
+	function write_menu_structure()
+	{
+		var arrBosses = get_boss_type( teWikiBase, null );
+		var xarrOperations = tools.get_relative_operations_by_boss_types( arrBosses );
+		xarrOperations = ArraySelect(xarrOperations, "check_operation_access( This )");
+				
+		arrBlockListParam = String( tools_web.get_web_param( curParams, "wiki_base_body.main.block_list", "title;desc;button;search;statistics;news", true ) ).split( ";" );
+		for( elem in arrBlockListParam )
+		{
+			switch( elem )
+			{
+					case "base_menu":
+						base_menu_block();
+						break;
+					case "structure":
+						structure_block( teWikiBase, iWikiBaseID );
+						break;
+			}
+				
+		}
+	}
+	
+	function draw_title( _mode )
+	{
+		sTitle = get_title( _mode );
+%>
+	<StackPanel Class="XAML-stack-filters-container" Orientation="Vertical" Adapt="1">
+		<Grid Width="100%" Class="XAML-grid-filter">
+			<GridColumns>
+				<GridColumn Width="100%"/>
+			</GridColumns>
+
+			<GridRow>
+<%
+			if( curDevice.disp_type == "mobile" )
+			{
+%>
+				<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+					<Link Click="SHOW=WikiBaseTreeStackPanel,WikiBaseNameStackPanel;HIDE=PanelWikiArticle" Class="icon-arrow-left"></Link>
+<%
+			}
+%>
+				<Label Class="XAML-label-filters-title"><![CDATA[<%=XmlAttrEncode( sTitle )%>]]></Label>
+<%
+			if( curDevice.disp_type == "mobile" )
+			{
+%>
+				</StackPanel>
+<%
+			}
+%>
+			</GridRow>
+		</Grid>
+	</StackPanel>
+<%
+	}
+	
+	
+	try
+	{
+		curUser;
+		curUserID;
+	}
+	catch( ex )
+	{
+		curUser = null;
+		curUserID = null;
+	}
+	
+	bOpenArticleByUrl = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.open_article_by_url", "1", true ) )
+	bShowToAnonymous = curUser == null && tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.show_to_anonymous", "1", true ) )
+	
+	bSearchResult = false;
+	if( !bOpenArticleByUrl )
+		bSearchResult = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "search_result", "0", true ) );
+	else
+		bSearchResult = tools_web.is_true( tools_web.get_web_param( curUrlQuery, "search_result", "0", true ) );
+
+	CONTEXT = tools.read_object( UrlDecode( tools_web.get_web_param( PARAMETERS, "CONTEXTSTR", "{}", true ) ) )
+	
+	iWikiArticleID = OptInt( tools_web.get_web_param( PARAMETERS, "wiki_article_id", "", true ) );
+	iPanelKey = iWikiArticleID;
+	iWikiBaseID = OptInt( tools_web.get_web_param( PARAMETERS, "wiki_base_id", "", true ) );
+	bEditArticle = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "edit", "0", true ) );
+	bHideButton = tools_web.is_true( tools_web.get_web_param( PARAMETERS, "hide_button", "0", true ) );
+	sMode = tools_web.get_web_param( PARAMETERS, "mode", "", true )
+	iMaxLen = OptInt( tools_web.get_web_param( curParams, "wiki_base_body.max_len", "", true ), 1000 );
+	bShowTree = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.show_tree", "1", true ) );
+	bAutoSave = false;
+	var arrNavigators = new Array();
+	
+	teWikiBase = null;
+	if( iWikiBaseID == curObjectID )
+		teWikiBase = curObject;
+	else
+		teWikiBase = OpenDoc( UrlFromDocID( iWikiBaseID ) ).TopElem;
+		
+	function check_access( iBossType )
+	{
+		if( !iBossType.HasValue )
+			return false;
+		oBoss = ArrayOptFind( arrBossTypes, "This.id == iBossType" )
+		if( oBoss == undefined )
+		{
+			feBoss = iBossType.OptForeignElem;
+			if( feBoss == undefined )
+				return false;
+			var xarrOperations = tools.get_relative_operations_by_boss_types( [ feBoss ] );
+			xarrOperations = ArraySelect(xarrOperations, "check_operation_access( This )");	
+			oBoss = new Object();
+			oBoss.id = iBossType;
+			oBoss.operations = xarrOperations;
+			arrBossTypes.push( oBoss );
+		}
+		return ArrayOptFind( oBoss.operations, "This.action == 'create_wiki_article'" ) != undefined;
+	}
+	function check_operation_access( catOperation )
+	{
+		bAccess = catOperation.operation_catalog_list.HasValue && ( StrContains(',' + catOperation.operation_catalog_list.Value+',', ',wiki_base,') || StrContains(',' + catOperation.operation_catalog_list.Value + ',', ',wiki_article,'))
+		if( !bAccess )
+			return false;
+			
+		if ( catOperation.use_access_eval )
+		{
+			teOperation = OpenDoc( UrlFromDocID( catOperation.id ) ).TopElem;
+			if ( ! tools.safe_execution( teOperation.access_eval_code ) )
+				return false;
+		}
+		return true;
+	}
+	var arrBossTypes = new Array();
+	var arrWikiArticleTypes = new Array();
+	_child = teWikiBase.func_managers.GetOptChildByKey( curUserID );
+	var bAllType = teWikiBase.free_access_edit || ( _child != undefined && check_access( _child.boss_type_id ) );
+	for( article_type in teWikiBase.wiki_article_types )
+	{
+		_child = article_type.func_managers.GetOptChildByKey( curUserID );
+		if( bAllType || article_type.free_access_edit  || ( _child != undefined && check_access( _child.boss_type_id ) ) )
+			arrWikiArticleTypes.push( article_type.wiki_article_type_id )
+	}
+	if( ArrayOptFirstElem( arrWikiArticleTypes ) != undefined )
+		arrWikiArticleTypes = XQuery( "for $i in wiki_article_types where MatchSome( $i/id, ( " + ArrayMerge( arrWikiArticleTypes, "This", "," ) + " ) ) return $i" );
+	
+	
+	
+	switch( sMode )
+	{
+		case "news":
+			write_menu_structure()
+			draw_title( sMode )
+			search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", "news", false, "" )
+			break;
+			
+		case "subscribe":
+			write_menu_structure();
+			draw_title( sMode );
+			sActionSearch = "SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=PanelMode,search;SET=CopyObjectVersionID,;SET=WikiArticleID,;UPDATE=PanelWikiArticle;"
+			//link_search_block( sActionSearch, "К поиску" );
+			xarrSubscribes = XQuery( "for $i in subscriptions where some $art in wiki_articles satisfies ( $art/id = $i/document_id and $art/wiki_base_id = " + iWikiBaseID + " and $i/person_id = " + curUserID + " ) and ( $i/date_to = null() or $i/date_to > " + XQueryLiteral( Date() ) + " ) order by $i/create_date descending return $i" );
+			if( ArrayOptFirstElem( xarrSubscribes ) == undefined )
+			{
+%>
+	<Label Class="XAML-label-empty-data"><![CDATA[<%="У вас нет избранных статей"%>]]></Label>
+<%
+			}
+			else
+				search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), ArrayMerge( ArraySelectDistinct( xarrSubscribes, "This.document_id" ), "This.document_id", ";" ), "", false, "" )
+			break;
+		case "object_version":
+			docObjectVersion = OpenDoc( UrlFromDocID( iWikiArticleID ) );
+			iWikiArticleID = docObjectVersion.TopElem.object_id.HasValue ? docObjectVersion.TopElem.object_id : iWikiArticleID;
+			teWikiArticle = OpenDocFromStr( docObjectVersion.TopElem.object_xml, 'form=x-local://wtv/wtv_wiki_article.xmd' ).TopElem;
+			if( docObjectVersion.TopElem.person_id == curUserID && docObjectVersion.TopElem.status == "project" )
+				bEditArticle = true;
+				
+			if( docObjectVersion.TopElem.status == "agreement" )
+				bEditArticle = false;
+			
+			if( !bHideButton )
+			{
+				curMessageBox = {
+					"id": "WikiArticleObjectVersion",
+					"type": "warning",
+					"text": ( docObjectVersion.TopElem.object_id.HasValue ? ( "Версия объекта от" + ": " + ( docObjectVersion.TopElem.doc_info.creation.date.HasValue ? StrDate( docObjectVersion.TopElem.doc_info.creation.date, true, false ) : "" ) ) : "Новая статья" ),
+					"buttons": []
+				};
+				if( docObjectVersion.TopElem.object_id.HasValue )
+				{
+					sActionSearch = "SET=" + ( bSearchResult ? "SearchResult" : "" ) + "bEditArticle,0;SET=" + ( bSearchResult ? "SearchResult" : "" ) + "PanelMode,article;SET=" + ( bSearchResult ? "SearchResultPanel" : "" ) + "WikiArticleID," + docObjectVersion.TopElem.object_id + ";UPDATE=" + ( bSearchResult ? "SearchResult" : "" ) + "PanelWikiArticle;";
+					curMessageBox.buttons.push( {
+						"title": "Открыть основную статью",
+						"click": sActionSearch
+					} );
+				}
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+			}
+		case "new_article":
+			if( sMode == "new_article" )
+			{
+				docWikiArticle = OpenNewDoc( 'x-local://wtv/wtv_wiki_article.xmd' );
+				teWikiArticle = docWikiArticle.TopElem;
+				teWikiArticle.wiki_article_type_id = tools_web.get_web_param( PARAMETERS, "article_type_id", "", true );
+			}
+		case "article":
+			
+			if( iWikiArticleID != undefined || sMode == "new_article" )
+			{
+				if( bEditArticle )
+				{
+					bAutoSave = tools_web.is_true( tools_web.get_web_param( curParams, "wiki_base_body.auto_save", "0", true ) );
+					iDelay = OptInt( tools_web.get_web_param( curParams, "wiki_base_body.auto_save.delay", "60", true ), 60 )
+%>
+	<Edit Name="ArticleActionEdit" Hidden="1"/>
+	<Edit Name="ArticleActionCommunicationTypeID" Hidden="1"/>
+	<Edit Name="ArticleActionCommunicationArticleID" Hidden="1"/>
+	<Edit Name="EditSaveComment" Hidden="1"/>
+	<Edit Name="EditSaveIsCritical" Hidden="1"/>
+	<Edit Name="ActionReady" Hidden="1"><%=bAutoSave ? "ACTION=ArticleAutoSaveAction" : ""%></Edit>
+	<Edit Name="ContextCustomElemEdit" Hidden="1"/>
+	<Edit Name="ArticleObjectVersionId" Hidden="1"><%=sMode == "object_version" ? docObjectVersion.DocID : ""%></Edit>
+
+	<Action Name="ArticleAction" Source="wiki_article_action" Success="{!messageText};<%=bShowTree ? "SHOW=WikiBaseTreeStackPanel;" : ""%>SET=<%=bSearchResult ? "SearchResult": ""%>bEditArticle,0;UPDATE=<%=bSearchResult ? "SearchResult": ""%>PanelWikiArticle">
+		<Param Name="action" Value="{ArticleActionEdit}"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="object_id" Value="<%=sMode == "object_version" ? docObjectVersion.TopElem.object_id : iWikiArticleID%>"/>
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+		<Param Name="object_version_id" Value="{ArticleObjectVersionId}"/>
+	</Action>
+	
+	<Edit Name="TempAddingSelectorId" Hidden="1"></Edit>
+
+	<Action Name="AddingSelectorAction" Source="wiki_article_action" Success="{!messageText};">
+		<Param Name="action" Value="check_adding_objects"/>
+		<Param Name="object_id" Value="{TempAddingSelectorId}"/>
+		<Param Name="CONTEXT" Value="{TempDestinationEditListAccessGroups}"/>
+	</Action>
+	
+	<Action Name="ArticleAutoSaveAction" Source="wiki_article_action" Delay="<%=iDelay*1000%>" Success="{!messageText};ACTION=ArticleAutoSaveAction">
+		<Param Name="action" Value="auto_save"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="object_id" Value="<%=sMode == "object_version" ? docObjectVersion.TopElem.object_id : iWikiArticleID%>"/>
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+		<Param Name="object_version_id" Value="{ArticleObjectVersionId}"/>
+	</Action>
+	
+	<Dialog Name="SelectObjectCommunicationArticle" Source="dlg_select" Title="<%="Выберите связанную статью"%>" Close="SET=ArticleActionCommunicationArticleID,{CatalogListDataGridFullList:^/id};ACTION=ArticleAction;">
+		<Param Name="catalog_name" Value="wiki_article"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="xquery_qual" Value=""/>
+	</Dialog>
+	<Dialog Name="SelectObjectCommunicationType" Source="dlg_select" Title="<%="Выберите тип связи"%>" Close="SET=ArticleActionCommunicationTypeID,{CatalogListDataGridFullList:^/id};ACTION=ArticleAction;">
+		<Param Name="catalog_name" Value="wiki_article_communication_type"/>
+		<Param Name="multi_select" Value="false"/>
+		<Param Name="xquery_qual" Value=""/>
+	</Dialog>
+	<Edit Name="ActionAfterCustomElem" Hidden="1"/>
+	<Dialog Name="CustomElemsCommentDialog" Source="dlg_custom_elem_comment" Title="<%="Заполните поля"%>" Width="600" Close="SET=field_critical_change,{DialogIsCritical};SET=EditSaveComment,{DialogText};SET=ContextCustomElemEdit,{CONTEXT};SET=ArticleActionEdit,{ActionAfterCustomElem};ACTION=ArticleAction;">
+		<Param Name="label" Value="<%=XmlAttrEncode( "Для сохранения статьи необходимо ввести обязательный комментарий" )%>"/>
+		<Param Name="catalog_name" Value="request_type"/>
+		<Param Name="object_code" Value="publicate_wiki_article"/>
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+	</Dialog>
+<%
+				}
+				else
+				{
+%>
+	<Action Name="ArticleAutoSaveAction" Source="wiki_article_action">
+		<Param Name="action" Value=""/>
+	</Action>
+<%
+				}
+				if( sMode == "article" )
+				{
+					teWikiArticle = OpenDoc( UrlFromDocID( iWikiArticleID ) ).TopElem;
+					//if( !bShowToAnonymous && ( !tools_web.check_access( teWikiArticle, curUserID, curUser, Session ) || ( teWikiArticle.wiki_article_type_id.HasValue && !tools_web.check_access( OpenDoc( UrlFromDocID ( teWikiArticle.wiki_article_type_id ), "form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1" ).TopElem , curUserID, curUser, Session ) ) ) )
+					if( !bShowToAnonymous && !tools.call_code_library_method( 'libWiki', 'check_access_wiki_article', [ null, teWikiArticle, curUserID, Session, curUser ] ).result )
+						set_error( "У вас нет прав для просмотра этой статьи" );
+						
+					if( bEditArticle )
+					{
+						iCopyObjectVersion = OptInt( tools_web.get_web_param( PARAMETERS, "copy_object_version_id", "", true ) );
+						if( iCopyObjectVersion != undefined )
+						{
+							docObjectVersion = OpenDoc( UrlFromDocID( iCopyObjectVersion ) );
+							teWikiArticle = OpenDocFromStr( docObjectVersion.TopElem.object_xml, 'form=x-local://wtv/wtv_wiki_article.xmd' ).TopElem;
+						}
+					}
+				}
+				
+				var arrBosses = get_boss_type( teWikiBase, teWikiArticle );
+				var xarrOperations = tools.get_relative_operations_by_boss_types( arrBosses );
+				xarrOperations = ArraySelect(xarrOperations, "check_operation_access( This )");
+				
+				
+				iTabItemDesc = undefined;
+				arrNavigators = new Array();
+				arrBlockListParam = String( tools_web.get_web_param( curParams, "wiki_base_body.article." + ( bEditArticle ? "edit_" : "" ) + "block_list", "title;button;custom_elem;main;child;next_prev", true ) ).split( ";" );
+				if( ArrayOptFind( arrBlockListParam, "This == 'navigator' || This == 'next_prev' || This == 'structure'" ) != undefined )
+					get_navigator_list( teWikiArticle, iWikiArticleID )
+				for( elem in arrBlockListParam )
+				{
+					if( !check_access_block( elem ) )
+						continue;
+					switch( elem )
+					{
+						case "title":
+							title_article_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "navigator":
+							if( sMode != "new_article" )
+								navigator_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "custom_elem":
+							custom_elem_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "button":
+							if( bHideButton || curUser == null )
+								break;
+							if( sMode == "article" || sMode == "new_article" || sMode == "object_version" )
+								button_article_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "main":
+							main_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "child":
+							child_block( teWikiArticle, iWikiArticleID );
+							break;
+						case "next_prev":
+							if( sMode == "article" )
+								next_prev( teWikiArticle, iWikiArticleID );
+							break;
+						case "base_menu":
+							base_menu_block();
+							break;
+						case "structure":
+							structure_block( teWikiArticle, iWikiArticleID );
+							break;
+					}
+					
+				}
+			}
+			break;
+			
+		case "main":
+			var arrBosses = get_boss_type( teWikiBase, null );
+			var xarrOperations = tools.get_relative_operations_by_boss_types( arrBosses );
+			xarrOperations = ArraySelect(xarrOperations, "check_operation_access( This )");
+				
+			arrBlockListParam = String( tools_web.get_web_param( curParams, "wiki_base_body.main.block_list", "title;desc;button;search;statistics;news", true ) ).split( ";" );
+			for( elem in arrBlockListParam )
+			{
+				switch( elem )
+				{
+					case "title":
+						title_block( teWikiBase );
+						break;
+					case "desc":
+						desc_block( teWikiBase, iWikiBaseID );
+						break;
+					case "button":
+						if( bHideButton || curUser == null || curDevice.disp_type == "mobile" )
+							break;
+						button_block();
+						break;
+					case "search":
+						search_block( "MainBlock", "", "search", false, "" );
+						break;
+					case "statistics":
+						statistics_block( teWikiBase, iWikiBaseID );
+						break;
+					case "news":
+						news_block();
+						break;
+					case "object_custom_block":
+						for ( catOverrideWebTemplateElem in XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('custom_web_template_id')" ) )
+						{
+							Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+						}
+						break;
+					case "base_menu":
+						base_menu_block();
+						break;
+					case "structure":
+						structure_block( teWikiBase, iWikiBaseID );
+						break;
+				}
+				
+			}
+			break;
+			
+		case "search":
+			write_menu_structure()
+			search_block( "SearchResult", "", "search", false, "" );
+			break;
+			
+		case "my_versions":
+			write_menu_structure()
+			draw_title( sMode )
+			search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", "object_versions", false, "$i/person_id = " + curUserID + " and MatchSome( $i/status, ( 'project', 'agreement', 'cancel' ) )" )
+			break
+		case "sogl_requests":
+			write_menu_structure()
+			sTitle = get_title( sMode );
+			search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", "sogl_requests", false, "$i/creation_user_id = " + curUserID, sTitle )
+			break;
+			
+		case "request":
+			write_menu_structure()
+			teRequest = OpenDoc( UrlFromDocID( iWikiArticleID ) ).TopElem;
+			teObjectVersion = OpenDoc( UrlFromDocID( teRequest.object_id ) ).TopElem;
+			teRequestType = null;
+			if( teRequest.request_type_id.HasValue )
+			{
+				teRequestType = OpenDoc( UrlFromDocID( teRequest.request_type_id ) ).TopElem;
+			}
+			if ( teRequestType != null && teRequestType.request_custom_web_template_id.HasValue )
+			{
+				iTmpObjectID = curObjectID;
+				curTmpObjectID = curObject;
+				curObject = teRequest;
+				curObjectID = iWikiArticleID;
+				Response.Write( tools_web.place_xaml( teRequestType.request_custom_web_template_id.Value ) );
+				curObject = curTmpObjectID;
+				curObjectID = iTmpObjectID;
+			}
+			else
+			{
+				if( teRequest.status_id == "active" )
+				{
+%>
+	<Edit Name="RequestActionEdit" Hidden="1"/>
+	<Action Name="RequestAction" Source="wiki_article_action" Success="{!messageText};SET=CopyObjectVersionID,;SET=LastWikiArticleID,;SET=WikiArticleCommunications,[];SET=bEditArticle,0;SET=PanelMode,sogl_requests;SET=WikiArticleID,;UPDATE=PanelWikiArticle;">
+		<Param Name="action" Value="{RequestActionEdit}"/>
+		<Param Name="object_id" Value="<%=iWikiArticleID%>"/>
+		<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+	</Action>
+	<Toolbar>
+		<Button Class="XAML-button" Click="SET=RequestActionEdit,close_request;ACTION=RequestAction"><%=XmlAttrEncode( tools_web.get_web_const( "soglasovat", curLngWeb ) )%></Button>
+		<Button Class="XAML-button" Click="SET=RequestActionEdit,reject_request;ACTION=RequestAction"><%=XmlAttrEncode( tools_web.get_web_const( "c_reject", curLngWeb ) )%></Button>
+	</Toolbar>
+<%
+				}
+%>
+	<TabControl>
+		<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_request", curLngWeb ) )%>">
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="250"/>
+					<GridColumn/>
+				</GridColumns>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vfb_author", curLngWeb )%> :</Label>
+					<Label><%=XmlAttrEncode( teRequest.person_fullname )%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%> :</Label>
+					<Label><%=XmlAttrEncode( teRequest.status_id.ForeignElem.name )%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "verb_comment", curLngWeb )%> :</Label>
+					<Label><%=XmlAttrEncode( teRequest.comment )%></Label>
+				</GridRow>
+			</Grid>
+<%
+				fldCustomElems = tools.get_custom_template( teRequest.Name, iWikiArticleID, teRequest );
+				if ( fldCustomElems != null )
+				{
+					fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+					if ( ArrayCount( fldWebCustomFields ) != 0 )
+					{
+						arrCustomFieldNames = Array();
+						curCustomFields = {
+							"template": fldCustomElems,
+							"fields": fldWebCustomFields,
+							"source": teRequest.custom_elems,
+							"modify_eval": false,
+						};
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					}
+				}
+%>
+			<Panel Name="PanelWikiArticle" Source="wiki_article_panel" ShowHeader="false">
+				<Param Name="wiki_article_id" Value="<%=teRequest.object_id%>"/>
+				<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+				<Param Name="mode" Value="object_version"/>
+				<Param Name="edit" Value="0"/>
+				<Param Name="hide_button" Value="1"/>
+			</Panel>
+		</TabItem>
+<%
+				if( teObjectVersion.object_id.HasValue )
+				{
+%>
+		<TabItem Title="<%=XmlAttrEncode( "Актуальная версия" )%>">
+			<Panel Name="PanelWikiArticle" Source="wiki_article_panel" ShowHeader="false">
+				<Param Name="wiki_article_id" Value="<%=teObjectVersion.object_id%>"/>
+				<Param Name="wiki_base_id" Value="<%=iWikiBaseID%>"/>
+				<Param Name="mode" Value="article"/>
+				<Param Name="edit" Value="0"/>
+				<Param Name="hide_button" Value="1"/>
+			</Panel>
+		</TabItem>
+<%
+				}
+%>
+	</TabControl>
+<%
+			}
+			break;
+		case "acquaints":
+		case "my_article":
+			write_menu_structure()
+			sTitle = get_title( sMode );
+			search_block( tools.random_string( 10, "qwertyuiopasdfghjklzxcvbnm" ), "", sMode, false, "", sTitle )
+			break;
+			
+	}
+%>
+</SPXMLScreen>

@@ -1,0 +1,11 @@
+﻿<SPXMLScreen>
+<%
+	iHeight = OptInt(tools_web.get_web_param( curParams, "mind_map.tuning.height",null, true ),500);
+%>
+	<Collection Name="MMCollection" Source="mind_map">
+		<Param Name="root_id" Value="<%=OptInt(tools_web.get_web_param( curParams, "mind_map.root_id",null, true ),null)%>"/>
+		<Param Name="categorized" Value="<%=tools_web.get_web_param( curParams, "mind_map.categorized", 0, true )%>"/>
+	</Collection>
+	
+	<MindMap Name="PlanOfMind" Width="100%" Height="<%=iHeight%>" Source="{MMCollection}" ShowToolbar="<%=tools_web.is_true(tools_web.get_web_param(curParams, "mind_map.show_toolbar", "0", true))%>" DataText="content" Click="OPENWINDOW={url}"/>
+</SPXMLScreen>

@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_course_person_report>
+
+	<!-- TODO -->
+	<report_name TYPE="string" DEFAULT="course_person_report"/>
+	<catalog_name TYPE="string" DEFAULT="course_person_report"/>
+
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+	<assessment_id TYPE="integer" FOREIGN-ARRAY="assessments"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	
+	
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<person_fullname TYPE="string"/>
+	
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	
+	<type TYPE="string" NOT-NULL="1" DEFAULT="collaborator"/>
+	
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<person_grouping TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="start_usage_date"/>
+	
+	<learnings>
+		<learning MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			<name TYPE="string"/>
+			
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+			<person_fullname TYPE="string"/>
+			<person_code TYPE="string"/>
+
+			<person_org_name TYPE="string"/>
+			<person_position_name TYPE="string"/>
+			<person_subdivision_name TYPE="string"/>
+			<person_list_staff TYPE="string"/>
+			
+			<start_usage_date TYPE="date"/>
+			<last_usage_date TYPE="date"/>
+
+			<score TYPE="real" NOT-NUL="1"/>
+			<max_score TYPE="real"/>
+			<status TYPE="string"/>
+			<is_assist TYPE="bool"/>
+			
+			<per_cent TYPE="real"/>
+			
+			<type TYPE="string"/>
+		</learning>
+	</learnings>
+
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+	<!-- TODO -->
+	<INHERIT TYPE="view_columns_base"/>
+	
+	<disp_learning TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_active_learning TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_test_learning TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_active_test_learning TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_event TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			row_list_field.Clear();
+			row_key_field = '.id';
+			rowsArray = Array();
+			rowsArrayCounter = 0;
+			for ( _row in rows.Object )
+			{
+					rowsArray[ rowsArrayCounter ] = _row.Env.ListElem.person_id;
+					rowsArrayCounter++;
+			}
+			rows = ArraySelectDistinct( QueryCatalogByKeys( 'collaborators', 'id', rowsArray ), 'id')	;
+			_num = ArrayCount( rows.Object );
+			
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+			if ( _num == 0 )
+			{   
+			Screen.MsgBox( ms_tools.get_const('u0mnmz31kn'), ms_tools.get_const('7ey6j94yku'), 'warning');
+				Cancel();
+			}
+			
+			return _num;
+	"/>
+</view_course_person_report>
+
+<OnInit PROPERTY="1" EXPR="
+
+	curUser = tools.get_cur_user();
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

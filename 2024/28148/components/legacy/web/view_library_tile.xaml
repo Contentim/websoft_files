@@ -1,0 +1,16 @@
+﻿<SPXMLScreen>
+<%
+	var sLinkClickAction = "OPENURL="+ tools_web.get_mode_clean_url(null, PARAMETERS.GetOptProperty( "id", null ), ({}));
+%>
+	<StackPanel Orientation="Vertical" Align="Center" Class="XAML-stack-tile">
+		<StackPanel Orientation="Vertical" Align="Center" Class="XAML-panel-tile-image">
+		<Image Click="<%=sLinkClickAction%>" Source="/pics/1blank.gif" Class="XAML-link-tile-image" Height="200" Width="100%">
+			<BackgroundImage Source="<%=XmlAttrEncode(PARAMETERS.GetOptProperty("cover"))%>"/>
+		</Image>
+		</StackPanel>
+		<StackPanel Class="XAML-stack-tile-title-container">
+			<Link Click="<%=sLinkClickAction%>"  Class="XAML-link-tile-title"><%=HtmlEncode(tools_web.get_cur_lng_name( PARAMETERS.GetOptProperty( "name" ), curLng.short_id ))%></Link>
+		</StackPanel>
+		<Label Class="XAML-label-tile-desc"><%=HtmlEncode(PARAMETERS.GetOptProperty( "author" ))%></Label>	
+	</StackPanel>
+</SPXMLScreen>

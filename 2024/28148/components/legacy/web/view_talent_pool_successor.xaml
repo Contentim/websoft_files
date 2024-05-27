@@ -1,0 +1,517 @@
+<%
+// const_start
+
+// const_end
+%>
+<SPXMLScreen>
+<%
+
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bAllowEdit=false
+sDispType=curDevice.disp_type
+bDesctop=sDispType != "mobile"
+
+if (ISDIALOG)
+{
+	curObjectID = OptInt(oParamSource.GetOptProperty( 'iObjectId' , null ),null);
+	bNoObject=true
+	if (curObjectID!=null)
+	{
+		try
+		{
+			curObjectDoc=OpenDoc( UrlFromDocID( curObjectID ) )
+			curObject=curObjectDoc.TopElem
+			Env.SetProperty( 'curObjectID', curObjectID );
+			Env.SetProperty( 'curObjectDoc', curObjectDoc );
+			Env.SetProperty( 'curObject', curObject);
+			bNoObject=false
+		}
+		catch(ex)
+		{
+
+		}
+	}
+	
+	if (bNoObject)
+	{
+			
+			curMessageBox = {
+					"type": "error",
+					"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	%>
+</SPXMLScreen>
+	<%
+				Cancel();
+	}
+	
+	fldOverrideTamplate=ArrayOptFirstElem(XQuery("for $elem in override_web_templates where $elem/is_enabled=true() and $elem/mode='talent_pool_successor' return $elem"))
+	if (fldOverrideTamplate!=undefined)
+	{
+		teOverrideTamplate=null
+		try
+		{
+			teOverrideTamplate=OpenDoc( UrlFromDocID(fldOverrideTamplate.id ) ).TopElem
+		}
+		catch(ex)
+		{
+		}
+		if (teOverrideTamplate!=null)
+		{
+			curParams = new SafeObject;
+			tools_web.set_web_params(curParams, teOverrideTamplate.wvars, true );
+			Request.Session.Env.SetProperty("curParams", curParams);
+		}
+	}
+}
+
+arrTabListParam = String( tools_web.get_web_param( curParams, "successor.tab_list", "info;files;custom;desc", true ) ).split( ";" );
+
+function fnBuildObjectSelector (oSourceObjectParams)
+{
+	strSelectorType=oSourceObjectParams.GetOptProperty("selector_type","selector")
+	if (strSelectorType=="selector")
+	{
+		curSelector = {
+		"id": oSourceObjectParams.GetOptProperty("id",""),
+		"object_id": oSourceObjectParams.GetOptProperty("object_id",""),
+		"object_id_item_name": oSourceObjectParams.GetOptProperty("object_id_item_name",""),
+		"multi_select": "false",
+		"display_object_ids":  oSourceObjectParams.GetOptProperty("display_object_ids",""),
+		"object_name":  oSourceObjectParams.GetOptProperty("object_name",""),
+		"width":oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth ),
+		"catalog_name": oSourceObjectParams.GetOptProperty("catalog_name","")
+		}
+	
+		curSelector.SetProperty("close_action",oSourceObjectParams.GetOptProperty("close_action","STOP"))
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+	}
+	else
+	{	
+		sCatalogName=oSourceObjectParams.GetOptProperty("catalog_name","place")
+		sDispName=common.exchange_object_types.GetChildByKey( sCatalogName ).disp_name
+		arrObjects=XQuery("for $elem in "+sCatalogName+"s order by $elem/"+sDispName+" return $elem")
+		iDefaultId=oSourceObjectParams.GetOptProperty("object_id",null)
+		strDefaultValue=oSourceObjectParams.GetOptProperty("default_value",tools_web.get_web_const( 'pusto', curLngWeb ))
+%>
+		<ComboBox Name="<%=oSourceObjectParams.GetOptProperty("id","")%>" Width="<%=oSourceObjectParams.GetOptProperty( 'width', iDefaultWidth )%>" Change="<%=oSourceObjectParams.GetOptProperty("close_action","STOP")%>">								
+			<ComboBoxItem Value="" <%=(iDefaultId == null ? "Selected=\"true\"" : "")%>><%=(iDefaultId == null ? "" : XmlAttrEncode(strDefaultValue))%></ComboBoxItem>
+<%
+			for(catObject in arrObjects)
+			{
+%>
+			<ComboBoxItem Value="<%=catObject.PrimaryKey%>" Selected="<%=(catObject.PrimaryKey == iDefaultId)%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( catObject.Child(sDispName).Value, curLng.short_id ))%></ComboBoxItem>
+<%
+			}
+%>
+		</ComboBox>	
+<%
+	}
+}
+
+function fnCheckRight(sActionCodeParam)
+{
+	if(curUser.access.access_role == "admin")
+		return true;
+	return (ArrayOptFind(xarrOperationsRights, "This.action == '" + sActionCodeParam + "'") !=undefined);
+}
+
+function fnCheckTaskEditRights()
+{
+	var bReturn=false
+	if(curUser.access.access_role == "admin")
+		return true;
+
+	strActionCodeList=String( "successor_change_status;successor_edit_custom_fields;successor_change_desc;successor_change_successors;successor_change_estimation;successor_change_development_potential;successor_change_budget_period;successor_change_readiness_level;successor_change_request")
+	arrActionCodes = strActionCodeList.split( ";" );
+
+	for (sActionCode in arrActionCodes)
+	{
+		if (fnCheckRight(sActionCode))
+		{
+			bReturn=true
+			break;
+		}
+	}
+	return bReturn;
+}
+
+
+
+function fnBuildFormButtons()
+{
+%>
+	<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="true">	
+<%
+	if(bHasActions)
+	{
+%>
+		<ComboBox Name="OperationId">
+			<ComboBoxItem Value="" Selected="True"><%=StrNonTitleCase( tools_web.get_web_const( "vypolnitoperac", curLngWeb ) )%></ComboBoxItem>
+<%
+		oParam = {
+			"name_id": "SuccessorOpertion",
+			"action": "SuccessorChangeAction",
+			"curUserID": curUserID,
+			"curUser": curUser
+		};
+		for(catActionElem in xarrOperationsActions)
+		{
+			if ( catActionElem.use_access_eval )
+			{
+				teOperation = OpenDoc( UrlFromDocID( catActionElem.id ) ).TopElem;
+				if ( ! tools.safe_execution( teOperation.access_eval_code ) )
+					continue;
+			}
+			sClick = tools_web.eval_operation_script( catActionElem.id, "xaml", oParam );
+%>
+		<ComboBoxItem Value="<%=catActionElem.PrimaryKey%>" Change="<%=sClick%>;"><%=tools_web.get_cur_lng_name( catActionElem.name, curLng.short_id )%></ComboBoxItem>
+<%
+		}
+%>
+	</ComboBox>
+<%
+	}
+	if (bAllowEdit)
+	{
+%>
+		<Button Class="XAML-button XAML-button-ok" Click="SET=SuccessorChangeAction/sAction,save;SET=SuccessorChangeAction/CONTEXT,{CONTEXT};SET=SuccessorChangeSuccessAction,<%=UrlEncode(ISDIALOG?'SET=SuccessorChangeAction/sSelectedObjects,#empty#;CLOSEDIALOG':sDefaultSuccessAction)%>;SET=SuccessorChangeFailureAction,<%=UrlEncode(sDefaultFailureAction)%>;Action=SuccessorChangeAction"><%=HtmlEncode(tools_web.get_web_const( 'c_save', curLngWeb ))%></Button>
+<%
+	}
+	if (ISDIALOG)
+	{
+%>
+		<Button Class="XAML-button XAML-button-cancel" Click="CANCELDIALOG"><%=HtmlEncode(tools_web.get_web_const( 'c_close', curLngWeb ))%></Button>
+<%	
+	}
+%>
+	</StackPanel>
+<%
+}
+
+
+xarrBossTypes = tools.get_object_relative_boss_types(curUserID, curObjectID);
+xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',successor,') )");
+xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0 && StrContains(','+This.operation_catalog_list.Value+',', ',successor,')");
+xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+bAllowEdit = (fnCheckTaskEditRights());
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+curUrlQuery = tools_web.get_url_query( PAGEURL );
+
+bHasActions=ArrayOptFirstElem( xarrOperationsActions ) != undefined
+if ( bHasActions )
+{
+	curCollectionMenu = {
+		"id": "SuccessorOpertion",
+		"catalog_name": curObject.Name,
+		"selected_data": UrlEncode( "[{\"id\":" + curObjectID + "}]" )
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+}
+
+iDefaultWidth=!bDesctop?"100%":"300"
+
+sDefaultSuccessAction='SET=SuccessorChangeAction/sSelectedObjects,#empty#;REFRESH'
+sDefaultFailureAction='SET=SuccessorChangeAction/CONTEXT,#empty#;SET=SuccessorChangeAction/sSelectedObjects,#empty#;ALERT={!messageText}'
+%>
+	<Edit Name="SuccessorChangeSuccessAction" Hidden="1"><%=sDefaultSuccessAction%></Edit>
+	<Edit Name="SuccessorChangeFailureAction" Hidden="1"><%=sDefaultFailureAction%></Edit>
+	<Action Name="SuccessorChangeAction" Source="successor_change" Success="{!SuccessorChangeSuccessAction}" Failure="{!SuccessorChangeFailureAction}">
+		<Param Name="sAction" Value=""/>
+		<Param Name="iObjectId" Value="<%=curObjectID%>"/>
+		<Param Name="sSelectedObjects" Value="#empty#"/>
+		<Param Name="CONTEXT" Value="#empty#"/>
+	</Action>
+	
+<%
+
+	fnBuildFormButtons()
+
+%>
+	<TabControl Name="successor_tab_controls<%=curObjectID%>" Preservable="1" Adapt="true" TabsLocation="<%=!ISDIALOG ? "w" : "n"%>" TabsWidth="200" Width="100%" >
+<%
+
+	for ( sTabListParam in arrTabListParam )
+	{
+		switch(sTabListParam)
+		{
+			case "info":
+			{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+				<GridColumns>
+					<GridColumn />
+					<GridColumn/>
+				</GridColumns>
+<%
+						fldPerson=curObject.person_id.OptForeignElem
+						fldPosition=undefined
+						if(fldPerson!=undefined)
+						{
+							fldPosition=fldPerson.position_id.OptForeignElem
+						}
+						if(fldPosition!=undefined)
+						{
+%>
+				<GridRow>
+						<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_position", curLngWeb )%>:</Label>
+						<Link Click="OPENURL=<%= tools_web.get_mode_clean_url( null, fldPerson.PrimaryKey, { doc_id: curDocID } ) %>"><![CDATA[<%=tools_web.get_cur_lng_name( fldPosition.name, curLng.short_id )%>]]></Link>
+				</GridRow>
+<%
+						}
+						if(fnCheckRight("successor_change_status")||curObject.status.HasValue)
+						{
+%>
+				<GridRow>
+							<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+<%
+							if(fnCheckRight("successor_change_status"))
+							{
+%>
+							<ComboBox Name="status" Width="<%=iDefaultWidth%>">
+<%
+								for( fldElem in curLngCommon.successor_status_types)
+								{
+									strSelected=''
+									if (curObject.status==fldElem.id)
+									{
+										strSelected=' Selected="True"'
+									}
+
+									try
+									{
+%>
+							<ComboBoxItem Value="<%=fldElem.id%>"<%=strSelected%>><%=XmlAttrEncode(curLngCommon.successor_status_types.GetChildByKey( fldElem.id).name)%></ComboBoxItem>
+<%
+									}
+									catch(ex)
+									{
+									}
+								}
+%>
+							</ComboBox>
+<%
+							}
+							else
+							{
+%>
+							<Label Class="XAML-grid-label-value"><%=(curObject.status.HasValue ? curLngCommon.successor_status_types.GetChildByKey( curObject.status ).name : "")%></Label>
+<%
+							}
+%>
+				</GridRow>
+<%
+						}
+						fldReadinessLevel=curObject.readiness_level_id.OptForeignElem
+						if(fnCheckRight("successor_change_readiness_level")||fldReadinessLevel!= undefined)
+						{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "urovengotovnos", curLngWeb )%>:</Label>
+<%
+							if(fnCheckRight("successor_change_readiness_level"))
+							{
+								oSourceObject = {
+									"id": "readiness_level_id",
+									"object_id": (fldReadinessLevel!= undefined?fldReadinessLevel.id:null),
+									"object_id_item_name": "readiness_level_id",
+									"multi_select": "false",
+									"catalog_name": "readiness_level",
+									"selector_type": "combo"
+								};
+								oSourceObject.SetProperty("close_action","")
+								fnBuildObjectSelector (oSourceObject)
+							}
+							else 
+							{
+%>
+					<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( fldReadinessLevel.name, curLng.short_id )%></Label>
+<%
+							}
+%>
+				</GridRow>
+<%
+						}
+						fldBudgetPeriod=curObject.budget_period_id.OptForeignElem
+						if(fnCheckRight("successor_change_budget_period")||fldBudgetPeriod!= undefined)
+						{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>
+<%
+							if(fnCheckRight("successor_change_budget_period"))
+							{
+								oSourceObject = {
+									"id": "budget_period_id",
+									"object_id": (fldBudgetPeriod!= undefined?fldBudgetPeriod.id:null),
+									"object_id_item_name": "budget_period_id",
+									"multi_select": "false",
+									"catalog_name": "budget_period",
+									"selector_type": "combo"
+								};
+								oSourceObject.SetProperty("close_action","")
+								fnBuildObjectSelector (oSourceObject)
+							}
+							else 
+							{
+%>
+					<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( fldBudgetPeriod.name, curLng.short_id )%></Label>
+<%
+							}
+%>
+				</GridRow>
+<%
+						}
+						fldDevelopmentPotential=curObject.development_potential_id.OptForeignElem
+						if(fnCheckRight("successor_change_development_potential")||fldDevelopmentPotential!= undefined)
+						{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "potencialrazvi_9", curLngWeb )%>:</Label>
+<%
+							if(fnCheckRight("successor_change_development_potential"))
+							{
+								oSourceObject = {
+									"id": "development_potential_id",
+									"object_id": (fldDevelopmentPotential!= undefined?fldDevelopmentPotential.id:null),
+									"object_id_item_name": "development_potential_id",
+									"multi_select": "false",
+									"catalog_name": "development_potential",
+									"selector_type": "combo"
+								};
+								oSourceObject.SetProperty("close_action","")
+								fnBuildObjectSelector (oSourceObject)
+							}
+							else 
+							{
+%>
+					<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( fldDevelopmentPotential.name, curLng.short_id )%></Label>
+<%
+							}
+%>
+				</GridRow>
+<%
+						}
+						fldEfficiencyEstimation=curObject.efficiency_estimation_id.OptForeignElem
+						if((fnCheckRight("successor_change_estimation"))||fldEfficiencyEstimation!= undefined)
+						{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ocenkaeffektiv", curLngWeb )%>:</Label>
+<%
+							if(fnCheckRight("successor_change_estimation"))
+							{
+								oSourceObject = {
+									"id": "efficiency_estimation_id",
+									"object_id": (fldEfficiencyEstimation!= undefined?fldEfficiencyEstimation.id:null),
+									"object_id_item_name": "efficiency_estimation_id",
+									"multi_select": "false",
+									"catalog_name": "efficiency_estimation",
+									"selector_type": "combo"
+								};
+								oSourceObject.SetProperty("close_action","")
+								fnBuildObjectSelector (oSourceObject)
+							}
+							else 
+							{
+%>
+					<Label Class="XAML-grid-label-value"><%=tools_web.get_cur_lng_name( fldEfficiencyEstimation.name, curLng.short_id )%></Label>
+<%
+							}
+%>
+				</GridRow>
+<%
+						}
+%>
+			</Grid>
+		</TabItem>
+	
+<%
+				break;
+			}
+			case "desc":
+			{
+				if ( fnCheckRight("successor_change_desc")|| curObject.desc.HasValue)
+				{
+%>
+			<TabItem Title="<%=tools_web.get_web_const( "c_desc", curLngWeb )%>">
+<%
+					if (fnCheckRight("successor_change_desc"))
+					{
+%>
+					<RichEdit Name="desc" Width="100%" Height="500">
+							<![CDATA[<%=tools_web.get_web_desc( curObject.Child( "desc" ), UrlFromDocID( curObjectID ), curObject.Name + ".desc" )%>]]>
+					</RichEdit>
+<%
+					}
+					else
+					{
+						curDescObject = curObject;
+						curDescObjectID = curObjectID;
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+					}
+				
+%>
+			</TabItem>
+	
+<%	
+				}
+				break;
+			}
+			case "files":
+			{
+				if(fnCheckRight("successor_view_files") || fnCheckRight("successor_change_files"))
+				{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "vdb_files", curLngWeb )%>">
+<%
+					if(fnCheckRight("successor_change_files"))
+					{
+						allowChangeFiles = true;
+					}
+
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+		</TabItem>
+	
+<%					
+				}
+				break;
+			}
+			case "custom":
+			{
+				if(fnCheckRight("successor_view_custom_fields")||fnCheckRight("successor_edit_custom_fields"))
+				{
+					arrCustomFieldNames = Array();
+					fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+					if ( fldCustomElems != null )
+					{
+%>
+		<TabItem Title="<%=tools_web.get_web_const( "c_additional", curLngWeb )%>">
+<%
+					curCustomFields = {
+						"id": "customFieldsViewGrid",
+						"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+						"source": curObject.custom_elems,
+						"modify_eval": fnCheckRight("successor_edit_custom_fields")
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					
+%>
+		</TabItem>
+<%
+					}
+				}
+				break;
+			}				
+		}
+	}
+%>
+	</TabControl>
+</SPXMLScreen>

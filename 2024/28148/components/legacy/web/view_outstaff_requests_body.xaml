@@ -1,0 +1,1449 @@
+﻿<%
+arrTabListParam = String( tools_web.get_web_param( curParams, "outstaff_requests_body.tab_list", "planing_requests;timesheet;replacement_requests;reports", true ) ).split( ";" );
+%><SPXMLScreen Ready="SHOW=<%=ArrayMerge( arrTabListParam, "'RowFiltersPanel' + This", "," )%>">
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bShowTitle = tools_web.is_true(tools_web.get_web_param( curParams, "outstaff_requests_body.show_title", "true", true ));
+
+var strActiveTab = ArrayOptFind(PARAMETERS, "key == \"OutstaffRequestsBodyTab\"");
+function is_upr()
+{
+	aRoles = String( tools_web.get_web_param( curParams, "outstaff_requests_body.upr_roles", "upr", true ) ).split( ";" );
+	return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+}
+function is_hr()
+{
+	aRoles = String( tools_web.get_web_param( curParams, "outstaff_requests_body.hr_roles", "hr", true ) ).split( ";" );
+	return ArrayOptFind( aRoles, "This == curUser.access.access_role" ) != undefined;
+}
+strActiveTab = (strActiveTab != undefined ? strActiveTab.value : OptInt( CONTEXT.GetOptProperty( 'OutstaffRequestsBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+iPageItemsCount = Int( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.iPageItemsCount", 10, true ));
+iGridHeight = Int( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.iGridHeight", 450, true ));
+bIsSelectListCollaborator = tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.select_from_list_collaborator", "0", true );
+bIsCreateOneRequest = tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.create_one_request_period", "0", true );
+bIsChangePlanHours = tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.change_plan_hours_after_save_request", "0", true );
+
+curTitle = {
+		"object_title": "Заявки на временный персонал"
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+if ( bShowTitle )
+{
+}
+
+
+TimesheetTabStatusList = String( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.status_list", "no_confirmation;change;absence;cancel;presence;partial_presence;cancelnotconfirm;error", true ) ).split( ";" );
+/*sNoConfirmationColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.no_confirmation", "rgba(165,204,243,0.7)", true );
+sPresenceColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.presence", "rgba(150,250,150,0.7)", true );
+sPartialPresenceColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.partial_presence", "rgba(0,255,0)", true );
+sAbsenceColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.absence", "rgba(243,84,84,0.7)", true );
+sChangeColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.change", "rgba(250,250,120,0.7)", true );
+sCancelColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.cancel", "rgba(244,164,96,0.7)", true );	
+sCancelNotConfirmColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.cancelnotconfirm", "rgba(199,21,133,0.7)", true );	
+sErrorColor = tools_web.get_web_param( curParams,"outstaff_requests_body.timesheet_tab.status_colors.error", "rgba(199,21,133,0.7)", true );*/
+
+isUpr = is_upr();
+isHr = is_hr();
+arrStatus = new Array();
+
+for( elem in TimesheetTabStatusList )
+{
+	obj = new Object();
+	obj.color = tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.status." + elem + ".color", "", true );
+	obj.name = tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.status." + elem + ".name", "", true );
+	try
+	{
+		obj.condition = tools.read_object( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.status." + elem + ".condition", "[]", true ) );
+	}
+	catch( ex ){ obj.condition = new Array(); }
+	arrStatus.push( obj );
+}
+	
+iDateDiffCount = Int( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.date_diff", 5, true ));
+		
+fldCurBudgetPeriod = ArrayOptFirstElem(XQuery("for $elem in budget_periods where $elem/start_date <= date('" + DateNewTime(Date(),00,00,00) + "') and $elem/finish_date >= date('" + DateNewTime(Date(),00,00,00) + "') and contains($elem/code,'out') return $elem"));
+
+strSubdivIds = "";
+iSelectedBudgetPeriodId = CONTEXT.GetOptProperty( 'planing_requestsbudget_period_id' );
+iSelectedPositionCommonId = OptInt(CONTEXT.GetOptProperty( 'planing_requestsposition_common_id', null),null);
+iSelectedSubdivisionId = OptInt(CONTEXT.GetOptProperty( 'planing_requestssubdivision_id', null),null);
+
+iTshSelectedBudgetPeriodId = OptInt(CONTEXT.GetOptProperty( 'timesheetbudget_period_id', null),null);
+iTshSelectedSubdivisionId = OptInt(CONTEXT.GetOptProperty( 'timesheetsubdivision_id', null),null);
+iTshSelectedGroupSubdivisionId = OptInt(CONTEXT.GetOptProperty( 'timesheetgroup_subdivision_id', null),null);
+iTshSelectedCommonPositionId = OptInt(CONTEXT.GetOptProperty( 'timesheetposition_common_id', null),null);
+
+iReplSelectedBudgetPeriodId = OptInt(CONTEXT.GetOptProperty( 'replacement_requestsbudget_period_id', null),null);
+iReplSelectedPositionCommonId = OptInt(CONTEXT.GetOptProperty( 'replacement_requestsposition_common_id', null),null);
+iReplSelectedSubdivisionId = OptInt(CONTEXT.GetOptProperty( 'replacement_requestssubdivision_id', null),null);
+
+
+%>
+<!-- ========= Actions ============= -->
+
+<!-- ========= Collections ============= -->
+
+<HTMLBox>
+		<![CDATA[
+			<style>
+				.XAML-plan-request-dialog { top: 10px !important; }
+			</style>
+		]]>
+</HTMLBox>
+
+<Edit Name="ActionCheck" Hidden="1"/>
+<Action Name="OutstaffPlanRequestCheck" Source="outstaff_plan_request_actions" Success="{!messageText}" Failure="ALERT={messageText}">
+	<Param Name="sAction" Value="{ActionCheck}"/>
+	<Param Name="sSelectedObjects" Value=""/>
+	<Param Name="SelectedBudjetPeriod" Value=""/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+
+<Dialog Name="PlaningRequestDialog" Source="dlg_plan_request_outstaff" Width="80%" Class="XAML-plan-request-dialog" Close="{!CloseAction};REFRESH">
+	<Param Name="object_id" Value=""/>
+	<Param Name="upr_roles" Value="<%=tools_web.get_web_param( curParams, "outstaff_requests_body.upr_roles", "upr", true )%>"/>
+	<Param Name="subdivision_id" Value="{PlanReqDlgSelectedSubdivisionId}"/>
+	<Param Name="budget_period_id" Value="{PlanReqDlgSelectedBudjetPeriodId}"/>
+	<Param Name="position_common_id" Value="{PlanReqDlgSelectedPositionCommonId}"/>
+	<Param Name="isWTcollaborator" Value="<%=bIsSelectListCollaborator%>"/>
+	<Param Name="onlyOneRequestForPeriod" Value="<%=bIsCreateOneRequest%>"/>
+	<Param Name="deductHourFromSub" Value="<%=bIsChangePlanHours%>"/>
+	<Param Name="default_value_custom_fields" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.default_value_custom_fields", "{}", true ) )%>"/>
+</Dialog>
+
+<Dialog Name="SelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="{!ActionDialog};">
+		<Param Name="catalog_name" Value=""/>
+		<Param Name="multi_select" Value=""/>
+		<Param Name="view_type" Value=""/>
+		<Param Name="xquery_qual" Value=""/>
+		<Param Name="check_access" Value="false"/>
+		<Param Name="selected_object_ids" Value=""/>
+		<Param Name="display_object_ids" Value=""/>
+		<Param Name="disp_filter" Value="true"/>
+		<Param Name="filter_id" Value=""/>
+		<Param Name="can_be_empty" Value=""/>
+		<Param Name="show_all" Value="<%=global_settings.settings.show_all_persons%>"/>
+</Dialog>
+
+<Dialog Name="OutstaffExecutStageDialog" Source="dlg_form_efuv_body" Class="XAML-plan-request-dialog" Width="<%=curDevice.disp_type == "mobile" ? "96%" : "600"%>" Close="Update=timesheetOutstaffStagesCalendar">
+		<Param Name="object_id" Value=""/>
+		<Param Name="stage_code" Value=""/>
+		<Param Name="upr_roles" Value="<%=tools_web.get_web_param( curParams, "outstaff_requests_body.upr_roles", "upr", true )%>"/>
+		<Param Name="hour_diff" Value="<%=iDateDiffCount%>"/>
+		<Param Name="isWTcollaborator" Value="<%=bIsSelectListCollaborator%>"/>
+		<Param Name="rewrite_plan_hours" Value="<%=tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.rewrite_plan_hours", "false", true )%>"/>
+		<Param Name="default_value_custom_fields" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.default_value_custom_fields", "{}", true ) )%>"/>
+		<Param Name="partlial_presense_restrictions" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.partlial_presense_restrictions", "[]", true ) )%>"/>
+		<Param Name="round_working_hour" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.round_working_hour", "[]", true ) )%>"/>
+		<Param Name="open_replace_new_window" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.open_replace_new_window", "true", true ) )%>"/>
+</Dialog>
+
+<Dialog Name="ReplaceRequestDialog" Class="XAML-plan-request-dialog" Source="request_body" Width="80%" Close="{!CloseAction};REFRESH">
+		<Param Name="request_type_id" Value=""/>
+		<Param Name="object_id" Value=""/>
+</Dialog>
+
+<Edit Name="ActionDialog" Hidden="1"/>
+<Edit Name="PlanReqDlgSelectedBudjetPeriodId" Hidden="1"/>
+<Edit Name="PlanReqDlgSelectedSubdivisionId" Hidden="1"/>
+<Edit Name="PlanReqDlgSelectedPositionCommonId" Hidden="1"/>
+
+<%
+//alert("CurUser: " + curUserID + " Role: " + curUser.access.access_role);
+fldBossTypeMain = ArrayOptFirstElem(XQuery("for $elem in boss_types where $elem/code='main' return $elem"));
+fldBossTypeFunction = ArrayOptFirstElem(XQuery("for $elem in boss_types where ($elem/code='functional' or $elem/code='fr') return $elem"));
+arrFuncManagers = Array();
+if (isUpr || isHr )
+{
+	arrFuncManagers = XQuery("for $elem in func_managers where $elem/catalog='subdivision' and $elem/person_id=" + curUserID +" and MatchSome( $elem/boss_type_id, (" + ( isUpr ? ( global_settings.settings.outstaff.outstaff_boss_types.ChildNum > 0 ? ArrayMerge( global_settings.settings.outstaff.outstaff_boss_types, "This.PrimaryKey", "," ) : fldBossTypeMain.id ): ( isHr ? fldBossTypeFunction.id : "")) + " ) ) return $elem");
+}
+strSubdivIds = "";
+if( isUpr )
+{
+		//fldFuncManager = ArrayOptFirstElem(XQuery("for $elem in func_managers where $elem/catalog='subdivision' and $elem/person_id=" + curUserID + " and $elem/boss_type_id=" + fldBossTypeMain.id + " return $elem"));
+		//if (fldFuncManager != undefined)
+		//{
+			iSelectedSubdivisionId  = (ArrayOptFirstElem(arrFuncManagers) != undefined ? ArrayOptFirstElem(arrFuncManagers).object_id : null);
+		//}
+		strSubdivIds = String(iSelectedSubdivisionId);
+}
+else
+{
+	if( isHr )
+	{
+			arrFuncManagAllSubdivs = Array();
+			//arrFuncManagers = XQuery("for $elem in func_managers where $elem/catalog='subdivision' and $elem/person_id=" + curUserID +" and $elem/boss_type_id=" + fldBossTypeFunction.id + " return $elem");
+			
+			if (ArrayOptFirstElem(arrFuncManagers) != undefined)
+			{
+				for (catFuncManag in arrFuncManagers)
+				{
+					arrSubSubdivisions = tools.xquery("for $elem in subdivisions where IsHierChild( $elem/id, " + catFuncManag.object_id + " ) order by $elem/Hier() return $elem");
+					if (ArrayOptFirstElem(arrSubSubdivisions) != undefined)
+					{
+						arrFuncManagAllSubdivs = ArrayUnion(arrFuncManagAllSubdivs, arrSubSubdivisions )
+					}
+					arrFuncManagAllSubdivs = ArrayUnion(arrFuncManagAllSubdivs, XQuery( "for $elem in subdivisions where $elem/id = " + catFuncManag.object_id + " return $elem" ));
+				}
+				
+			}
+			
+			if (ArrayOptFirstElem(arrFuncManagAllSubdivs) != undefined)
+			{
+				strSubdivIds =  ArrayMerge(arrFuncManagAllSubdivs,"This.id",";");
+			}
+	}
+	else if( curUser.access.access_role == "outsorcing" )
+	{
+			arrOutstaffProvidersCurUser = XQuery("for $elem in outstaff_providers where $elem/collaborator_id=" + curUserID + " return $elem"); 
+			if (ArrayOptFirstElem(arrOutstaffProvidersCurUser) != undefined)
+			{
+				strOutstaffProvidersIds = ArrayMerge(arrOutstaffProvidersCurUser, "This.id",",");
+				arrOutstaffContracts = XQuery("for $elem in outstaff_contracts where MatchSome( $elem/outstaff_provider_id,(" + strOutstaffProvidersIds + ")) return $elem"); 
+				if (ArrayOptFirstElem(arrOutstaffContracts) != undefined)
+				{
+					//strSubdivIds = ArrayMerge(arrOutstaffContracts, "This.subdivision_id",";");
+					
+					arrContractsSubdivIds = Array();
+					for (catContract in arrOutstaffContracts)
+					{
+						teContract = OpenDoc(UrlFromDocID(catContract.id)).TopElem;
+						if (teContract != undefined && ArrayOptFirstElem(teContract.regions) != undefined)
+						{
+							//arrContractsSubdivIds = ArrayUnion(arrContractsSubdivIds, ArrayExtract(teContract.regions, "This.subdivision_id"));
+							for (elemRegion in teContract.regions)
+							{
+								if (elemRegion.ChildExists("subdivision_id") == true && elemRegion.subdivision_id.HasValue)
+								{
+									arrContractsSubdivIds.push(elemRegion.subdivision_id) ;	
+								}
+							}
+						}
+					}
+					arrContractsSubdivIds = ArraySelectDistinct(arrContractsSubdivIds)
+					if (ArrayOptFirstElem(arrContractsSubdivIds) != undefined)
+					{
+						strSubdivIds = (StrBegins( ArrayMerge( arrContractsSubdivIds, "This", ";"),";") == true ? StrReplaceOne(ArrayMerge( arrContractsSubdivIds, "This", ";"),";","") : ArrayMerge(ArraySelectDistinct(arrContractsSubdivIds), "This", ";"));
+					}
+				}
+			}
+	}
+}
+
+if( strSubdivIds == "" )
+{
+	curMessageBox = {
+		"id": "NotSubdivision",
+		"type": "warning",
+		"text": "У вас нет закрепленых подразделений",
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+%>
+
+
+<Edit Name="PlaningRequestsActive" Hidden="1">0</Edit>
+<Collection Name="OutstaffPlaningRequestsCollection" Source="outstaff_planing_requests_collection">
+	<Param Name="context" Value="{CONTEXT}"/>
+	<Param Name="SubdivisionIds" Value="<%=strSubdivIds%>"/>
+	<Param Name="BudgetPeriodId" Value="<%=iSelectedBudgetPeriodId%>"/>
+	<Param Name="PositionCommonId" Value="<%=iSelectedPositionCommonId%>"/>
+	<Param Name="active" Value="{PlaningRequestsActive}"/>
+	<Param Name="by_budget_period" Value="<%=tools_web.is_true(tools_web.get_web_param( curParams, "outstaff_requests_body.by_budget_period", "false", true ))%>"/>
+</Collection>
+<Edit Name="OutstaffStagesCalendarActive" Hidden="1"><%=isUpr ? 1 : 0%></Edit>
+<Collection Name="OutstaffOrderExecutStagesCollection" Source="outstaff_order_execut_stages_collection">
+	<Param Name="context" Value="{CONTEXT}"/>
+	<Param Name="SubdivisionIds" Value="<%=isUpr ? "{SubdivisionIds}" : strSubdivIds%>"/>
+	<Param Name="BudgetPeriodId" Value="<%=iTshSelectedBudgetPeriodId%>"/>
+	<Param Name="date_diff" Value="<%=iDateDiffCount%>"/>
+	<Param Name="arr_status" Value="<%=UrlEncode( tools.object_to_text( arrStatus, "json" ) )%>"/>
+	<Param Name="by_budget_period" Value="<%=tools_web.is_true(tools_web.get_web_param( curParams, "outstaff_requests_body.by_budget_period", "false", true ))%>"/>
+</Collection>
+<Edit Name="ReplacementRequestsActive" Hidden="1">0</Edit>
+<Collection Name="OutstaffReplacementRequestsCollection" Source="outstaff_replacemet_collection">
+	<Param Name="context" Value="{CONTEXT}"/>
+	<Param Name="SubdivisionIds" Value="<%=strSubdivIds%>"/>
+	<Param Name="BudgetPeriodId" Value="<%=iReplSelectedBudgetPeriodId%>"/>
+	<Param Name="PositionCommonId" Value="<%=iReplSelectedPositionCommonId%>"/>
+	<Param Name="workflow_state" Value="{workflow_state}"/>
+	<Param Name="request_status" Value="{request_status}"/>
+	<Param Name="active" Value="{ReplacementRequestsActive}"/>
+	<Param Name="by_budget_period" Value="<%=tools_web.is_true(tools_web.get_web_param( curParams, "outstaff_requests_body.by_budget_period", "false", true ))%>"/>
+</Collection>
+
+<Edit Name="SubdivisionIds" Hidden="1"><%=strSubdivIds%></Edit>
+<%
+arrPlaningRequestsListParam = String( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.fields_list", "request_name,request_date,request_status,responsible_collaborator,position,subdivision,provider,ro,hours_residue", true ) ).split( ";" );
+PlaningRequestsTabParams = tools_web.get_web_param( curParams, "outstaff_requests_body.planing_request_tab.params_list", "", true );
+PlaningRequestsTabHideSearchPanel = tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.hide_search_panel", "", true );
+
+arrReplacementRequestsListParam = String( tools_web.get_web_param( curParams, "outstaff_requests_body.replacement_requests_tab.fields_list", "repl_request_name,repl_request_date,repl_request_status,repl_responsible_collaborator,repl_position,repl_subdivision,repl_provider,repl_ro,repl_hours_residue,repl_wf_state", true ) ).split( ";" );
+
+
+function add_filter( name, is_main, val, xquery_qual )
+{
+	try{
+		is_main;
+	}
+	catch( ex ){ is_main = false; }
+	
+	try{
+		val;
+	}
+	catch( ex ){ val = ""; }
+	
+	try{
+		xquery_qual;
+	}
+	catch( ex ){ xquery_qual = ""; }
+	
+	obj_filter = new Object();
+	ident = "";
+	const = "";
+	switch( name )
+	{
+		case "action_date_s":
+			const = "vkmb_start_action_date";
+		case "action_date_f":
+			if( name == "action_date_f" )
+				const = "j87phjbjvh";
+		case "create_date":
+			obj_filter.type = "date";
+			if( name == "create_date" )
+				const = "c_create_date";
+			ident = "start_" + name;		
+			break;
+					
+		
+		case "budget_period":
+			const = "c_budget_period";
+			obj_filter.xquery_qual = "contains($elem/code,'out')";
+		case "outstaff_type_material":
+			if( name == "outstaff_type_material" )
+			{
+				obj_filter.title = "Тип расходного материала";
+			}
+		case "type_service":
+			if( name == "type_service" )
+			{
+				obj_filter.xquery_qual = "$elem/allow_outstaff = true()";
+				obj_filter.check_access = true;
+				name = "position_common";
+				const = "c_position_common";
+			}
+		case "request_type":
+			if( name == "request_type" )
+			{
+				const = "5rrpn7n7gm";
+				obj_filter.xquery_qual = " $elem/code = '" + sCodeCustomRequest + "'";
+			}
+		case "group_subdivision":
+			if( name == "group_subdivision" )
+			{
+				const = "1akgrp8ook";
+				name = "subdivision_group";
+			}
+		case "subdivision":
+			obj_filter.type = "foreign_elem";
+			if( name == "subdivision" )
+			{
+				const = "c_subd";
+				obj_filter.xquery_qual = "MatchSome( $elem/id, ( " + StrReplace( strSubdivIds, ";", "," ) + " ) )";
+			}
+			
+			ident = name + "_id";
+			obj_filter.SetProperty( "default", OptInt( CONTEXT.GetOptProperty( ident, curUrlQuery.GetOptProperty( ident, "" ) ), "" ) );
+			obj_filter.SetProperty( "catalog_name", name );
+			break;
+			
+		case "wf_state":
+			const = "hzte1f3376";
+			obj_filter.type = "combo";
+			ident = name;
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: "Все этапы" } );
+			outstaffReplace = ArrayOptFirstElem( XQuery( "for $i in request_types where $i/code = 'outstaff_replace' return $i" ) );
+			if ( outstaffReplace != undefined )
+			{
+				teOutstaffReplace = OpenDoc( UrlFromDocID( outstaffReplace.id ) ).TopElem
+				if ( teOutstaffReplace.workflow_id.HasValue )
+				{	
+					teWorkflow = OpenDoc( UrlFromDocID( teOutstaffReplace.workflow_id ) ).TopElem;
+					for( state in teWorkflow.states )
+						obj_filter.items.push( { value: state.code, title: state.name } );
+				}
+			}
+			break;
+					
+		case "request_status":
+			const = "fyiq75x6vn";
+			obj_filter.type = "combo";
+			ident = name;
+			obj_filter.items = new Array();
+			for( state in common.request_status_types )
+				obj_filter.items.push( { value: state.id, title: state.name } );
+			break;
+					
+		case "object_type":
+			ident = "objectType";
+			const = "c_object_type";
+			obj_filter.type = "combo";
+
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "all", title: tools_web.get_web_const( "xco2menws4", curLngWeb ) } );
+			for ( _obj_type in ArraySelectDistinct( knowledge_objects, "This.catalog" ) )
+				obj_filter.items.push( { value: _obj_type.catalog, title: _obj_type.catalog.ForeignElem.title } );
+					
+			break;
+		
+		default:
+			return null;
+
+	}
+	if( xquery_qual != "" )
+		obj_filter.xquery_qual = xquery_qual
+		
+	obj_filter.value = val;
+	obj_filter.name = sTabListParam + ident;
+	if( !is_main && const != "" )
+		obj_filter.title = tools_web.get_web_const( const, curLngWeb );
+	return obj_filter;	
+}
+		
+		
+if (curUser.access.access_role == "admin" || isHr || isUpr || curUser.access.access_role == "outsorcing")
+{
+
+	if ( ArrayCount( arrTabListParam ) > 1 )
+	{
+%>
+
+<TabControl Name="OutstaffRequestsBodyTab" Class="XAML-tabcontrol-filter" ActiveTab="<%=strActiveTab%>"  Preservable="1" Adapt="true">
+<%
+	}
+for ( sTabListParam in arrTabListParam )
+{
+	if ( sTabListParam == "planing_requests" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode("Плановые заявки")%>">
+<%
+		}
+		
+		try
+		{
+			row_filters = new Array();
+			if ( PlaningRequestsTabParams != "" )
+			{
+				cnt_filter = 0;
+				arrFilters = new Array();
+				for( filter in String( PlaningRequestsTabParams ).split( ";" ) )
+				{
+					xquery = "";
+					if( cnt_filter >= 3 )
+					{
+						row_filters.push( arrFilters );
+						cnt_filter = 0;
+						arrFilters = new Array();
+					}
+					value = "";
+					switch( filter )
+					{
+						case "subdivision":
+							value = iSelectedSubdivisionId;
+							break;
+							
+						case "budget_period":
+							value = (fldCurBudgetPeriod != undefined && iSelectedBudgetPeriodId == undefined ? fldCurBudgetPeriod.id : OptInt( iSelectedBudgetPeriodId, null ) );
+							break;
+							
+						case "type_service":
+							value = iSelectedPositionCommonId;
+							break;
+					}
+					arrFilters.push( add_filter( filter, false, value, xquery ) )
+					cnt_filter++;
+				}
+				if( cnt_filter > 0 )
+					row_filters.push( arrFilters );
+			
+				curFilter = {
+					'id': sTabListParam,
+					'disp_search': false,
+					'search_action': "SET=PlaningRequestsActive,1;UPDATE=OutstaffPlanRequestsDataGrid;",
+					'action': "SET=PlaningRequestsActive,1;UPDATE=OutstaffPlanRequestsDataGrid;",
+					'row_filters': row_filters,
+					'filters': [],
+				};
+
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+			}
+			else
+			{
+%>
+		<StackPanel Class="XAML-stack-filters-container" Height="56" Orientation="Vertical" Adapt="1"/>
+<%
+			}
+%>
+				
+				<Toolbar Class="XAML-toolbar" Adapt="true" Width="100%">
+					<Button Click="SET=PlaningRequestsActive,1;UPDATE=OutstaffPlanRequestsDataGrid;" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+					if ( isHr || isUpr)
+					{
+						if (strSubdivIds != "")
+						{
+%>
+							<Button Click="SET=SelectDialog/catalog_name,subdivision;SET=SelectDialog/xquery_qual,;SET=SelectDialog/display_object_ids,<%=UrlEncode(strSubdivIds)%>;SET=ActionDialog,<%=UrlEncode( "SET=PlanReqDlgSelectedSubdivisionId,{CatalogListDataGridFullList:^/id};SET=ActionDialog," + UrlEncode( "SET=PlanReqDlgSelectedBudjetPeriodId,{CatalogListDataGridFullList:^/id};SET=SelectDialog/catalog_name,position_common;SET=SelectDialog/xquery_qual,$elem/allow_outstaff = true();SET=SelectDialog/display_object_ids,;SET=ActionDialog," + UrlEncode( "SET=PlanReqDlgSelectedPositionCommonId,{CatalogListDataGridFullList:^/id};SET=PlaningRequestDialog/object_id,;OPENDIALOG=PlaningRequestDialog" ) + ";OPENDIALOG=SelectDialog" )  + ";SET=SelectDialog/catalog_name,budget_period;SET=SelectDialog/xquery_qual," + UrlEncode( "contains($elem/code,'out')" ) + ";SET=SelectDialog/display_object_ids,;OPENDIALOG=SelectDialog" )%>;OPENDIALOG=SelectDialog" Class="XAML-button-content"><%=tools_web.get_web_const( "qgat42qe0w", curLngWeb )%></Button>
+<%
+						}
+%>
+							<!--<Button Click="" Class="XAML-button-content"><%=HtmlEncode("Контакты поставщика")%></Button>-->
+<%
+					}
+%>
+				</Toolbar>
+
+				<Collection Name="OutstaffPlanRequestsMenu" Source="outstaff_plan_requests_menu">
+					<Param Name="selected_data" Value="{OutstaffPlanRequestsDataGrid}"/>
+					<Param Name="name_id" Value="OutstaffPlanRequests"/>
+					<Param Name="id_field_name" Value="obj_id"/>
+					<Param Name="catalog_name" Value="outstaff_order_execution"/>
+				</Collection>	
+				
+				<Action Name="OutstaffPlanRequestRunAction" Source="outstaff_plan_request_actions" Success="ALERT={messageText};UPDATE=OutstaffPlanRequestsDataGrid;" Failure="ALERT={messageText}">
+					<Param Name="sAction" Value=""/>
+		  			<Param Name="sSelectedObjects" Value=""/>
+					<Param Name="SelectedBudjetPeriod" Value=""/>
+					<Param Name="default_value_custom_fields" Value="<%=UrlEncode( tools_web.get_web_param( curParams, "outstaff_requests_body.planing_requests_tab.default_value_custom_fields", "{}", true ) )%>"/>
+				</Action>
+				
+
+				
+				<DataGrid Name="OutstaffPlanRequestsDataGrid" Source="{OutstaffPlaningRequestsCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='" + iGridHeight + "'" : "Height='300'")%>  Selection="multiple" Width="100%" PageSize="<%=iPageItemsCount%>">
+					<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+					<DataGridColumn Value="obj_id" DataID="obj_id" Type="string" Hidden="true" Ghost="false"/>
+					<DataGridColumn Value="subdivision_id" DataID="subdivision_id" Type="string" Hidden="true" Ghost="false"/>
+					
+<% 	
+				if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'request_name'")) != undefined)
+				{
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode("Название заявки")%>" Value="order_name" <%=(curDevice.disp_type != "mobile" ? "Width='150'" : "Width='100%'")%> PageSize="<%=iPageItemsCount%>" Type="link" Click="SET=PlaningRequestDialog/object_id,{id};SET=PlaningRequestDialog/subdivision_id,{subdivision_id};SET=PlaningRequestDialog/budget_period_id,<%=iSelectedBudgetPeriodId%>;SET=PlaningRequestDialog/position_common_id,<%=iSelectedPositionCommonId%>;SET=PlaningRequestDialog/isWTcollaborator,<%=bIsSelectListCollaborator%>;SET=PlaningRequestDialog/onlyOneRequestForPeriod,<%=bIsCreateOneRequest%>;SET=PlaningRequestDialog/deductHourFromSub,<%=bIsChangePlanHours%>;OPENDIALOG=PlaningRequestDialog" ColorSource="color_source" Sortable="true"/>
+<%
+				}
+				if (curDevice.disp_type != "mobile")
+				{
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'request_date'")) != undefined)
+					{
+%>				
+						<DataGridColumn Title="<%=XmlAttrEncode("Дата заявки")%>" Value="order_date" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'request_status'")) != undefined)
+					{
+%>
+				 		<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const( "fyiq75x6vn", curLngWeb ))%>" Value="order_status_name" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'responsible_collaborator'")) != undefined)
+					{
+%>
+						<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_tutor_main", curLngWeb ))%>" Value="person_fullname" Width="150" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'position'")) != undefined)
+					{
+%>		
+						<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_position_common", curLngWeb ))%>" Value="position_common_name" Width="150" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'subdivision'")) != undefined)
+					{
+%>	
+				 		<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_subd", curLngWeb ))%>" Value="subdivision_name" Width="150" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'ro'")) != undefined)
+					{
+%>	
+						<DataGridColumn Title="<%=XmlAttrEncode("PO")%>" Value="ro_name" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'provider'")) != undefined)
+					{
+						strType = "";
+						if (curUser.access.access_role != "outsorcing")
+						{
+							strType = "Type='link' Click='OPENURL={outstaff_provider_url}'";
+						}
+						else
+						{
+							strType = "Type='string'";
+						}
+%>					
+						<DataGridColumn Title="<%=XmlAttrEncode("Поставщик")%>" Value="outstaff_provider_name" Width="120" <%=strType%> ColorSource="color_source" Sortable="true"/>
+<%
+					}
+					if (ArrayOptFirstElem(ArraySelect(arrPlaningRequestsListParam, "This == 'hours_residue'")) != undefined && curUser.access.access_role != "outsorcing")
+					{
+%>					
+						<DataGridColumn Title="<%=XmlAttrEncode("Остаток часов")%>" Value="hours_residue" Width="100" Type="string" ColorSource="color_source" Sortable="true"/>
+<%
+					}
+				}
+				
+%>
+					<Menu Source="{OutstaffPlanRequestsMenu}"/>
+				</DataGrid>
+
+<%		
+		}
+		catch(err)
+		{
+			alert(err);
+		}	
+			
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "timesheet" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode("Учет объема услуг")%>">
+<%
+		}
+		
+		sCalendarDefaultViewParam = tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.calendar_default_view", "month", true );
+		TimesheetTabParams = tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.params_list", "", true );
+		row_filters = new Array();
+		if ( TimesheetTabParams != "" && !isUpr )
+		{
+			cnt_filter = 0;
+			arrFilters = new Array();
+			for( filter in String( TimesheetTabParams ).split( ";" ) )
+			{
+				if( cnt_filter >= 3 )
+				{
+					row_filters.push( arrFilters );
+					cnt_filter = 0;
+					arrFilters = new Array();
+				}
+				value = "";
+				xquery = "";
+				switch( filter )
+				{
+					case "subdivisions":
+						iGroupSubdivisionId = OptInt( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.subdivision_group_id", "", true ) );
+						arrTempSubd = new Array();
+						arrResultSubd = isHr ? ArrayExtract( arrFuncManagers, "This.object_id" ) : curUser.access.access_role == "outsorcing" ? arrContractsSubdivIds : new Array();
+						if( iGroupSubdivisionId != undefined )
+						{
+							for ( elem in XQuery( "for $i in subdivision_group_subdivisions where $i/subdivision_group_id = " + iGroupSubdivisionId + " return $i" ) )
+							{
+								arrSubSubdivisions = tools.xquery("for $elem in subdivisions where IsHierChild( $elem/id, " + elem.subdivision_id + " ) order by $elem/Hier() return $elem");
+								if (ArrayOptFirstElem(arrSubSubdivisions) != undefined)
+								{
+									arrTempSubd = ArrayUnion(arrTempSubd, arrSubSubdivisions )
+								}
+								arrTempSubd = ArrayUnion( arrTempSubd, XQuery( "for $elem in subdivisions where $elem/id = " + elem.subdivision_id + " return $elem" ));
+							}
+							arrResultSubd = ArrayIntersect( arrResultSubd, arrTempSubd, "This", "This.id" );
+						}
+						xquery = " MatchSome( $elem/id, ( " + ArrayMerge( arrResultSubd, "This", "," ) + " ) ) "
+						filter = "subdivision";
+						value = iSelectedSubdivisionId;
+						break;
+							
+					case "budget_period":
+						value = ( fldCurBudgetPeriod != undefined ? fldCurBudgetPeriod.id : iTshSelectedBudgetPeriodId );
+						break;
+							
+					case "common_position":
+						filter = "type_service";
+						value = iTshSelectedCommonPositionId;
+						break;
+						
+					case "group_subdivision":
+						value = iTshSelectedGroupSubdivisionId;
+						xquery = tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.subdivision_group_xquery_qual", "", true );
+						break;
+						
+						
+				}
+				_filter = add_filter( filter, false, value, xquery );
+				arrFilters.push( _filter )
+				cnt_filter++;
+			}
+			if( cnt_filter > 0 )
+				row_filters.push( arrFilters );
+			
+			curFilter = {
+				'id': sTabListParam,
+				'disp_search': false,
+				'search_action': ( "SET=OutstaffStagesCalendarActive,1;UPDATE=" + sTabListParam + "OutstaffStages" + ( curDevice.disp_type != "mobile" ? "Calendar" : "List" ) + ";" ),
+				'action': ( "SET=OutstaffStagesCalendarActive,1;UPDATE=" + sTabListParam + "OutstaffStages" + ( curDevice.disp_type != "mobile" ? "Calendar" : "List" ) + ";" ),
+				'row_filters': row_filters,
+				'filters': [],
+			};
+
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+		}
+		else
+		{
+%>
+		<StackPanel Class="XAML-stack-filters-container" Height="56" Orientation="Vertical" Adapt="1"/>
+<%
+		}
+		if ( TimesheetTabParams != "" && !isUpr && false )
+		{
+%>			
+				<Panel Name="SearchPanal<%=sTabListParam%>" Title="<%=XmlAttrEncode( tools_web.get_web_const( "vkpb_search", curLngWeb ) )%>" Width="100%" Expanded="1">
+					<Dialog Name="SelectDialogtsh_group_subdivision_id" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="Set=ObjectNameEdittsh_group_subdivision_id,{CatalogListDataGridFullList:^/disp};Set=tsh_group_subdivision_id,{CatalogListDataGridFullList:^/id};SET=ActionCheck,check_group_subdivision;ACTION=OutstaffPlanRequestCheck">
+						<Param Name="catalog_name" Value="subdivision_group"/>
+						<Param Name="multi_select" Value="false"/>
+						<Param Name="xquery_qual" Value="<%=tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.subdivision_group_xquery_qual", "", true )%>"/>
+						<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+					</Dialog>
+					<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+						<GridColumns>
+							<GridColumn Width="250"/>
+							<GridColumn/>
+						</GridColumns>
+<%
+					
+					if ( TimesheetTabParams.indexOf("budget_period") >= 0  && !isUpr)
+					{
+												
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%>:</Label>
+							
+<%
+							try
+							{
+								strTimeshObjectName = OpenDoc(UrlFromDocID(Int(iTshSelectedBudgetPeriodId))).TopElem.name ;
+							}
+							catch(ex)
+							{
+								strTimeshObjectName = "";
+							}
+							
+							curSelector = {
+								"id": "tsh_budget_period_id",
+								"width": "100%",
+								"catalog_name": "budget_period",
+								"xquery_qual": "contains($elem/code,'out')",
+								"object_id_item_name": "tsh_budget_period_id",
+								"object_id": (fldCurBudgetPeriod != undefined ? fldCurBudgetPeriod.id : iTshSelectedBudgetPeriodId),
+								"object_name":  strTimeshObjectName,
+								"can_be_empty": "true"
+								
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>				
+						</GridRow>
+<%
+					}
+					
+					if ( TimesheetTabParams.indexOf("subdivisions") >= 0 && !isUpr )
+					{
+						sName = tools.random_string( 8, "qwertyuiopasdfghjklzxcvbnm" );
+						iGroupSubdivisionId = OptInt( tools_web.get_web_param( curParams, "outstaff_requests_body.timesheet_tab.subdivision_group_id", "", true ) );
+						arrTempSubd = new Array();
+						arrResultSubd = isHr ? ArrayExtract( arrFuncManagers, "This.object_id" ) : curUser.access.access_role == "outsorcing" ? arrContractsSubdivIds : new Array();
+						if( iGroupSubdivisionId != undefined )
+						{
+							for ( elem in XQuery( "for $i in subdivision_group_subdivisions where $i/subdivision_group_id = " + iGroupSubdivisionId + " return $i" ) )
+							{
+								arrSubSubdivisions = tools.xquery("for $elem in subdivisions where IsHierChild( $elem/id, " + elem.subdivision_id + " ) order by $elem/Hier() return $elem");
+								if (ArrayOptFirstElem(arrSubSubdivisions) != undefined)
+								{
+									arrTempSubd = ArrayUnion(arrTempSubd, arrSubSubdivisions )
+								}
+								arrTempSubd = ArrayUnion( arrTempSubd, XQuery( "for $elem in subdivisions where $elem/id = " + elem.subdivision_id + " return $elem" ));
+							}
+							arrResultSubd = ArrayIntersect( arrResultSubd, arrTempSubd, "This", "This.id" );
+						}
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_subd", curLngWeb )%>:</Label>
+							<Panel Name="<%=sName%>" Source="panel_selected_hier_subdivisions" ShowHeader="false">
+								<Param Name="str_subdivisions" Value="<%=ArrayMerge( arrResultSubd, "This", ";" )%>"/>
+								<Param Name="field_name" Value="tsh_subdivision_id"/>
+								<Param Name="panel_ident" Value="<%=sName%>"/>
+								<Param Name="CONTEXTSTR" Value="{PanelContext}"/>
+							</Panel>			
+						</GridRow>
+<%
+					}
+					if ( TimesheetTabParams.indexOf("common_position") >= 0 && !isUpr )
+					{
+						
+%>
+						<GridRow>
+							<Label Class="XAML-info-grid-title-column"><%=HtmlEncode("Вид услуги")%>:</Label>
+<%
+							strTimeshObjectName = "";
+							try
+							{
+								strTimeshObjectName = OpenDoc(UrlFromDocID(Int(iTshSelectedCommonPositionId))).TopElem.name ;
+							}
+							catch(ex)
+							{
+								strTimeshObjectName = "";
+							}
+							
+							curSelector = {
+								"id": "tsh_common_position_id",
+								"width": "100%",
+								"catalog_name": "position_common",
+								"object_id_item_name": "tsh_common_position_id",
+								"object_id": iTshSelectedCommonPositionId ,
+								"xquery_qual": "$elem/allow_outstaff = true()",
+								"object_name":  strTimeshObjectName,
+								"can_be_empty": "true",
+								"check_access": "true"
+							};
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>				
+						</GridRow>
+<%
+					}
+%>					
+					</Grid>
+					
+				</Panel>
+<%
+				}
+				//alert("ssss "+strSubdivIds)
+%>	
+				<Edit Name="tsh_subdivision_id" Hidden="1"></Edit>
+				<Edit Name="PanelContext" Hidden="1">{}</Edit>
+				<Toolbar Class="XAML-toolbar" Adapt="true">
+<%
+		if(curDevice.disp_type != "mobile")
+		{
+%>	
+					<Button Click="SET=OutstaffStagesCalendarActive,1;UPDATE=<%=sTabListParam%>OutstaffStagesCalendar;" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+		}
+		else
+		{
+%>
+					<Button Click="SET=OutstaffStagesCalendarActive,1;UPDATE=<%=sTabListParam%>OutstaffStagesList;" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+		}
+%>
+				</Toolbar>
+				<HTMLBox>
+					<![CDATA[
+						<style>
+							.XAML-test-out .x-toolbar-default {display: none;}
+							.spxmlcalendarrefresh {display: none !important;}
+						</style>
+					]]>
+				</HTMLBox>
+<%
+		if(curDevice.disp_type != "mobile")
+		{
+%>				
+				<Calendar Name="<%=sTabListParam%>OutstaffStagesCalendar" Width="100%" <%=(curDevice.disp_type != "mobile" ? "Height='500'" : "Height='450'")%> DataTitle="stage_name" Hidden="0" DataStart="start_date" DataEnd="finish_date" DataFormat="formatfld" Source="{OutstaffOrderExecutStagesCollection}"
+					SelectedView="<%=sCalendarDefaultViewParam%>" CategoryClick="UPDATE=<%=sTabListParam%>OutstaffStagesCalendar" DayClick="UPDATE=<%=sTabListParam%>OutstaffStagesCalendar" WeekClick="UPDATE=<%=sTabListParam%>OutstaffStagesCalendar" MonthClick="UPDATE=<%=sTabListParam%>OutstaffStagesCalendar" EventClick="SET=OutstaffExecutStageDialog/object_id,{outstaff_order_execution_id};SET=OutstaffExecutStageDialog/stage_code,{stage_id};SET=OutstaffExecutStageDialog/hour_diff,<%=iDateDiffCount%>;SET=OutstaffExecutStageDialog/isWTcollaborator,<%=bIsSelectListCollaborator%>;SET=OutstaffExecutStageDialog/isWTcollaborator,<%=bIsSelectListCollaborator%>;OPENDIALOG=OutstaffExecutStageDialog" DataColor="color" Modes="day,month,week" AutoReload="True"/>
+<%
+		}
+		else
+		{
+%>
+			<DataGrid Name="<%=sTabListParam%>OutstaffStagesList" Source="{OutstaffOrderExecutStagesCollection}" PageSize="15" Selection="single" Width="100%">
+				<DataGridColumn Title="ID" Value="id" Hidden="1" Ghost="false"/>
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="stage_name" Type="link" Sortable="True" Click="SET=OutstaffExecutStageDialog/object_id,{outstaff_order_execution_id};SET=OutstaffExecutStageDialog/stage_code,{stage_id};SET=OutstaffExecutStageDialog/hour_diff,<%=iDateDiffCount%>;SET=OutstaffExecutStageDialog/isWTcollaborator,<%=bIsSelectListCollaborator%>;SET=OutstaffExecutStageDialog/isWTcollaborator,<%=bIsSelectListCollaborator%>;OPENDIALOG=OutstaffExecutStageDialog" Width="100%" ColorSource="color"/>
+
+				<DataGridColumn Title="<%=tools_web.get_web_const( "c_start_date", curLngWeb )%>" Value="start_date" Type="string"  Sortable="True" ColorSource="color"/>
+				
+			</DataGrid>
+<%
+		}
+%>			
+				
+				<HTMLBox>
+					<![CDATA[
+						<table border="0" cellpadding="4" cellspacing="10">
+							<tr>
+<%
+				cnt = 0;
+				for( elem in arrStatus )
+				{
+					if( cnt >= ( curDevice.disp_type != "mobile" ? 4 : 2 ) )
+					{
+%>
+						</tr><tr>
+<%
+						cnt = 0;
+					}
+%>
+								<td style="width: <%=curDevice.disp_type != "mobile" ? 20 : 10%>px; background-color: <%=elem.color%>">&nbsp;</td>
+								<td style="font-size:12px"><%=HtmlEncode( elem.name )%></td>
+<%
+					cnt++;
+				}
+%>
+							</tr>
+						</table>
+					]]>
+				</HTMLBox> 
+<%
+
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>	
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "replacement_requests" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode("Заявки на замену")%>">
+<%
+		}
+		
+		try
+		{
+			ReplacementRequestsTabParams = tools_web.get_web_param( curParams, "outstaff_requests_body.replacement_requests_tab.params_list", "", true );
+			
+			row_filters = new Array();
+			if ( ReplacementRequestsTabParams != "" )
+			{
+				cnt_filter = 0;
+				arrFilters = new Array();
+				for( filter in String( ReplacementRequestsTabParams ).split( ";" ) )
+				{
+					xquery = "";
+					if( ( !isHr && curUser.access.access_role != "outsorcing" ) && filter == "subdivision" )
+						continue;
+					if( cnt_filter >= 3 )
+					{
+						row_filters.push( arrFilters );
+						cnt_filter = 0;
+						arrFilters = new Array();
+					}
+					value = "";
+					switch( filter )
+					{
+						case "subdivision":
+							value = iReplSelectedSubdivisionId;
+							break;
+								
+						case "budget_period":
+							value = ( fldCurBudgetPeriod != undefined && iReplSelectedBudgetPeriodId == null ? fldCurBudgetPeriod.id : iReplSelectedBudgetPeriodId );
+							break;
+								
+						case "type_service":
+							value = iReplSelectedPositionCommonId;
+							break;
+					}
+					arrFilters.push( add_filter( filter, false, value, xquery ) )
+					cnt_filter++;
+				}
+				if( cnt_filter > 0 )
+					row_filters.push( arrFilters );
+				
+				curFilter = {
+					'id': sTabListParam,
+					'disp_search': false,
+					'search_action': "SET=ReplacementRequestsActive,1;UPDATE=OutstaffReplacementRequestsDataGrid",
+					'action': "SET=ReplacementRequestsActive,1;UPDATE=OutstaffReplacementRequestsDataGrid",
+					'row_filters': row_filters,
+					'filters': [],
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+			}
+			else
+			{
+%>
+		<StackPanel Class="XAML-stack-filters-container" Height="56" Orientation="Vertical" Adapt="1"/>
+<%
+			}
+%>
+		<Toolbar Class="XAML-toolbar" Adapt="true">
+			<Button Click="SET=ReplacementRequestsActive,1;UPDATE=OutstaffReplacementRequestsDataGrid" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+		</Toolbar>
+		
+		<DataGrid Name="OutstaffReplacementRequestsDataGrid" Source="{OutstaffReplacementRequestsCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='" + iGridHeight + "'" : "Height='300'")%> Selection="multiple" Width="100%" PageSize="<%=iPageItemsCount%>">
+					<DataGridColumn Title="ID" Value="id" Type="string" Hidden="true"/>
+					<DataGridColumn Value="outstaff_request_type_id" DataID="outstaff_request_type_id" Type="string" Hidden="true" Ghost="false"/>
+					<DataGridColumn Value="outstaff_request_id" DataID="outstaff_request_id" Type="string" Hidden="true" Ghost="false"/>
+<% 	
+	if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_request_name'")) != undefined)
+	{
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode("Название заявки")%>" Value="stage_name"  <%=(curDevice.disp_type != "mobile" ? "Width='200'" : "Width='100%'")%> Type="link" Click="SET=ActionCheck,open_replacement_request;SET=OutstaffPlanRequestCheck/sSelectedObjects,{outstaff_request_id};ACTION=OutstaffPlanRequestCheck" ColorSource="color" Sortable="true"/>
+<%
+	}
+	if (curDevice.disp_type != "mobile")
+	{
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_request_date'")) != undefined)
+		{
+%>				
+					<DataGridColumn Title="<%=XmlAttrEncode("Дата заявки")%>" Value="stage_date" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_request_status'")) != undefined)
+		{
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const( "fyiq75x6vn", curLngWeb ))%>" Value="stage_status_name" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		//alert("Repl WF");
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_wf_state'")) != undefined)
+		{
+			//alert("Repl WF2");
+%>
+				 	<DataGridColumn Title="<%=XmlAttrEncode("Этап ДО")%>" Value="outstaff_request_wf_state_name" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_responsible_collaborator'")) != undefined)
+		{
+%>
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_tutor_main", curLngWeb ))%>" Value="person_fullname" Width="170" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_position'")) != undefined)
+		{
+%>		
+					<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_position", curLngWeb ))%>" Value="person_position" Width="170" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_subdivision'")) != undefined)
+		{
+%>	
+				 	<DataGridColumn Title="<%=XmlAttrEncode(tools_web.get_web_const("c_subd", curLngWeb ))%>" Value="subdivision_name" Width="150" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_ro'")) != undefined)
+		{
+%>	
+					<DataGridColumn Title="<%=XmlAttrEncode("PO")%>" Value="ro_name" Width="100" Type="string" Sortable="true" ColorSource="color"/>
+<%
+		}
+		if (ArrayOptFirstElem(ArraySelect(arrReplacementRequestsListParam, "This == 'repl_provider'")) != undefined)
+		{
+			strType = "";
+			if (isUpr)
+			{
+				strType = "Type='link' Click='OPENURL={outstaff_provider_url}'";
+			}
+			else
+			{
+				strType = "Type='string'";
+			}
+%>					
+					<DataGridColumn Title="<%=XmlAttrEncode("Поставщик")%>" Value="outstaff_provider_name" Width="150" <%=strType%> Sortable="true" ColorSource="color"/>
+<%
+		}
+	}
+%>
+					
+		</DataGrid>
+<%
+
+		}
+		catch(ex)
+		{
+			alert(ex);
+		}
+		
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "custom_requests" )
+	{
+		sCodeCustomRequest = tools_web.get_web_param( curParams, "outstaff_requests_body.custom_request_tab.code_request", "outstaff", true )
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode( "Дополнительные заявки" )%>">
+<%
+		}
+		
+		try
+		{
+			CustomRequestsTabParams = tools_web.get_web_param( curParams, "outstaff_requests_body.custom_request_tab.params_list", "", true );
+			row_filters = new Array();
+			if ( CustomRequestsTabParams != "" )
+			{
+				cnt_filter = 0;
+				arrFilters = new Array();
+				for( filter in String( CustomRequestsTabParams ).split( ";" ) )
+				{
+					xquery = "";
+					if( cnt_filter >= 3 )
+					{
+						row_filters.push( arrFilters );
+						cnt_filter = 0;
+						arrFilters = new Array();
+					}
+					value = "";
+					switch( filter )
+					{
+						case "request":
+							filter = "request_type"
+							break;
+
+					}
+					arrFilters.push( add_filter( filter, false, value, xquery ) )
+					cnt_filter++;
+				}
+				if( cnt_filter > 0 )
+					row_filters.push( arrFilters );
+				
+				curFilter = {
+					'id': sTabListParam,
+					'disp_search': false,
+					'search_action': ( "SET=CustomRequestsActive,1;UPDATE=OutstaffCustomRequestsDataGrid;" ),
+					'action': ( "SET=CustomRequestsActive,1;UPDATE=OutstaffCustomRequestsDataGrid;" ),
+					'row_filters': row_filters,
+					'filters': [],
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+			}
+			else
+			{
+%>
+		<StackPanel Class="XAML-stack-filters-container" Height="56" Orientation="Vertical" Adapt="1"/>
+<%
+			}
+			
+			
+			sCustomFields = tools_web.get_web_param( curParams, "outstaff_requests_body.custom_request_tab.custom_fields", "", true );
+			sWorkflowFields = tools_web.get_web_param( curParams, "outstaff_requests_body.custom_request_tab.workflow_fields", "", true );
+%>
+				<Edit Hidden="1" Name="SelectedSubdivisionID"/>
+				<Edit Hidden="1" Name="SelectedRequestTypeID"/>
+				<Toolbar Class="XAML-toolbar">
+					<Button Click="SET=CustomRequestsActive,1;UPDATE=OutstaffCustomRequestsDataGrid;" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+			if( isUpr && strSubdivIds != "" )
+			{
+%>	
+					<Button Click="SET=SelectDialog/catalog_name,request_type;SET=SelectDialog/can_be_empty,false;
+					SET=SelectDialog/xquery_qual,<%=UrlEncode( "contains( $elem/code, '" + sCodeCustomRequest + "' )" )%>;
+					SET=SelectDialog/display_object_ids,;SET=ActionDialog,<%=UrlEncode( "SET=SelectedRequestTypeID,{CatalogListDataGridFullList:^/id};" )%>
+					<%=UrlEncode( !StrContains( strSubdivIds, ";" ) ? ( "SET=SelectedSubdivisionID," + strSubdivIds + ";OPENWINDOW=" + tools_web.get_mode_clean_url( "request_create", null, { request_type_id: "{SelectedRequestTypeID}", request_object_id: "{SelectedSubdivisionID}" } ) )
+					: ( "SET=SelectDialog/catalog_name,subdivision;SET=SelectDialog/can_be_empty,false;
+					SET=SelectDialog/xquery_qual,;SET=SelectDialog/display_object_ids," + UrlEncode( strSubdivIds ) + ";
+					SET=ActionDialog," + UrlEncode( "SET=SelectedSubdivisionID,{CatalogListDataGridFullList:^/id};OPENWINDOW=" + tools_web.get_mode_clean_url( "request_create", null, { request_type_id: "{SelectedRequestTypeID}", request_object_id: "{SelectedSubdivisionID}" } ) ) + ";
+					OPENDIALOG=SelectDialog;" ) )%>;
+					OPENDIALOG=SelectDialog" Class="XAML-button-content"><%=tools_web.get_web_const( "qgat42qe0w", curLngWeb )%></Button>
+<%
+			}
+%>
+				</Toolbar>
+				
+				<Edit Name="CustomRequestsActive" Hidden="1">0</Edit>
+				<Collection Name="OutstaffCustomRequestsCollection" Source="outstaff_custom_requests">
+					<Param Name="code_request" Value="<%=sCodeCustomRequest%>"/>
+					<Param Name="request_type_id" Value="{custom_requestsrequest_type_id}"/>
+					<Param Name="custom_fields" Value="<%=sCustomFields%>"/>
+					<Param Name="workflow_fields" Value="<%=sWorkflowFields%>"/>
+					<Param Name="active" Value="{CustomRequestsActive}"/>
+					<Param Name="str_subdivisions" Value="<%=strSubdivIds%>"/>
+				</Collection>	
+				
+				<DataGrid Name="OutstaffCustomRequestsDataGrid" Source="{OutstaffCustomRequestsCollection}" <%=(curDevice.disp_type != "mobile" ? "Height='" + iGridHeight + "'" : "Height='300'")%> Selection="multiple" Width="100%" PageSize="<%=iPageItemsCount%>">
+					<DataGridColumn <%=(curDevice.disp_type != "mobile" ? "Width='150'" : "Width='100%'")%> Value="code" Title="<%=tools_web.get_web_const( "c_request", curLngWeb )%>" Type="link" Click="OPENWINDOW=<%=tools_web.get_mode_clean_url( null, "{id}" )%>"/>
+<%
+		if (curDevice.disp_type != "mobile")
+		{
+%>
+						<DataGridColumn Value="person_fullname" Title="<%="Сотрудник"%>" Width="200" Type="string"/>
+						<DataGridColumn Value="workflow_state" Title="<%="Этап"%>" Width="150" Type="string"/>
+						<DataGridColumn Value="create_date" Title="<%="Дата создания"%>" Width="150" Type="string"/>
+						<DataGridColumn Value="create_time" Title="<%="Время создания"%>" Width="150" Type="string"/>
+						<DataGridColumn Value="request_type" Title="<%="Тип заявки"%>" Width="200" Type="string"/>
+<%
+			rType = ArrayOptFirstElem( XQuery( "for $i in request_types where $i/code = '" + sCodeCustomRequest + "' return $i" ) );
+			if( sCustomFields != "" )
+			{
+				if( rType != undefined )
+				{
+					tmpObject = OpenNewDoc( 'x-local://wtv/wtv_request.xmd' ).TopElem;
+					tmpObject.request_type_id = rType.id;
+					fldCustomElems = tools.get_custom_template( tmpObject.Name, null, tmpObject );
+					if ( fldCustomElems != null )
+					{
+						fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+						for( field in String( sCustomFields ).split( ";" ) )
+						{
+							field = ArrayOptFind( fldWebCustomFields, "This.name == '" + field + "'" );
+							if( field == undefined )
+								continue;
+%>
+							<DataGridColumn Value="custom_<%=field.name%>" Title="<%=field.title%>" Width="150" Type="string"/>
+<%
+						}
+						
+					}
+				}
+			}
+			if( sWorkflowFields != "" )
+			{
+				if( rType != undefined )
+				{
+					teRequestType = OpenDoc( UrlFromDocID( rType.id ) ).TopElem;
+					if( teRequestType.workflow_id.HasValue )
+					{
+						teWorkflow = OpenDoc( UrlFromDocID( teRequestType.workflow_id ) ).TopElem;
+
+						for( field in String( sWorkflowFields ).split( ";" ) )
+						{
+							field = teWorkflow.workflow_fields.GetOptChildByKey( field );
+							if( field == undefined )
+								continue;
+%>
+							<DataGridColumn Value="workflow_<%=field.name%>" Title="<%=field.title%>" Width="150" Type="string"/>
+<%
+						}
+					}
+				}
+			}
+		}
+%>
+				</DataGrid>
+<%		
+		}
+		catch(err)
+		{
+			alert(err);
+		}	
+			
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	</TabItem>
+<%
+		}
+	}
+	if ( sTabListParam == "materials" )
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Title="<%=XmlAttrEncode("Расходные материалы")%>">
+<%
+		}
+		iMaterialSubdId = OptInt(CONTEXT.GetOptProperty( 'materialssubdivision_id', null),null);
+		iMaterialPeriodId = CONTEXT.GetOptProperty( 'materialsbudget_period_id' );
+		iMaterialPeriodId = OptInt( ( fldCurBudgetPeriod != undefined && iMaterialPeriodId == undefined ? fldCurBudgetPeriod.id : OptInt( iMaterialPeriodId, null ) ), null );
+		iMaterialTypeId = OptInt(CONTEXT.GetOptProperty( 'materialsoutstaff_type_material_id', null),null);
+		
+		row_filters = new Array();
+		cnt_filter = 0;
+		arrFilters = new Array();
+		arrFilters.push( add_filter( "budget_period", false, iMaterialPeriodId, "" ) );
+		arrFilters.push( add_filter( "subdivision", false, ( isUpr ? iSelectedSubdivisionId : iMaterialSubdId ), "" ) );
+		arrFilters.push( add_filter( "outstaff_type_material", false, iMaterialTypeId, "" ) );
+		row_filters.push( arrFilters );
+		curFilter = {
+			'id': sTabListParam,
+			'disp_search': false,
+			'search_action': ( "REFRESH;" ),
+			'action': ( "REFRESH;" ),
+			'row_filters': row_filters,
+			'filters': [],
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+		
+%>
+
+		<Toolbar Class="XAML-toolbar" Adapt="true">
+			<Button Click="REFRESH" Class="XAML-button-content"><%=tools_web.get_web_const( "c_refresh", curLngWeb )%></Button>
+<%
+		if( isUpr )
+		{
+%>
+			<Button Click="SET=ActionCheck,save_subdivision;ACTION=OutstaffPlanRequestCheck" Class="XAML-button-content"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+			<Button Click="SET=ActionCheck,set_fact_value;ACTION=OutstaffPlanRequestCheck" Class="XAML-button-content"><%='Доставлено в полном объеме'%></Button>
+<%
+		}
+%>
+		</Toolbar>
+		<Edit Name="CheckSubdivisionFactValue" Hidden="1"><%=tools_web.get_web_param( curParams, "outstaff_requests_body.materials.check_fact_value", 1, true )%></Edit>
+<%
+		teMaterialSudb = null
+		if( isUpr )
+		{
+			try
+			{
+				teMaterialSudb = OpenDoc(UrlFromDocID( Int( iSelectedSubdivisionId ) )).TopElem
+			}
+			catch(ex)
+			{			}
+		}
+		else
+		{
+			if( iMaterialSubdId != null )
+				try
+				{
+					teMaterialSudb = OpenDoc(UrlFromDocID( iMaterialSubdId )).TopElem
+					strReplaceObjectName = teMaterialSudb.name ;
+				}
+				catch(ex)
+				{				}
+		}
+		if( teMaterialSudb != null )
+		{
+%>
+		<Grid Width="100%" Class="XAML-info-grid-table" CellClass="XAML-info-grid-cell" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="300"/>
+				<GridColumn Width="200"/>
+				<GridColumn Width="100"/>
+				<GridColumn Width="100"/>
+			</GridColumns>	
+			<GridRow>
+				<Label Class="XAML-grid-label-name"><%='Тип расходного материала'%></Label>
+				<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_budget_period", curLngWeb )%></Label>
+				<Label Class="XAML-grid-label-name"><%='Плановое количество'%></Label>
+				<Label Class="XAML-grid-label-name"><%='Фактическое количество'%></Label>
+			</GridRow>
+<%
+			arr_materials = teMaterialSudb.outstaff.materials;
+
+			if( iMaterialTypeId != null )
+				arr_materials = ArraySelect( arr_materials, "This.outstaff_type_material_id == iMaterialTypeId" );
+			if( iMaterialPeriodId != null )
+				arr_materials = ArraySelect( arr_materials, "This.budget_period_id == iMaterialPeriodId" );
+				
+			fDate = DateNewTime( Date(), 0, 0, 0 );
+			for( elem in arr_materials )
+			{
+
+				material = elem.outstaff_type_material_id.OptForeignElem;
+				if( material == undefined )
+					continue;
+					
+				budget_period = elem.budget_period_id.OptForeignElem;
+				if( budget_period == undefined )
+					continue;
+%>	
+			<GridRow>
+				<Label><%=XmlAttrEncode( material.name )%></Label>
+				<Label><%=XmlAttrEncode( budget_period.name )%></Label>
+				<Label><%=elem.plan_value%></Label>
+<%
+				if( DateNewTime( budget_period.finish_date, 0, 0, 0 ) < fDate || !isUpr )
+				{
+%>	
+				<Label><%=elem.fact_value%></Label>
+<%
+				}
+				else
+				{
+%>	
+				<Edit KeyPress="#!1-43:STOP;#!45:STOP;#!47:STOP;;#!58-10000:STOP;#!S1-10000:STOP;" Name="a<%=elem.id%>_fact_value"><%=elem.fact_value%></Edit>
+<%
+				}
+
+%>
+			</GridRow>
+<%
+			}
+%>	
+		</Grid>
+<%
+		}
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>	
+	</TabItem>
+<%
+		}
+	}
+	sDocumentCode = tools_web.get_web_param( curParams, "outstaff_requests_body.reports.document_code", "", true )
+	if ( sTabListParam == "reports" && sDocumentCode != "" )
+	{
+		xarrDocuments = XQuery( "for $i in documents where $i/code = " + XQueryLiteral( sDocumentCode ) + " order by $i/position descending return $i" );
+		xarrDocuments = ArraySelect( xarrDocuments, "tools_web.check_access( This, curUserID, curUser, Session )" )
+		if( ArrayOptFirstElem( xarrDocuments ) != undefined )
+		{
+			if ( ArrayCount( arrTabListParam ) > 1 )
+			{
+%>
+	<TabItem Title="<%=XmlAttrEncode('Отчеты')%>">
+		<StackPanel Class="XAML-stack-filters-container" Height="56" Orientation="Vertical" Adapt="1"/>
+<%
+			}
+%>
+			<Label/>
+			<Label/>
+			<Grid Width="100%" Adapt="true">
+				<GridColumns>
+					<GridColumn Width="120"/>
+					<GridColumn Width="100%" Align="left"/>
+				</GridColumns>
+<%
+			for( elem in xarrDocuments )
+			{
+%>	
+				<GridRow>
+					<Label Width="60"/>
+					<Link Click="OPENWINDOW=<%=elem.is_link ? elem.link_href : tools_web.doc_link( elem )%>"><%=XmlAttrEncode( elem.name )%></Link> 
+				</GridRow>
+				<GridRow>
+					<Label/>
+				</GridRow>
+<%
+			}
+%>
+				
+				
+			</Grid>
+				
+<%		
+			if ( ArrayCount( arrTabListParam ) > 1 )
+			{
+%>
+	</TabItem>
+<%
+			}
+		}
+	}
+}
+	if ( ArrayCount( arrTabListParam ) > 1 )
+	{
+%>
+</TabControl>
+<%
+	}
+}
+else
+{
+	curMessageBox = {
+		"type": "error_access"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+%>
+</SPXMLScreen>

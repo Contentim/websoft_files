@@ -1,0 +1,121 @@
+﻿<HTML>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+
+		<%
+			arrColumns = Ps.columns;
+		%>
+
+		<table border="1" cellpadding="2" cellspacing="0">
+		  <tr valign="middle">
+		  	<% for(oColumn in arrColumns){ %>
+		  			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const(oColumn.const)%></td>
+		  	<% } %>
+		  </tr>
+		<%
+			
+		arrResults = Ps.learnings
+		
+		for (var i = 0; i < ArrayCount(arrResults); i++) {
+		
+			_learning = arrResults[i]
+		%>
+		
+		<%if (i % 2 === 0) { %>
+			<tr valign="middle">
+		<% } else { %>
+			<tr valign="middle" bgcolor="#CCCCCC">
+		<% } %>
+
+			<%
+		
+					_learning_score = '';
+					if ( _learning.person_id.HasValue && _learning.max_score.HasValue)
+					{
+						_learning_score = _learning.score;
+						
+						if(_learning.max_score > 0)
+						{
+							_learning_score = _learning.score + ' (' + ( ( 100 * _learning.score ) / _learning.max_score ) + '%)'
+						}
+					}
+
+				state_name = '';
+				state_name = _learning.state_id.ForeignElem.name;
+
+				switch(_learning.state_id)
+				{
+					case 0: // назначен
+						color_bg = '#eee';
+						break;
+					case 1: // в процессе
+						color_bg = '#FFD773';
+						break;
+					case 2: // завершен
+						color_bg = '#E667AF';
+						break;
+					case 3: // не пройден
+						color_bg = '#ff5349';
+						break;
+					case 4: // пройден
+						color_bg = '#42ff9e';
+						break;
+					case 5: // просмотрен
+						color_bg = '#FFE240';
+						break;
+					default:
+						color_bg = '#fff';
+				}
+			%>
+
+			<% for(oColumn in arrColumns){ %>
+				<% if(oColumn.name == 'person_fullname'){ %>
+					<td><%=_learning.person_fullname%></td>
+				<% } %>
+				<% if(oColumn.name == 'person_org_name'){ %>
+					<td><%=_learning.person_org_name%></td>
+				<% } %>
+				<% if(oColumn.name == 'person_subdivision_name'){ %>
+					<td><%=_learning.person_subdivision_name%></td>
+				<% } %>
+				<% if(oColumn.name == 'person_code'){ %>
+					<td><%=_learning.person_code%></td>
+				<% } %>
+				<% if(oColumn.name == 'person_position_name'){ %>
+					<td><%=_learning.person_position_name%></td>
+				<% } %>
+				<% if(oColumn.name == 'creator_fullname'){ %>
+					<td><%=_learning.creator_fullname%></td>
+				<% } %>
+				<% if(oColumn.name == 'creator_code'){ %>
+					<td><%=_learning.creator_code%></td>
+				<% } %>
+				<% if(oColumn.name == 'hire_date'){ %>
+					<td align="center"><%=_learning.hire_date%></td>
+				<% } %>
+				<% if(oColumn.name == 'dismiss_date'){ %>
+					<td align="center"><%=_learning.dismiss_date%></td>
+				<% } %>
+				<% if(oColumn.name == 'course_name'){ %>
+					<td><%=_learning.course_name%></td>
+				<% } %>
+				<% if(oColumn.name == 'start_usage_date'){ %>
+					<td align="center"><%=_learning.start_usage_date%></td>
+				<% } %>
+				<% if(oColumn.name == 'max_end_date'){ %>
+					<td align="center"><%=_learning.max_end_date%></td>
+				<% } %>
+				<% if(oColumn.name == 'score'){ %>
+					<td align="center"><%=_learning.score%></td>
+				<% } %>
+				<% if(oColumn.name == 'status_name'){ %>
+					<td bgcolor="<%=color_bg%>" align="center"><%=state_name%></td>
+				<% } %>
+			<% } %>
+		  </tr>
+		<%
+		}
+		%>
+		</table>
+	</body>
+</HTML>

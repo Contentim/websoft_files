@@ -1,0 +1,9 @@
+﻿<SPXMLScreen>
+	<StackPanel Align="right">
+		<Link Click="CLOSEDIALOG" Class="icon-close"></Link>
+	</StackPanel>
+<%
+	PARAMETERS.SetProperty("bShowAsDialog", "1");
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_contest_participant_tile.xaml" ) );
+%>
+</SPXMLScreen>

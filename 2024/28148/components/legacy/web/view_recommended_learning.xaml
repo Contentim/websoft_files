@@ -1,0 +1,360 @@
+﻿<%
+// const_start
+sConstProceedToEvent = "Перейти к мероприятию"; // TODO
+// const_end
+%>
+<SPXMLScreen Class="XAML-recommended-learning">
+<!---------------------------------------- Variables -------------------------------------------->
+<!---------------------------------------- Actions -------------------------------------------->
+<!-------------------------------------- Collections -------------------------------------------->
+<!----------------------------------------- Code -------------------------------------------->
+
+<%
+var iCurTab = OptInt( CONTEXT.GetOptProperty( "Tab" ), 0 );
+
+bShowUserSelect = ( tools_web.get_web_param( curParams, "recommended_learning.bShowUserSelect", "0", true ) == "1");
+
+arrTabListParam = String( tools_web.get_web_param( curParams, "recommended_learning.tab_list", "", true ) ).split( ";" );
+sCurTabName = arrTabListParam[iCurTab];
+bShowTabs = ArrayCount(arrTabListParam) > 1;
+%>
+	<StackPanel  Width="100%" Orientation="Vertical" Class="XAML-stack-block">
+		<StackPanel Orientation="Horizontal" Class="XAML-stack-block-header">
+			<Label Class="XAML-label-block-header"><%=tools_web.get_web_const( "rekomendovanno", curLngWeb )%></Label>
+		</StackPanel>
+<%
+if(bShowTabs)
+{
+%>
+	<TabControl Name="Tab" ActiveTab="<%=iCurTab%>">
+<%
+}
+for(sTabName in arrTabListParam)
+{
+	if(sTabName == "learning")
+	{
+		if(bShowTabs)
+		{
+%>
+		<TabItem Class="icon-graduation-cap" Title="<%=( tools_web.get_web_const( "2h1z3jjflh", curLngWeb ) )%>" Reload="1">
+		<%
+		}
+			if(sCurTabName == "learning")
+			{
+				iUserID = (CONTEXT.HasProperty("selected_user_id") && CONTEXT.GetProperty("selected_user_id") != "") ? Int(CONTEXT.GetProperty("selected_user_id")) : undefined;
+				if(iUserID == undefined)
+				{
+					iUserID = curUserID;
+				}
+				arrItems = tools_web.get_user_recommended_learning(iUserID);
+				if(bShowUserSelect)
+				{
+		%>
+				<StackPanel Class="XAML-stack-filter">
+								<Edit Name="selected_user_id" Hidden="1"></Edit>
+						<%
+										sID = "selected_user_id";
+										curSelector = {
+											"id": sID,
+											"catalog_name": "collaborator",
+											"object_id": iUserID,
+											"multi_select": "false",
+											"show_all": "false",
+											"close_action": ("SET=selected_user_id,{CatalogListDataGridFullList:^/id};REFRESH")
+										};
+										Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						%>
+				</StackPanel>
+		<%
+				}
+		%>
+				<Grid Width="100%" Class="XAML-grid-list-container XAML-recommended">
+					<GridColumns>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+
+
+			<%
+					for(oItem in arrItems)
+					{
+						sStatus = tools_web.get_web_const( "neizucheno", curLngWeb );
+						sColor = "#ffac3e";
+						sStatusClass = "color-plan";
+						switch(oItem.status)
+						{
+							case "process":
+								sStatus = tools_web.get_web_const( "c_active", curLngWeb );
+								sColor = "#8ed100";
+								sStatusClass = "color-process";
+								break;
+							case "learned":
+								sStatus = tools_web.get_web_const( "izucheno", curLngWeb );
+								sColor = "#8c80c8";
+								sStatusClass = "color-finish";
+								break;
+						}
+			%>
+
+					<GridRow>
+						<Grid Class="XAML-grid-list-item">
+							<GridColumns>
+								<GridColumn Width="20"/>
+								<GridColumn/>
+								<GridColumn Width="10%"/>
+							</GridColumns>
+						<GridRow>
+			<%
+							if(oItem.type == "org")
+							{
+			%>
+								<Label Class="icon-calendar-o-ico"></Label>
+
+							<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+								<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('education_method', oItem.id, ({"doc_id": curDocID}))%>"><%=oItem.name%></Link>
+									<Label Class="XAML-label-status <%=sStatusClass%>"><%=sStatus%></Label>
+								</StackPanel>
+			<%
+							}
+							else
+							{
+			%>
+								<Label Class="icon-newspaper-o"></Label>
+
+							<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+								<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('course', oItem.objectId, ({"doc_id": curDocID}))%>"><%=oItem.name%></Link>
+									<Label Class="XAML-label-status <%=sStatusClass%>"><%=sStatus%></Label>
+								</StackPanel>
+			<%
+							}
+			%>
+								<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+
+			<%
+						if(oItem.mark != "-")
+						{
+%>								<Label><%=(tools_web.get_web_const( "vdb_aim_value", curLngWeb ) + ": " + StrReal( Real( oItem.mark ), 1 ) )%></Label>
+			<%
+						}
+								if(oItem.type == "org")
+								{
+							if(oItem.nextDate != "")
+							{
+			%>
+									<Label><%=oItem.nextDate%></Label>
+			<%
+							}
+							if(oItem.nextPlace != "")
+							{
+			%>
+									<Label><%=oItem.nextPlace%></Label>
+			<%
+							}
+									if(oItem.objectId != null)
+									{
+			%>
+										<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('event', oItem.objectId, ({"doc_id": curDocID}))%>" Width="100"><%=sConstProceedToEvent%></Link>
+			<%
+									}
+								}
+								else
+								{
+									if(oItem.status != "process")
+									{
+										if( oItem.courseYourselfStart)
+										{
+			%>
+											<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('course', oItem.objectId, ({"doc_id": curDocID}))%>" Width="100"><%=tools_web.get_web_const( "vlpb_start", curLngWeb )%></Link>
+			<%
+										}
+										else
+										{
+			%>
+											<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('course', oItem.objectId, ({"doc_id": curDocID}))%>" Width="100"><%=tools_web.get_web_const( "c_text_create_request", curLngWeb )%></Link>
+			<%
+										}
+									}
+									else
+									{
+			%>
+										<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('learning_proc', oItem.learningId, ({"doc_id": curDocID}))%>" Width="100"><%=tools_web.get_web_const( "vlpb_next", curLngWeb )%></Link>
+			<%
+									}
+								}
+			%>
+							</StackPanel>
+							</StackPanel>
+							</GridRow>
+						</Grid>
+						</GridRow>
+			<%
+					}
+
+			%>
+				</Grid>
+		<%
+			}
+
+		if(bShowTabs)
+		{
+	%>
+		</TabItem>
+	<%
+		}
+	}
+	if(sTabName == "events")
+	{
+		if(bShowTabs)
+		{
+	%>
+		<TabItem Class="icon-clock2" Title="<%=( tools_web.get_web_const( "blizhayshiemerop", curLngWeb ) )%>" Reload="1">
+	<%
+		}
+			if(sCurTabName == "events")
+			{
+				arrCollaboratorsLearnings = new Array();
+				arrCollaboratorsIds = tools.get_direct_sub_person_ids( curUserID );
+				for(iCollId in arrCollaboratorsIds)
+				{
+					arrCollaboratorsLearnings = ArrayUnion(arrCollaboratorsLearnings, tools_web.get_user_recommended_learning(iCollId));
+				}
+				arrCollaboratorsLearnings = ArrayUnion(arrCollaboratorsLearnings, tools_web.get_user_recommended_learning(curUserID));
+				arrCollaboratorsLearnings = ArraySelect(arrCollaboratorsLearnings, "objectId != null && eventName != null");
+				arrCollaboratorsLearnings = ArraySort(arrCollaboratorsLearnings, "objectId", "+", "userId", "+");
+		%>
+			<Grid Width="100%" Class="XAML-grid-info-table XAML-recommended">
+				<GridColumns>
+					<GridColumn Width="520"/>
+					<GridColumn Width="160"/>
+					<GridColumn  />
+				</GridColumns>
+
+				<GridRow Class="XAML-grid-header-row XAML-gridrow-header">
+					<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "c_event", curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "vdb_aim_date", curLngWeb )%></Label>
+					<Label Class="XAML-grid-header-text"><%=tools_web.get_web_const( "c_contest_place", curLngWeb )%></Label>
+				</GridRow>
+			<%
+				bDrawNewStackPanel = false;
+				bCloseStackPanel = false;
+				arrCheckBoxes = new Array();
+				for(i=0; i < arrCollaboratorsLearnings.length; i++)
+				{
+					oItem = arrCollaboratorsLearnings[i];
+					oNextItem = ( (i + 1) < arrCollaboratorsLearnings.length ? arrCollaboratorsLearnings[i + 1] : null);
+					oPrevItem = ( (i - 1) >= 0 ? arrCollaboratorsLearnings[i - 1] : null);
+					if( oPrevItem == null || oPrevItem.objectId != oItem.objectId)
+					{
+			%>
+			<GridRow>
+				<StackPanel Orientation="Vertical" UsePadding="False">
+					<StackPanel Orientation="Horizontal">
+						<Image Class="XAML-icon-info" Source="/pics/1blank.gif" Click="TOGGLE=Info<%=oItem.objectId%>" Width="30">
+							<HTMLTip><%=tools_web.get_web_const( "vnrqm9djn5", curLngWeb )%></HTMLTip>
+						</Image>
+						<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('event', oItem.objectId, ({"doc_id": curDocID}))%>"><%=oItem.name%></Link>
+					</StackPanel>
+
+					<StackPanel Orientation="Vertical" Name="Info<%=oItem.objectId%>" Hidden="1">
+			<%
+					}
+
+					if(oPrevItem == null || oItem.userId != oPrevItem.userId)
+					{
+						sCheckBoxName = "cb" + oItem.objectId + "_" + oItem.userId;
+						arrCheckBoxes.push(sCheckBoxName);
+			%>
+						<StackPanel Orientation="Horizontal" Name="Info<%=sCheckBoxName%>">
+							<Image Source="icons/16png/collaborator.png"/>
+							<Link Click="OPENURL=<%=tools_web.get_mode_clean_url('collaborator', oItem.userId, ({"doc_id": curDocID}))%>" Width="300"><%=oItem.userName%></Link>
+							<HTMLBox Width="150">
+			<%
+								j=0;
+								for(oMethodType in oItem.methodsTypes)
+								{
+									sMethodName = "";
+									switch(oMethodType.type)
+									{
+										case "position":
+											sMethodName = tools_web.get_web_const( "potipovoydolzhn", curLngWeb );
+											break;
+										case "group":
+											sMethodName = tools_web.get_web_const( "3guftw4p5t", curLngWeb );
+											break;
+										case "profile":
+											sMethodName = tools_web.get_web_const( "2169svf1gx", curLngWeb );
+											break;
+										case "competence":
+											sMethodName = tools_web.get_web_const( "pokompetencii", curLngWeb );
+											break;
+									}
+
+									sId = oItem.objectId + oItem.userId + oMethodType.type + j;
+									sHTML = '<div class="XAML-recommended-method"><div class="XAML-method-name" onclick="';
+									sHTML = sHTML + "if($('#" + sId + "').is(':visible')) { $('#" + sId + "').slideUp('normal'); $(this).removeClass('open'); } else { $('#" + sId + "').slideDown('normal'); $(this).addClass('open'); }";
+									sHTML = sHTML + '">' + sMethodName + '</div>';
+									sHTML = sHTML + '<div id="' + sId + '" class="XAML-method-description" style="display: none;">' + oMethodType.name + '</div></div>';
+									j++;
+			%>
+									<%=HtmlEncode( sHTML )%>
+			<%
+								}
+			%>
+							</HTMLBox>
+							<CheckBox Name="<%=sCheckBoxName%>"></CheckBox>
+						</StackPanel>
+			<%
+					}
+
+					if(oNextItem == null || oNextItem.objectId != oItem.objectId)
+					{
+						docEvent = OpenDoc(UrlFromDocID(Int(oItem.objectId)));
+						sAction = "OPENURL=" + tools_web.get_mode_clean_url('request_create', null,  { doc_id: curDocID, request_object_id: oItem.objectId });
+						if(docEvent.TopElem.default_request_type_id.HasValue && docEvent.TopElem.default_request_type_id.ForeignElem.is_group)
+						{
+							sAction += "&request_type_id=" + docEvent.TopElem.default_request_type_id;
+						}
+						if(ArrayCount(arrCheckBoxes) > 0)
+						{
+							sAction += "&selected_users="
+							for(sCheckBoxName in arrCheckBoxes)
+							{
+								sAction += sCheckBoxName + ":{" + sCheckBoxName + "},";
+							}
+						}
+			%>
+						<StackPanel Orientation="Horizontal" Align="right">
+							<Button Class="XAML-button XAML-button-request" Click="<%=sAction%>" class="inputButton" onmouseover="this.className='inputButtonOver'" onmouseout="this.className='inputButton'"><%=tools.get_web_str("c_text_create_request")%></Button>
+						</StackPanel>
+					</StackPanel>
+				</StackPanel>
+				<Label><%=oItem.nextDate%></Label>
+				<Label><%=oItem.nextPlace%></Label>
+			</GridRow>
+			<%
+					}
+				}
+			%>
+		</Grid>
+		<%
+			}
+		%>
+	<%
+		if(bShowTabs)
+		{
+	%>
+		</TabItem>
+	<%
+		}
+	}
+}
+	if(bShowTabs)
+	{
+%>
+	</TabControl>
+<%
+	}
+%>
+</StackPanel>
+</SPXMLScreen>

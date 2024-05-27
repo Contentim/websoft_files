@@ -1,0 +1,307 @@
+﻿<%
+alert(222)
+// const_start
+var oConstCollTile = ({
+	"desc": tools_web.get_web_const( 'c_desc', curLngWeb ),
+	"position": tools_web.get_web_const( 'c_position', curLngWeb ),
+	"sub": tools_web.get_web_const( 'c_subd', curLngWeb ),
+	"email": "Email"
+});
+// const_end
+
+var iObjectId = Int(PARAMETERS.GetOptProperty( "id" ));
+var iUserId = Int(PARAMETERS.GetOptProperty( "person_id" ));
+var sUsername = PARAMETERS.GetOptProperty( "fullname" );
+var sPosition = PARAMETERS.GetOptProperty( "position_name" );
+var sSubdivision = PARAMETERS.GetOptProperty( "position_parent_name" );
+var sEmail = PARAMETERS.GetOptProperty( "email","" );
+
+var sStatus = PARAMETERS.GetOptProperty( "status", "" );
+var sCareerReserveTypeName = PARAMETERS.GetOptProperty( "career_reserve_type_name", "" );
+var sObjType = PARAMETERS.GetOptProperty( "obj_name", "" );
+
+var dIncludeReserve=""
+var dStart = ""
+var dFinish=""
+var sNominationName = ""
+var sExclusionReasonName = ""
+var sAdaptaionName = PARAMETERS.GetOptProperty( "adaptation_name", "" );
+var dPlanReadiness=""
+
+if (sObjType=="cr")
+{
+	dStart = PARAMETERS.GetOptProperty( "start_date", "" );
+	dFinish = PARAMETERS.GetOptProperty( "finish_date", "" );
+	dPlanReadiness=PARAMETERS.GetOptProperty( "plan_readiness_date", "" )
+
+}
+else
+{
+	switch(sStatus)
+	{
+		case "candidate":
+			dStart = PARAMETERS.GetOptProperty( "start_date", "" );
+			sNominationName = PARAMETERS.GetOptProperty( "nomination", "" );
+			sStatus=""
+			break;
+		case "in_reserve":
+			dIncludeReserve= PARAMETERS.GetOptProperty( "include_reserve_date", "" )
+			sStatus=""
+			break;
+		case "failed":
+			sStatus=""
+			break;
+		case "left_reserve":
+			sStatus=""
+			dFinish = PARAMETERS.GetOptProperty( "finish_date", "" );
+			sExclusionReasonName = PARAMETERS.GetOptProperty( "exclusion_reason", "" );
+			break;
+	}
+}
+
+sObjectImageUrl =  tools_web.get_object_source_url( "person", iUserId, "260x260" );
+
+//sClickAction = 'OPENURL=' + tools_web.get_mode_clean_url( 'talent_pool_'+sObjType+'_card', iObjectId, { doc_id: curDocID } )  ;
+sClickAction = 'OPENURL=' + tools_web.get_mode_clean_url( null, iObjectId, { doc_id: curDocID } )  ;
+
+var bHasDescription = true;
+%>
+<SPXMLScreen>
+	<StackPanel Orientation="Vertical" Class="XAML-stack-tile" Height="350">
+<%		
+		if (bHasDescription)
+		{
+%>
+		<TabControl DisplayMode="concertina" Height="216" TabsHidden="true" Name="tiletab<%=iObjectId%>">
+		<TabItem Title="Info" Class1="XAML-stack-tile">
+			<Link  Click="SET=tiletab<%=iObjectId%>,1" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+<%
+		}
+	%>
+		<Image Click="<%=sClickAction%>" Source="/pics/1blank.gif" Class1="XAML-link-tile-image XAML-link-tile-image-vertical" Class="XAML-link-tile-image" Height="216" Width="100%">
+			<BackgroundImage Source="<%=XmlAttrEncode( sObjectImageUrl )%>"/>
+		</Image>
+	<%
+		if (bHasDescription)
+		{
+			var catCurUser = ArrayOptFirstElem(XQuery("for $elem in collaborators where $elem/id = " + iUserId + " return $elem"));
+			function drawInfoPersonExpInfo(catUser)
+			{
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table-compact">
+				<GridColumns>
+					<GridColumn Width="100"/>
+					<GridColumn/>
+				</GridColumns>
+<%
+				sAgeStr = null;
+				if (catUser.birth_date.HasValue)
+				{
+					if (catUser.birth_date<=CurDate)
+					{
+						sAgeStr = Year(CurDate) - Year(catUser.birth_date);
+						if (Month(CurDate) * 100 + Day(CurDate) > Month(catUser.birth_date) * 100 + Day(catUser.birth_date))
+							sAgeStr = sAgeStr - 1;
+						
+						if (sAgeStr<0)
+						{
+							sAgeStr = 0
+						}
+						sAgeStr = StrInt(sAgeStr);
+					}
+					
+				}
+					
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vrb_age", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=(sAgeStr == null ? tools_web.get_web_const("neukazan_1", curLngWeb) : sAgeStr)%>]]></Label>
+				</GridRow>
+<%
+				var oInfo = new Array();
+				var arrYears = [ tools_web.get_web_const( 'let_1', curLngWeb ), tools_web.get_web_const( 'god', curLngWeb ), tools_web.get_web_const( 'goda', curLngWeb ) ];
+				var rPeriod, iPeriod, iPeriodMonth, sHTML = "";
+				if (catUser.hire_date.HasValue)
+				{
+					if (catUser.hire_date<=CurDate)
+					{
+						rPeriod = (0.083 * Month(CurDate) + Year(CurDate)) - (0.083 * Month(catUser.hire_date) + Year(catUser.hire_date));
+						iPeriod = Int(rPeriod);
+						iPeriodMonth = Int((rPeriod - iPeriod) / 0.083);
+%>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vkompanii", curLngWeb )%>:</Label>
+					<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+						<Label><![CDATA[<%=(((iPeriod == 0 ? "" : iPeriod + " " + StrNonTitleCase(arrYears[IntModType(Int(rPeriod))]) + " ") + iPeriodMonth + " " + StrNonTitleCase(tools_web.get_web_const("mes", curLngWeb))))%>]]></Label>
+						<Label><![CDATA[<%=(StrNonTitleCase(tools_web.get_web_const("t1y74xh7qn", curLngWeb)) + " " + StrDate(catUser.hire_date, false))%>]]></Label>
+					</StackPanel>
+				</GridRow>
+<%
+					}
+				}
+				if ( catUser.position_date.HasValue )
+				{
+					if (catUser.position_date<=CurDate)
+					{
+						rPeriod = (0.083 * Month(CurDate) + Year(CurDate)) - (0.083 * Month(catUser.position_date) + Year(catUser.position_date));
+						iPeriod = Int(rPeriod);
+						iPeriodMonth = Int((rPeriod - iPeriod) / 0.083);
+%>
+
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "nadolzhnosti", curLngWeb )%>:</Label>
+					<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+						<Label><![CDATA[<%=(iPeriod == 0 ? "" : iPeriod + " " + StrNonTitleCase(arrYears[IntModType(Int(rPeriod ))]) + " ") + iPeriodMonth + " " + StrNonTitleCase(tools_web.get_web_const("mes", curLngWeb))%>]]></Label>
+						<Label><![CDATA[<%=(StrNonTitleCase(tools_web.get_web_const("t1y74xh7qn", curLngWeb)) + " " + StrDate(catUser.position_date, false))%>]]></Label>
+					</StackPanel>
+				</GridRow>
+<%			
+					}
+				}
+	
+				if ( sStatus!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=sStatus%>]]></Label>
+				</GridRow>
+<%					
+				}				
+				if ( dIncludeReserve!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "datavklyucheniyav", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=dIncludeReserve%>]]></Label>
+				</GridRow>
+<%					
+				}
+				if ( dStart!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "qpltbj1sg1", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=dStart%>]]></Label>
+				</GridRow>
+<%					
+				}
+				if ( dFinish!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=sObjType=="cr"?tools_web.get_web_const( "datafaktichesko", curLngWeb ):tools_web.get_web_const( "dataisklyucheniya", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=dFinish%>]]></Label>
+				</GridRow>
+<%					
+				}			
+				if ( sNominationName!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "sposobvydvizhen", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=sNominationName%>]]></Label>
+				</GridRow>
+<%					
+				}
+				if ( sExclusionReasonName!="" )
+				{
+
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "osnovaniedlyais", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=sExclusionReasonName%>]]></Label>
+				</GridRow>
+<%					
+				}					
+				
+				if (sHTML != "")
+					sHTML = tools_web.get_web_const( 'opytraboty', curLngWeb ) + "<br/>" + sHTML;
+%>
+
+			</Grid>				
+<%
+				sHTML = "";
+				return sHTML;
+
+			}
+		
+		
+	%>
+		</TabItem>
+		<TabItem Title="<%=oConstCollTile.desc%>">
+			<Link  Click="SET=tiletab<%=iObjectId%>,0" Class="XAML-link-tile-info icon-arrow-repeat icon-2x"/>
+	<%
+		if (catCurUser != undefined)
+		{
+	%>
+			
+	<%
+			drawInfoPersonExpInfo(catCurUser);
+		}
+	%>
+		</TabItem>
+		</TabControl>
+	<%
+		}
+	%>
+		<StackPanel Class="XAML-stack-tile-title-container" Height="55">
+		<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+			<%=XmlAttrEncode(sUsername)%>
+		</Link>
+		</StackPanel>
+		
+		<%
+			if(sPosition != "")
+			{
+		%>	
+		<Label Class="XAML-label-tile-desc">
+			<%=oConstCollTile.position%>: <%=XmlAttrEncode(sPosition)%>
+		</Label>
+		<%
+			}
+			
+			if(sSubdivision != "")
+			{
+		%>	
+		<Label Class="XAML-label-tile-desc">
+			<%=oConstCollTile.sub%>: <%=XmlAttrEncode(sSubdivision)%>
+		</Label>
+		<%
+			}
+			
+			if(sEmail != "")
+			{
+		%>
+		<Label Class="XAML-label-tile-desc">
+			<%=oConstCollTile.email%>: <%=XmlAttrEncode(sEmail)%>
+		</Label>
+		<%
+			}
+			if ( sCareerReserveTypeName!="" )
+			{
+%>
+			<Label Class="XAML-label-tile-desc">
+				<%=tools_web.get_web_const( "tiprezerva", curLngWeb )%>: <%=XmlAttrEncode(sCareerReserveTypeName)%>
+			</Label>
+<%					
+			}
+			if ( dPlanReadiness!="" )
+			{
+
+%>
+			<Label Class="XAML-label-tile-desc">
+				<%=tools_web.get_web_const( "c_plan_readiness_date", curLngWeb )%>: <%=XmlAttrEncode(dPlanReadiness)%>
+			</Label>
+<%					
+			}
+		%>
+	</StackPanel>
+
+</SPXMLScreen>

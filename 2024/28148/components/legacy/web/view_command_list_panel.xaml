@@ -1,0 +1,224 @@
+﻿<%
+	function get_last_user_photo( user_id )
+	{
+		oImage = new Object();
+		oImage.date = "";
+		oImage.url = "";
+		catObjectDataType = ArrayOptFirstElem( XQuery( "for $i in object_data_types where $i/code = 'user_photo' and $i/object_type = 'collaborator' return $i/Fields( 'id' )" ) );
+		if( catObjectDataType != undefined )
+		{
+			catObjectData = ArrayOptFirstElem( XQuery( "for $i in object_datas where $i/object_data_type_id = " + catObjectDataType.id + " and $i/object_id = " + user_id + " return $i/Fields( 'id' )" ) );
+			if( catObjectData != undefined )
+			{
+				teObjectData = OpenDoc( UrlFromDocID( catObjectData.id ) ).TopElem;
+				oImage.url = tools_web.get_object_source_url( "resource", teObjectData.custom_elems.ObtainChildByKey( "resource_id" ).value, { Session: Session } );
+				oImage.date = teObjectData.custom_elems.ObtainChildByKey( "resource_date" ).value;
+			}
+		}
+		if( oImage.url == "" )
+			oImage.url = tools_web.get_object_source_url( "person", user_id, "150x150" );
+			
+		return oImage;
+	}
+	function write_collaborator( _collaborator_id )
+	{
+
+		teObject = OpenDoc( UrlFromDocID( Int( _collaborator_id ) ) ).TopElem;
+		
+		oObjectImageUrl = get_last_user_photo( _collaborator_id );
+		
+		sClickAction = "SET=SelectCollaboratorID," + _collaborator_id + ";UPDATE=CommandCollaboratorPanel;"
+		 
+		sDesc = "";
+		iTaskTypeID = OptInt( tools_web.get_web_param( curParams, "command_body.task_type_id", "", true ) );
+		catTask = ArrayOptFirstElem( XQuery( "for $i in tasks where $i/executor_id = " + _collaborator_id + ( iTaskTypeID != undefined ? " and $i/task_type_id = " + iTaskTypeID : "" ) + " and $i/status = '0' return $i/Fields( 'id', 'name' )" ) );
+		if( catTask != undefined )
+		{
+			//teTask = OpenDoc( UrlFromDocID( catTask.id ) ).TopElem;
+			sDesc = catTask.name;
+		}
+		sDesc = HtmlToPlainText(sDesc);
+		if( StrLen( sDesc ) > iMaxLen )
+			sDesc = ( StrLeftCharRange(  sDesc, iMaxLen ) + "..." );
+%>
+	<Grid Width="100%" Class="XAML-grid-list-item" Adapt="1">
+		<GridColumns>
+<%
+		if( curDevice.disp_type != "mobile" )
+		{
+%>
+			<GridColumn/>
+<%
+		}
+%>
+			<GridColumn Width="100%"/>	
+		</GridColumns>
+		<GridRow>
+<%
+		if(oObjectImageUrl.url != "" && curDevice.disp_type != "mobile" )
+		{
+%>
+			<Image Click="<%=sClickAction%>" Source="pics/1blank.gif" Class="XAML-image-list-image">
+				<BackgroundImage Source="<%=XmlAttrEncode( oObjectImageUrl.url )%>"/>
+			</Image>
+<%
+		}
+%>
+			<StackPanel Class="XAML-stack-container" Orientation="Vertical">
+				<Grid Width="100%">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Width="50" Align="right"/>	
+					</GridColumns>
+					<GridRow>
+						<StackPanel Class="XAML-stack-container" Orientation="Horizontal" Adapt="1">
+							<Link Click="<%=sClickAction%>" Class="XAML-link-tile-title">
+								<![CDATA[<%=tools_web.get_cur_lng_name( teObject.fullname, curLng.short_id )%>]]>
+							</Link>							
+						</StackPanel>
+<%
+	if (tools_web.get_cur_lng_name( teObject.current_state, curLng.short_id ) != '')
+	{
+		sStatusClass = "";
+		for ( _elem_state in teObject.history_states )
+			{
+				if ( ( _elem_state.start_date.HasValue && _elem_state.finish_date.HasValue && CurDate < _elem_state.finish_date && CurDate > _elem_state.start_date )
+					|| ( _elem_state.start_date.HasValue && ! _elem_state.finish_date.HasValue && CurDate >_elem_state.start_date )
+					|| ( ! _elem_state.start_date.HasValue && _elem_state.finish_date.HasValue && CurDate < _elem_state.finish_date ) )
+				{
+					sStatusClass = _elem_state.state_id;
+					break;
+				}
+			}
+%>
+						<StackPanel Class="XAML-stack-container XAML-command-status color-command-state-<%=sStatusClass%>" Orientation="Horizontal" Adapt="1">
+							<Label>
+								<![CDATA[<%=tools_web.get_cur_lng_name( teObject.current_state, curLng.short_id )%>]]>
+							</Label>							
+						</StackPanel>
+<%
+	}
+%>
+					</GridRow>
+				</Grid>
+<%
+		if( teObject.position_name.HasValue )
+		{
+%>
+				<Label Class="XAML-label-tile-subtitle">
+					<![CDATA[<%=teObject.position_name%>]]>
+				</Label>
+<%
+		}
+		if( sDesc != "" )
+		{
+%>
+				<Label Class="XAML-label-tile-desc">
+					<![CDATA[<%=sDesc%>]]>
+				</Label>
+<%
+		}
+%>
+			</StackPanel>
+
+		</GridRow>
+	</Grid>
+<%
+	
+	}
+	
+	iPageNum = OptInt( tools_web.get_web_param( PARAMETERS, "page_num", "", true ), 1 );
+	iPageSize = OptInt( tools_web.get_web_param( curParams, "command_body.command.page_size", "", true ), 10 );
+	iMaxLen = 100;
+	sAction = tools_web.get_web_param( PARAMETERS, "action", "", true );
+	
+	switch( sAction )
+	{
+		case "next":
+			iPageNum++;
+			break;
+		case "back":
+			iPageNum--;
+			break;
+	}
+	
+	sMode = "collaborator_list";
+	iTotal = 0;
+	
+	arrResult = new Array();
+	
+	switch( sMode )
+	{
+		case "collaborator_list":
+			sCollectionCode =  "command_collection";
+			teCollection = OpenDoc( UrlFromDocID( ArrayOptFirstElem( tools.xquery( "for $elem in remote_collections where $elem/code = " + XQueryLiteral( sCollectionCode ) + " return $elem/id, $elem/__data" ) ).id ) ).TopElem;
+
+			teCollection.wvars.ObtainChildByKey( "group_id" ).value = tools_web.get_web_param( PARAMETERS, "group_id", "", true );
+			teCollection.wvars.ObtainChildByKey( "key_word" ).value = tools_web.get_web_param( PARAMETERS, "key_word", "", true );
+			
+			teCollection.page_index = iPageNum - 1;
+			teCollection.page_size = iPageSize;
+
+			oResult_search = teCollection.evaluate( "json", Request );
+			iTotal = oResult_search.total;
+			//alert('oResult_search.result ' +oResult_search.result)
+			arrResult = ParseJson( oResult_search.result );
+			if( ArrayCount( arrResult ) == 0 )
+			{
+%>
+<SPXMLScreen Ready="HIDE=SearchResultButtonsStackPanel">
+	<Label Class="XAML-grid-list-container"><%=tools_web.get_web_const( "netdannyh", curLngWeb )%></Label>
+</SPXMLScreen>
+<%
+				Cancel();
+			}
+			break;
+	}	
+	if( ArrayCount( arrResult ) > 0 )
+	{
+
+		rPages = Real( iTotal )/Real( iPageSize );
+		iPages = Int( rPages );
+		if( rPages > iPages )
+			iPages++;
+		
+		
+		sButtonsAction = "";
+		if( iPages > 1 )
+		{
+			sPanelName = "";
+			if( iPageNum == 1 )
+				sButtonsAction += "HIDE=" + sPanelName + "Back;SHOW=" + sPanelName + "NotBack;"
+			else
+				sButtonsAction += "SHOW=" + sPanelName + "Back;HIDE=" + sPanelName + "NotBack;"
+			if( iPageNum == iPages )
+				sButtonsAction += "HIDE=" + sPanelName + "Next;SHOW=" + sPanelName + "NotNext;"
+			else
+				sButtonsAction += "SHOW=" + sPanelName + "Next;HIDE=" + sPanelName + "NotNext;"
+			sButtonsAction += ";SET=" + sPanelName + "PageNum," + iPageNum + ";SET=" + sPanelName + "Pages," + iPages + ";SHOW=" + sPanelName + "ButtonsStackPanel"
+		}
+%>
+<SPXMLScreen Ready="<%=sButtonsAction%>">
+	<StackPanel Class="XAML-grid-list-container">
+	
+<%
+		for( _id in arrResult )
+			switch( sMode )
+			{
+				default:
+					write_collaborator( _id.id );
+					break;
+			}
+%>
+	</StackPanel>
+<%			
+	}
+	
+	else
+	{
+%>
+<SPXMLScreen>
+<%
+	}
+%>
+</SPXMLScreen>

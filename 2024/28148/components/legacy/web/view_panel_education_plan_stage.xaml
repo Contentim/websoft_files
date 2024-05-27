@@ -1,0 +1,168 @@
+﻿<SPXMLScreen>
+<%
+sConstAddToFolder = tools_web.get_web_const( "dobavitvetap", curLngWeb );
+sConstFolderName = tools_web.get_web_const( "c_phase", curLngWeb );
+sConstEduMethodName = tools_web.get_web_const("c_edu_method", curLngWeb );
+sConstCourseName = tools_web.get_web_const("c_course", curLngWeb );
+sConstTestName = tools_web.get_web_const("c_test", curLngWeb );
+sConstEventName = tools_web.get_web_const("c_event", curLngWeb );
+sConstDurationDays = tools_web.get_web_const( "prodolzhitelnos_1", curLngWeb );
+sConstDelayDays = tools_web.get_web_const( "startcherez", curLngWeb );
+sConstDelayNameFolder = StrNonTitleCase( tools_web.get_web_const( "dneyposlenachal_2", curLngWeb ) );
+sConstDelayNameProgram = StrNonTitleCase( tools_web.get_web_const( "dneyposlenachal", curLngWeb ) );
+sConstStartTypeAuto = StrNonTitleCase( tools_web.get_web_const( "avtomaticheski", curLngWeb ) );
+sConstStartTypeManual = StrNonTitleCase( tools_web.get_web_const( "vruchnuyu", curLngWeb ) );
+sConstStatus = tools_web.get_web_const( "c_status", curLngWeb );
+sConstPercent = tools_web.get_web_const( "c_readiness_percent", curLngWeb );
+sConstPlanDate = tools_web.get_web_const( "c_plan_date", curLngWeb );
+sConstFinishDate = tools_web.get_web_const( "c_finish_date", curLngWeb );
+context = tools.read_object( UrlDecode( tools_web.get_web_param( PARAMETERS, 'CONTEXTSTR', '{}', true ) ) );
+
+
+iPartId = OptInt( tools_web.get_web_param( PARAMETERS, 'iPartId', '', true ), "" );
+_curPart = undefined;
+if ( iPartId != "" )
+{
+	_curPart = ArrayOptFind( curObject.programs,"This.id == " + iPartId );
+}
+sProgramType = context.GetOptProperty( "dlg_program_type", _curPart != undefined ? _curPart.type : "" );
+%>
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+		<GridColumns>
+			<GridColumn Width="<%=curDevice.disp_type != "mobile" ? "250" : "100%"%>"/>
+			<GridColumn Align="Left"/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_type", curLngWeb )%>:</Label>
+			<ComboBox Name="dlg_program_type" SelectedItem="<%=sProgramType%>" Width="<%=curDevice.disp_type != "mobile" ? "250" : "100%"%>" Change="SET=dlg_object_id,;SET=ObjectNameEditdlg_object_id,;SET=TempCONTEXT,{CONTEXT};UPDATE=PlanEducationStageData">
+				<ComboBoxItem Value=""></ComboBoxItem>
+				<ComboBoxItem Value="folder"><%=ms_tools.get_const("c_phase")%></ComboBoxItem>
+				<ComboBoxItem Value="education_method"><%=ms_tools.get_const("c_edu_method")%></ComboBoxItem>
+				<ComboBoxItem Value="course"><%=ms_tools.get_const("c_course")%></ComboBoxItem>
+				<ComboBoxItem Value="assessment"><%=ms_tools.get_const("c_test")%></ComboBoxItem>
+				<ComboBoxItem Value="event"><%=ms_tools.get_const("c_event")%></ComboBoxItem>
+				<ComboBoxItem Value="material"><%="Изучение материала"%></ComboBoxItem>
+				<ComboBoxItem Value="learning_task"><%=ms_tools.get_const( "zzzv3sxxx47yyy" )%></ComboBoxItem>
+			</ComboBox>
+		</GridRow> 	
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+            <Edit Name="dlg_name" Width="100%"><%=context.GetOptProperty( "dlg_name", _curPart != undefined ? _curPart.name : "" )%></Edit>
+		</GridRow>
+<%
+	if( sProgramType == "material" )
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "tipmateriala", curLngWeb )%>:</Label>
+            <ComboBox Name="dlg_catalog_name" SelectedItem="<%=context.GetOptProperty( "dlg_catalog_name", ( _curPart != undefined ? _curPart.catalog_name : "" ) )%>" Width="250" Change="SET=dlg_object_id,;SET=ObjectNameEditdlg_object_id,;SET=TempCONTEXT,{CONTEXT};UPDATE=PlanEducationStageData">
+				<ComboBoxItem Value=""></ComboBoxItem>
+<%
+				for ( ctlg in curLngCommon.learning_catalogs )
+				{
+%>
+				<ComboBoxItem Value="<%=ctlg.id%>"><%=ctlg.name%></ComboBoxItem>
+<%
+				}
+%>
+			</ComboBox>
+		</GridRow>
+<%
+	}
+	if ( sProgramType != "folder" )
+	{
+		catalog = "";
+		switch( sProgramType )
+		{
+			case "material":
+				catalog = context.GetOptProperty( "dlg_catalog_name", _curPart != undefined ? _curPart.catalog_name : "" );
+				break;
+			case "education_method":
+			case "course":
+			case "assessment":
+			case "learning_task":
+			case "event":
+				catalog = sProgramType;
+				break;
+			default:
+				catalog = "";
+		}
+		if( catalog != "" )
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_object", curLngWeb )%>:</Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+<%
+		
+			curSelector = {
+				"id": "dlg_object_id",
+				"object_id": ( context.GetOptProperty( "dlg_object_id", ( _curPart != undefined ? _curPart.object_id : "" ) ) ),
+				"object_id_item_name": "dlg_object_id",
+				"multi_select": false,
+				"catalog_name": catalog,
+				"width": ( curDevice.disp_type != "mobile" ? "250" : "100%" ),
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+			</StackPanel>
+		</GridRow>		
+<%
+		}
+	}
+	else
+	{
+%>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=sConstDurationDays%>:</Label>
+			<Edit Name="dlg_days" Width="50"><%=context.GetOptProperty( "dlg_days", ( _curPart != undefined ? _curPart.days : "" ) )%></Edit>
+		</GridRow>
+<%
+	}
+%>		
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vppb_state", curLngWeb )%>:</Label>
+			<ComboBox Name="dlg_state_id" SelectedItem="<%=context.GetOptProperty( "dlg_state_id", ( _curPart != undefined ? _curPart.state_id : "0" ) )%>">
+<%
+	for (_state in curLngCommon.learning_states)
+	{
+%>
+				<ComboBoxItem Value="<%=_state.id%>"><%=_state.name%></ComboBoxItem>
+<%
+	}
+%>
+			</ComboBox>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=sConstDelayDays%>:</Label>
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-container" Adapt="1">
+				<Edit Name="dlg_delay_days" Width="50"><%=context.GetOptProperty( "dlg_delay_days", ( _curPart != undefined ? _curPart.delay_days : "" ) )%></Edit>
+				<Label Class="XAML-info-grid-title-column"> <%=( sProgramType != "folder" ? sConstDelayNameProgram : sConstDelayNameFolder )%></Label>
+				<Label Width="5"></Label>
+<%
+	if ( sProgramType != "folder" && sProgramType != "education_method" )
+	{
+%>
+				<ComboBox Name="dlg_start_type" SelectedItem="<%=context.GetOptProperty( "dlg_start_type", ( _curPart != undefined ? _curPart.start_type : "manual" ) )%>">
+					<ComboBoxItem Value="auto"><%=sConstStartTypeAuto%></ComboBoxItem>
+					<ComboBoxItem Value="manual"><%=sConstStartTypeManual%></ComboBoxItem>
+				</ComboBox>
+<%
+	}
+%>
+			</StackPanel>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=sConstPercent%>:</Label>
+			<Edit Name="dlg_readiness_percent" Width="50"><%=context.GetOptProperty( "dlg_readiness_percent", ( _curPart != undefined ? _curPart.readiness_percent : "" ) )%></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=sConstPlanDate%>:</Label>
+			<DatePicker Format="d.m.Y H:i"  Name="dlg_plan_date"><%=context.GetOptProperty( "dlg_plan_date", ( _curPart!=undefined ? _curPart.plan_date.HasValue ? StrDate( _curPart.plan_date, true, false ) : "" : "" ) )%></DatePicker>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-info-grid-title-column"><%=sConstFinishDate%>:</Label>
+			<DatePicker Format="d.m.Y H:i" Name="dlg_finish_date"><%=context.GetOptProperty( "dlg_finish_date", ( _curPart!=undefined ? _curPart.finish_date.HasValue ? StrDate( _curPart.finish_date, true, false ) : "" : "" ) )%></DatePicker>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

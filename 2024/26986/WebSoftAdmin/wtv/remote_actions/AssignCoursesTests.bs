@@ -1,0 +1,1166 @@
+﻿function doMessage(sMsg)
+{
+	return ({ "command": "alert", "msg": sMsg });
+}
+function getParam(_arrFormFields, _sName)
+{
+	result = "";
+	try
+	{
+		_tmpFld = ArrayOptFind(_arrFormFields, "This.name=='" + _sName + "'");
+		result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+	}
+	catch (_err)
+	{
+		result = "";
+		return result;
+	}
+	return result;
+}
+
+function getCourseName(_sObjects)
+{
+	_catalog = SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "assessment" : "course";
+	_fieldName = SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "title" : "name";
+	_sTitle = SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "Тест" : "Курс";
+	
+	_arrObjects = tools.xquery("for $elem in " + _catalog + "s where MatchSome($elem/id, (" + StrReplace(_sObjects, ';', ',') + ")) return $elem/Fields('id','" + _fieldName + "')");
+
+	if (ArrayCount(_arrObjects) > 2)
+	{
+		_aObj = [];
+		arrEv = ArrayDirect(_arrObjects);
+
+		for (i=0; i < 2; i++)
+		{
+			if (_catalog == 'assessment')
+				_aObj.push(String(arrEv[i].title))
+			else
+				_aObj.push(String(arrEv[i].name))
+		}
+		_sObjectsName = _sTitle + "ы: " + ArrayMerge(_aObj, 'This', ', ') + " и еще " + (ArrayCount(_arrObjects)-2);
+	}
+	else if (ArrayCount(_arrObjects) == 1)
+		_sObjectsName = _sTitle + ": " + ArrayMerge(_arrObjects, _fieldName, ',');
+	else
+		_sObjectsName = _sTitle + "ы: " + ArrayMerge(_arrObjects, _fieldName, ', ');
+
+	return _sObjectsName
+}
+
+function formTemplate(formID, title, grabFld, isFinal, _height, paragraph)
+{
+	var oForm = (
+		{
+			"form_id": formID,
+			"command": "display_form",
+			"height": _height,
+			"title": "Назначить " + (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тесты" : "курсы"),
+			"message": title,
+			"form_fields": [
+				{
+					"name": "__gp",
+					"type": "hidden",
+					"value": (UrlEncode(EncodeJson(oGatheredParams)))
+				},
+				{
+					"name": "__chain",
+					"type": "hidden",
+					"value": (UrlEncode(EncodeJson(chain)))
+				},
+				{
+					"name": "__step",
+					"type": "hidden",
+					"value": step
+				},
+				{
+					"name": "__grab",
+					"type": "hidden",
+					"value": grabFld
+				}
+			],
+			"buttons": [
+				{ "name": "cancel", "label": ms_tools.get_const('c_cancel'), "type": "cancel", css_class: "btn-submit-custom" },
+				{ "name": "submit", "label": (isFinal ? "Выполнить" : "Далее"), "type": "submit", css_class: "btn-cancel-custom" }
+			],
+			no_buttons: false
+		});
+		
+		if (paragraph != undefined && paragraph != "")
+			oForm.form_fields.push({"name": "__paragraph", "type": "paragraph", "value": paragraph})
+
+	return oForm;
+}
+
+// ***********************************************************
+function getContextID()
+{
+	var sTempElem;
+	var arrContextTemp = new Array();
+	var arrContextID = new Array();
+
+	try
+	{
+		arrContextTemp.push(OBJECT_ID);
+	}
+	catch (e)
+	{
+	}
+	try
+	{
+		arrContextTemp = ArrayUnion(arrContextTemp, String(SELECTED_OBJECT_IDS).split(";"));
+	}
+	catch (e)
+	{
+	}
+	try
+	{
+		arrContextTemp.push(OptInt(curObjectID));
+	}
+	catch (e)
+	{
+	}
+
+	for (sTempElem in arrContextTemp)
+	{
+		if (OptInt(sTempElem) != undefined)
+		{
+			arrContextID.push(OptInt(sTempElem));
+		}
+	}
+
+	arrContextID = ArraySelectDistinct(arrContextID);
+
+	return arrContextID;
+}
+
+// ***********************************************************
+function getModeContext(iObjectIdContext)
+{
+	var sModeContext, docDocument;
+
+	if (iObjectIdContext == undefined)
+	{
+		sModeContext = "without_context";
+		return sModeContext;
+	}
+
+	docDocument = tools.open_doc(iObjectIdContext);
+	if (docDocument == undefined)
+	{
+		sModeContext = "without_context";
+		return sModeContext;
+	}
+
+	sModeContext = String(docDocument.TopElem.Name);
+
+	return sModeContext;
+}
+
+// ******************ОСНОВНАЯ ОБЛАСТЬ*************************
+
+var oProp, oFormFields, oGatheredParams, chain, step, grab, surprise = null;
+var isFinal = false;
+
+if (LdsIsClient)
+{
+	form_fields = PARAMETERS.GetOptProperty("form_fields", "");
+	command = PARAMETERS.GetOptProperty("form_fields", "eval");
+}
+else
+{
+	form_fields = PARAMETERS.GetOptProperty("form_fields", "[]");
+	command = (form_fields == "[]" ? "eval" : "");
+}
+
+if (form_fields != "" && form_fields != "[]")
+{
+	oFormFields = ParseJson(form_fields);
+	oGatheredParams = ParseJson(UrlDecode(ArrayOptFindByKey(oFormFields, "__gp", "name").value));
+	chain = ParseJson(UrlDecode(ArrayOptFindByKey(oFormFields, "__chain", "name").value));
+	step = OptInt(ArrayOptFindByKey(oFormFields, "__step", "name").value, 0);
+	grab = ArrayOptFindByKey(oFormFields, "__grab", "name").value; 
+}
+else
+{
+	oFormFields = null;
+	oGatheredParams = new Object;
+	chain = ["course_select"];
+	step = 0;
+	grab = "";
+}
+
+arrContextID = getContextID();
+sModeContext = getModeContext(ArrayOptFirstElem(arrContextID));
+
+if (command == "eval")
+{
+	/**** SCREEN FILLING (chain.push(screen_id)) *****/
+
+	if (sModeContext == "course" || sModeContext == "assessment")
+	{
+		chain.push("target_select");
+		oGatheredParams.SetProperty("courses_ids_context", ArrayMerge(arrContextID, "This", ";"));
+		step++;
+	}
+	else if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("STANDALONE_MODE")))
+	{
+		chain.push("target_select");
+	}
+	
+	if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("person_selector")))
+		chain.push("person_selector");
+
+	if (SCOPE_WVARS.GetOptProperty("object_list_for_assignment") == "individual")
+	{
+		oGatheredParams.object_list_for_assignment = "individual";
+	}
+	else
+	{
+		for (oProp in (["object_list_for_assignment"]))
+			if (SCOPE_WVARS.GetOptProperty(oProp) == "select")
+				chain.push(oProp);
+	}
+	var wholesale = new Array();
+
+	/**** BULK SCREEN [screen_id] *****/
+	for (oProp in (["start_learning_date", "learning_length", "mind_employee_status", "proctoring", "check_reassignment"]))
+		if (SCOPE_WVARS.GetOptProperty(oProp) == "select")
+			wholesale.push(oProp);
+	if (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "course")
+		for (oProp in (["debug", "commenting"]))
+			if (SCOPE_WVARS.GetOptProperty(oProp) == "select")
+				wholesale.push(oProp);
+
+	if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("use_comments")))
+		wholesale.push("comment");
+		
+		wholesale.push("days_to_learn");
+	
+	if (SCOPE_WVARS.GetOptProperty("mind_employee_status") == "select" && SCOPE_WVARS.GetOptProperty("blacklist_statuses") != "")
+		wholesale.push("omit_states_selection");
+	
+	if (SCOPE_WVARS.GetOptProperty("check_reassignment") == "select")
+	{
+		wholesale.push("expire_time_of_completed");
+		wholesale.push("reassignment_mind_only_finished");
+	}
+	
+	if (ArrayCount(wholesale) > 0)
+	{
+		oProp = ArrayMerge(wholesale, "This", "|");
+		if (ArrayCount(wholesale) == 1)
+			oProp += "|";
+		chain.push(oProp);
+	}
+
+
+}
+else
+{
+	if (grab != "")
+		for (oProp in String(grab).split("|"))
+		{
+			_sfldValue = "";
+			if (ArrayOptFindByKey(oFormFields, oProp, "name") != undefined)
+				_sfldValue = ArrayOptFindByKey(oFormFields, oProp, "name").value;
+
+			if (oGatheredParams.GetOptProperty("object_list_for_assignment") == "individual" && IsArray(oGatheredParams.GetOptProperty("_coursesCycle")))
+			{
+				grab = oGatheredParams.GetOptProperty("_coursesCycle");
+				oGatheredParams.SetProperty(grab[0] + "_" + oProp, _sfldValue);
+
+			}
+			else
+				oGatheredParams.SetProperty(oProp, _sfldValue);
+		}
+}
+
+if (surprise == null)
+{
+
+	if (oGatheredParams.GetOptProperty("object_list_for_assignment") == "individual")
+	{
+		if (step >= ArrayCount(chain))
+		{
+			oProp = oGatheredParams.GetOptProperty("_coursesCycle");
+			if (IsArray(oProp) && ArrayCount(oProp) > 1)
+			{
+				step = oGatheredParams._stepRewind;
+				oGatheredParams.SetProperty("_coursesCycle", ArrayRange(oProp, 1, ArrayCount(oProp) - 1));
+
+			}
+		}
+	}
+	
+	if (sModeContext == "course" || sModeContext == "assessment")
+	{
+		if (step < ArrayCount(chain) && chain[step] == "object_list_for_assignment" && ArrayCount(arrContextID) == 1)
+		{
+			step++;
+		}
+	}
+	else
+	{
+		if (oGatheredParams.GetOptProperty("courses_ids", "") != "")
+		{
+			if (step < ArrayCount(chain) && chain[step] == "object_list_for_assignment" && ArrayCount(String(oGatheredParams.courses_ids).split(";")) == 1)
+			{
+				step++;
+			}
+		}
+
+	}
+	
+	if (step < ArrayCount(chain))
+	{
+		var stepID = chain[step];
+		isCheckStatus = false;
+		isFinal = (step == (ArrayCount(chain) - 1));
+		step++;
+		try
+		{
+			if (chain[step - 2] == "course_select" && SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "course")
+			{
+				_sCourseIDs = StrReplace(oGatheredParams.courses_ids, ";", ",");
+				xarrCourse = tools.xquery("for $elem in courses where ( $elem/status = 'archive' ) and MatchSome($elem/id, (" + _sCourseIDs + ")) return $elem/Fields('id')");
+
+				if (ArrayCount(xarrCourse) > 0)
+				{
+					_isApplay = getParam(oFormFields, "сheck_status");
+					if (_isApplay == undefined)
+					{
+						stepID = "course_select";
+						step--;
+						isCheckStatus = true;
+						alert("В выбраных курсах имеются архивные или скрытые, подтвердите назначение!");
+					}
+					else
+					{
+						if (!tools_web.is_true(_isApplay))
+						{
+							stepID = "course_select";
+							step--;
+							isCheckStatus = false;
+							alert("Выберите другие курсы");
+						}
+					}
+				}
+			}
+		}
+		catch (error)
+		{
+
+		}
+
+		/**** SCREENS SWITCHING *****/
+		switch (stepID)
+		{
+			case "course_select":
+				_filterCourse = "";
+				oProp = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тесты" : "курсы");
+				RESULT = formTemplate(stepID, "Выберите " + oProp, "courses_ids", isFinal, 500);
+				oProp = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "assessment" : "course");
+				sApplicationCode = SCOPE_WVARS.GetOptProperty( "sAPPLICATION", null );
+
+				iAccessLevel = tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, sApplicationCode ] );
+
+				sExpertCond = ""
+				if (iAccessLevel == 3) // 3 - методист
+				{
+					var aReqExpert = "for $elem in experts where $elem/type = 'collaborator' and $elem/person_id = " + curUserID + " return $elem";
+					var iExpertID = ArrayOptFirstElem(tools.xquery(aReqExpert), {"id": 0}).id;
+					var sReqCategory = "for $elem in roles where $elem/catalog_name = '" + oProp + "' and contains($elem/experts," + OptInt(iExpertID, 0) + ") return $elem";
+					var arrExpertCategory = tools.xquery(sReqCategory);
+					if(ArrayCount(arrExpertCategory) > 0)
+					{
+						var sReqCourses = "for $elem in " + oProp + "s where MatchSome($elem/role_id, (" + ArrayMerge(arrExpertCategory, "This.id.Value", ",") + ")) return $elem";
+						var arrExpertCourses = tools.xquery(sReqCourses);
+						if(ArrayOptFirstElem(arrExpertCourses) != undefined)
+						{
+							sExpertCond = " and MatchSome($elem/id, (" + ArrayMerge(arrExpertCourses, "This.id.Value", ",") + "))";
+						}
+					} else {
+						sExpertCond = " $elem/id = 0"
+					}
+				}
+				
+				//alert(tools.object_to_text(ArrayCount(arrExpertCategory),'json'));
+
+				if (oProp == "course")
+				{
+					if (!tools_web.is_true(SCOPE_WVARS.GetOptProperty("filter_archive")))
+						_filterCourse = " $elem/status != 'archive' " + sExpertCond;
+					if (!tools_web.is_true(SCOPE_WVARS.GetOptProperty("filter_secret")))
+						if (_filterCourse == "")
+							_filterCourse = " $elem/status != 'secret' " + sExpertCond;
+						//else
+							//_filterCourse += " and $elem/status != 'secret' " + sExpertCond;
+				}
+				else
+				{
+					_filterCourse = " $elem/status = 'publish' " + sExpertCond;
+				}
+				if (isCheckStatus)
+					RESULT.form_fields.push(({
+						"name": "сheck_status",
+						"label": "Подтвердить назначение архивных или скрытых курсов",
+						"type": "bool",
+					}));
+					
+ 				RESULT.command = "select_object";
+				RESULT.catalog_name = oProp;
+				RESULT.check_access = true;
+				RESULT.multi_select = (tools_web.is_true(SCOPE_WVARS.GetOptProperty("object_selection_multiple")));
+				RESULT.title = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "Выберите тесты" : "Выберите курсы");
+				RESULT.field_name = "courses_ids";
+				RESULT.xquery_qual = _filterCourse; 
+				
+				break;
+			case "target_select":
+				sApplicationCode = SCOPE_WVARS.GetOptProperty( "sAPPLICATION", null );
+				var curApplication = tools_app.get_cur_application( sApplicationCode );
+				iAccessLevel = tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, sApplicationCode ] );
+				sAccessLevel = "";
+
+				if (iAccessLevel == 0)
+				{
+					sAccessLevel = "lpe_manager";
+					arrSubordinates = tools.call_code_library_method("libMain", "get_subordinate_records", [ curUserID, ['func','fact'], true, 'collaborators', null, '', true, true, true, true, [], true ]);
+				}
+				else
+				{
+					switch(iAccessLevel)
+					{
+						case 10:
+							sAccessType = 'admin';
+							break;
+						case 7:
+							sAccessType = 'manager';
+							break;
+						case 5: 
+							sAccessType = 'hr';
+							break;
+						case 3: 
+							sAccessType = 'expert';
+							break;
+						case 1: 
+							sAccessType = 'observer';
+							break;
+						default:
+							sAccessType = 'reject';
+							break;
+					}
+					
+					switch( sAccessType )
+					{
+						case 'admin':
+						case 'manager':
+						{
+							sAccessLevel = "admin";
+							arrSubordinates = [];
+							arrGroups = [];
+							break;
+						}
+						case 'hr':
+						{
+							sAccessLevel = "manager";
+							var _manager_type_id = tools.call_code_library_method("libApplication", "GetApplicationHRBossTypeID", [ ( curApplication != null ? curApplication.id : null ), curUserID ]);
+							arrSubordinates = tools.call_code_library_method("libMain", "get_subordinate_records", [ curUserID, ['func'], true, '', null, '', true, true, true, true, [_manager_type_id], true ]);
+							arrGroups = tools.xquery("for $elem in func_managers where $elem/person_id = " + curUserID + " and $elem/catalog ='group' and $elem/boss_type_id = " + _manager_type_id + " return $elem");
+							arrRootSubdivisions = tools.xquery("for $elem in func_managers where $elem/person_id = " + curUserID + " and $elem/catalog ='subdivision' and $elem/boss_type_id = " + _manager_type_id + " return $elem");
+							var arrSubdivisions = [];
+							for (_elem in arrRootSubdivisions)
+							{
+								arrSubdivisions = ArrayUnion(arrSubdivisions, tools.xquery("for $elem in subdivisions where IsHierChildOrSelf( $elem/id, " + XQueryLiteral(_elem.object_id) + " ) order by $elem/Hier() return $elem"));
+							}
+							break;
+						}
+						case 'expert':
+						{
+							sAccessLevel = "expert";
+							// найти пользвателя среди экспертов
+							sExpertQuery = 'for $elem in experts where $elem/person_id = ' + curUserID + ' return $elem';
+
+							arrExperts = tools.xquery( sExpertQuery );
+							if(ArrayOptFirstElem(arrExperts) == undefined)
+							{
+								return '$elem/id = 0';
+							}
+							for(oExpert in arrExperts)
+							{
+								iExpertID = OptInt(oExpert.id.Value);
+							}
+
+							arrGroupIDs = [];
+							
+							// группы
+							sGroupsQuery = 'for $elem in groups return $elem';
+							arrGroupsObject = tools.xquery( sGroupsQuery );
+							if(ArrayOptFirstElem(arrGroupsObject) == undefined)
+							{
+								return '$elem/id = 0';
+							}
+							
+							for(oGroup in arrGroupsObject)
+							{
+								docGroup = tools.open_doc(oGroup.id.Value)
+								if (docGroup != undefined)
+								{
+									teGroup = docGroup.TopElem;
+								}
+								
+								if(ArrayOptFind(teGroup.experts, 'This.expert_id == iExpertID') != undefined)
+								{
+									arrGroupIDs.push(oGroup.id.Value)
+								}
+							}
+
+							// подразделения
+							arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUserID ] ), '({id: This.id, name: This.name, type: This.type})');
+							var arrSubdivisions = [];
+							for(oObject in arrObjects)
+							{
+								if(oObject.type == 'subdivision')
+								{
+									arrSubdivisions.push(oObject.id)
+								}
+							}
+
+							break;
+						}
+						case 'observer':
+						{
+							sAccessLevel = "observer";
+							break;
+						}
+						case 'reject':
+						{
+							//return '$elem/id = 0';
+							break;
+						}
+						default:
+						{
+							//return '$elem/id = 0';
+						}
+					}
+				}
+				sQueryQual = "";
+				switch (SCOPE_WVARS.GetOptProperty("TARGET_CATALOG"))
+				{
+					case "subdivision":
+						oProp = "подразделения";
+						sLabel = "Подразделения";
+						sCatalog = "subdivision";
+						switch (sAccessLevel)
+						{
+							case "manager":
+							case "lpe_manager":
+								sQueryQual = " MatchSome($elem/id,(" + ArrayMerge( arrSubdivisions, "OptInt( This.id, 0 )", "," ) + "))";
+								break;
+							case "expert":
+								sQueryQual = " MatchSome($elem/id, (" + ArrayMerge( arrSubdivisions, "XQueryLiteral(This)", "," ) + "))";
+								sQueryQual = "";
+								break;
+						}
+						break;
+					case "group":
+						oProp = "группы";
+						sLabel = "Группы";
+						sCatalog = "group";
+						switch (sAccessLevel)
+						{
+							case "expert":
+								sQueryQual = " MatchSome($elem/id,(" + ArrayMerge(arrGroupIDs, 'This', ',') + "))";
+								sQueryQual = "";
+								break;
+							case "manager":
+								arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUserID ] ), '({id: This.id, name: This.name, type: This.type})');
+								var arrGroupIDs = [];
+								for(oObject in arrObjects)
+								{
+									if(oObject.type == 'group')
+									{
+										arrGroupIDs.push(oObject.id)
+									}
+								}
+								sQueryQual = 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+								break;
+						}
+						break;
+					case "subordinates":
+						oProp = "сотрудников";
+						sLabel = "Сотрудники";
+						sCatalog = "collaborator";
+						//arrIds = tools.get_sub_person_ids_by_func_manager_id( OptInt( SCOPE_WVARS.GetOptProperty( "curUserID", "" ), 0 ) , "collaborator,org,position,subdivision", true);
+						//sQueryQual = " MatchSome($elem/id,(" + ArrayMerge( arrIds, "OptInt( This, 0 )", "," ) + "))";
+						switch (sAccessLevel)
+						{
+							case "manager":
+							case "lpe_manager":
+								sQueryQual = " MatchSome($elem/id,(" + ArrayMerge( arrSubordinates, "OptInt( This, 0 )", "," ) + "))";
+								break;
+							case "expert":
+								//sQueryQual = "";
+								break;
+						}
+						break;
+					default:
+						oProp = "сотрудников";
+						sLabel = "Сотрудники";
+						sCatalog = "collaborator";
+						switch (sAccessLevel)
+						{
+							case "manager":
+							case "lpe_manager":
+								sQueryQual = " MatchSome($elem/id,(" + ArrayMerge( arrSubordinates, "OptInt( This, 0 )", "," ) + "))";
+								break;
+						}
+						//sQueryQual = sAccessLevel == "manager" || sAccessLevel == "lpe_manager" ?  : "";
+						break;
+				}
+				
+				RESULT = formTemplate(stepID, "Выберите " + oProp, "selected_object_ids", isFinal, 500);
+				RESULT.command = "select_object";
+				RESULT.catalog_name = sCatalog;
+				RESULT.multi_select = true;
+				RESULT.title = 'Выберите ' + oProp;
+				RESULT.field_name = 'selected_object_ids';
+				RESULT.disp_hier_view = false;
+				RESULT.xquery_qual = sQueryQual;
+
+				if( sAccessLevel == "manager" && (SCOPE_WVARS.GetOptProperty("TARGET_CATALOG") == "subdivision" || SCOPE_WVARS.GetOptProperty("TARGET_CATALOG") == "collaborator") )
+				{
+					RESULT.disp_hier_view = false;
+					RESULT.disp_tree_selector = false; 
+				}
+				
+				break;
+			case "person_selector":
+				if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("STANDALONE_MODE")))
+					_sObjectIDs = oGatheredParams.selected_object_ids;
+				else
+				{
+					try
+					{
+						_sObjectIDs = String(SELECTED_OBJECT_IDS);
+					}
+					catch (_err)
+					{
+						_sObjectIDs = "";
+					}
+
+					if (_sObjectIDs == "")
+					{
+						try
+						{
+							_sObjectIDs = String(OBJECT_ID);
+						}
+						catch (_err)
+						{
+							_sObjectIDs = "";
+						}
+					}
+
+					if (_sObjectIDs == "")
+					{
+						try
+						{
+							_sObjectIDs = String(curObjectID);
+						}
+						catch (_err)
+						{
+							_sObjectIDs = "";
+						}
+					}
+				}
+				_sObjectIDs = StrReplace(_sObjectIDs, ";", ",");
+
+				switch (SCOPE_WVARS.GetOptProperty("TARGET_CATALOG"))
+				{
+					case "subdivision":
+						cat = new Array();
+						iGenCount = 0;
+						for (_sObjectID in _sObjectIDs.split(","))
+						{
+							iGenCount++;
+							cat = ArrayUnion(cat, ArrayExtract(tools.xquery("for $elem in subs where IsHierChild($elem/id, " + XQueryLiteral(Int(_sObjectID)) + ") and $elem/basic_collaborator_id != null() and $elem/type = 'position' order by $elem/Hier() return $elem/id,$elem/basic_collaborator_id"), "This.basic_collaborator_id.Value"));
+						}
+						_strPersonIDs = ArrayMerge(ArraySelectDistinct(cat, "This"), "This", ",");
+						_filter = " MatchSome($elem/id, (" + _strPersonIDs + ")) ";
+						RESULT = formTemplate(stepID, "Выберите сотрудников подразделения", "selected_person_ids", isFinal, 500);
+						RESULT.command = "select_object";
+						RESULT.catalog_name = "collaborator";
+						RESULT.multi_select = true;
+						RESULT.title = 'Выберите сотрудников подразделения';
+						RESULT.field_name = 'selected_person_ids';
+						RESULT.xquery_qual = _filter;
+						break;
+					case "group":
+						_arrPersons = ArraySelectAll(tools.xquery("for $elem in group_collaborators where MatchSome($elem/group_id, (" + _sObjectIDs + ")) return $elem/Fields('collaborator_id')"));
+						_strPersonIDs = ArrayMerge(ArraySelectDistinct(_arrPersons, "This.collaborator_id.Value"), "This.collaborator_id.Value", ",");
+						_filter = " MatchSome($elem/id, (" + _strPersonIDs + ")) ";
+						RESULT = formTemplate(stepID, "Выберите сотрудников группы", "selected_person_ids", isFinal, 500);
+						RESULT.command = "select_object";
+						RESULT.catalog_name = "collaborator";
+						RESULT.multi_select = true;
+						RESULT.title = 'Выберите сотрудников группы';
+						RESULT.field_name = 'selected_person_ids';
+						RESULT.xquery_qual = _filter;
+						break;
+				}
+				break;
+			case "object_list_for_assignment":
+				oProp = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тест" : "курс");
+				
+				if (sModeContext == "course" || sModeContext == "assessment")
+				{
+					sObjectsIDs = oGatheredParams.courses_ids_context.split(";")
+				}
+				else
+				{
+					sObjectsIDs = oGatheredParams.courses_ids.split(";");
+				}
+				sObjectsIDs = ArrayMerge(sObjectsIDs, "This", ";");
+
+				RESULT = formTemplate(stepID, getCourseName(sObjectsIDs), "object_list_for_assignment", isFinal, 300);
+				RESULT.form_fields.push(({ "name": "object_list_for_assignment", "type": "radio", "mandatory": true, "label": ("Выберите способ настройки параметров назначения:"), "entries": [{ "name": "Для всего списка " + oProp + "ов сразу", "value": "any" }, { name: ("Для каждого " + oProp + "а отдельно"), "value": "individual" }], "value": "any" }));
+				break;
+			default:
+				if (StrContains(stepID, "|"))
+				{
+					if (sModeContext == "course" || sModeContext == "assessment")
+					{
+						sObjectsIDs = oGatheredParams.courses_ids_context.split(";")
+					}
+					else
+					{
+						sObjectsIDs = oGatheredParams.courses_ids.split(";");
+					}
+					sObjectsIDs = ArrayMerge(sObjectsIDs, "This", ";");
+					
+					if (oGatheredParams.GetOptProperty("object_list_for_assignment") == "individual")
+					{
+
+						oProp = oGatheredParams.GetOptProperty("_coursesCycle", null);
+
+						if (oProp == null)
+						{
+							if (sModeContext == "course" || sModeContext == "assessment")
+							{
+								oProp = oGatheredParams.courses_ids_context.split(";")
+							}
+							else
+							{
+							oProp = oGatheredParams.courses_ids.split(";");
+							}
+							oGatheredParams.SetProperty("_coursesCycle", oProp);
+							oGatheredParams.SetProperty("_stepRewind", step - 1);
+						}
+						if (ArrayCount(oProp) > 1)
+							isFinal = false;
+						if (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test")
+						{
+							oProp = ArrayOptFirstElem(tools.xquery("for $elem in assessments where $elem/id = " + OptInt(oProp[0]) + " return $elem/Fields('id','title')"));
+							RESULT = formTemplate(stepID, getCourseName(sObjectsIDs), stepID, isFinal, 250, "Настройки для " + CodeLiteral(oProp.title));
+						}
+						else
+						{
+							oProp = ArrayOptFirstElem(tools.xquery("for $elem in courses where $elem/id = " + OptInt(oProp[0]) + " return $elem/Fields('id','name')"));
+							RESULT = formTemplate(stepID, getCourseName(sObjectsIDs), stepID, isFinal, 250, "Настройки для " + CodeLiteral(oProp.name));
+						}
+					}
+					else
+						RESULT = formTemplate(stepID, getCourseName(sObjectsIDs), stepID, isFinal, 250, "Настройки");
+
+
+					for (oProp in String(stepID).split("|"))
+						if (oProp != "")
+						{
+							/**** BULK SCREEN IDs *****/
+							switch (oProp)
+							{
+								case "start_learning_date":
+									oText = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тестирования" : "обучения");
+									RESULT.form_fields.push(({ "name": "start_learning_date", "type": "date", "mandatory": false, "label": "Дата начала " + oText }));
+									RESULT.height += 30;
+									break;
+								case "learning_length":
+									oProp = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тест" : "курс");
+									oText = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тестировани" : "обучени");
+									RESULT.form_fields.push(({ "name": "learning_length", "type": "radio", "mandatory": true, "label": "Продолжительность " + oText + "я", "entries": [{ "name": "Не определять", "value": "dontcare" }, { name: ("Из карточки " + oProp + "а"), "value": "take_from_course" }, { name: "Число дней", "value": "predefined_days" }], "value": "take_from_course", "column": 1 }));
+									RESULT.form_fields.push(({ "name": "days_to_learn", "type": "integer", "mandatory": false, "label": "Число дней на " + oText + "е", "value": SCOPE_WVARS.GetOptProperty("days_to_learn") + "", "column": 2 }));
+									RESULT.height += 120;
+									break;
+								case "comment":
+									RESULT.form_fields.push(({ "name": "comment", "type": "string", "label": "Комментарий" }));
+									RESULT.height += 55;
+									break;
+								case "debug":
+									RESULT.form_fields.push(({ "name": "debug", "type": "bool", "label": "Использовать отладку" }));
+									RESULT.height += 30;
+									break;
+								case "check_reassignment":
+									oProp = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "тест" : "курс");	
+									RESULT.form_fields.push(({ "name": "check_reassignment", "type": "bool", "label": "Проверка повторного назначения", "column": 1 }));
+									RESULT.form_fields.push(({ "name": "reassignment_mind_only_finished", "type": "bool", "label": "При проверке повторного назначения \nучитывать только успешно завершенные " + oProp + "ы", "column": 2 }));
+									RESULT.form_fields.push(({ "name": "expire_time_of_completed", "type": "integer", "label": "Глубина поиска завершенных " + oProp + "ов", "mandatory": false, "column": 2 }));
+									RESULT.height += 110;
+									break;
+								case "proctoring":
+									RESULT.form_fields.push(({ "name": "proctoring", "type": "bool", "label": "Использовать прокторинг" }));
+									RESULT.height += 30;
+									break;
+								case "commenting":
+									RESULT.form_fields.push(({ "name": "commenting", "type": "bool", "label": "Комментирование" }));
+									RESULT.height += 30;
+									break;
+								case "mind_employee_status":
+									RESULT.form_fields.push(({ "name": "mind_employee_status", "type": "radio", "mandatory": true, "label": "Учитывать состояние сотрудника", "entries": [{ "name": "Не назначать уволенным", "value": "omit_dismissed" }, { "name": "Не назначать по списку состояний", "value": "omit_states" }, { name: "Назначать всем", "value": "everyone" }], "value": "omit_dismissed", "column": 1 }));
+									_entries = [];
+									_blacklistStatuses = SCOPE_WVARS.GetOptProperty("blacklist_statuses") + "";
+									if (_blacklistStatuses != "")
+									{
+										_arrBlacklistStatuses = _blacklistStatuses.split(";");
+										_entries = ArrayExtract(lists.person_states, "({'name': This.name.Value, 'value': This.id.Value})"); 
+										_entries = ArrayIntersect(_entries, _arrBlacklistStatuses, "This.value", "This");
+									}
+									if (ArrayCount(_entries) > 0)
+										RESULT.form_fields.push(({ "name": "omit_states_selection", "type": "list", "mandatory": false, "label": "Список состояний сотрудников", "entries": _entries, "column": 2 }));
+									RESULT.height += 100;
+									break;
+							}
+						}
+
+				}
+				break;
+		}
+	}
+	else
+	{
+		/***** GATHER PARAMS AND DO STUFF ******/
+
+		var cat, bIndividual = (oGatheredParams.GetOptProperty("object_list_for_assignment") == "individual");
+		if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("STANDALONE_MODE")))
+		{
+			oProp = oGatheredParams.selected_object_ids;
+		}
+		else if (
+			tools_web.is_true(SCOPE_WVARS.GetOptProperty("STANDALONE_MODE")) == false
+			&& (sModeContext == "course" || sModeContext == "assessment")
+		)
+		{
+			oProp = oGatheredParams.selected_object_ids;
+		}
+		else
+		{
+			try
+			{
+				oProp = "" + SELECTED_OBJECT_IDS;
+			}
+			catch (_err)
+			{
+				oProp = "";
+			}
+			if (oProp == "")
+			{
+				try
+				{
+					oProp = "" + OBJECT_ID;
+				}
+				catch (_err)
+				{
+					oProp = "";
+				}
+			}
+			if (oProp == "")
+			{
+				try
+				{
+					oProp = "" + curObjectID;
+				}
+				catch (_err)
+				{
+					oProp = "";
+				}
+			}
+		}
+
+		oProp = StrReplace(oProp, ";", ",");
+		var targetCatalog = SCOPE_WVARS.GetOptProperty("TARGET_CATALOG", "collaborator");
+		var assignmentCatalog = (SCOPE_WVARS.GetOptProperty("ASSIGNMENT_CATALOG") == "test" ? "assessment" : "course");
+		var iGenCount;
+		switch (targetCatalog)
+		{
+			case "subdivision":
+				if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("person_selector")))
+				{
+					iGenCount = ArrayCount(oProp.split(","));
+					oProp = oGatheredParams.selected_person_ids;
+					oProp = StrReplace(oProp, ";", ",");
+				}
+				else
+				{
+					cat = new Array();
+					iGenCount = 0;
+					for (oProp in oProp.split(","))
+					{
+						iGenCount++;
+						cat = ArrayUnion(cat, ArrayExtract(tools.xquery("for $elem in subs where IsHierChild($elem/id, " + XQueryLiteral(Int(oProp)) + ") and $elem/basic_collaborator_id != null() and $elem/type = 'position' order by $elem/Hier() return $elem/id,$elem/basic_collaborator_id"), "This.basic_collaborator_id.Value"));
+					}
+					oProp = ArrayMerge(ArraySelectDistinct(cat, "This"), "This", ",");
+				}
+				break;
+
+			case "group":
+				iGenCount = ArrayCount(oProp.split(","));
+				if (tools_web.is_true(SCOPE_WVARS.GetOptProperty("person_selector")))
+				{
+					oProp = oGatheredParams.selected_person_ids;
+					oProp = StrReplace(oProp, ";", ",");
+				}
+				else
+					oProp = ArrayMerge(ArraySelectDistinct(XQuery("for $elem in group_collaborators where MatchSome($elem/group_id, (" + oProp + ")) and $elem/collaborator_id != null() return $elem/Fields('id','collaborator_id')"), "This.collaborator_id.Value"), "This.collaborator_id.Value", ",");
+				break;
+		}
+
+		var oCourse, oTuning, oFilter, fldName, oRes, aPeople = XQuery(("for $elem_qc in collaborators where MatchSome($elem_qc/id, (" + oProp + ")) return $elem_qc/Fields('id','is_dismiss','current_state')"));
+
+		var aPCounter = new Array();
+		var iCCount = 0;
+		var iPeopleCount = 0;
+		var iCourseCount = 0;
+		
+
+		if (sModeContext == "course" || sModeContext == "assessment")
+		{
+			sCourses_ids = StrReplace(oGatheredParams.courses_ids_context, ";", ",");
+		}
+		else
+		{
+			sCourses_ids = StrReplace(oGatheredParams.courses_ids, ";", ",");
+		}
+		for (oCourse in XQuery(("for $elem in " + assignmentCatalog + "s " +
+			" where MatchSome($elem/id, (" + sCourses_ids + ")) " +
+			" return $elem/Fields('id','duration')")))
+		{
+			iCourseCount++;
+			fldName = "mind_employee_status";
+			if (bIndividual)
+				fldName = oCourse.PrimaryKey + "_" + fldName;
+
+			_oFilter = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("mind_employee_status"));
+
+			for (cat in aPeople)
+			{
+				iPeopleCount++;
+				oRes = true;
+				switch (_oFilter)
+				{
+					case "omit_dismissed":
+						if (cat.is_dismiss.Value)
+						{
+							oRes = false;
+						}
+						break;
+					case "omit_states":
+						// !now it's names ";" separated!
+						oRes = true;
+						fldName = "omit_states_selection";
+						if (bIndividual)
+							fldName = oCourse.PrimaryKey + "_" + fldName;
+						oProp = oGatheredParams.GetOptProperty(fldName);
+
+						if (oProp != undefined)
+							for (_oProp in oProp.split(";"))
+								if (lists.person_states.GetOptChildByKey( _oProp ).name == cat.current_state.Value)
+								{
+									oRes = false;
+									break;
+								}
+
+						break;
+					case "blacklisted":
+						// !now it's names ";" separated!
+
+						oProp = SCOPE_WVARS.GetOptProperty("blacklist_statuses");
+						if (oProp != undefined)
+							
+							for (_oProp in oProp.split(";"))
+							{
+								if ( _oProp != '')
+								{
+									if ( lists.person_states.GetOptChildByKey( _oProp ).name == undefined )
+										continue;
+								
+									if ( lists.person_states.GetOptChildByKey( _oProp ).name == cat.current_state.Value )
+									{
+										oRes = false;
+										break;
+									}
+								}						
+							}
+							
+						break;
+				}
+
+				if (!oRes)
+				{
+					continue;
+				}
+				else
+				{
+					fldName = "check_reassignment";
+					if (bIndividual)
+						fldName = oCourse.PrimaryKey + "_" + fldName;
+
+					oFilter = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("check_reassignment"));
+
+					if (tools_web.is_true(oFilter) || oProp == "predefined_days")
+					{
+						fldName = "reassignment_mind_only_finished";
+						if (bIndividual)
+							fldName = oCourse.PrimaryKey + "_" + fldName;
+						oProp = tools_web.is_true(oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("reassignment_mind_only_finished")));
+
+						fldName = "expire_time_of_completed";
+						if (bIndividual)
+							fldName = oCourse.PrimaryKey + "_" + fldName;
+
+						oFilter = DateOffset(DateNewTime(Date()), OptInt(oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("expire_time_of_completed")), 0) * (-86400));
+
+						fldName = (assignmentCatalog == "course" ? "learning" : "test_learning");
+						_propName = (assignmentCatalog == "course" ? "course_id" : "assessment_id");
+
+						iCountLearning = 0;
+						if (!oProp)
+							iCountLearning = ArrayCount(XQuery("for $elem in " + fldName + "s where $elem/person_id = " + cat.PrimaryKey + " and $elem/" + _propName + " = " + oCourse.PrimaryKey + " and $elem/last_usage_date > " + XQueryLiteral(oFilter) + " return $elem/Fields('id')"));
+						else
+							iCountLearning = ArrayCount(XQuery("for $elem in " + fldName + "s where $elem/person_id = " + cat.PrimaryKey + " and $elem/" + _propName + " = " + oCourse.PrimaryKey + " and $elem/state_id = 4 and $elem/last_usage_date > " + XQueryLiteral(oFilter) + " return $elem/Fields('id')"));
+
+						if (iCountLearning > 0)
+							continue;
+					}
+				}
+
+
+				oTuning = ({
+					"iPersonID": cat.PrimaryKey.Value,
+				});
+
+				oTuning.SetProperty((assignmentCatalog == "assessment" ? "iAssessmentID" : "iCourseID"), oCourse.PrimaryKey.Value);
+
+				fldName = "learning_length";
+				if (bIndividual)
+					fldName = oCourse.PrimaryKey + "_" + fldName;
+				oProp = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("learning_length"));
+
+				switch (oProp)
+				{
+					case "dontcare":
+						oTuning.iDuration = 0;
+						break;
+					case "predefined_days":
+						fldName = "days_to_learn";
+						if (bIndividual)
+							fldName = oCourse.PrimaryKey + "_" + fldName;
+
+						oTuning.iDuration = OptInt(oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("days_to_learn")), null);
+						break;
+				}
+
+				fldName = "start_learning_date";
+				if (bIndividual)
+					fldName = oCourse.PrimaryKey + "_" + fldName;
+				oProp = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("start_learning_date"));
+
+				try
+				{
+					oRes = Date(oProp);
+				}
+				catch (_x_)
+				{
+					oRes = DateNewTime(Date());
+					if (oProp == "tomorrow")
+					{
+						oRes = DateOffset(oRes, 86400);
+					}
+					if (oProp == "monday")
+					{
+						oRes = DateOffset(oRes, 86400);
+						while (WeekDay(oRes) != 1)
+							oRes = DateOffset(oRes, 86400);
+					}
+				}
+
+				oTuning.dtStartLearningDate = oRes;
+
+				if (assignmentCatalog == "course")
+				{
+					fldName = "commenting";
+					if (bIndividual)
+						fldName = oCourse.PrimaryKey + "_" + fldName;
+					oProp = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("commenting"));
+
+					oTuning.bCommenting = (tools_web.is_true(oProp) || oProp == "on");
+
+					fldName = "debug";
+					if (bIndividual)
+						fldName = oCourse.PrimaryKey + "_" + fldName;
+					oProp = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("debug"));
+
+					oTuning.bLogging = (tools_web.is_true(oProp) || oProp == "on");
+				}
+
+				fldName = "comment";
+				if (bIndividual)
+					fldName = oCourse.PrimaryKey + "_" + fldName;
+				oProp = oGatheredParams.GetOptProperty(fldName, "");
+
+				if (oProp != "")
+					oTuning.sComment = oProp;
+
+				fldName = "proctoring";
+				if (bIndividual)
+					fldName = oCourse.PrimaryKey + "_" + fldName;
+				oProp = oGatheredParams.GetOptProperty(fldName, SCOPE_WVARS.GetOptProperty("proctoring"));
+
+				oTuning.bUseProctoring = (tools_web.is_true(oProp) || oProp == "use");
+
+				if (assignmentCatalog == "assessment")
+					oRes = tools.activate_test_to_person(oTuning);
+				else
+					oRes = tools.activate_course_to_person(oTuning);
+
+				try
+				{
+					oRes.DocID;
+					iCCount++;
+					if (aPCounter.indexOf(cat.PrimaryKey.Value) < 0)
+						aPCounter.push(cat.PrimaryKey.Value);
+				}
+				catch (_x_)
+				{
+				}
+
+			}
+		}
+
+		oProp = "Выполнено назначений: " + iCCount;
+		switch (targetCatalog)
+		{
+			case "group":
+				oProp += ". Обработано групп: " + iGenCount;
+				break;
+			case "subdivision":
+				oProp += ". Обработано подразделений: " + iGenCount;
+				break;
+		}
+		RESULT = ({
+			"command": "alert",
+			"confirm_result": { command: "close_form" },
+			"msg": oProp
+		});
+
+	}
+}

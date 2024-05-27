@@ -1,0 +1,235 @@
+﻿<SPXMLScreen>
+<%
+aTypeExpert = String( tools_web.get_web_param( curParams, "proctoring_body.expert_type", "proctor;expert", true ) ).split( ";" );
+aObjectTypes = String( tools_web.get_web_param( curParams, "proctoring_body.proctoring_object", "course;assessment;poll", true ) ).split( ";" );
+bShowTabs = tools_web.is_true( tools_web.get_web_param( curParams, "proctoring_body.proctoring_object.show_proctoring_object_on_tab", "1", true ) );
+xarrProctoringObjects = XQuery( "for $i in object_experts where $i/person_id = " + curUserID + " and MatchSome( $i/type, ( " + ArrayMerge( aTypeExpert, "XQueryLiteral( This )", "," ) + " ) ) return $i" )
+
+curTitle = {
+	"type": "simple",
+	"title": "Панель прокторинга"
+}
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+function get_filter_name_all( name )
+{
+	switch( name )
+	{
+		case "object_type":
+			return tools_web.get_web_const( "xco2menws4", curLngWeb );
+		default:
+			return tools_web.get_web_const( "f0j4vfoxrb", curLngWeb );
+	}
+}
+function get_filter_default_value( name )
+{
+	return "all";
+}
+
+function get_filter_name( name )
+{
+	switch( name )
+	{
+		case "collaborator":
+			return tools_web.get_web_const( "c_coll", curLngWeb )
+		case "subdivision":
+			return tools_web.get_web_const( "c_subd", curLngWeb )
+		case "course":
+			return tools_web.get_web_const( "c_course", curLngWeb )
+		case "assessment":
+			return tools_web.get_web_const( "c_test", curLngWeb )
+		case "poll":
+			return tools_web.get_web_const( "c_poll", curLngWeb )
+		case "learning_record_status":
+			return tools_web.get_web_const( "c_status", curLngWeb )
+		case "object_type":
+			return tools_web.get_web_const( "c_object_type", curLngWeb )
+		case "finish_date_from":
+			return 'Дата завершения с';
+		case "finish_date_to":
+			return tools_web.get_web_const( "mkly6lmeds", curLngWeb );
+		case "show_dismiss":
+			return tools_web.get_web_const( "c_disp_dismiss", curLngWeb )
+	}
+
+	return "";	
+}
+
+function add_filter( name, ident, is_main )
+{
+	obj_filter = new Object();
+	const = "";
+	var sUpdateAction = "UPDATE=DataGridLearningRecords" + name;
+	aResultArray = null;
+	switch( name )
+	{
+		case "course":
+		case "assessment":
+		case "poll":
+			obj_filter.xquery_qual = "MatchSome( $elem/id, ( " + ArrayMerge( ArraySelect( xarrProctoringObjects, "This.object_type == sObjectType" ), "This.object_id", "," ) + " ) )";
+		case "collaborator":
+		case "subdivision":
+			obj_filter.type = "foreign_elem";
+			obj_filter.catalog_name = name;
+			break;
+		case "learning_record_status":
+			aResultArray = curLngCommon.learning_record_statuss;
+			obj_filter.value = "active";
+			obj_filter.SetProperty( "default", "active" );
+		case "object_type":
+			if( aResultArray == null )
+				aResultArray = ArrayIntersect( curLngCommon.proctoring_objects, aObjectTypes, "This.PrimaryKey", "This" );
+			obj_filter.type = "combo";
+			if( is_main )
+				obj_filter.width = 200;
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: get_filter_default_value( name, false ), title: get_filter_name_all( name, is_main ) } );
+			for ( catElem in aResultArray )
+				obj_filter.items.push( { value: catElem.id.Value, title: catElem.name.Value } );
+			break;
+			
+		case "type_sessions":
+			obj_filter.SetProperty( "default", "proctor" );
+			
+			obj_filter.type = "combo";
+			obj_filter.items = new Array();
+			obj_filter.items.push( { value: "proctor", title: "Где я проктор" } );
+			obj_filter.items.push( { value: "boss", title: "Моих подчиненных" } );
+			break;
+		case "finish_date_from":
+		case "finish_date_to":
+			obj_filter.type = "date";
+			break;
+		
+		case "show_dismiss":
+			obj_filter.title_value = get_filter_name( name, is_main );
+			obj_filter.type = "checkbox";
+			break;
+	}
+	obj_filter.name = name + ident;
+	if( !is_main )
+	{
+		if( name != "show_dismiss" )
+			obj_filter.title = get_filter_name( name, is_main );
+	}
+	else
+		obj_filter.change = sUpdateAction;
+
+	return obj_filter;	
+}
+
+function write_datagrid( name )
+{
+	arr_filters = new Array();
+	row_filters = new Array();
+	if( name == "" )
+		sObjectType = CONTEXT.GetOptProperty( "object_type", "all" );
+	else
+		sObjectType = name;
+	if( sObjectType != "all" )
+	{
+		arr_filters.push( add_filter( sObjectType, name, false ) )
+		iObjectID = OptInt( CONTEXT.GetOptProperty( "proctor_object" + name, "" ) );
+		if( iObjectID != undefined && !bShowTabs )
+		{
+			catObject = ArrayOptFirstElem( XQuery( "for $i in " + sObjectType + "s where $i/id = " + iObjectID + " return $i" ) );
+			if( catObject == undefined )
+				CONTEXT.SetProperty( "proctor_object_id" + name, "" )
+		} 
+	}
+	else
+		CONTEXT.SetProperty( "proctor_object" + name, "" );
+	
+	arr_filters.push( add_filter( "collaborator", name, false ) )
+	arr_filters.push( add_filter( "show_dismiss", name, false ) )
+	
+	row_filters.push( arr_filters );
+	arr_filters = new Array();
+	
+	arr_filters.push( add_filter( "finish_date_from", name, false ) )
+	arr_filters.push( add_filter( "finish_date_to", name, false ) )
+	arr_filters.push( add_filter( "subdivision", name, false ) )
+	
+	row_filters.push( arr_filters );
+	arr_filters = new Array();
+	
+	arr_filters.push( add_filter( "type_sessions", name, true ) )
+	arr_filters.push( add_filter( "learning_record_status", name, true ) )
+	if( name == "" )
+		arr_filters.push( add_filter( "object_type", name, true ) )
+					
+	curFilter = {
+		'id': name,
+		'search_field': ( "key_word" + name ),
+		'search_width': 150,
+		'disp_search_field': true,
+		'disp_search': true,
+		'search_action': ( name == "" ? "REFRESH;" : "UPDATE=DataGridLearningRecords" + name ),
+		'action': ( name == "" ? "REFRESH;" : "UPDATE=DataGridLearningRecords" + name ),
+		'filters': arr_filters,
+		'row_filters': row_filters,
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+
+%>
+	<Collection Name="ProctoringObjectsCollection<%=name%>" Source="proctoring_collection">
+		<Param Name="sType" Value="proctoring_objects"/>
+		<Param Name="sTypeExpert" Value="<%=ArrayMerge( aTypeExpert, "This", "," )%>"/>
+		<Param Name="iProctoringObjectId" Value="{proctor_object<%=name%>}"/>
+		<Param Name="sStatus" Value="{learning_record_status<%=name%>}"/>
+		<Param Name="sTypeSessions" Value="{type_sessions<%=name%>}"/>
+		<Param Name="sTypeObject" Value="<%=name == "" ? "{object_type}" : name%>"/>
+		<Param Name="sKeyWord" Value="{key_word<%=name%>}"/>
+		<Param Name="iCollaboratorId" Value="{collaborator<%=name%>}"/>
+		<Param Name="iSubdivisionId" Value="{subdivision<%=name%>}"/>
+		<Param Name="bShowDismiss" Value="{show_dismiss<%=name%>}"/>
+		<Param Name="dFinishDateFrom" Value="{finish_date_from<%=name%>}"/>
+		<Param Name="dFinishDateTo" Value="{finish_date_to<%=name%>}"/>
+	</Collection>
+	<Dialog Name="LearningRecordDialog<%=name%>" Source="dlg_learning_record" Title="<%="Запись прокторинга"%>" Close="UPDATE=DataGridLearningRecords<%=name%>" Width="90%">
+		<Param Name="object_id" Value=""/>
+	</Dialog>
+	<DataGrid Name="DataGridLearningRecords<%=name%>" Source="{ProctoringObjectsCollection<%=name%>}" Title="" PageSize="100">
+		<DataGridColumn Value="id" Title="" Type="string" Hidden="1" Ghost="0"/>
+		<DataGridColumn Value="object_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_object", curLngWeb ) )%>" Width="100%" Type="string"/>
+		<DataGridColumn Value="fullname" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_fio", curLngWeb ) )%>" Width="250" Type="link" Click="SET=LearningRecordDialog<%=name%>/object_id,{id};OPENDIALOG=LearningRecordDialog<%=name%>"/>
+		<DataGridColumn Value="position_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_position", curLngWeb ) )%>" Width="150" Type="string"/>
+		<DataGridColumn Value="position_parent_name" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_subd", curLngWeb ) )%>" Width="150" Type="string"/>
+		<DataGridColumn Value="status" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_status", curLngWeb ) )%>" Width="150" Type="string"/>
+		<DataGridColumn Value="date" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_date", curLngWeb ) )%>" Width="150" Type="string"/>
+<%
+	if( name != "poll" )
+	{
+%>
+		<DataGridColumn Value="result" Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_result", curLngWeb ) )%>" Width="150" Type="string"/>
+<%
+	}
+%>
+	</DataGrid>
+<%
+}
+if( bShowTabs )
+{
+%>
+	<TabControl _Width="100" Preservable="1" Class="XAML-tabcontrol-filter">
+<%
+	for( tab in aObjectTypes )
+	{
+%>
+		<TabItem Title="<%=XmlAttrEncode( curLngCommon.proctoring_objects.GetOptChildByKey( tab ).name )%>">	
+<%
+		write_datagrid( tab )
+%>
+		</TabItem>	
+<%
+	}
+		
+%>
+	</TabControl>
+<%
+}
+else
+	write_datagrid( "" );
+%>
+</SPXMLScreen>

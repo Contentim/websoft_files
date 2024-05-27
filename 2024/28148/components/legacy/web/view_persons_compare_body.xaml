@@ -1,0 +1,432 @@
+﻿<SPXMLScreen>
+
+<HTMLBox Dynamic="1">
+	<![CDATA[
+
+		<link href="scripts/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script type="text/javascript" src="scripts/jquery-ui/jquery-ui.js" language="javascript"></script>
+
+	]]>
+</HTMLBox>
+
+<%
+// const_start
+var sConst_Distribution = tools_web.get_web_const( "raspredelenie", curLngWeb );
+var sConst_SelectStatistic = "Выберите показатель";
+var sConst_SelectStatistics = "Выберите показатели для сравнения";
+var sConst_SelectCollaborators = "Выберите сотрудников для сравнения";
+var sConst_SelectDateStart = "С ";
+var sConst_SelectDateEnd = "По ";
+var sConst_SelectData = "Выберите данные";
+var aDataTypes = [ { "name": tools_web.get_web_const( "2h1z3jjflh", curLngWeb ), "id": "learning" }, { "name": tools_web.get_web_const( "ass_mark", curLngWeb ), "id": "pa" }, { "name": tools_web.get_web_const( "c_testing", curLngWeb ), "id": "test" }, { "name": "Карьера", "id": "career" } ];
+var sChoiceCollIds = "";
+// const_end
+
+var iSelectDateType = CONTEXT.GetOptProperty( "SelectDateType", 0 );
+//alert( "start: " + ( CONTEXT.GetOptProperty( "datePeriodStart", null ) != null ) );
+var sPeriodStart = ( CONTEXT.GetOptProperty( "datePeriodStart", null ) != null ) ? Date( CONTEXT.GetOptProperty( "datePeriodStart", "" ) ) : "";
+
+//alert( "end: " + ( CONTEXT.GetOptProperty( "datePeriodEnd", null ) != null ) );
+var sPeriodEnd = ( CONTEXT.GetOptProperty( "datePeriodEnd", null ) != null ) ? Date( CONTEXT.GetOptProperty( "datePeriodEnd", "" ) ) : "";
+
+
+
+sStatisticCodes = String( tools_web.get_web_param( curParams, "persons_compare.statistic_codes", "person_learning,person_test_learning,person_learning_success,person_test_learning_success,person_test_learning_average_score,person_event_results,person_age,person_org_experience,person_position_experience", true ) );
+arrTabListParam = String( tools_web.get_web_param( curParams, "persons_compare.tab_list", "table;graph;timeline", true ) ).split( ";" );
+
+if(sStatisticCodes != "")
+{
+	aStatistics = XQuery("for $elem in statistic_recs where MatchSome($elem/code, (" + ArrayMerge( sStatisticCodes.split(",") , "XQueryLiteral(This)", ",") + ")) return $elem");
+}
+else
+	aStatistics = new Array();
+
+
+var sPersonIDs = CONTEXT.GetOptProperty( "ComparePersons", curUrlQuery.GetOptProperty( "persons", "" ) );
+var iParamX = OptInt(CONTEXT.GetOptProperty("SelectGraphX",""), 0);
+var iParamY = OptInt(CONTEXT.GetOptProperty("SelectGraphY",""), 0);
+
+%>
+<Label Class="XAML-object-title-label"><![CDATA[<%=tools_web.get_web_const( "sravneniesotru", curLngWeb )%>]]></Label>
+
+<Edit Name="ComparePersons" Hidden="true"><![CDATA[<%=sPersonIDs%>]]></Edit>
+<Dialog Name="PersonsCompareSelectDialog" Source="dlg_select" Title="<%=XmlAttrEncode( tools_web.get_web_const( "0mzyraf76u", curLngWeb ) )%>" Close="SET=ComparePersons,{CatalogListDataGridSelList:*};REFRESH">
+	<Param Name="catalog_name" Value="collaborator"/>
+	<Param Name="multi_select" Value="true"/>
+	<Param Name="selected_object_ids" Value="{ComparePersons}"/>
+	<Param Name="selected_from_data" Value="false"/>
+	<Param Name="disp_filter" Value="false"/>
+	<Param Name="show_all" Value="false"/>
+	<Param Name="secid" Value="<%=tools_web.get_secid( Session.sid )%>"/>
+</Dialog>
+
+<Toolbar Class="XAML-toolbar">
+
+	<Button Class="XAML-button XAML-button-new" Click="OPENDIALOG=PersonsCompareSelectDialog"><%=tools_web.get_web_const( "vaaeb_sel_colls", curLngWeb )%></Button>
+
+</Toolbar>
+<%
+if ( sPersonIDs != "" && sPersonIDs != "[]")
+{
+
+	var arrPersonIDs = StrBegins( sPersonIDs, "[" ) ? ArrayExtract( ParseJson( sPersonIDs ), "Int(This.id)" ) : ArrayExtract( sPersonIDs.split( ";" ), "Int(This)" );
+	var xarrPersons = QueryCatalogByKeys( "collaborators", "id", arrPersonIDs );
+
+	var arrPersons = [];
+	for ( catPersonElem in xarrPersons )
+	{
+		arrPersonIndexes = [];
+
+		for(catStatistic in aStatistics)
+		{
+			try
+			{
+				catStatisticRec = ArrayOptFirstElem(tools.get_statistic_data(catStatistic.id, catPersonElem.id));
+				arrPersonIndexes.push({
+					"name": catStatistic.id,
+					"value": catStatisticRec.value,
+					"desc": catStatisticRec.value_str
+				});
+			}
+			catch(x)
+			{
+				alert(x);
+			}
+		}
+		arrPersons.push({
+			"id": catPersonElem.id.Value,
+			"fullname": catPersonElem.fullname.Value,
+			"position_name": catPersonElem.position_name.Value,
+			"position_parent_name": catPersonElem.position_parent_name.Value,
+			"image_url": tools_web.get_object_source_url( "person", catPersonElem.id.Value, "200x200" ),
+			"sex": ( catPersonElem.sex == "m" ? tools_web.get_web_const( "vpb_m", curLngWeb ) : ( catPersonElem.sex == "w" ? tools_web.get_web_const( "vpb_w", curLngWeb ) : "" ) ),
+			"indexes": arrPersonIndexes
+		});
+	}
+
+
+	iDefaultTab = OptInt( CONTEXT.GetOptProperty( "PersonsCompareTab" ), OptInt( curUrlQuery.GetOptProperty( "persons_compare_tab" ), 0 ) );
+	iCurTab = 0-1;
+
+%>
+<TabControl Name="PersonsCompareTab" ActiveTab="<%=iDefaultTab%>" Class="XAML-tabcontrol-filter" Width="100%">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+	///////////////////////////////////////////////   TABLE TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "table" )
+		{
+			iCurTab++;
+			sTabTitle = tools_web.get_web_param( curParams, "persons_compare.tab_list.table_tab", tools_web.get_web_const( "vcrb_table", curLngWeb ), true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+
+		<StackPanel Orientation="Vertical" Class="XAML-stack-filters-container" Align="right" Adapt="1">
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-filter" Align="right">
+				<Label Class="XAML-button-view"></Label>
+			</StackPanel>
+		</StackPanel>
+
+		<Grid Class="XAML-grid-info-table" Adapt="true">
+			<GridColumns>
+				<GridColumn Width="250"/>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+				<GridColumn/>
+<%
+			}
+%>
+			</GridColumns>
+
+
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"/>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+					<Image UpdateOnLoad="1" Source="<%=XmlAttrEncode( oPersonElem.image_url )%>" Class="wt-person-compare-img XAML-image-link" Click="OPENURL=<%=tools_web.get_mode_clean_url( 'collaborator', oPersonElem.id, { doc_id: curDocID } )%>"/>
+<%
+			}
+%>
+			</GridRow>
+
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><![CDATA[<%=tools_web.get_web_const( "c_coll", curLngWeb )%>]]></Label>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+					<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( 'collaborator', oPersonElem.id, { doc_id: curDocID } )%>"><![CDATA[<%=oPersonElem.fullname%>]]></Link>
+<%
+			}
+%>
+			</GridRow>
+
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><![CDATA[<%=tools_web.get_web_const( "c_position", curLngWeb )%>]]></Label>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+				<Label><![CDATA[<%=oPersonElem.position_name%>]]></Label>
+<%
+			}
+%>
+			</GridRow>
+
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><![CDATA[<%=tools_web.get_web_const( "c_subd", curLngWeb )%>]]></Label>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+				<Label><![CDATA[<%=oPersonElem.position_parent_name%>]]></Label>
+<%
+			}
+%>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><![CDATA[<%=tools_web.get_web_const( "vpb_sex", curLngWeb )%>]]></Label>
+<%
+			for ( oPersonElem in arrPersons )
+			{
+%>
+				<Label><![CDATA[<%=oPersonElem.sex%>]]></Label>
+<%
+			}
+%>
+			</GridRow>
+
+<%
+			for ( catStatistics in aStatistics )
+			{
+%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column" NoWrap="true"><![CDATA[<%=catStatistics.name%>]]></Label>
+<%
+				for ( oPersonElem in arrPersons )
+				{
+					oIndexChild = ArrayOptFindByKey( oPersonElem.indexes, catStatistics.id, "name" );
+%>
+				<Label><![CDATA[<%=oIndexChild != undefined ? oIndexChild.desc : tools_web.get_web_const( "c_error", curLngWeb )%>]]></Label>
+<%
+				}
+%>
+			</GridRow>
+<%
+			}
+%>
+		</Grid>
+
+	</TabItem>
+<%
+		}
+
+///////////////////////////////////////////////   GRAPH TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "graph" )
+		{
+			iCurTab++;
+			sTabTitle = tools_web.get_web_param( curParams, "persons_compare.tab_list.graph_tab", tools_web.get_web_const( "vcrb_graph", curLngWeb ), true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+
+		<StackPanel Align="right" Orientation="Vertical" Class="XAML-stack-filters-container" Adapt="true">
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-filter" Align="right">
+				<Label Class="XAML-button-view"/>
+				<ComboBox Name="SelectGraphX" Width="250" SelectedItem="<%=iParamX%>" Class="XAML-combo-view" Change="REFRESH">
+					<ComboBoxItem Value="0"><![CDATA[<%=sConst_SelectStatistic%>]]></ComboBoxItem>
+<%
+			for(catStatistic in aStatistics)
+			{
+%>
+					<ComboBoxItem Value="<%=catStatistic.id%>"><%=catStatistic.name%></ComboBoxItem>
+<%
+			}
+%>
+				</ComboBox>
+				<Label Class="XAML-label-divider"/>
+				<ComboBox Name="SelectGraphY" Width="250" SelectedItem="<%=iParamY%>" Class="XAML-combo-view" Change="REFRESH">
+					<ComboBoxItem Value="0"><![CDATA[<%=sConst_SelectStatistic%>]]></ComboBoxItem>
+<%
+			for(catStatistic in aStatistics)
+			{
+%>
+					<ComboBoxItem Value="<%=catStatistic.id%>"><%=catStatistic.name%></ComboBoxItem>
+<%
+			}
+%>
+				</ComboBox>
+			</StackPanel>
+		</StackPanel>
+<%
+			if(iParamX != 0 && iParamY != 0)
+			{
+				var aPersonInfo = [];
+				var oXIndexElem = ArrayOptFindByKey( aStatistics, iParamX, "id");
+				var sParamNameX = oXIndexElem.name;
+				var oYIndexElem = ArrayOptFindByKey( aStatistics, iParamY, "id");
+				var sParamNameY = oYIndexElem.name;
+
+				var iCnt = 0;
+				var nMaxXValue = 0;
+				var nMaxYValue = 0;
+
+				for ( oPersonElem in arrPersons )
+				{
+					aPersonInfo[iCnt] =
+					{
+						id: oPersonElem.id,
+						sFullName: oPersonElem.fullname,
+						sPosition: oPersonElem.position_name,
+						sDepartment: oPersonElem.position_parent_name,
+						sImageURL: oPersonElem.image_url,
+						sLink: tools_web.get_mode_clean_url( "collaborator", oPersonElem.id, { doc_id: curDocID } )
+					};
+					oXIndexElem = ArrayOptFindByKey( oPersonElem.indexes, iParamX, "name" );
+					oYIndexElem = ArrayOptFindByKey( oPersonElem.indexes, iParamY, "name" );
+					aPersonInfo[iCnt].X = Int(oXIndexElem.value);
+					aPersonInfo[iCnt].Xdisp = oXIndexElem.value;
+					if(nMaxXValue < aPersonInfo[iCnt].X)
+					{
+						nMaxXValue = aPersonInfo[iCnt].X;
+					}
+					aPersonInfo[iCnt].Y = Int(oYIndexElem.value);
+					aPersonInfo[iCnt].Ydisp = oYIndexElem.value;
+					if(nMaxYValue < aPersonInfo[iCnt].Y)
+					{
+						nMaxYValue = aPersonInfo[iCnt].Y;
+					}
+					iCnt++;
+				}
+				nMaxXValue = ((nMaxXValue/10) + 1)*10;
+				var nXStep = nMaxXValue/5;
+				var aXPoints = [];
+				for(i=0; i<=5; i++)
+				{
+					aXPoints.push(i*nXStep);
+				}
+
+				if(StrContains(oXIndexElem, "percent") || StrContains(oYIndexElem, "percent"))
+				{
+					nMaxYValue = 100;
+				}
+				else
+				{
+					nMaxYValue = ((nMaxYValue/10) + 1)*10;
+				}
+%>
+
+	<StackPanel Orientation="Vertical" Class="XAML-uni-content-container">
+			<StackPanel Orientation="Vertical" Class="XAML-stack-content-header">
+				<Label Class="XAML-label-header-4"><%=sConst_Distribution%> "<%=sParamNameY%> / <%=sParamNameX%>"</Label>
+			</StackPanel>
+		<StackPanel Orientation="Vertical" Class="wt-info-main">
+			<Graph Name="Graph_<%=iParamX%>_vs_<%=iParamY%>" Type="distribution" Aspect="0.8" DisplayPoints="true" DisplayTips="true" AxisValueFontSize="13" Height="500">
+				<Axis Dir="X" AxisPosition="both" DisplayAxis="true" DisplayGrid="true" DisplayName="true" DisplayValues="true" DisplayPercents="true" AxisName="<%=sParamNameX%>">
+<%
+				for(i=0; i<aXPoints.length; i++)
+				{
+%>
+					<Val Value="<%=aXPoints[i]%>"/>
+<%
+				}
+%>
+				</Axis>
+				<Axis Dir="Y" AxisPosition="both" DisplayAxis="true" DisplayGrid="true" DisplayName="true" DisplayValues="true" AxisName="<%=sParamNameY%>" Min="0" Max="<%=nMaxYValue%>" Steps="5"/>
+				<Series Color="#355bbb">
+<%
+				for(i=0; i < aPersonInfo.length; i++)
+				{
+%>
+					<Val X="<%=aPersonInfo[i].X%>" Value="<%=aPersonInfo[i].Y%>" Link="<%=aPersonInfo[i].sLink%>" ImageSrc="<%=aPersonInfo[i].sImageURL%>" Title="<%=aPersonInfo[i].sFullName%>: <%=sParamNameX%> <%=aPersonInfo[i].X%>" />
+<%
+				}
+%>
+				</Series>
+			</Graph>
+		</StackPanel>
+	</StackPanel>
+<%
+			}
+			else
+			{
+%>
+<StackPanel>
+	<Label Class="XAML-label-empty-data"><%=sConst_SelectStatistics%></Label>
+</StackPanel>
+<%
+			}
+%>
+	</TabItem>
+<%
+		}
+
+///////////////////////////////////////////////   TIMELINE TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "timeline" )
+		{
+			iCurTab++;
+			sTabTitle = "Timeline";
+			sChoiceCollIds = ArrayMerge( arrPersons, "This.id", ";" );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle )%>">
+		<StackPanel Align="right" Orientation="Vertical" Class="XAML-stack-filters-container" Adapt="true">
+			<StackPanel Orientation="Horizontal" Class="XAML-stack-filter" Align="right">
+
+				<Label Align="right" Adapt="1"> с: </Label>
+				<DatePicker Name="datePeriodStart" Change="Refresh"><%=sPeriodStart%></DatePicker>
+
+				<Label Align="right" Adapt="1"> по: </Label>
+				<DatePicker Name="datePeriodEnd" Change="Refresh"><%=sPeriodEnd%></DatePicker>
+
+				<ComboBox Name="SelectDateType" Width="250" SelectedItem="<%=iSelectDateType%>" Class="XAML-combo-view" Change="REFRESH">
+					<ComboBoxItem Value="0"><![CDATA[<%=sConst_SelectData%>]]></ComboBoxItem>
+<%
+			for ( i = 0; i < ArrayCount( aDataTypes ); i++ )
+			{
+				sType = aDataTypes[i];
+%>
+					<ComboBoxItem Value="<%=sType.id%>"> <%=sType.name%> </ComboBoxItem>
+<%
+			}
+%>
+				</ComboBox>
+			</StackPanel>
+		</StackPanel>
+
+		<Collection Name="collection_timeline" Source="uni_collection_timeline">
+			<Param Name="dStartPeriod" Value="<%=sPeriodStart%>"/>
+			<Param Name="dEndPeriod" Value="<%=sPeriodEnd%>"/>
+			<Param Name="sDataType" Value="<%=iSelectDateType%>"/>
+			<Param Name="sPersonIds" Value="<%=sChoiceCollIds%>"/>
+		</Collection>
+
+		<StackPanel Adapt="1">
+			<Label Class="XAML-label-header-2" Align="center" Adapt="1"> Timeline </Label>
+		</StackPanel>
+
+		<Timeline Name="timelineForCollab" Height="500" Width="1100" FntSzNameScale="13" Source="{collection_timeline}"/>
+
+	</TabItem>
+<%
+		}
+
+
+
+	}
+%>
+</TabControl>
+<%
+}
+else
+{
+%>
+<StackPanel>
+	<Label Class="XAML-label-empty-data"><%=sConst_SelectCollaborators%></Label>
+</StackPanel>
+<%
+}
+%>
+</SPXMLScreen>

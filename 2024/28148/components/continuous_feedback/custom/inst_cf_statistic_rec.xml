@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>0429nrqxcw</id>
+		<server_version>3.0.0.3 (2013-12-13)</server_version>
+	</basic>
+	<statistic_recs>
+		<statistic_rec>
+			<id>0x60B701449F9D660D</id>
+			<code>GetPersonContinuousFeedbackContext</code>
+			<name VALUE="##'Непрерывная обратная связь / Контекст'##"/>
+			<url>x-local://components/continuous_feedback/spxml/statistic_recs/GetPersonContinuousFeedbackContext.bs</url>
+			<is_enabled>1</is_enabled>
+			<auto_calc>0</auto_calc>
+			<context_calc>1</context_calc>
+			<ready_to_analytics>0</ready_to_analytics>
+			<period_calc_type>none</period_calc_type>
+			<is_std>1</is_std>
+		</statistic_rec>
+	</statistic_recs>
+</data>

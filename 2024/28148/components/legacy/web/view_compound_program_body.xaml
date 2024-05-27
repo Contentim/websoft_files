@@ -1,0 +1,433 @@
+﻿<SPXMLScreen>
+<%
+function get_program_link( fldPartElem )
+{
+	if( !fldPartElem.type.HasValue )
+		return "";
+	switch( fldPartElem.type )
+	{
+		case "folder":
+			return "";
+		case "material":
+			if( fldPartElem.catalog_name.HasValue && fldPartElem.object_id.HasValue )
+				return "OPENURL=" + tools_web.get_mode_clean_url( ( fldPartElem.catalog_name == "material" ? "library_material" : fldPartElem.catalog_name ), fldPartElem.object_id, { doc_id: curDocID } );
+			else
+				return "";
+		case "education_method":
+			if( fldPartElem.education_method_id.HasValue )
+				return "OPENURL=" + tools_web.get_mode_clean_url( null, fldPartElem.education_method_id, { doc_id: curDocID } );
+			else
+				return "";
+							
+		case "course":
+		case "assessment":
+		case "event":
+		case "learning_task":
+			if( fldPartElem.object_id.HasValue )
+				return "OPENURL=" + tools_web.get_mode_clean_url( null, fldPartElem.object_id, { doc_id: curDocID } );
+			else
+			return "";
+		default:
+			return "";
+	}
+	return "";
+}
+
+function title_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+}
+
+function recommend_block()
+{
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_recommend_block.xaml" ) );
+}
+
+function main_tab()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "compound_program_body.tab_list.main_tab.block_list", "desc;map", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "compound_program_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "osnovnyesveden", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-info2">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "map" )
+		{
+			sMapType = CONTEXT.GetOptProperty( "PlanMapTypeSelector", "list" );
+			function get_part_data( partElem )
+			{
+				obj = new Object();
+				const = "";
+				iObjectId  = "";
+				sObjectUrl = "";
+				switch( partElem.type )
+				{
+					case "folder":
+						const = tools_web.get_web_const( "c_phase", curLngWeb );
+						sObjectUrl = "pics/folder32x32.png";
+						break;
+					case "education_method":
+						const = tools_web.get_web_const( "c_edu_method", curLngWeb );
+						iObjectId = partElem.education_method_id;
+						sObjectUrl = "images/education_method.png";
+						break;
+					case "course":
+						const = tools_web.get_web_const( "c_course", curLngWeb );
+						iObjectId = partElem.object_id;
+						sObjectUrl = "images/education_method.png";
+						break;
+					case "assessment":
+						const = tools_web.get_web_const( "c_test", curLngWeb );
+						iObjectId = partElem.object_id;
+						sObjectUrl = "images/assessment.png";
+						break;
+					case "learning_task":
+						const = tools_web.get_web_const( "zzzv3sxxx47yyy", curLngWeb );
+						iObjectId = partElem.object_id;
+						sObjectUrl = "images/learning_task.png";
+						break;
+					case "event":
+						const = tools_web.get_web_const( "c_event", curLngWeb );
+						iObjectId = partElem.object_id;
+						sObjectUrl = "images/event.png";
+						break;
+					case "material":
+						const = "Изучение материала";
+						if( partElem.catalog_name.HasValue )
+							sObjectUrl = "images/" + partElem.catalog_name + ".png";
+						else
+							sObjectUrl = "images/library_material.png";
+						iObjectId = partElem.object_id;
+								
+						break;
+				}
+				teObject = null;
+				if( OptInt( iObjectId ) != undefined )
+					teObject = OpenDoc( UrlFromDocID( iObjectId ) ).TopElem;
+						
+				sName = "";
+				if( teObject != null )
+				{
+					switch ( teObject.Name )
+					{
+						default:
+							sName = tools.get_disp_name_value( teObject );
+							if ( teObject.ChildExists( 'resource_id' ) && teObject.resource_id.HasValue )
+								sObjectUrl = tools_web.get_object_source_url( 'resource', teObject.resource_id );
+							else
+								sObjectUrl = '/images/' + teObject.Name + '.png';
+							break;
+					}
+				}
+				obj.name = sName;
+				obj.pict_url = sObjectUrl;
+				obj.const = const;
+				obj.top_elem = teObject;
+				
+				return obj;
+			}
+
+			curFilter = {
+				'id': "EducationPlanSelector",
+				'title': tools_web.get_web_const( "kartaprogrammy", curLngWeb ),
+				'selectors': "list_adv;structure",
+				'selectors_value': CONTEXT.GetOptProperty( "FilterSelectorsEducationPlanSelector", "list_adv" ),
+				'disp_search': false,
+				'selectors_action': "TOGGLE=PlanPartsList,PlanPartsGraph;",
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+			function put_doc_xml( iId, iIdentParam )
+			{
+				var arrChildParts = ArraySelectByKey( curObject.programs, iId, "parent_progpam_id" );
+
+				for( fldPartElem in arrChildParts )
+				{
+					sImgUrl = "/pics/1blank.gif";
+					obj_data = get_part_data( fldPartElem )
+					if ( fldPartElem.type == 'folder' )
+					{
+%>
+				<Grid Width="100%" Class="XAML-grid-list-item">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn Adapt="true"/>
+						<GridColumn Width="100%"/>
+					</GridColumns>
+					<GridRow>
+						<Image Source="/pics/1blank.gif" Class="XAML-course-map-indent XAML-course-map-indent-<%=iIdentParam%>"/>
+						<Label Class="wt-course-element-switch wt-course-element-switch-expanded XAML-label-switch XAML-label-switch-expanded"/>
+						<StackPanel Orientation="Vertical" Class="">
+							<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+						</StackPanel>
+					</GridRow>
+				</Grid>
+<%
+					}
+					else
+					{
+%>
+					<Grid Width="100%" Class="XAML-grid-list-item">
+						<GridColumns>
+							<GridColumn/>
+							<GridColumn Adapt="true"/>
+							<GridColumn Width="100%"/>
+							<GridColumn Adapt="true"/>
+							<GridColumn Adapt="true"/>
+						</GridColumns>
+						<GridRow>
+							<Image Source="/pics/1blank.gif" Class="XAML-course-map-indent XAML-course-map-indent-<%=iIdentParam%> XAML-image-indent-<%=iIdentParam%>"/>
+							<Label Class="wt-course-element-switch wt-course-element-switch-collapsed XAML-label-switch XAML-label-switch-collapsed"/>
+
+							<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+<%
+						if( get_program_link( fldPartElem ) != "" )
+						{
+%>
+								<Link Click="<%=get_program_link( fldPartElem )%>" Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Link>
+<%
+						}
+						else
+						{
+%>
+								<Label Class="XAML-label-header-4"><![CDATA[<%=tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id )%>]]></Label>
+<%
+						}
+%>
+								<Label Class="XAML-label-normal"><%=obj_data.const%>. <%=obj_data.name%></Label>
+							</StackPanel>
+							<Label Class="wt-course-progress-tangle"/>
+						</GridRow>
+					</Grid>
+<%
+					}
+					put_doc_xml( fldPartElem.id, iIdentParam + 1 );
+				}
+			}
+%>
+			<StackPanel Orientation="Vertical" Name="PlanPartsList" Class="XAML-stack-treemap XAML-course-map XAML-stack-list-container" Hidden="<%=( sMapType != "graph" ? "0" : "1" )%>" Width="100%">
+<%
+			put_doc_xml( null, 0 );
+%>
+			</StackPanel>
+			<StackPanel Orientation="Vertical" Name="PlanPartsGraph" Hidden="<%=( sMapType != "graph" ? "1" : "0" )%>" Width="100%">
+				<HTMLBox>
+					<![CDATA[
+						<style>
+							.mp-div-text{ width: 100% !important; }
+						</style>
+					]]>
+				</HTMLBox>
+				<Collection Name="ProgramPartsCollection">
+					<Data>
+						<!--<Row>
+							<Cell Id="name" Value="<%=XmlAttrEncode( "<b>" + tools_web.get_cur_lng_name( curObject.name, curLng.short_id ) + "</b>" )%>"/>
+							<Cell Id="id" Value="0"/>
+						</Row>-->
+<%
+			for ( fldPartElem in curObject.programs )
+			{
+				obj_data = get_part_data( fldPartElem )
+
+				fldParent = ArrayOptFirstElem( fldPartElem.completed_parent_programs );
+				iParent = fldParent == undefined ? ( fldPartElem.parent_progpam_id.HasValue ? fldPartElem.parent_progpam_id : "" ) : fldParent.PrimaryKey;
+				sName = "<div style='font-size: 16px; font-weight: 600; width: 100% !important;  white-space: normal !important; display: block;overflow-y: hidden; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical;  -webkit-line-clamp: 3;'>" + tools_web.get_cur_lng_name( fldPartElem.name, curLng.short_id ) + "</div>"
+				sText = "<div style='height: 83px; width: 232px !important;'><div style='height: 63px; width: 232px !important; overflow-y: hidden;'>";
+				if( obj_data.const != "" )
+					sText += tools_web.get_web_const( "c_type", curLngWeb ) + " : " + obj_data.const;
+				sText += "</div>";
+				sText += "</div>";
+%>
+						<Row>
+							<Cell Id="title" Value="<%=XmlAttrEncode( sName )%>"/>
+							<Cell Id="id" Value="<%=fldPartElem.PrimaryKey%>"/>
+							<Cell Id="parent" Value="<%=iParent%>"/>
+							<Cell Id="parents_ids" Value=""/>
+							<Cell Id="url" Value="<%=get_program_link( fldPartElem )%>"/>
+							<Cell Id="class" Value=""/>
+							<Cell Id="text" Value="<%=XmlAttrEncode( sText )%>"/>
+							<Cell Id="image" Value="<%=obj_data.pict_url%>"/>
+						</Row>
+<%
+			}
+%>
+					</Data>
+				</Collection>
+				<WTTree Type="tree" 
+						MultiPath="true" 
+						Orientation="top" 
+						DisplayToggle="false" 
+						InterElement="30" 
+						InterLevel="30" 
+						MarkerEnd="arrow" 
+						MarkerStart="circle" 
+						ElementForm="roundrect" 
+						ElementHeight="175" 
+						ElementWidth="250" 
+						ElementBGColor="#ffffff;" 
+						ElementLayout="image=image|title=title;text=text" 
+						Name="ProgramPartsChart" 
+						Width="100%" 
+						Source="{ProgramPartsCollection}" 
+						NodeClick="{!url}" 
+						DataParent="parent" 
+						DataID="id" 
+						DataTitle="title" 
+						DataText="text" 
+						DataClass="class"/>
+
+				<!--<WTTree Width="100%" Name="ProgramPartsChart" Source="{ProgramPartsCollection}" Selectable="0" DataID="id" DataParent="parent_object_id" DataTitle="name" DataText="name" DataImage="icon" NodeMode="normal" NodeClick="{!url}" DisplayToggle="true" ElementLayout="fonticon|text=name">
+				</WTTree>-->
+				<!--<FlowChart Name="ProgramPartsChart" Width="100%" Height="400" DataID="id" DataTitle="name" DataParent="parent_object_id" Source="{ProgramPartsCollection}" Click="OPENURL={url}"/>-->
+			</StackPanel>
+			
+<%
+		}
+
+		if ( sTabElem == "desc" )
+		{
+            desc_block()
+		}
+		
+		if ( sTabElem == "info" )
+		{
+            info_block();
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function info_block()
+{
+
+}
+
+function desc_block()
+{
+	Response.Write( tools_web.place_xaml( "block_desc" ) );
+}
+
+function event_tab()
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, "compound_program_body.tab_list.event_tab.block_list", "events", true ) ).split( ";" );
+	sTabTitle = tools_web.get_web_param( curParams, "compound_program_body.tab_list.event_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( "c_events", curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Class="icon-calendar-o">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == "events" )
+		{
+			curView = {
+				"id": "Events",
+				"height": "",
+				"catalog_name": "event",
+				"xquery_qual": ( "$elem/compound_program_id = " + curObjectID ),
+				"disp_link": "true",
+				"link_field_index": 1,
+				"list_columns": ((curDevice.disp_type != "mobile") ? "name;start_date;status_id;total_cost" : "name;start_date"),
+				"disp_filter": "false",
+				"disp_paging": "true",
+				"paging_size": 15,
+				"disp_search": "false"
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+function tab_block()
+{
+	arrTabListParam = String( tools_web.get_web_param( curParams, "compound_program_body.tab_list", "main;event;report", true ) ).split( ";" );
+%>
+<TabControl Name="CompoundProgramBodyTab" ActiveTab="<%=iDefaultTab%>" Width="100%" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>">
+<%
+	for ( sTabListParam in arrTabListParam )
+	{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "main" )
+		{
+			main_tab()
+		}
+
+///////////////////////////////////////////////   EVENT TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "event" )
+		{
+			event_tab()
+		}
+///////////////////////////////////////////////   CUSTOM TAB   /////////////////////////////////////////////
+		if ( sTabListParam == "custom" )
+		{
+			custom_tab()
+		}
+	
+///////////////////////////////////////////////   REPORT TAB   /////////////////////////////////////////////
+		sReportTabPath = "compound_program_body.tab_list.report_tab";
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_reports_tab.xaml" ) );
+	}
+%>
+</TabControl>
+<%
+}
+
+function custom_tab()
+{
+	iCurTab++;
+	xarrCustomTabOverrideWebTemplates = ArraySelectByKey( xarrOverrideWebTemplates, 'object_custom_tab', 'zone' );
+	if ( ArrayCount( xarrCustomTabOverrideWebTemplates ) != 0 )
+	{
+		sTabTitle = tools_web.get_web_param( curParams, "compound_program_body.tab_list.custom_tab", "", true );
+		if( sTabTitle == "" )
+			sTabTitle = tools_web.get_web_const( "nastraivaemaya", curLngWeb )
+%>
+	<TabItem Class="icon-drawer" Title="<%=XmlAttrEncode( tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+		for ( catOverrideWebTemplateElem in xarrCustomTabOverrideWebTemplates )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+%>
+	</TabItem>
+<%
+	}
+}
+
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( "CompoundProgramBodyTab" ), OptInt( curUrlQuery.GetOptProperty( "tab" ), 0 ) );
+iCurTab = 0-1;
+xarrOverrideWebTemplates = ArraySelectAll( XQuery( "for $elem in override_web_templates where MatchSome( $elem/zone, ('object_custom_block','object_custom_tab','object_custom_main') ) and ( $elem/mode = " + XQueryLiteral( curMode ) + " or $elem/mode = '' ) and ( $elem/web_design_id = " + XQueryLiteral( curWebDesignID ) + " or $elem/web_design_id = null() ) and ( $elem/site_id = " + XQueryLiteral( curSiteID ) + " or $elem/site_id = null() ) and $elem/is_enabled = true() return $elem/Fields('zone','custom_web_template_id')" ) );
+arrBlockListParam = String( tools_web.get_web_param( curParams, "compound_program_body.block_list", "title;tab", true ) ).split( ";" );
+for( sBlockListParam in arrBlockListParam )
+{
+	if ( sBlockListParam == "object_custom_block" )
+	{
+		for ( catOverrideWebTemplateElem in ArraySelectByKey( xarrOverrideWebTemplates, "object_custom_block", "zone" ) )
+		{
+			Response.Write( tools_web.place_xaml( catOverrideWebTemplateElem.custom_web_template_id.Value ) );
+		}
+	}
+	if( sBlockListParam == "title" )
+		title_block();
+		
+	if( sBlockListParam == "recommend" )
+		recommend_block();
+		
+	if( sBlockListParam == "tab" )
+		tab_block();
+		
+	if( sBlockListParam == "block_desc" )
+		desc_block();
+		
+	if( sBlockListParam == "block_info" )
+		info_block();
+		
+}
+%>
+</SPXMLScreen>

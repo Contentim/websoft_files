@@ -1,0 +1,506 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+	
+	<% if (Ps.disp_answers){ %>
+		<h1><%=Ps.poll.name%></h1>
+	<% } %>
+
+	<%
+		if (Ps.disp_answers)
+		{
+	%>
+		
+		<table border="1" cellpadding="2" cellspacing="0">
+			
+			<tr>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+
+				<% for(questElem in Ps.poll.questions){%>
+
+					<% if(ArrayCount(questElem.entries) > 0 && questElem.type != 'order'){%>
+						<td align="center" colspan="<%=ArrayCount(questElem.entries)%>"><%=questElem.title%></td>
+					<%} else {%>
+						<% if(questElem.type == 'bool'){%>
+							<td align="center" colspan="2"><%=questElem.title%></td>
+						<%}%>
+
+						<% if(questElem.type != 'bool'){%>
+						<td align="center"><%=questElem.title%></td>
+						<%}%>
+					<%}%>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td><%=ms_tools.get_const('c_comment')%></td>
+					<%}%>
+				<%}%>
+
+			</tr>
+
+			<tr>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_coll')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+
+				<% for(questElem in Ps.poll.questions){%>
+					<% if(ArrayCount(questElem.entries) > 0 && questElem.type != 'order'){ %>
+						<% 
+							_tmp = ArrayOptFirstElem(questElem.entries); 
+							firstElemValue = _tmp.value;
+						%>
+						<td align="center"><%=firstElemValue%></td>
+
+						<%
+							entriesRange = ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+						%>
+
+						<% for(entryElem in entriesRange){%>
+							<td align="center"><%=entryElem.value%></td>
+						<%}%>
+					<%} else {%>
+
+						<% if(questElem.type == 'bool'){%>
+							<td align="center"><%=ms_tools.get_const('c_yes')%></td>
+							<td align="center"><%=ms_tools.get_const('c_no')%></td>
+						<%}%>
+
+						<% if(questElem.type != 'bool'){%>
+							<td>&nbsp;</td>
+						<%}%>
+
+						
+					<%}%>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td>&nbsp;</td>
+					<%}%>
+				<%}%>
+
+			</tr>
+
+			<tbody>
+
+				<% for(resultElem in Ps.poll_results){%>
+					<tr>
+						<td><%=resultElem.person_fullname%></td>
+						<td><%=resultElem.person_code%></td>
+						<td><%=resultElem.start_date%></td>
+
+						<% for(questElem in Ps.poll.questions){ %>
+
+							<!-- блоки с вариантами ответов -->
+							<% if(ArrayCount(questElem.entries) > 0){%>
+
+								<%
+									// для ответа блока Упорядочивание
+									order_answer_value = '';
+								%>
+
+								<!-- единственный выбор: radiobox, select -->
+								<% if(questElem.type == 'combo' || questElem.type == 'choice'){%>
+
+									<% for(entryElem in questElem.entries){%>
+										<%
+											_empty_combo_choice = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										%>
+										
+										<!-- если нет ответов по блоку -->
+										<% if(_empty_combo_choice == undefined){%>
+											<td>&nbsp;</td>
+										<%}%>
+
+										<% if(_empty_combo_choice != undefined){ %>
+										
+											<%for(answerElem in resultElem.answers){%>
+												<%if(questElem.question_id == answerElem.question_id){%>
+													<%
+														arrAnswerValues = String( answerElem.value ).split( ';' );
+													%>
+													<% if(ArrayCount(arrAnswerValues) == 1){%>
+														<% if(entryElem.id == OptInt(answerElem.value)){%>
+															<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+														<%} else {%>
+															<td align="center">&nbsp;</td>
+														<%}%>
+													<%}%>
+												<%}%>
+											<%}%>
+
+										<%}%>
+
+									<%}%>
+								<%}%><!-- END radiobox, select -->
+
+								<!-- Множественный выбор -->
+								<% if(questElem.type == 'select'){%>
+									<% for(entryElem in questElem.entries){%>
+
+										<%
+											_empty_select =  ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+											_select_value = false;
+										%>
+
+										<!-- если нет ответов по блоку -->
+										<% if(_empty_select == undefined){%>
+											<td>&nbsp;</td>
+										<%}%>
+
+										<% if(_empty_select != undefined){%>
+											<%
+												_answer = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+
+												if(_answer != '')
+													_values = String( _answer.value ).split( ';' );
+
+												_has_value = ArrayOptFind(_values, 'This == StrInt(entryElem.id.Value)');
+
+												if(_has_value != undefined)
+													_select_value = true;
+												else
+													_select_value = false;
+											%>
+
+											<% if(_select_value == true){%>
+												<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+											<%} else {%>
+												<td>&nbsp;</td>
+											<%}%>
+
+										<%}%>
+
+									<%}%>
+								<%}%><!-- END Множественный выбор -->
+
+							<%}%> <!-- END блоки с вариантами ответов -->
+
+							<!-- Упорядочивание -->
+							<% if(questElem.type == 'order'){%>
+								<%
+									_empty_order = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_order == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_order != undefined){%>
+									<%for(answerElem in resultElem.answers){%>
+										<% if(questElem.question_id == answerElem.question_id){%>
+											<%
+												_arrAnswerValues = String( answerElem.value ).split( ';' );
+											%>
+
+											<% for(iAnswerValueElem in _arrAnswerValues){%>
+												<%
+													_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+													if(_answer != undefined){
+														order_answer_value +=  _answer.value + '; ';
+													}
+												%>
+											<%}%>
+											<td><%=order_answer_value%></td>
+										<%}%>
+									<%}%>
+								<%}%>
+							<%}%><!-- END Упорядочивание -->
+
+
+							<!-- текст, ссылки на файлы и объекты, строки, даты, числа -->
+							<% if(questElem.type == 'text' || questElem.type == 'string' || questElem.type == 'number' || questElem.type == 'date' || questElem.type == 'link_to_database_object' || questElem.type == 'file'){%>
+								<%
+									_empty_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_other == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_other != undefined){%>
+									<%
+										_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_value_other =  _other.value.Value
+									%>
+
+									<% if(questElem.type == 'file'){%>
+										<td><a href="<%=_value_other%>"><%=_value_other%></a></td>
+									<% } else {%>
+										<td><%=_value_other%></td>
+									<% }%>
+									
+								<%}%>
+							<%}%><!-- END текст, ссылки на файлы и объекты, строки, даты, числа -->
+
+							<!-- Флаг: да, нет -->
+							<% if(questElem.type == 'bool'){%>
+								<%
+									_empty_bool = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+									_arr_bool = ['true', 'false'];
+								%>
+
+								<% for(boolElem in _arr_bool){%>
+									<!-- если нет ответов по блоку -->
+									<% if(_empty_bool == undefined){%>
+										<td>&nbsp;</td>
+									<%}%>
+
+									<% if(_empty_bool != undefined){%>
+										<% for(answerElem in resultElem.answers){%>
+											<% if(questElem.question_id == answerElem.question_id){%>
+												<% if(boolElem == answerElem.value){%>
+													<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+												<% } else { %>
+													<td>&nbsp;</td>
+												<%}%>
+											<%}%>
+										<%}%>
+									<%}%>
+								<%}%>
+							<%}%><!-- END Флаг -->
+
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<% if(Ps.show_comments_in_report){%>
+								<%
+									_empty_comment = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_comment == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_comment != undefined){%>
+									<%
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_value_comment = _tmp.comment;
+									%>
+									<td><%=_value_comment%></td>
+								<%}%>
+							<%}%><!-- END комментарии к вопросам в отчет по опросу -->
+							
+						<%}%>
+					</tr>
+				<%}%>
+
+			</tbody>
+
+		</table>
+	<%
+	}
+	else
+	{
+	%>
+		<table border="1" cellpadding="2" cellspacing="0">
+
+			<tr>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_coll')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+
+				<% for(questElem in Ps.poll.questions){%>
+					<td><%=questElem.title%></td>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td><%=ms_tools.get_const('c_comment')%></td>
+					<%}%>
+				<%}%>
+			</tr>
+
+			<tbody>
+
+				<% for(resultElem in Ps.poll_results){%>
+					<tr>
+						<td><%=resultElem.person_fullname%></td>
+						<td><%=resultElem.person_code%></td>
+						<td><%=resultElem.start_date%></td>
+
+						<% for(questElem in Ps.poll.questions){ %>
+							<%
+								// для ответа блока Упорядочивание
+								order_answer_value = '';
+							%>
+
+							<!-- единственный выбор: radiobox, select -->
+							<% if(questElem.type == 'combo' || questElem.type == 'choice'){%>
+								<%
+									_empty_combo_choice = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_combo_choice == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_combo_choice != undefined){ %>
+									<%
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_combo_choice = ArrayOptFind(questElem.entries, 'OptInt(This.id) == OptInt(_tmp.value.Value)');
+										_combo_choice_value = _combo_choice.value.Value;
+									%>
+									<td align="center"><%=_combo_choice_value%></td>
+								<%}%>
+							<%}%><!-- END radiobox, select -->
+
+							<!-- Множественный выбор -->
+							<% if(questElem.type == 'select'){%>
+								<%
+									_empty_select =  ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+									select_answer_value = '';
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_select == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_select != undefined){%>
+
+									<% for(answerElem in resultElem.answers){%>
+										<% if(questElem.question_id == answerElem.question_id){%>
+											<%
+												_arrAnswerValues = String( answerElem.value ).split( ';' );
+											%>
+
+											<% for(iAnswerValueElem in _arrAnswerValues){%>
+												<%
+													_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+													if(_answer != undefined){
+														select_answer_value += _answer.value + '; ';
+													}
+												%>
+											<%}%>
+										<%}%>
+									<%}%>
+									<td><%=select_answer_value%></td>
+								<%}%>
+							<%}%><!-- END Множественный выбор -->
+
+							<!-- текст, ссылки на файлы и объекты, строки, даты, числа -->
+							<% if(questElem.type == 'text' || questElem.type == 'string' || questElem.type == 'number' || questElem.type == 'date' || questElem.type == 'link_to_database_object' || questElem.type == 'file'){%>
+								<%
+									_empty_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_other == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_other != undefined){%>
+									<%
+										_other = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_value_other =  _other.value.Value;
+									%>
+									
+									<% if(questElem.type == 'file'){%>
+										<td><a href="<%=_value_other%>"><%=_value_other%></a></td>
+									<% } else {%>
+										<td><%=_value_other%></td>
+									<% }%>
+
+								<%}%>
+							<%}%><!-- END текст, ссылки на файлы и объекты, строки, даты, числа -->
+
+							<!-- Упорядочивание -->
+							<% if(questElem.type == 'order'){%>
+								<%
+									_empty_order = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+									order_answer_value = '';
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_order == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_order != undefined){%>
+									<% for(answerElem in resultElem.answers){%>
+										<% if(questElem.question_id == answerElem.question_id){%>
+											<%
+												_arrAnswerValues = String( answerElem.value ).split( ';' );
+											%>
+
+											<% for(iAnswerValueElem in _arrAnswerValues){%>
+												<%
+													_answer = ArrayOptFind(questElem.entries, 'This.id == OptInt(iAnswerValueElem)');
+													order_answer_value += _answer.value + '; ';
+												%>
+											<%}%>
+
+											<td><%=order_answer_value%></td>
+										<%}%>
+									<%}%>
+									
+								<%}%>
+							<%}%><!-- END Упорядочивание -->
+							
+							<!-- Флаг: да, нет -->
+							<% if(questElem.type == 'bool'){%>
+								<%
+									_empty_bool = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+									_arr_bool = ['true', 'false'];
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_bool == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_bool != undefined){%>
+									<%
+										_bool = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_value_bool = _bool.value.Value;
+									%>
+
+									<% if(_value_bool == 'true'){%>
+										<td align="center"><%=ms_tools.get_const('c_yes')%></td>
+									<%}%>
+
+									<% if(_value_bool == 'false'){%>
+										<td align="center"><%=ms_tools.get_const('c_no')%></td>
+									<%}%>
+								<%}%>
+							<%}%><!-- END Флаг -->
+
+							
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<% if(Ps.show_comments_in_report){%>
+								<%
+									_empty_comment = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+								%>
+
+								<!-- если нет ответов по блоку -->
+								<% if(_empty_comment == undefined){%>
+									<td>&nbsp;</td>
+								<%}%>
+
+								<% if(_empty_comment != undefined){%>
+									<%
+										_tmp = ArrayOptFind(resultElem.answers, 'This.question_id == questElem.question_id');
+										_value_comment = _tmp.comment;
+									%>
+									<td><%=_value_comment%></td>
+								<%}%>
+							<%}%><!-- END комментарии -->
+							
+						<%}%>
+					</tr>
+				<%}%>
+
+			</tbody>
+
+		</table>
+	<%
+	}
+	%>
+</body>
+</html>

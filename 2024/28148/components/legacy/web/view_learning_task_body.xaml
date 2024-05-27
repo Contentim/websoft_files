@@ -1,0 +1,167 @@
+﻿<%
+// const_start
+sConstPeriod = "Период выполнения";
+// const_end
+%>
+<SPXMLScreen>
+<Action Name="LearningTaskAction" Source="learning_task_result_action" Success="{!messageText}" Failure="ALERT={messageText}">
+	<Param Name="action" Value="start_learning_task_result"/>
+	<Param Name="object_id" Value="<%=curObjectID%>"/>
+	<Param Name="education_plan_id" Value="<%=curUrlQuery.GetOptProperty( "education_plan_id", "" )%>"/>
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+</Action>
+<%
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+
+
+bCanStart = ( tools_web.is_true( tools_web.get_web_param( curParams, "learning_task_body.can_start", "true", true ) ) && curObject.yourself_start );
+bFailTime = false;
+if( curObject.start_date.HasValue && curObject.start_date > Date() )
+{
+	curMessageBox = {
+		"type": "warning",
+		"text": "Время выполнения задания еще не наступило"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+else if( curObject.finish_date.HasValue && curObject.finish_date < Date() )
+{
+	curMessageBox = {
+		"type": "warning",
+		"text": "Время, отведенное на выполнение задания, истекло"
+	};
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+}
+else
+{
+	catLearningTaskResult = ArrayOptFirstElem( XQuery( "for $i in learning_task_results where $i/learning_task_id = " + curObjectID + " and $i/person_id = " + curUserID + " return $i" ) );
+	
+	curMessageBox = {
+		"type": "warning",
+		"text": "",
+		"buttons": []
+	};
+	sMessage = "";
+	if( bCanStart && ( catLearningTaskResult == undefined || catLearningTaskResult.status_id == "process" || catLearningTaskResult.status_id == "assign" ) )
+	{
+		curMessageBox.buttons.push({ "title": "Приступить к выполнению", "click": "ACTION=LearningTaskAction" });
+		sMessage = "Вы можете выполнить задание"
+	}
+	else if( catLearningTaskResult != undefined )
+	{
+		curMessageBox.buttons.push({ "title": "Просмотреть", "click": "OPENURL=" + tools_web.get_mode_clean_url( null, catLearningTaskResult.id ) });
+		if( catLearningTaskResult.status_id == "evaluation" )
+			sMessage = "Ваше задание на оценки у эксперта";
+		else if( catLearningTaskResult.status_id == "success" || catLearningTaskResult.status_id == "failed" )
+			sMessage = "Ваше задание оценено экспертом";
+		else
+			sMessage = "Вы можете просмотреть задание";
+	}
+	if( sMessage != "" )
+	{
+		curMessageBox.SetProperty( "text", sMessage );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+}
+
+
+
+arrTabListParam = String( tools_web.get_web_param( curParams, "learning_task_body.tab_list", "info;materials", true ) ).split( ";" );
+%>
+
+<TabControl Width="100%" TabsLocation="<%=curDevice.disp_type != "mobile" ? "w" : "n"%>" Preservable="1">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+	if ( sTabListParam == "info" )
+	{
+		sTitle = tools_web.get_web_param( curParams, "learning_task_body.tab_list.info", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( ( sTitle != "" ? sTitle : tools_web.get_web_const( "osnovnyesveden", curLngWeb ) ) )%>" Class="icon-info2">
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn/>
+					<GridColumn/>
+				</GridColumns>				
+<%
+				if(curObject.code.HasValue)
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_code", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.code%>]]></Label>
+				</GridRow>
+<%
+				}
+				if(curObject.start_date.HasValue)
+				{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><![CDATA[<%=sConstPeriod%>:]]></Label>
+<%
+					if(curObject.finish_date.HasValue && Day(curObject.start_date) == Day(curObject.finish_date))
+					{
+%>
+					<Label Class="XAML-grid-label-value"><%=StrDate(curObject.start_date, false, false) + " " + StrDate(curObject.start_date, true, false) + "-" + StrTime(curObject.finish_date) %></Label>
+<%
+					}
+					else if(curObject.finish_date.HasValue)
+					{
+%>
+					<Label Class="XAML-grid-label-value"><%=StrDate(curObject.start_date, true, false)%> - <%=(StrDate(curObject.finish_date, true, false))%></Label>
+<%
+					}
+%>
+				</GridRow>
+<%
+				}
+%>
+			</Grid>
+<%
+			fldCustomElems = null;
+			fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+			fldWebCustomFields = new Array();
+			if ( fldCustomElems != null )
+			{
+				fldWebCustomFields = ArraySelectByKey( fldCustomElems.fields, true, 'disp_web' );
+			}
+			arrCustomFieldNames = Array();
+			curCustomFields = {
+				"template": fldCustomElems,
+				"fields": fldWebCustomFields,
+				"source": curObject.custom_elems,
+				"modify_eval": false,
+				"disp_pages": true
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+					
+					
+			Response.Write( tools_web.place_xaml( "block_desc" ) );
+%>
+	</TabItem>
+<%
+	}
+
+	if ( sTabListParam == "materials" )
+	{
+		sTitle = tools_web.get_web_param( curParams, "learning_task_body.tab_list.materials", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( ( sTitle != "" ? sTitle : tools_web.get_web_const( "c_materials", curLngWeb ) ) )%>" Class="icon-file-text-o">
+<%
+		if( curObject.files.ChildNum == 0 )
+		{
+%>
+		<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( "netmaterialov", curLngWeb )%>]]></Label>
+<%
+		}
+		else
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+	}
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

@@ -1,0 +1,33 @@
+﻿<SPXMLScreen>
+<%
+switch ( curUrlQuery.GetOptProperty( "m", "0" ) )
+{
+	case '1':
+		curMessageBox = {
+			"type": "info",
+			"text": tools_web.get_web_const( 'vrsb_message1', curLngWeb )
+		};
+		break;
+
+	case '3':
+		curMessageBox = {
+			"type": "error",
+			"text": tools_web.get_web_const( 'vrsb_message2', curLngWeb )
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+		break;
+}
+
+curView = {
+	"id": "Responses",
+	"height": "400",
+	"catalog_name": "response",
+	"xquery_qual": ( "$elem/person_id = " + curUserID ),
+	"disp_filter": "true",
+	"disp_search": "true",
+	"sort_direct": "-",
+	"list_columns": "create_date;response_type_id;type;object_name"
+};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</SPXMLScreen>

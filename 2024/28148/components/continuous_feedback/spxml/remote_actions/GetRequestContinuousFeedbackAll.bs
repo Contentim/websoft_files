@@ -1,0 +1,383 @@
+﻿try
+{
+	try
+	{
+		form_fields = ParseJson( form_fields );
+	}
+	catch ( err )
+	{
+		form_fields = [];
+	}
+
+
+	function get_form_fields_param( sFieldName )
+	{
+		var oField = ArrayOptFindByKey( form_fields, sFieldName, 'name' );
+		if ( oField == undefined )
+		{
+			return undefined;
+		}
+		return oField.value;
+	}
+
+
+	var teApplication = continuous_feedback.get_component_application();
+	var arrApplicationResponseTypes = continuous_feedback.get_component_application_response_types();
+	if ( ArrayCount( arrApplicationResponseTypes ) == 0 )
+	{
+		RESULT = {
+			command: "alert",
+			msg: "Не указаны типы отзывов в базовом приложении компонента"
+		};
+		Cancel();
+	}
+
+	var iResponseTypeID = OptInt( get_form_fields_param( 'response_type_id' ), null );
+	var iProjectID = OptInt( get_form_fields_param( 'project_id' ), null );
+	var sStep = get_form_fields_param( 'step' );
+
+	if ( iResponseTypeID == null && ArrayCount( arrApplicationResponseTypes ) == 1 )
+	{
+		iResponseTypeID = OptInt( ArrayFirstElem( arrApplicationResponseTypes ).response_type_id, null );
+	}
+	if ( iResponseTypeID != null )
+	{
+		var oApplicationResponseType = ArrayOptFind( arrApplicationResponseTypes, 'OptInt(This.response_type_id)==' + iResponseTypeID );
+		var bSaveAuthor = tools_web.is_true( oApplicationResponseType.save_author );
+		if ( ! bSaveAuthor )
+		{
+			RESULT = {
+				command: "close_form",
+				confirm_result: {
+					command: "alert",
+					msg: "Нельзя запрашивать анонимную обратную связь"
+				}
+			};
+			Cancel();
+		}
+
+		teResponseType = OpenDoc( UrlFromDocID( iResponseTypeID ) ).TopElem;
+	}
+
+	if ( command == "eval" || command == "submit_form" )
+	{
+		if ( sStep == undefined )
+		{
+			if ( iResponseTypeID == null )
+			{
+				sStep = "select_response_type_id";
+			}
+			else if ( iProjectID == null )
+			{
+				if ( teResponseType.object_type == 'project_participant' )
+				{
+					sStep = "select_project_id";
+				}
+				else
+				{
+					sStep = "fill_response";
+				}
+			}
+			else
+			{
+				sStep = "fill_response";
+			}
+		}
+	}
+
+	if ( sStep == "select_response_type_id" )
+	{
+		RESULT = {
+			command: "display_form",
+			title: "Выбор типа отзыва",
+			form_fields: [
+				{
+					name: "response_type_id",
+					label: "Тип отзыва",
+					type: "radio",
+					value: "",
+					validation: "nonempty",
+					entries: []
+				}
+			],
+			buttons: [
+				{
+					name: "cancel",
+					label: "Отменить",
+					type: "cancel"
+				},
+				{
+					name: "submit",
+					label: "Далее",
+					type: "submit"
+				}
+			],
+			no_buttons: false
+		};
+		oFormField = ArrayFirstElem( RESULT.form_fields );
+		for ( oApplicationResponseTypeElem in arrApplicationResponseTypes )
+		{
+			oFormField.entries.push( {
+				name: oApplicationResponseTypeElem.title,
+				value: oApplicationResponseTypeElem.response_type_id
+			} );
+		}
+		Cancel();
+	}
+
+	if ( sStep == "select_project_id" )
+	{
+		arrXQueryQual = [];
+		arrProjectStates = teApplication.wvars.ObtainChildByKey( 'state_projects' ).value;
+		if ( arrProjectStates == "" || arrProjectStates == null )
+		{
+			arrProjectStates = [];
+		}
+		else if ( ObjectType( arrProjectStates ) != "JsArray" )
+		{
+			arrProjectStates = String( arrProjectStates ).split( ";" );
+		}
+		if ( ArrayCount( arrProjectStates ) == 1 )
+		{
+			arrXQueryQual.push( "$elem/status = " + XQueryLiteral( arrProjectStates[ 0 ] ) );
+		}
+		else if ( ArrayCount( arrProjectStates ) > 1 )
+		{
+			arrXQueryQual.push( "MatchSome( $elem/status, (" + ArrayMerge( arrProjectStates, "XQueryLiteral(This)", "," ) + ") )" );
+		}
+		bOnlyProjectMembers = tools_web.is_true( teApplication.wvars.ObtainChildByKey( 'only_project_members' ).value );
+		if ( bOnlyProjectMembers )
+		{
+			arrXQueryQual.push( "some $person in project_participants satisfies( $elem/id = $person/project_id and $person/object_id = " + curUserID + " )" );
+		}
+		RESULT = {
+			command: "select_object",
+			title: "Выбор проекта",
+			message: "Выберите проект",
+			catalog_name: "project",
+			xquery_qual: ArrayMerge( arrXQueryQual, "This", " and " ),
+			field_name: "project_id",
+			multi_select: false,
+			mandatory: true,
+			validation: "nonempty",
+			form_fields: [
+				{
+					name: "response_type_id",
+					type: "hidden",
+					value: iResponseTypeID
+				}
+			]
+		};
+		Cancel();
+	}
+
+	if ( sStep == "fill_response" )
+	{
+		RESULT = {
+			command: "display_form",
+			title: "Заполнение обратной связи",
+			form_fields: [
+				{
+					name: "project_id",
+					type: "hidden",
+					value: iProjectID
+				},
+				{
+					name: "response_type_id",
+					type: "hidden",
+					value: iResponseTypeID
+				},
+				{
+					name: "step",
+					type: "hidden",
+					value: "done"
+				}
+			],
+			buttons: [
+				{
+					name: "cancel",
+					label: "Отменить",
+					type: "cancel"
+				},
+				{
+					name: "submit",
+					label: "Выполнить",
+					type: "submit"
+				}
+			],
+			no_buttons: false
+		};
+
+		sXQueryQual = "";
+		if ( iProjectID == null )
+		{
+			var bCanRequestResponseOther = tools_web.is_true( teApplication.wvars.ObtainChildByKey( 'can_request_response_other' ).value );
+			if ( bCanRequestResponseOther )
+			{
+				RESULT.form_fields.push( {
+					name: "object_id",
+					value: curUserID,
+					label: "Для кого",
+					type: "foreign_elem",
+					catalog: "collaborator",
+					multiple: false,
+					mandatory: true,
+					validation: "nonempty"
+				} );
+			}
+			else
+			{
+				RESULT.form_fields.push( {
+					name: "object_id",
+					type: "hidden",
+					value: curUserID
+				} );
+				RESULT.form_fields.push( {
+					name: "object_name",
+					type: "paragraph",
+					value: ( "Для кого" + ": " + curUser.fullname )
+				} );
+			}
+		}
+		else
+		{
+			teProject = OpenDoc( UrlFromDocID( iProjectID ) ).TopElem;
+			RESULT.form_fields.push( {
+				name: "project_name",
+				type: "paragraph",
+				value: ( "Проект" + ": " + teProject.name.Value )
+			} );
+
+			catProjectParticipant = ArrayOptFirstElem( XQuery( "for $elem in project_participants where $elem/project_id = " + iProjectID + " and $elem/object_id = " + curUserID + " return $elem/Fields('id')" ) );
+			RESULT.form_fields.push( {
+				name: "object_id",
+				value: catProjectParticipant.id.Value,
+				label: "Для кого",
+				type: "foreign_elem",
+				catalog: "project_participant",
+				query_qual: ( "$elem/project_id = " + iProjectID ),
+				multiple: false,
+				mandatory: true,
+				validation: "nonempty"
+			} );
+		}
+
+		RESULT.form_fields.push( {
+			name: "person_id",
+			value: "",
+			label: "У кого",
+			type: "foreign_elem",
+			catalog: "collaborator",
+			query_qual: "",
+			multiple: false,
+			mandatory: true,
+			validation: "nonempty"
+		} );
+
+		iDaysPlanning = OptInt( iDaysPlanning );
+		RESULT.form_fields.push( {
+			name: "plan_date",
+			label: "Оценить до",
+			type: "date",
+			value: ( iDaysPlanning > 0 ? StrXmlDate( DateOffset( CurDate, ( iDaysPlanning * 86400 ) ) ) : "" ),
+			mandatory: true,
+			validation: "nonempty"
+		} );
+		Cancel();
+	}
+
+	if ( sStep == "done" )
+	{
+		var iPersonID = OptInt( get_form_fields_param( "person_id" ) );
+		var iObjectID = OptInt( get_form_fields_param( "object_id" ) );
+		var bSelectError = false;
+		if ( iPersonID == iObjectID )
+		{
+			bSelectError = true;
+		}
+		else
+		{
+			var teObject = OpenDoc( UrlFromDocID( iObjectID ) ).TopElem;
+			if ( teObject.Name == 'project_participant' )
+			{
+				if ( iPersonID == teObject.object_id )
+				{
+					bSelectError = true;
+				}
+			}
+		}
+		if ( bSelectError )
+		{
+			RESULT = {
+				command: "alert",
+				msg: "Нельзя оценивать самого себя"
+			};
+			Cancel();
+		}
+
+		var bProjectResponseRepeat = tools_web.is_true( teApplication.wvars.ObtainChildByKey( "project_response_repeat" ).value );
+		var iDaysBetween = OptInt( teApplication.wvars.ObtainChildByKey( "days_between" ).value );
+		if ( iDaysBetween < 0 )
+		{
+			iDaysBetween = 0;
+		}
+
+		if ( iProjectID != null && bProjectResponseRepeat )
+		{
+			if ( ArrayOptFirstElem( XQuery( "for $elem in responses where $elem/response_type_id = " + iResponseTypeID + " and $elem/object_id = " + iPersonID + " and $elem/person_id = " + curUserID + " and ( $elem/status = 'plan' or $elem/status = 'done' ) return $elem/Fields('id')" ) ) != undefined )
+			{
+				RESULT = {
+					command: "alert",
+					msg: "Вы уже оставляли обратную связь выбранного типа участнику проекта"
+				};
+				Cancel();
+			}
+		}
+
+		if ( iProjectID == null && iDaysBetween > 0 )
+		{
+			dDeltaDone = DateOffset( CurDate, ( 0 - ( iDaysBetween * 86400 ) ) );
+			if ( ArrayOptFirstElem( XQuery( "for $elem in responses where $elem/response_type_id = " + iResponseTypeID + " and $elem/object_id = " + iPersonID + " and $elem/person_id = " + curUserID + " and ( $elem/status = 'plan' or $elem/status = 'done' ) and $elem/done_date > date('" + dDeltaDone + "') return $elem/Fields('id')" ) ) != undefined )
+			{
+				RESULT = {
+					command: "alert",
+					msg: "Вы уже оставляли обратную связь выбранного типа этому человеку"
+				};
+				Cancel();
+			}
+		}
+
+		var iNotification = OptInt( teApplication.wvars.ObtainChildByKey( "notify_response_request_type" ).value, null );
+		var oRes = tools.call_code_library_method( "libContinuousFeedback", "CreatePersonContinuousFeedbackResponse", [ iPersonID, curUserID, iObjectID, form_fields, iNotification, sNotifyResponse ] );
+		if ( oRes.error != 0 )
+		{
+			RESULT = {
+				command: "close_form",
+				confirm_result: {
+					command: "alert",
+					msg: oRes.error_text
+				}
+			};
+			Cancel();
+		}
+
+		RESULT = {
+			command: "close_form",
+			confirm_result: {
+				command: "alert",
+				msg: "Обратная связь запрошена",
+				confirm_result: {
+					command: "reload_page"
+				}
+			}
+		};
+		Cancel();
+	}
+}
+catch ( g_err )
+{
+	if ( ! IsCancelError( g_err ) )
+	{
+		alert( "ERROR: RemoteAction: GetRequestContinuousFeedbackAll:\r\n" + g_err );
+	}
+}

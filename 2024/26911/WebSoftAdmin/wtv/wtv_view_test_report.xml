@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_test_report>
+
+	<report_name TYPE="string" DEFAULT="test_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+	<assessment_id TYPE="integer" FOREIGN-ARRAY="assessments"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<disp_learning_type TYPE="string" NOT-NULL="1" DEFAULT="test_learnings"/>
+	<excel_file_url TYPE="string"/>
+	<disp_excel_file_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<is_web_client TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	
+	<catalog_name TYPE="string"/>
+	<view_type TYPE="string"/>
+	<view_type_env TYPE="variant"/>
+	<INHERIT TYPE="view_columns_base"/>
+	
+	<data>
+		<INHERIT TYPE="table_data_base"/>
+	</data>
+
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<action_catalog_name TYPE="string" DEFAULT="collaborators"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+
+			rows = []
+			strNoObjectsSelected=ms_tools.get_const('cg_no_record')
+			if (action_catalog_name=='collaborators')
+			{
+				rows = QueryCatalogByKeys( action_catalog_name, 'id', ArraySelectDistinct( ArrayExtract( Screen.FindItem( 'ViewGrid' ).SelRows, 'Int(Env.ListElem.cs.GetChildByKey(\'id\').t)' ) ) );
+				strNoObjectsSelected=ms_tools.get_const('ctb5bgp07v')
+			}
+			else if (action_catalog_name=='active_test_learnings')
+			{
+				rows = QueryCatalogByKeys( action_catalog_name, 'id', ArraySelectDistinct( ArrayExtract( ArraySelect(Screen.FindItem( 'ViewGrid' ).SelRows,'Env.ListElem.cs.GetChildByKey(\'id\').s==\'a\''), 'Int(Env.ListElem.cs.GetChildByKey(\'id\').cl)' ) ) );
+			}
+			_num = ArrayCount( rows.Object );
+
+			bError=false
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				bError=true;
+			if (_num == 0)
+			{
+				Screen.MsgBox( strNoObjectsSelected , ms_tools.get_const('c_error'), 'error', 'ok' )
+				bError=true;
+			}
+
+			row_list_field.Clear();
+			action_catalog_name='collaborators';
+			if (bError)
+			{
+				Cancel();
+			}
+
+			return _num;
+			
+	"/>
+	<set_sel_action PROPERTY="1" PARAM="List" PARAM="Screen" EXPR="
+		TopElem = Child(0).Parent;
+		iSelrowsCount = ArrayCount( List.SelRows );
+		TopElem.count_sel = iSelrowsCount;
+		Screen.FindItem( 'StatusPanel' ).Update();
+	"/>
+</view_test_report>
+
+<OnInit PROPERTY="1" EXPR="
+
+	strRowImageUrl=''
+	strViewTypeName='test_report'
+	if (global_settings.settings.show_creator_in_reports)
+	{
+		strViewTypeName='test_report_add_columns'
+	}
+	
+	strRowImageUrl=view_types.GetChildByKey( strViewTypeName ).row_image_url
+	TopElem.catalog_name=strViewTypeName
+	TopElem.view_type=strViewTypeName
+	TopElem.AssignElem( view_types.GetChildByKey( TopElem.view_type ) );	
+	
+	ms_tools.init_view( TopElem );
+	TopElem.row_image_url=strRowImageUrl
+"/>
+</SPXML-INLINE-FORM>

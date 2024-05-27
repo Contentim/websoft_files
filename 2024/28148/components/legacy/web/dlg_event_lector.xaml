@@ -1,0 +1,52 @@
+﻿<SPXMLScreen>
+<%
+/*-----------------------------------------------------------------------------------------------------------*/
+oLector = ArrayOptFirstElem(tools.read_object(String(PARAMETERS.GetOptProperty( 'select_data'))));
+fldLector = curObject.lectors.GetChildByKey(Int(oLector.id));
+catLector = fldLector.lector_id.ForeignElem;
+sLectorFullname = (catLector.type == 'invitee') ? catLector.lector_fullname : catLector.person_fullname;
+%>
+
+	<Action Name="SaveEventLectorData" Source="event_lector_change" Success="CLOSEDIALOG;REFRESH;" Failure="ALERT={messageText}">		
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="iEventId" Value="<%=curObjectID%>"/>
+		<Param Name="iLectorId" Value="<%=fldLector.lector_id%>"/>
+	</Action>
+
+	<Grid Width="100%" Class="XAML-grid-info-table">
+		<GridColumns>
+			<GridColumn Width="50%" Align="Right"/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_coll")%>:</Label>
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url( null, fldLector.lector_id, { doc_id: curDocID } )%>"><%=sLectorFullname%></Link>
+		</GridRow>
+				
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("bos75mgjh5")%>:</Label>
+			<Edit Name="hours" Width="250"><%=fldLector.hours%></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("kolvochasovvvyh")%>:</Label>
+			<Edit Name="weekend_hours" Width="250"><%=fldLector.weekend_hours%></Edit>
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=tools.get_web_str("c_comment")%>:</Label>
+			<Edit Name="comment" Width="250"><%=fldLector.comment%></Edit>
+		</GridRow>
+	</Grid>
+	<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn Width="100"/>
+			<GridColumn Width="100"/>
+		</GridColumns>
+
+		<GridRow>
+			<Label/>
+			<Button Class="XAML-button" Width="100" Click="ACTION=SaveEventLectorData">OK</Button>
+			<Button Class="XAML-button" Width="100" Click="CANCELDIALOG"><%=tools_web.get_web_const( "c_cancel", curLngWeb )%></Button>
+		</GridRow>
+	</Grid>
+</SPXMLScreen>

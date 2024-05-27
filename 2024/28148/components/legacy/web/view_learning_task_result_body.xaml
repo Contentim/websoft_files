@@ -1,0 +1,196 @@
+﻿<%
+function write_buttons()
+{
+%>
+	<Toolbar>
+<%
+	if( curObject.status_id == "assign" && curObject.person_id == curUserID && ( !curObject.plan_start_date.HasValue || curObject.plan_start_date < Date() ) )
+	{
+%>
+		<Button Click="SET=LearningTaskResultAction/action,process;ACTION=LearningTaskResultAction;"><%="Перейти к выполнению задания"%></Button>
+<%
+	}
+	if( ( curObject.status_id == "process" && curObject.person_id == curUserID ) || ( curObject.status_id == "evaluation" && curObject.expert_id == curUserID ) )
+	{
+%>
+		<Button Click="SET=LearningTaskResultAction/action,save;ACTION=LearningTaskResultAction;"><%=tools_web.get_web_const( "c_save", curLngWeb )%></Button>
+<%
+	}
+	if( curObject.status_id == "process" && curObject.person_id == curUserID )
+	{
+%>
+		<Button Click="SET=LearningTaskResultAction/action,evaluation;ACTION=LearningTaskResultAction;"><%="Отправить на проверку"%></Button>
+<%
+	}
+	if( curObject.status_id == "evaluation" && curObject.expert_id == curUserID )
+	{
+%>
+		<Button Click="SET=LearningTaskResultAction/action,success;ACTION=LearningTaskResultAction;"><%="Задание выполнено"%></Button>
+		<Button Click="SET=LearningTaskResultAction/action,failed;ACTION=LearningTaskResultAction;"><%="Задание не выполнено"%></Button>
+<%
+	}
+%>
+	</Toolbar>
+<%
+}
+
+bLite = tools_web.is_true( curUrlQuery.GetOptProperty( "lite", "0" ) );
+teLearningTask = OpenDoc( UrlFromDocID( curObject.learning_task_id ) ).TopElem;
+%>
+<SPXMLScreen Class="XAML-Learning-Task-Result">
+	<Action Name="LearningTaskResultAction" Source="learning_task_result_action" Success="{!messageText}" Failure="ALERT={messageText}">
+		<Param Name="action" Value=""/>
+		<Param Name="object_id" Value="<%=curObjectID%>"/>
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	</Action>
+<%
+
+if( !bLite )
+{
+	curTitle = {
+		"default_title": teLearningTask.name
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_web_template_title.xaml" ) );
+}
+
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_check_education_plan_access.xaml" ) );
+
+if( curObject.plan_start_date.HasValue && curObject.plan_start_date > Date() )
+{
+	if( curObject.person_id == curUserID )
+	{
+		curMessageBox = {
+			"id": "LearningTaskInfo",
+			"type": "info",
+			"buttons": []
+		};
+		curMessageBox.SetProperty( "text", "Вы не можете приступить к выполнению задания, так как планируемая дата начала выполнения задания еще не наступила" );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+	}
+}
+else
+	write_buttons();
+%>
+	<TabControl TabsLocation="<%=bLite ? "n" : "w"%>" TabsWidth="216" Adapt="true">
+		<TabItem Title="<%=tools_web.get_web_const( "c_info", curLngWeb )%>">
+<%
+
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table" Adapt="1">
+				<GridColumns>
+					<GridColumn Width="250" Align="right"/>
+					<GridColumn/>
+				</GridColumns>
+
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_status", curLngWeb )%>:</Label>
+					<Label><%=curObject.status_id.ForeignElem.name%></Label>
+				</GridRow>
+<%
+	if( !bLite )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "planiruemayadat_4", curLngWeb )%>:</Label>
+					<Label><%=curObject.plan_start_date.HasValue ? StrDate( curObject.plan_start_date, true, false ) : ""%></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "planiruemayadat_1", curLngWeb )%>:</Label>
+					<Label><%=curObject.plan_end_date.HasValue ? StrDate( curObject.plan_end_date, true, false ) : ""%></Label>
+				</GridRow>
+<%
+	}
+	if( curObject.person_id != curUserID )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+					<Label><%=curObject.person_id.HasValue ? curObject.person_id.ForeignElem.fullname : ""%></Label>
+				</GridRow>
+<%
+	}
+	if( curObject.expert_id != curUserID )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "vkpb_expert", curLngWeb )%>:</Label>
+					<Label><%=curObject.expert_id.HasValue ? ( curObject.expert_id.OptForeignElem != undefined ? curObject.expert_id.ForeignElem.fullname : tools_web.get_web_const( "c_deleted", curLngWeb ) ) : ""%></Label>
+				</GridRow>
+<%
+	}
+
+	if( curObject.status_id == "process" && curObject.person_id == curUserID )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "c_answer", curLngWeb )%>:</Label>
+					<EditBox Name="CollaboratorAnswer" Class="" Width="100%" Height="200"><![CDATA[<%=curObject.answer%>]]></EditBox>
+				</GridRow>
+<%
+	}
+	else if( curObject.status_id != "process" && curObject.status_id != "assign" )
+	{ 
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%="Ответ сотрудника"%>:</Label>
+					<HTMLBox><![CDATA[<%=StrReplace( curObject.answer, "\n", "<br/>" )%>]]></HTMLBox>
+				</GridRow>
+<%
+	}
+	if( curObject.status_id == "evaluation" && curObject.expert_id == curUserID )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ass_mark", curLngWeb )%>:</Label>
+					<Edit KeyPress="#!1-31:STOP;#!33-44:STOP;#!46-47:STOP;#!58-10000:STOP;#!S1-39:STOP;#!S42:STOP;#!S44-47:STOP;#!S58-10000:STOP;" Name="ExpertMark" Class="" Width="50"><![CDATA[<%=curObject.mark%>]]></Edit>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "kommentariyeks", curLngWeb )%>:</Label>
+					<EditBox Name="ExpertComment" Class="" Width="100%" Height="200"><![CDATA[<%=curObject.expert_comment%>]]></EditBox>
+				</GridRow>
+<%
+	}
+	if( curObject.status_id == "success" || curObject.status_id == "failed" )
+	{
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=tools_web.get_web_const( "ass_mark", curLngWeb )%>:</Label>
+					<Label><![CDATA[<%=curObject.mark%>]]></Label>
+				</GridRow>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%="Комментарий эксперта"%>:</Label>
+					<HTMLBox><![CDATA[<%=StrReplace( curObject.expert_comment, "\n", "<br/>" )%>]]></HTMLBox>
+				</GridRow>
+<%
+	}
+%>
+			</Grid>
+<%
+
+allowChangeFiles = ( ( curObject.status_id == "process" && curObject.person_id == curUserID ) || ( curObject.status_id == "evaluation" && curObject.expert_id == curUserID ) );;
+bStaticCollection = false;
+sFilesListViewType = "";
+sID_curFiles = "LearningTaskResultFiles"
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+
+	
+%>
+		</TabItem>
+		<TabItem Title="<%="Описание к заданию"%>">
+<%
+allowChangeFiles = false;
+bStaticCollection = false;
+sFilesListViewType = "";
+dummyObject = teLearningTask;
+dummyObjectID = curObject.learning_task_id;
+sID_curFiles = "LearningTaskFiles"
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+
+curDescObject = teLearningTask;
+curDescObjectID = curObject.learning_task_id;
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+		</TabItem>
+
+	</TabControl>
+</SPXMLScreen>

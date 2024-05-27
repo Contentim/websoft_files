@@ -1,0 +1,200 @@
+<%
+	
+	oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+	arrTabListParam = String( tools_web.get_web_param( curParams, 'tab_list', 'tree;scheme;tag_cloud', true ) ).split( ';' );
+	showUnconfirmedObjects = tools_web.get_web_param( curParams, 'show_unconfirmed_objects', '0', true );
+	searchPanelExpanded = tools_web.get_web_param( curParams, 'search_panel_expanded', 'false', true );
+	search_exist = ( oParamSource.GetOptProperty("search") != undefined && tools_web.is_true( oParamSource.GetOptProperty("search") ) );
+	if ( search_exist )
+		searchPanelExpanded = true;
+	searchParam = String( tools_web.get_web_param( curParams, 'search_panel_param', 'classifier;create_date;action_date;key_word;tag;expert;status', true ) ).split( ';' );
+
+	sShowExpertQuestionBtn = tools_web.get_web_param( curParams, 'show_expert_question_button', '0', true );
+
+	fieldArray = Array( "knowledge_classifier_id", "start_create_date", "finish_create_date", "start_action_date", "finish_action_date", "key_word", "tag_id", "expert_id", "status" );
+	urlFieldArray = Array( "kc_id", "from_cdate", "to_cdate", "from_adate", "to_adate", "keyword", "tag_id", "expert_id", "status" )
+	
+	iTreeWeight = ( tools_web.get_web_param( curParams, "tree_wight", 300, true ));
+	knowledge_classifier_id = (oParamSource.GetOptProperty( "kc_id") != undefined ? oParamSource.GetOptProperty( "kc_id" ) : "");
+	start_create_date = (oParamSource.GetOptProperty( "from_cdate") != undefined ? oParamSource.GetOptProperty( "from_cdate" ) : "");
+	finish_create_date = (oParamSource.GetOptProperty( "to_cdate") != undefined ? oParamSource.GetOptProperty( "to_cdate" ) : "");
+	start_action_date = (oParamSource.GetOptProperty( "from_adate") != undefined ? oParamSource.GetOptProperty( "from_adate" ) : "");
+	finish_action_date = (oParamSource.GetOptProperty( "to_adate") != undefined ? oParamSource.GetOptProperty( "to_adate" ) : "");
+	key_word = (oParamSource.GetOptProperty( "keyword") != undefined ? oParamSource.GetOptProperty( "keyword" ) : "");
+	tag_id = (oParamSource.GetOptProperty( "tag_id") != undefined ? oParamSource.GetOptProperty( "tag_id" ) : curObjectID);
+	expert_id = (oParamSource.GetOptProperty( "expert_id") != undefined ? oParamSource.GetOptProperty( "expert_id" ) : "");
+	status = (oParamSource.GetOptProperty( "status") != undefined ? oParamSource.GetOptProperty( "status" ) : "");
+	icurTab = CONTEXT.GetOptProperty( 'AssessmentBodyTab' ) != undefined ? CONTEXT.GetOptProperty( 'AssessmentBodyTab' ) : OptInt( oParamSource.GetOptProperty( "tab_id"), 0 );
+	key_word_tag = CONTEXT.GetOptProperty( 'KeyWordTagCloud' ) != undefined ? CONTEXT.GetOptProperty( 'KeyWordTagCloud' ) : oParamSource.GetOptProperty( "key_word_tag", '');
+	iCurTagID = OptInt( CONTEXT.GetOptProperty( "tag_id" ), OptInt( tag_id, null ) );
+	cloud_tag_id = OptInt( oParamSource.GetOptProperty( "cloud_tag_id" ), iCurTagID );
+	tag_role_id = OptInt( oParamSource.GetOptProperty( "tag_role_id" ), '' );
+	try
+	{
+		default_type_visible
+	}
+	catch( ex )
+	{
+		default_type_visible = tools_web.get_web_param( curParams, 'default_type_visible', 'list', true );
+	}
+	type_visible_tag = oParamSource.GetOptProperty( "type_visible_tag" , default_type_visible );
+	typeMode = tools_web.get_web_param( curParams, 'typeMode', 'grid', true );
+	SeeCnt = OptInt( tools_web.get_web_param( curParams, 'SeeCnt', 5, true ), 5 );
+	
+	
+	arrTabClouds = String( tools_web.get_web_param( curParams, "cloud_tab_list", "kps;objects;experts;questions", true ) ).split( ";" );
+	hide_tabitem_tag = tools_web.get_web_param( curParams, "hide_tabitem", false, true ) && ArrayCount( arrTabClouds ) == 1;	
+	_use_hier = tools_web.get_web_param( curParams, "full_list_question_by_hier", "0", true );
+
+	if ( oParamSource.GetOptProperty( "qsort_type" ) != undefined )
+		_sort_type = oParamSource.GetOptProperty( "qsort_type" );
+	else
+		_sort_type = tools_web.get_web_param( curParams, "question_sort_type", "", true )
+	if ( _sort_type == "" )
+		_sort_type = "question";
+
+	arrTagCloudTabs = String( tools_web.get_web_param( curParams, "cloud_tab_list", "kps;objects;experts;questions", true ) ).split( ";" );
+	strAction= "search";
+	strMode= "knowledge_map";
+	url_query = UrlQuery( PAGEURL );
+	temp_url = UrlEncode( UrlFileName( url_query ) + '?mode=' + url_query.GetOptProperty( "mode" ) + ( url_query.GetOptProperty( "object_id" ) != undefined ? '&object_id=' + url_query.GetOptProperty( "object_id" ) : '' ) + ( url_query.GetOptProperty( "doc_id" ) != undefined ? '&doc_id=' + url_query.GetOptProperty( "doc_id" ) : '' ) + ( url_query.GetOptProperty( "custom_web_template_id" ) != undefined ? '&custom_web_template_id=' + url_query.GetOptProperty( "custom_web_template_id" ) : '' ) + "&tab_id=" + ( ArrayCount( arrTabListParam ) - 1 ) );
+%>
+
+<SPXMLScreen>
+
+	<Dialog Name="AnswerExspertDialog" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="">
+		<Param Name="iQuestionId" Value=""/>
+	</Dialog>
+
+	<Edit Name="CloudTagId" Hidden="1" Value=""/>
+	<Edit Name="TagCloudTabE" Hidden="1"><%=CONTEXT.GetOptProperty( "TagCloudTabE", ArrayOptFirstElem( arrTagCloudTabs ) )%></Edit>	
+	<Edit Name="TypeVisibleTag" Hidden="1"><%=type_visible_tag%></Edit>	
+	<Edit Name="RoleID" Hidden="1"><%=tag_role_id%></Edit>	
+	<Edit Name="TagIDCloud" Hidden="1"><%=cloud_tag_id%></Edit>	
+
+	<TabControl Name="KnowledgeTagTab" DisplayMode="tab" TabsHidden="true" Height="100%" ActiveTab="<%=OptInt( cloud_tag_id ) != undefined ? 1 : 0%>">
+		<TabItem>
+<%
+		type = "tag_cloud"
+		curFilter = {
+			'id': type,
+			'search_field': type + "key_word",
+			'search_width': 150,
+			'disp_search': true,
+			'search_action': "UPDATE=TagCloudPanel;",
+			'action': "UPDATE=KnowledgeMapTabPanel{KnowlPartBodyTabE};",
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+%>
+			<Panel ShowHeader="false" Name="TagCloudPanel" Source="xaml_tag_cloud_panel" Class="XAML-PanelKnowledge-with-top">
+				<Param Name="RoleID" Value="{RoleID}"/>
+				<Param Name="KeyWordTagCloud" Value="{<%=type%>key_word}"/>
+				<Param Name="TagIDCloud" Value="{TagIDCloud}"/>
+				<Param Name="NewUrl" Value="<%=temp_url%>"/>
+				<Param Name="TypeVisibleTag" Value="{TypeVisibleTag}"/>
+			</Panel>
+		</TabItem>
+		<TabItem Title="<%=tools_web.get_web_const( "c_materials", curLngWeb )%>">
+			<Grid Width="100%" Class="XAML-grid-container">
+				<GridColumns>
+					<GridColumn/>	
+					<GridColumn Width="100%"/>
+				</GridColumns>
+
+				<GridRow>
+					<Link Click="SET=KnowledgeTagTab,0" Class="icon-arrow-left"></Link>	
+					<Edit Class="XAML-edit-label XAML-edit-label-title" Name="currentlySelectedKnowledgeTitle" Editable="0"><%=OptInt( cloud_tag_id ) != undefined ? OpenDoc( UrlFromDocID( OptInt( cloud_tag_id ) ) ).TopElem.name : ""%></Edit>		
+			
+				</GridRow>
+			</Grid>
+<%
+	if( !hide_tabitem_tag )
+	{
+%>
+	<TabControl ActiveTab="<%=CONTEXT.GetOptProperty( "TabControlData", 0 )%>" Name="TabControlData"  Class="XAML-tabcontrol-filter XAML-tabcontrol-knowledge" Preservable="1">
+<%
+			for( elem in arrTagCloudTabs )
+			{
+				switch( elem )
+				{
+					case "objects":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_materials", curLngWeb ) )%>" Click="SET=TagCloudTabE,objects;UPDATE=TagCloudPanel{TagCloudTabE}">
+				
+<%
+						break;
+					case "experts":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "vkpb_experts", curLngWeb ) )%>" Click="SET=TagCloudTabE,experts;UPDATE=TagCloudPanel{TagCloudTabE}">
+<%
+
+						break;
+					case "questions":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_questions", curLngWeb ) )%> - <%=XmlAttrEncode( tools_web.get_web_const( "vtr_answers", curLngWeb ) )%>" Click="SET=TagCloudTabE,questions;UPDATE=TagCloudPanel{TagCloudTabE}">
+<%
+						break;
+
+					case "desc":
+%>				
+			<TabItem Title="<%=XmlAttrEncode( tools_web.get_web_const( "c_desc", curLngWeb ) )%>" Click="SET=TagCloudTabE,desc;UPDATE=TagCloudPanel{TagCloudTabE}">
+<%
+						break;
+				}
+				if( elem != "desc" )
+				{
+					curFilter = {
+						'id': "tag" + elem,
+						'search_field': "tag" + elem + "key_word",
+						'selectors': ( elem != "questions" ? 'list;tile' : '' ),
+						'search_width': 150,
+						'disp_search': true,
+						'selectors_field': "TypeVisibleTag" + elem,
+						'selectors_value': default_type_visible,
+						'search_action': "UPDATE=TagCloudPanel{TagCloudTabE};",
+						'selectors_action': "UPDATE=TagCloudPanel{TagCloudTabE};",
+						'action': "UPDATE=TagCloudPanel{TagCloudTabE};"
+					};
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+
+				}
+				else
+				{
+%>				
+				<StackPanel Class="XAML-stack-filters-container" Height="54" Orientation="Vertical" Adapt="1">
+				</StackPanel>
+<%	
+				}
+%>	
+				<Panel ShowHeader="false" Name="TagCloudPanel<%=elem%>" Source="xaml_knowledge_map_tab_panel" Class="XAML-PanelKnowledge-with-top">
+					<Param Name="KnowlPartBodyTab" Value="{TagCloudTabE}"/>  
+					<Param Name="TypeVisible" Value="{TypeVisibleTag<%=elem%>}"/>
+					<Param Name="type" Value="Tag"/>
+				</Panel>			
+			</TabItem>
+<%
+			}
+
+%>				
+		</TabControl>
+<%
+	}
+%>
+		<Collection Name="QuestionsCollectionTag" Source="view_knowledge_map_tree_template_questions_collection">
+			<Param Name="iTagId" Value="{TagIDCloud}"/>
+			<Param Name="sKeyWord" Value="{tagquestionskey_word}"/>
+		</Collection>
+		<Collection Name="KnowledgeMaterialTileTag" Source="knowledge_collection_for_materials_tile">
+			<Param Name="TagID" Value="{TagIDCloud}"/>
+			<Param Name="SearchW" Value="{tagobjectskey_word}"/>
+		</Collection>
+		<Collection Name="KnowledgeExpertTileTag" Source="knowledge_collection_for_experts_tile">
+			<Param Name="TagID" Value="{TagIDCloud}"/>
+			<Param Name="key_word" Value="{tagexpertskey_word}"/>
+		</Collection>
+
+		</TabItem>
+	</TabControl>
+
+
+</SPXMLScreen>

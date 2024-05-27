@@ -1,0 +1,97 @@
+﻿<SPXMLScreen>
+<%
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'LearningTaskResultsTab' ), OptInt( curUrlQuery.GetOptProperty( 'learning_task_results_tab' ), 0 ) );
+iCurTab = 0-1;
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'learning_task_results.tab_list', 'my;experts', true ) ).split( ';' );
+%>
+<TabControl Name="LearningTaskResultsTab" ActiveTab="<%=iDefaultTab%>" Width="100%" Class="XAML-tabcontrol-filter">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'my' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'learning_task_results.tab_list.my_tab.block_list', 'learning_task_results', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "learning_task_results.tab_list.my_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? "Мои задания" : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'learning_task_results' )
+		{
+			sStatusFilter = CONTEXT.GetOptProperty( 'status_id', 'assign' );
+			curView = {
+				"id": "All",
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "learning_task_result",
+				"xquery_qual": ( "$elem/person_id = " + curUserID + " and $elem/status_id = '{status_id}' and $elem/event_id = null()" ),
+				"disp_filter": true,
+				"filter_mode": "custom",
+				"disp_search": true,
+				"list_columns": "learning_task_name;status_id;mark;plan_end_date",
+				"sort_index": 0,
+				"sort_direct": "-",
+				"filter_items": [
+					{ "id": "status_id", "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": sStatusFilter }
+				],
+				"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   EXPERTS TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'experts' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'learning_task_results.tab_list.experts_tab.block_list', 'learning_task_results', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "learning_task_results.tab_list.experts_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? "На проверке" : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'learning_task_results' )
+		{
+			sStatusFilterWork = CONTEXT.GetOptProperty( 'status_id_expert', 'evaluation' );
+
+			curView = {
+				"id": "Sogl",
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "learning_task_result",
+				"xquery_qual": ( "$elem/expert_id = " + curUserID + " and $elem/status_id = '{status_id_expert}' and $elem/event_id = null()" ),
+				"disp_search": true,
+				"sort_index": 1,
+				"sort_direct": "-",
+				"disp_filter": true,
+				"filter_mode": "custom",
+				"filter_items": ([
+					{ "id": "status_id_expert", "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": sStatusFilterWork }
+				]),
+				"link_action": ( "OPENURL=" + tools_web.get_mode_clean_url( null, "%7Bid%7D", { doc_id: curDocID } ) ),
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>

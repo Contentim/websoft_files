@@ -1,0 +1,71 @@
+﻿<SPXMLScreen Class="XAML-without-padding-and-margin">
+<%
+	cloudTabListParam = String( tools_web.get_web_param( PARAMETERS, "cloud_tab_list", "kps;objects;experts;questions", true ) ).split( ";" );
+	sKeyWord = tools_web.get_web_param( PARAMETERS, "sKeyWord", "", true );
+	ExpertId = tools_web.get_web_param( PARAMETERS, "ExpertId", "", true );
+	PersonId = tools_web.get_web_param( PARAMETERS, "PersonId", "", true );
+	qStatus = tools_web.get_web_param( PARAMETERS, "qStatus", "all", true );
+	TypeVisible = tools_web.get_web_param( PARAMETERS, "TypeVisible", "spisok", true );
+	QuestionType = tools_web.get_web_param( PARAMETERS, "qtype", "", true );
+	SeeCnt = OptInt( tools_web.get_web_param( PARAMETERS, "SeeCnt", 5, true ), 5 );
+
+%>
+	<Collection Name="QuestionsCollection" Source="view_knowledge_map_tree_template_questions_collection">
+		<Param Name="iExpertId" Value="<%=ExpertId%>"/>
+		<Param Name="iPersonId" Value="<%=PersonId%>"/>
+		<Param Name="qStatus" Value="<%=qStatus%>"/>
+		<Param Name="iObjectKC" Value=""/>
+		<Param Name="iObjectKP" Value=""/>
+		<Param Name="sKeyWord" Value="<%=sKeyWord%>"/>
+		<Param Name="iTagId" Value=""/>
+		<Param Name="bUseHier" Value="1"/>
+		<Param Name="QuestionType" Value="<%=QuestionType%>"/>
+	</Collection>
+	<Dialog Name="AnswerExspertDialogTag" Source="expert_answer" Title="<%=XmlAttrEncode(tools_web.get_web_const( "veqb_expert_answer", curLngWeb ))%>" Close="">
+		<Param Name="iQuestionId" Value="{iQuestionIdTag}"/>
+	</Dialog>
+
+<%
+	if( TypeVisible == "spisok" )
+	{
+		cond = new Array();
+		if( QuestionType == 'faq' )
+			cond[ArrayCount(cond)] = " $i/is_faq=true() ";
+		else if( QuestionType == 'opened' )
+			cond[ArrayCount(cond)] = " $i/is_disclosed=true() ";
+			
+		if( qStatus == "true" )
+			cond[ArrayCount(cond)] = " $i/status = true() ";
+		else if( qStatus == "false" )
+			cond[ArrayCount(cond)] = " $i/status = false() ";
+			
+		if( OptInt( ExpertId ) != undefined )
+			cond[ArrayCount(cond)] = " $i/expert_id = " + OptInt( ExpertId );
+			
+		if( OptInt( PersonId ) != undefined )
+			cond[ArrayCount(cond)] = " $i/person_id = " + OptInt( PersonId );
+		
+		
+		xarrMyQuestions = XQuery("for $i in expert_questions " + ( ArrayCount(cond) > 0 ? ' where ' + ArrayMerge(cond, 'This', ' and ') : '') + " return $i");
+		if (sKeyWord != "")
+		{
+			xarrMyQuestions = ArraySelect( xarrMyQuestions, "StrContains(StrLowerCase(This.question), '" + StrLowerCase(sKeyWord) + "') == true");
+		}
+%>
+				<Panel Name="PanelSpisokKnowledgeMaterial" Source="xaml_knowledge_panel_for_spisok" Width="100%" Class="XAML-PanelKnowledge">
+					<Param Name="bShow" Value="1"/>
+					<Param Name="sType" Value="question"/>
+					<Param Name="aObjects" Value="<%=ArrayMerge( ArraySelectDistinct( xarrMyQuestions, "id" ), "This.id", ";" )%>"/>
+					<Param Name="SeeCnt" Value="<%=SeeCnt%>"/>
+					<Param Name="showUnconfirmedObj" Value="0"/>
+				</Panel>
+<%
+	}
+	else
+	{
+%>
+	<TileView Name="QuestionsTileView2" TileHeight="200" TileWidth="250" Columns="3" Rows="5" PageSize="15" DataSource="{QuestionsCollection}" TemplateSource="tile_knowledge" />
+<%
+	}
+%>
+</SPXMLScreen>

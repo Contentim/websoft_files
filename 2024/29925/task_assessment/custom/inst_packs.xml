@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<inst_packs>
+	<inst_pack>
+		<id>inst_ta_code_library</id>
+		<name>Управление проектной оценкой / Библиотеки программного кода</name>
+		<comment>Справочник библиотек программного кода</comment>
+		<url>inst_ta_code_library.xml</url>
+		<package_date>2023-11-22</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_ta_remote_action</id>
+		<name>Управление проектной оценкой / Удаленные действия</name>
+		<comment>Удаленные действия</comment>
+		<url>inst_ta_remote_action.xml</url>
+		<package_date>2023-12-01</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+</inst_packs>

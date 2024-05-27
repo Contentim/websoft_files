@@ -1,0 +1,478 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="
+
+	fldThisReportikLocalSettings = local_settings.custom_datas.ObtainChildByKey( TopElem.report_name );
+
+">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+		
+		<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" WEB-ID-EXPR="'report_view_grid'">
+			<COLUMNS>
+				<COL WIDTH="30zr"/>
+				<COL WIDTH="10zr"/>	
+				<COL WIDTH="25zr"/>
+				<COL WIDTH="25zr"/>
+				<COL WIDTH="25zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="23zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="16zr"/>
+			</COLUMNS>
+			<ROW HEADER="1">
+				<LABEL TITLE-EXPR="ms_tools.get_const('wrm4ebg7c9')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_org')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_subd')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_position')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('9zrvsdt5a5')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_dismiss_date')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('mak5wn2e6o')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('3rr6dy1wal')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('vlpb_finish_date')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_score')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('vppb_state')" ALIGN="center"/>
+			</ROW>
+			
+			<LOOP EXPR="Ps.learnings" VAR="ListElem">
+				<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.id ) )" WEB-ID-EXPR="
+					_code = ms_tools.get_element_property( ListElem, 'course_id', 'assessment_id', true );
+					_person = ms_tools.get_element_property( ListElem, 'person_id', 'collaborator_id', true );
+					if ( _code != null &amp;&amp; _person != null )
+					{
+						return 'ViewGridRow_' + _person + '_' + _code;
+					}
+					else
+					{
+						return 'ViewGridRow_' + ms_tools.get_element_property( ListElem, 'code', 'id', true )
+					}">
+					<LABEL TITLE-EXPR="ListElem.person_fullname" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_code" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_id.ForeignElem.org_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_subdivision_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_position_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_id.ForeignElem.hire_date" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_id.ForeignElem.dismiss_date" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.course_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="StrDate( ListElem.start_usage_date, true, false )" FLAT="1"/>
+					<LABEL TITLE-EXPR="StrDate( ListElem.max_end_date, true, false )" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.score" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.state_id.ForeignElem.name" TEXT-COLOR-EXPR="ListElem.state_id.ForeignElem.text_color" FLAT="1" ERROR-TEXT=""/>
+				</ROW>
+			</LOOP>
+
+		</GRID>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<LINE>
+					<RADIO-BUTTON TITLE-EXPR="ms_tools.get_const('c_course')" SWITCH-VALUE="false" SOURCE="Ps.disp_learning_prog" WEB-ID-EXPR="'course_report_disp_learning_prog_false'"/>
+					<RADIO-BUTTON TITLE-EXPR="ms_tools.get_const('c_edu_prog')" SWITCH-VALUE="true" SOURCE="Ps.disp_learning_prog" WEB-ID-EXPR="'course_report_disp_learning_prog_true'"/>
+				</LINE>
+				<IF EXPR="(Ps.disp_learning_prog==true)">
+					<ITEM TYPE="ms_object_selector" titleExpr="'Набор программ'" requireExpr="true" WIDTH="100%" catalogExpr="'education_program'" SOURCE="Ps.education_program_id" afterSelectAction="
+					if (TopElem.education_program_id.HasValue)
+					{
+						try
+						{
+							has_course=false;
+							ArrEducationProgram=XQuery('for $elem in education_program_education_methods where $elem/education_program_id='+TopElem.education_program_id+' return $elem')
+							for ( iEducationProgramElem in ArrEducationProgram )
+							{
+								try
+								{
+									if (iEducationProgramElem.type=='course')
+									{
+										has_course=true;
+									}
+								}
+								catch(ex)
+								{
+
+								}
+							}
+							if (has_course==false)
+							{
+								Screen.MsgBox( ms_tools.get_const('vvybrannomnabo'), ms_tools.get_const('7ey6j94yku'), 'info', 'ok' );
+							}
+						}
+						catch(ex)
+						{
+
+						}
+					}
+					"/>
+				</IF>
+				<ELSE>
+					<ITEM TYPE="ms_object_selector" requireExpr="true" catalogExpr="'course'" WIDTH="100%" SOURCE="Ps.course_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'hr': // менеджер обучения
+									case 'observer': // наблюдатель
+									{
+										return '';
+									}
+									case 'expert': // методист
+									{
+										if(oModelRoles.expert_id != undefined && oModelRoles.expert_id != null )
+										{
+											iExpertID = oModelRoles.expert_id;
+
+											sQuery = 'for $elem in roles where $elem/catalog_name = \'course\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+											arrRoles = tools.xquery(sQuery);
+											
+											arrRoleIDs = [];
+											for(oRole in arrRoles)
+											{
+												arrRoleIDs.push(oRole.id.Value);
+											}
+
+											arrObjects = [];
+											if(ArrayCount(arrRoleIDs) > 0)
+											{
+												sQuery = 'for $elem in courses where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+												arrObjects = tools.xquery(sQuery);
+
+												arrObjectIDs = [];
+												if(ArrayOptFirstElem(arrObjects) != undefined)
+												{
+													for(oObject in arrObjects)
+													{
+														arrObjectIDs.push(oObject.id.Value);
+													}
+												}
+												return 'MatchSome($elem/id, (' + ArrayMerge(arrObjectIDs, 'This', ',') + '))'
+											} else {
+												return '$elem/id = 0';
+											}
+										}
+										break;
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					" WEB-ID-EXPR="'course_report_course_id'"/>
+				</ELSE>
+
+				<IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert': // методист
+									{
+										return '';
+									}
+									case 'hr': // менеджер обучения
+									{
+										arrSubordinateIDs = oModelRoles.subordinate_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+									}
+									case 'observer': // наблюдатель
+									{
+										arrSubordinateIDs = oModelRoles.subordinate_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					" WEB-ID-EXPR="'course_report_person_id'"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}
+									case 'hr':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					" WEB-ID-EXPR="'course_report_parent_object_id'"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1" WEB-ID-EXPR="'course_report_hier_sub_select'"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue">
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'group'" SOURCE="Ps.group_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}										
+									case 'hr':
+									{
+										arrGroupIDs = oModelRoles.group_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrGroupIDs = oModelRoles.group_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					" WEB-ID-EXPR="'course_report_group_id'"/>
+				</IF>
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('awbyj8ntwg')##">
+					<COMBO WIDTH="100%"  SOURCE="Ps.disp_learning_type" WEB-ID-EXPR="'course_report_disp_learning_type'">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('ipyij2uvm3')" VALUE="learnings" WEB-ID-EXPR="'course_report_disp_learning_type_learnings'"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('yperlnbc1i')" VALUE="active_learnings" WEB-ID-EXPR="'course_report_disp_learning_type_activelearnings'"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="active_learnings,learnings" WEB-ID-EXPR="'course_report_disp_learning_type_alllearnings'"/>
+					</COMBO>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1" WEB-ID-EXPR="'course_report_start_date'"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1" WEB-ID-EXPR="'course_report_finish_date'"/>
+				</LINE>
+
+				<CHECK HSPAN="2" SOURCE="Ps.disp_person_list_staff" MULTILINE="1" TITLE-EXPR="ms_tools.get_const('ef2trjd7i5')" WEB-ID-EXPR="'course_report_disp_person_list_staff'"/>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( !(Ps.course_id.HasValue || Ps.education_program_id.HasValue) )
+	{
+		Screen.MsgBox( 'Не выбран электронный курс или набор программ', ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	var curUserID = tools.cur_user_id;
+	var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+	oResult = task.CallMethod( 'tools_report', 'course_report', [ Ps, curUserID, sApplicationID ] );
+
+	if ( oResult != null || oResult.error != 1 )
+	{
+		TopElem.count_arr = ArrayCount( oResult.learnings );
+
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+		
+		function getReport(Ps, oResult){
+			Ps.learnings.Clear();
+			for ( oLearning in oResult.learnings )
+			{
+				oItem = Ps.learnings.AddChild();
+				oItem.id = oLearning.id;
+				oItem.person_code = oLearning.person_code;
+				oItem.person_id = oLearning.person_id;
+				oItem.person_fullname = oLearning.person_fullname;
+				oItem.person_subdivision_name = oLearning.person_subdivision_name;
+				oItem.person_position_name = oLearning.person_position_name;
+				
+				oItem.course_name = oLearning.course_name;
+				oItem.start_usage_date = oLearning.start_usage_date;
+				oItem.max_end_date = oLearning.max_end_date;
+				
+				oItem.score = oLearning.score;
+				oItem.state_id = oLearning.state_id;
+				oItem.max_score = oLearning.max_score;
+			}
+		}
+
+		if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+		{
+			if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', TopElem.count_arr), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+			{ // Выгрузка отчета в Excel
+
+				Screen.RunCommand( 'Export' );
+				Ps.learnings.Clear();
+				TopElem.count_arr = null;
+					
+				} else { // Открыть отчет сейчас? Да
+					getReport(Ps, oResult);
+				}
+		} else {
+			getReport(Ps, oResult);
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/course_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps.learnings ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+	
+"/>
+
+<COMMAND-HANDLER CMD="Export_WWW" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/course_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps.learnings ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

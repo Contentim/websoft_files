@@ -1,0 +1,1677 @@
+﻿<%
+// const_start
+var sConstEditDate = 'Дата начала редактирования';
+var sConstPlanStartDate = 'Плановая дата начала';
+// const_end
+%>
+<SPXMLScreen>
+<%
+curDate=DateNewTime(Date(),00,00,00)
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+strIncludeID= ISDIALOG ? '': curTalentPoolCRTaskViewer.GetOptProperty( 'id', '' );
+iFlag=0
+bIsNew=false
+if ( ISDIALOG )
+{
+	strTaskPrefix=''
+	iObjectID = oParamSource.GetOptProperty( 'iObjectId' , null );
+	try
+	{
+		teCareerReserveID=Int(iObjectID)
+		teCareerReserve=OpenDoc( UrlFromDocID( teCareerReserveID ) ).TopElem
+	}
+	catch(ex)
+	{
+		curMessageBox = {
+				"type": "error",
+				"text": tools_web.get_web_const( 'neudalosotkryt_5', curLngWeb )
+			};
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+</SPXMLScreen>
+<%
+			Cancel();
+	}
+
+	strTaskID = oParamSource.GetOptProperty( 'task_id' , null );
+	if ( strTaskID != null )
+	{
+			fldTask=undefined
+			if (strTaskID=='new')
+			{
+				fldTask=teCareerReserve.tasks.AddChild()
+				bIsNew=true;
+			}
+			else
+			{
+				try
+				{
+					fldTask=teCareerReserve.tasks.GetOptChildByKey(strTaskID)
+				}
+				catch(ex)
+				{
+				}
+			}
+			if (fldTask==undefined)
+			{
+				curMessageBox = {
+					"type": "error",
+					"text": tools_web.get_web_const( 'neukazanidispy', curLngWeb )
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_message_box.xaml" ) );
+%>
+	</SPXMLScreen>
+<%
+				Cancel();
+			}
+
+			iFlag=1;
+		}
+
+	try
+	{
+		bSelectOnlyTutors=PARAMETERS.bSelectOnlyTutors
+	}
+	catch(ex)
+	{
+		bSelectOnlyTutors=false
+	}
+	strActionCodeList=String( "career_reserve_task_edit_name;career_reserve_task_edit_type;career_reserve_task_edit_status;career_reserve_task_edit_dates;career_reserve_task_edit_mentor;career_reserve_task_edit_mark;career_reserve_task_edit_desc;career_reserve_task_edit_person_comment;career_reserve_task_edit_mentor_comment;career_reserve_task_edit_commission;career_reserve_task_edit_comp;career_reserve_task_start_edit_date;career_reserve_task_edit_files;career_reserve_task_edit_parent")
+	arrActionCodes = strActionCodeList.split( ";" );
+	
+	bTaskEditable=false
+	if (!fldTask.forbid_task_portal_edit)
+	{
+		if (!fldTask.start_edit_date.HasValue||(fldTask.start_edit_date.HasValue&&fldTask.start_edit_date<=curDate))
+		{
+			bTaskEditable=true
+		}
+	}
+
+	function fnCheckRight(sAction)
+	{
+		var bResult=false
+		if(curUser.access.access_role == "admin")
+			bResult=true;
+		fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sAction + "'") ;
+		if (fldAction!=undefined)
+		{
+			if (bTaskEditable)
+			{
+				bResult=true
+			}
+			else
+			{
+				bResult=ArrayOptFind(arrActionCodes, "This == '" + fldAction.action + "'")==undefined 
+			}
+		}
+		
+		if (!bTaskEditable&&!bResult&&StrContains(sAction,"_see_",true))
+		{
+			sCode=StrReplace(sAction,"_see_","_edit_")
+			fldAction=ArrayOptFind(xarrOperationsRights, "This.action == '" + sCode + "'") ;
+			if (fldAction!=undefined)
+			{
+				bResult=true
+			}
+		}
+		
+		return bResult
+	}
+
+	function fnCheckTaskEditRights()
+	{
+	
+		if(curUser.access.access_role == "admin")
+				return true;
+				
+		if (bTaskEditable)
+		{
+			for (sActionCode in arrActionCodes)
+			{
+				if (fnCheckRight(sActionCode))
+				{
+					return true
+				}
+			}
+		}
+		return false;
+	}
+
+	xarrBossTypes = tools.get_object_relative_boss_types(curUserID, teCareerReserveID);
+
+
+	if (!fldTask.commission_persons.ChildByKeyExists(curUserID))
+	{
+		arrComissionTypes=XQuery( 'for $elem in boss_types where $elem/code = \'talent_pool_commission\' return $elem' )
+
+		if (ArrayOptFirstElem(arrComissionTypes)!=undefined)
+		{
+			for (fldComissionType in arrComissionTypes)
+			{
+				xarrBossTypes = ArraySelect(xarrBossTypes, 'This.id!='+fldComissionType.id);
+			}
+		}
+	}
+
+
+	if (fldTask.tutor_id!=curUserID)
+	{
+		arrTaskTutorTypes=XQuery( 'for $elem in boss_types where $elem/code = \'talent_pool_task_tutor\' return $elem' )
+
+		if (ArrayOptFirstElem(arrTaskTutorTypes)!=undefined)
+		{
+			for (fldTaskTutorType in arrTaskTutorTypes)
+			{
+				xarrBossTypes = ArraySelect(xarrBossTypes, 'This.id!='+fldTaskTutorType.id);
+			}
+		}
+	}
+
+	xarrOperations = tools.get_relative_operations_by_boss_types(xarrBossTypes);
+	xarrOperations = ArraySelect(xarrOperations, "This.operation_catalog_list.HasValue && ( StrContains(','+This.operation_catalog_list.Value+',', ',career_reserve,') )");
+	xarrOperationsActions = ArraySelect(xarrOperations, "This.operation_type == 0");
+	xarrOperationsRights = ArraySelect(xarrOperations, "This.operation_type == 1");
+
+	bAllowEdit = (fnCheckTaskEditRights()||(fldTask.type=='defence'&&fldTask.commission_persons.ChildByKeyExists(curUserID)));
+}
+else
+{
+	strTaskID = 'new'
+	bIsNew=true;
+	fldTask=OpenNewDoc('x-local://wtv/wtv_career_reserve.xmd' ).TopElem.tasks.AddChild()
+	strTaskPrefix=strIncludeID+(strIncludeID!=''?'_':'')+'task_'
+	iFlag=1;
+	bAllowEdit=true
+}
+
+sDispType=curDevice.disp_type
+bLastColExist=(bAllowEdit||ISDIALOG)
+bCanEdit=true;
+sResultSet=ArrayMerge(teCareerReserve.tutors,'person_id',';')
+iPersonID = teCareerReserve.person_id.Value
+bDesctop=sDispType != "mobile"
+iDefaultWidth=!bDesctop?"100%":"300"
+iDatePickerWidth=""
+
+strClearFields=''
+if ( ISDIALOG )
+{
+%>
+<Action Name="<%=strIncludeID%>CREditTaskRunAction" Source="talent_pool_edit_cr_task" Success="ALERT={messageText}" Failure="ALERT={messageText}">
+	<Param Name="CONTEXT" Value="{CONTEXT}"/>
+	<Param Name="task_id" Value="<%=strTaskID%>"/>
+	<Param Name="iObjectId" Value="<%=iObjectID%>"/>
+	<Param Name="sAction" Value="edit_cr_task"/>
+</Action>
+<%
+}
+%>
+<Edit Name="NewUpdatedManagersResultSet" Hidden="1"><%=sResultSet%></Edit>
+<TabControl Name="TalentPoolPRCardTaskBodyTab" Preservable="1" TabsLocation="<%=!ISDIALOG ? "w" : "n"%>" TabsWidth="200" Width="100%" Adapt="true">
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'cavr3d3iwk', curLngWeb ))%>">
+	<Grid Width="100%" Class="XAML-grid-info-table" Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn/>
+		</GridColumns>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_name', curLngWeb ))%>:</Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_name'))
+			{
+				strFieldName=strTaskPrefix+'name'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<EditBox Name="<%=strFieldName%>" Width="<%=iDefaultWidth%>"><%=fldTask.name%></EditBox>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(fldTask.name)%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_type', curLngWeb ))%>:</Label>
+<%
+			if (bIsNew||(fnCheckRight('career_reserve_task_edit_type')))
+			{
+				strFieldName=strTaskPrefix+'type'
+%>
+				<ComboBox Name="<%=strFieldName%>" Width="<%=iDefaultWidth%>">
+<%
+					for( fldElem in curLngCommon.career_reserve_tasks_types)
+					{
+						strAction="SHOW=SP"+fldElem.id+";HIDE=SP"+ArrayMerge(ArrayExtract(ArraySelect(curLngCommon.career_reserve_tasks_types,"This.id!='"+fldElem.id+"'"),"id"),"This",",SP")
+						strSelected=''
+						if (fldTask.type==fldElem.id)
+						{
+							strSelected=' Selected="True"'
+						}
+
+						try
+						{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>" Change="<%=strAction%>"<%=strSelected%>><%=XmlAttrEncode(curLngCommon.career_reserve_tasks_types.GetChildByKey( fldElem.id).name)%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+						}
+					}
+%>
+
+			</ComboBox>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(fldTask.type.HasValue ? curLngCommon.career_reserve_tasks_types.GetChildByKey( fldTask.type).name.Value : "")%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		if (bIsNew||(fnCheckRight('career_reserve_task_edit_parent')||(fnCheckRight('career_reserve_task_see_parent')&&fldTask.parent_task_id.HasValue)))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'roditelskayazad', curLngWeb ))%>:</Label>
+<%
+			arrParents=ArraySelect( teCareerReserve.tasks, 'This.parent_task_id.HasValue==false' )
+			if (bIsNew||(fnCheckRight('career_reserve_task_edit_parent')))
+			{
+				
+				strFieldName=strTaskPrefix+'parent_task_id'
+%>
+				<ComboBox Name="<%=strFieldName%>" Width="<%=iDefaultWidth%>">
+<%
+					for( fldElem in arrParents)
+					{
+						strAction=""
+						strSelected=''
+						if (fldTask.parent_task_id==fldElem.id)
+						{
+							strSelected=' Selected="True"'
+						}
+
+						try
+						{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>" Change="<%=strAction%>"<%=strSelected%>><%=XmlAttrEncode(tools_web.get_cur_lng_name( fldElem.name, curLng.short_id ))%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+						}
+					}
+%>
+
+			</ComboBox>
+<%
+			}
+			else
+			{
+				strName=""
+				if (fldTask.parent_task_id.HasValue)
+				{
+					fldParent=ArrayOptFindByKey(teCareerReserve.tasks, fldTask.parent_task_id,"id" )
+					if (fldParent!=undefined)
+					{
+						strName=fldParent.name
+					}
+				}
+%>
+			<Label Class="XAML-grid-label-value"><%=XmlAttrEncode(tools_web.get_cur_lng_name( strName, curLng.short_id ))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}		
+%>
+		<GridRow>
+		<Label Class="XAML-grid-label-name"><%=XmlAttrEncode( tools_web.get_web_const( 'c_status', curLngWeb ) )%>:</Label>
+<%
+				if( bIsNew||fnCheckRight('career_reserve_task_edit_status'))
+				{
+					strFieldName=strTaskPrefix+'status'
+					if ( !ISDIALOG )
+					{
+						strClearFields=strClearFields+'SET='+strFieldName+'/SelectedItem,'+ArrayOptFirstElem(curLngCommon.career_reserve_status_types).id+';'
+					}
+%>
+	<ComboBox Name="<%=strFieldName%>" Width="<%=iDefaultWidth%>">
+<%
+					for( fldElem in curLngCommon.career_reserve_status_types)
+					{
+						strSelected=''
+						if (fldTask.status==fldElem.id)
+						{
+							strSelected=' Selected="True"'
+						}
+
+						try
+						{
+%>
+				<ComboBoxItem Value="<%=fldElem.id%>"<%=strSelected%>><%=XmlAttrEncode(curLngCommon.career_reserve_status_types.GetChildByKey( fldElem.id).name)%></ComboBoxItem>
+<%
+						}
+						catch(ex)
+						{
+						}
+					}
+%>
+
+</ComboBox>
+<%
+				}
+				else
+				{
+%>
+					<Label NoWrap="true"><%=HtmlEncode(fldTask.status.HasValue ? curLngCommon.career_reserve_status_types.GetChildByKey( fldTask.status).name : "")%></Label>
+<%
+				}
+%>
+		</GridRow>
+<%
+		if (bIsNew||(fnCheckRight('career_reserve_task_edit_mentor')||(fnCheckRight('career_reserve_task_see_mentor')&&fldTask.tutor_id.HasValue)))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_mentor', curLngWeb ))%>:</Label>
+<%
+			if ((bIsNew||(fnCheckRight('career_reserve_task_edit_mentor'))))
+			{
+				strObjectName=strTaskPrefix+'tutor_id'
+				iMentorID=curUserID
+				strMentorName=curUser.fullname
+
+				if (bSelectOnlyTutors&&(ArrayOptFind(teCareerReserve.tutors,"person_id=="+curUserID)==undefined))
+				{
+					iMentorID=''
+					strMentorName=''
+				}
+
+				iMentorID=fldTask.tutor_id
+				strMentorName=(fldTask.tutor_id.HasValue && fldTask.tutor_id.OptForeignElem != undefined ? fldTask.tutor_id.ForeignElem.name : "")
+				if (bIsNew)
+				{
+					iMentorID=curUserID
+					strMentorName=curUser.fullname
+
+					if (bSelectOnlyTutors&&(ArrayOptFind(teCareerReserve.tutors,"person_id=="+curUserID)==undefined))
+					{
+						iMentorID=''
+						strMentorName=''
+					}
+				}
+				curSelector = {
+				"id": strObjectName,
+				"object_id": iMentorID,
+				"object_id_item_name": strObjectName,
+				"object_name":  strMentorName,
+				"multi_select": "false",
+				"catalog_name": "collaborator",
+				"width":iDefaultWidth,
+				"selected_object_ids": iMentorID
+				};
+
+				if (bSelectOnlyTutors)
+				{
+					strXQueryQual=' MatchSome( $elem/id, ('+ArrayMerge(teCareerReserve.tutors,'person_id',',')+' ) ) '
+					curSelector.SetProperty('xquery_qual',strXQueryQual)
+				}
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+			}
+			else
+			{
+				strTaskObjectName=""
+				if (fldTask.tutor_id.HasValue)
+				{
+
+					try
+					{
+						strTaskObjectName=ArrayFirstElem(XQuery("for $elem in collaborators where $elem/id="+fldTask.tutor_id+" return $elem")).fullname
+					}
+					catch(ex)
+					{
+					}
+				}
+%>
+
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}
+		
+%>
+		</Grid>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_type'))
+			{
+				arrTaskTypes=ArraySelectAll(curLngCommon.career_reserve_tasks_types)
+			}
+			else
+			{
+				arrTaskTypes=ArraySelect(curLngCommon.career_reserve_tasks_types,'This.id=="'+fldTask.type+'"')
+			}
+			for( fldElem in arrTaskTypes)
+			{
+			
+				iSelected=1
+				if (fldTask.type==fldElem.id&&fldTask.type!='task'&&fldTask.type!='stage')
+				{
+					iSelected=0
+				}
+%>
+			<StackPanel Class="XAML-stack-container" Name="SP<%=fldElem.id%>" Hidden="<%=(iSelected)%>">
+<%
+				if (fldElem.id=='defence')
+				{
+					if (fnCheckRight('career_reserve_task_change_commission'))
+					{
+%>
+				<StackPanel Class="XAML-stack-container">	
+<%
+
+						sID = "CRCommission";
+						sDispNameEditName = "TempDestinationEdit" + sID;
+						if ( !ISDIALOG )
+						{
+							strClearFields=strClearFields+'SET=TempDestinationEdit' + sID+',;'
+						}
+						arrForNewHeaders = new Array();
+						arrForNewCells = new Array();
+						tools_web.set_var_eval( "arrAddCommitions", Env.curVars, fldTask.commission_persons, "value" );
+
+						arrForNewHeaders[ArrayCount(arrForNewHeaders)]=tools_web.get_web_const( 'vdb_aim_value', curLngWeb );
+						arrForNewCells[ArrayCount(arrForNewCells)]="(temp = ArrayOptFind( Env.curVars.GetOptProperty('arrAddCommitions', []), 'person_id==' +ListElem.PrimaryKey ),((temp == undefined) ? '' : (temp.score)))";
+
+						curSelectorList = {
+								"id": sID,
+								"selected_object_ids": ArrayMerge( ArrayExtract( fldTask.commission_persons, 'person_id' ), 'This', ';' ),
+								"height": "100%",
+								"title":(tools_web.get_web_const( 'vcrb_commission', curLngWeb )),
+								"catalog_name": "collaborator",
+								"disp_search": "true",
+								"disp_filter": "false",
+								"check_access": "false",
+								"sort_direct": "-",
+								"disp_array": "false",
+								"array": ( "{" + sDispNameEditName + "}" ),
+								"list_columns": "fullname;position_name",
+								"col_headers": ArrayMerge( arrForNewHeaders, "This", ";" ),
+								"col_cells": ArrayMerge( arrForNewCells, "This", ";" ),
+								"is_data_grid": "true"
+						}
+
+
+						curSelectorList.SetProperty( "buttons", [
+								{ "title": tools_web.get_web_const( "veb_b7", curLngWeb ), "click": "OPENDIALOG=SelectDialogCRCommission" }
+							])
+						//curSelectorList.SetProperty("close_action","SET=CRRunAction/iObjectId,"+teCareerReserveID+";SET=CRRunAction/sSelectedObjects,{CatalogListDataGridSelList:*};SET=CRRunAction/sAction,change_managers;SET=CRRunAction/sNeedUpdateList,CatalogListDataGrid"+sID+";ACTION=CRRunAction;")
+
+						Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector_list.xaml" ) );
+%>
+					</StackPanel>
+					<Label/>
+<%
+					}
+				}
+				else if (fldElem.id!='defence')
+				{
+%>
+				<Grid Width="100%" Class="XAML-grid-info-table" CellClass="XAML-grid-info-cell" Adapt="true">
+					<GridColumns>
+						<GridColumn/>
+						<GridColumn/>
+					</GridColumns>
+<%
+					if (fldElem.id=='test_learning')
+					{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_test', curLngWeb ))%>:</Label>
+						<StackPanel Class="XAML-stack-container" Adapt="true">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.title : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"catalog_name": "assessment",
+							"width":iDefaultWidth,
+							"selected_object_ids": iTaskObjectID
+							};
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=TestAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{
+%>							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.object_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+<%						
+						}
+						if (!bIsNew&&fnCheckRight('career_reserve_task_add_to_object'))
+						{
+							bButtonActive=(!fldTask.active_test_learning_id.HasValue && fldTask.object_id.HasValue)
+%>							
+							<StackPanel Class="XAML-stack-container" Name="TestAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+								<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_test;ACTION=CREditTaskRunAction;"><%=HtmlEncode(tools_web.get_web_const( 'vmpb_create_active_ass', curLngWeb ))%></Button>
+							</StackPanel>
+<%
+						}
+%>	
+						</StackPanel>
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='learning')
+					{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'mak5wn2e6o', curLngWeb ))%>:</Label>
+						<StackPanel Class="XAML-stack-container" Adapt="true">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"width":iDefaultWidth,
+							"catalog_name": "course",
+							"selected_object_ids": iTaskObjectID
+							};
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=CourseAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{
+%>							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.object_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+<%						
+						}
+						if (!bIsNew&&fnCheckRight('career_reserve_task_add_to_object'))
+						{
+							bButtonActive=(!fldTask.active_learning_id.HasValue && fldTask.object_id.HasValue)
+%>							
+							<StackPanel Class="XAML-stack-container" Name="CourseAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+								<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_course;ACTION=CREditTaskRunAction;"><%=HtmlEncode(tools_web.get_web_const( 'naznachitkurs', curLngWeb ))%></Button>
+							</StackPanel>
+<%
+						}
+%>	
+						</StackPanel>
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='education_method')
+					{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_edu_method', curLngWeb ))%>:</Label>
+						<StackPanel Class="XAML-stack-container" Adapt="true">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"width":iDefaultWidth,
+							"xquery_qual":"$elem/type='org'",
+							"catalog_name": "education_method",
+							"selected_object_ids": iTaskObjectID
+							};
+							
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SET=ObjectNameEdit"+(strTaskPrefix+fldElem.id+'_event_id')+",;SET="+(strTaskPrefix+fldElem.id+'_event_id')+",;SET=SelectDialog"+(strTaskPrefix+fldElem.id+'_event_id')+"/xquery_qual,$elem/education_method_id={CatalogListDataGridFullList:^/id};HIDE=SP"+(strTaskPrefix+fldElem.id+'_event_placeholder')+";SHOW=SP"+(strTaskPrefix+fldElem.id+'_event')+";HIDE=EventAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{
+%>							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.object_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+<%	
+						}
+%>
+						</StackPanel>
+					</GridRow>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_event', curLngWeb ))%>:</Label>
+						<StackPanel>
+						<StackPanel Name="SP<%=strTaskPrefix+fldElem.id+'_event_placeholder'%>" Hidden="<%=fldTask.object_id.HasValue%>"><Label/></StackPanel>
+						<StackPanel Class="XAML-stack-container" Adapt="true" Name="SP<%=strTaskPrefix+fldElem.id+'_event'%>" Hidden="<%=!fldTask.object_id.HasValue%>">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.event_id.HasValue && fldTask.event_id.OptForeignElem != undefined ? fldTask.event_id.ForeignElem.name : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_event_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.event_id:null)
+
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"catalog_name": "event",
+							"width":iDefaultWidth,
+							"xquery_qual":(fldTask.object_id.HasValue?"$elem/education_method_id="+fldTask.object_id:"$elem/id=null()"),
+							"selected_object_ids": iTaskObjectID
+							};
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=EventAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+							
+						}
+						else
+						{
+%>
+							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.event_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.event_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>	
+<%
+						}
+						if (!bIsNew&&fnCheckRight('career_reserve_task_add_to_object'))
+						{
+							bButtonActive=(!fldTask.event_result_id.HasValue && fldTask.event_id.HasValue)
+%>							
+							<StackPanel Class="XAML-stack-container" Name="EventAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+								<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_event;ACTION=CREditTaskRunAction;"><%=HtmlEncode(tools_web.get_web_const( 'lz5ins4lr7', curLngWeb ))%></Button>
+							</StackPanel>
+<%
+						}
+%>
+						</StackPanel>
+						</StackPanel>
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='compound_program')
+					{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_compound_prog', curLngWeb ))%>:</Label>
+						<StackPanel Class="XAML-stack-container" Adapt="true">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"width":iDefaultWidth,
+							//"xquery_qual":"$elem/type='org'",
+							"catalog_name": "compound_program",
+							"selected_object_ids": iTaskObjectID
+							};
+							
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SET=ObjectNameEdit"+(strTaskPrefix+fldElem.id+'_eduplan_id')+",;SET="+(strTaskPrefix+fldElem.id+'_eduplan_id')+",;SET=SelectDialog"+(strTaskPrefix+fldElem.id+'_eduplan_id')+"/xquery_qual,$elem/type = 'collaborator' and $elem/person_id = " + iPersonID + " and $elem/compound_program_id={CatalogListDataGridFullList:^/id};HIDE=SP"+(strTaskPrefix+fldElem.id+'_eduplan_placeholder')+";SHOW=SP"+(strTaskPrefix+fldElem.id+'_eduplan')+";HIDE=EventAddToObjectPanel")
+
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{
+%>							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.object_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+<%	
+						}
+%>
+						</StackPanel>
+					</GridRow>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'je8frfv2u9', curLngWeb ))%>:</Label>
+						<StackPanel>
+							<StackPanel Name="SP<%=strTaskPrefix+fldElem.id+'_eduplan_placeholder'%>" Hidden="<%=fldTask.object_id.HasValue%>"><Label/></StackPanel>
+							<StackPanel Class="XAML-stack-container" Adapt="true" Name="SP<%=strTaskPrefix+fldElem.id+'_eduplan'%>" Hidden="<%=!fldTask.object_id.HasValue%>">
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.education_plan_id.HasValue && fldTask.education_plan_id.OptForeignElem != undefined ? fldTask.education_plan_id.ForeignElem.name : "")
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_eduplan_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.education_plan_id:null)
+							
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"catalog_name": "education_plan",
+							"width":iDefaultWidth,
+							"xquery_qual": (fldTask.object_id.HasValue ? "$elem/type = 'collaborator' and $elem/person_id = " + iPersonID + " and $elem/compound_program_id = " + fldTask.object_id.Value : "$elem/id=null()"),
+							"selected_object_ids": iTaskObjectID
+							};
+							//curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=EventAddToObjectPanel")
+							curSelector.SetProperty("close_action","SHOW=EventAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+							
+						}
+						else
+						{
+%>
+								<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.education_plan_id%></Edit>
+								<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.education_plan_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>	
+<%
+						}
+						
+						if (false && !bIsNew && fnCheckRight('career_reserve_task_add_to_object'))
+						{
+							bButtonActive=(!fldTask.event_result_id.HasValue && fldTask.education_plan_id.HasValue)
+%>							
+								<StackPanel Class="XAML-stack-container" Name="EventAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+									<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_event;ACTION=CREditTaskRunAction;"><%=HtmlEncode(tools_web.get_web_const( 'lz5ins4lr7', curLngWeb ))%></Button>
+								</StackPanel>
+<%
+						}
+%>
+							</StackPanel>
+						</StackPanel>
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='document_learning')
+					{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'tipmateriala', curLngWeb ))%>:</Label>
+<%
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							strFieldName=strTaskPrefix+'type_document'
+							if ( !ISDIALOG )
+							{
+								strClearFields=strClearFields+'SET='+strFieldName+'/SelectedItem,'+ArrayOptFirstElem(curLngCommon.career_reserve_material_types).id+';'
+							}
+%>
+						<ComboBox Name="<%=strFieldName%>" Width="<%=iDefaultWidth%>">
+<%
+							for( fldCRMT in curLngCommon.career_reserve_material_types)
+							{
+								strAction="SHOW=SP"+fldCRMT.id+";HIDE=SP"+ArrayMerge(ArrayExtract(ArraySelect(curLngCommon.career_reserve_material_types,"This.id!='"+fldCRMT.id+"'"),"id"),"This",",SP")
+								strAction=strAction+";SHOW=SP"+fldCRMT.id+"Title;HIDE=SP"+ArrayMerge(ArrayExtract(ArraySelect(curLngCommon.career_reserve_material_types,"This.id!='"+fldCRMT.id+"'"),"id"),"This","Title,SP")+"Title"
+								strSelected=''
+								if (fldTask.type_document==fldCRMT.id)
+								{
+									strSelected=' Selected="True"'
+								}
+
+								try
+								{
+%>
+							<ComboBoxItem Value="<%=fldCRMT.id%>" Change="<%=strAction%>;"<%=strSelected%>><%=XmlAttrEncode(curLngCommon.career_reserve_material_types.GetChildByKey( fldCRMT.id).name)%></ComboBoxItem>
+<%
+								}
+								catch(ex)
+								{
+								}
+							}
+%>
+
+						</ComboBox>
+<%
+						}
+						else
+						{
+							sInitialElemName=(fldTask.type_document.HasValue ? curLngCommon.career_reserve_material_types.GetChildByKey( fldTask.type_document).name.Value : "")
+%>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(sInitialElemName)%></Label>
+<%
+						}
+%>
+					</GridRow>
+					<GridRow>
+						<StackPanel Adapt="true" Class="XAML-stack-container">
+<%
+						for( fldCRMT in curLngCommon.career_reserve_material_types)
+						{
+							iCRMTSelected=1
+							if (fldTask.type_document==fldCRMT.id)
+							{
+								iCRMTSelected=0
+							}
+%>
+							<StackPanel Name="SP<%=fldCRMT.id%>Title" Hidden="<%=(iCRMTSelected)%>" Class="XAML-stack-container">
+								<Label Class="XAML-grid-label-name"><%=XmlAttrEncode(curLngCommon.career_reserve_material_types.GetChildByKey( fldCRMT.id).name)%>:
+								</Label>
+							</StackPanel>
+<%
+						}
+%>
+						</StackPanel>
+						<StackPanel Adapt="true" Class="XAML-stack-container">
+<%
+						for( fldCRMT in curLngCommon.career_reserve_material_types)
+						{
+							iCRMTSelected=1
+							if (fldTask.type_document==fldCRMT.id)
+							{
+								iCRMTSelected=0
+							}
+
+							if ( !ISDIALOG )
+							{
+								strClearFields=strClearFields+'HIDE=SP'+fldCRMT.id+';'
+							}
+
+%>
+							<StackPanel Name="SP<%=fldCRMT.id%>" Hidden="<%=(iCRMTSelected)%>" Class="XAML-stack-container">
+<%
+							if (fldCRMT.id!='absolute_doc')
+							{
+								strTaskObjectName=''
+								if (fldCRMT.id==fldTask.type_document&&fldTask.type=='document_learning')
+								{
+									strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+								}
+								if (fnCheckRight('career_reserve_task_edit_type'))
+								{
+
+									strObjectName=strTaskPrefix+fldElem.id+'_'+fldCRMT.id+'_object_id'
+									if ( !ISDIALOG )
+									{
+										strClearFields=strClearFields+'SET='+strObjectName+',;'
+										strClearFields=strClearFields+'SET=ObjectNameEdit'+strObjectName+',;'
+									}
+									iTaskObjectID=(fldCRMT.id==fldTask.type_document?fldTask.object_id:null)
+
+									curSelector = {
+									"id": strObjectName,
+									"object_id": iTaskObjectID,
+									"object_id_item_name": strObjectName,
+									"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+									"multi_select": "false",
+									"width":iDefaultWidth,
+									"catalog_name": (fldCRMT.id=='portal_doc'?"document":fldCRMT.id),
+									"selected_object_ids": iTaskObjectID
+									};
+									curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp}")
+									Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+								}
+								else
+								{
+									if ( fldTask.object_id.HasValue )
+									{
+										if (fldTask.type_document == 'portal_doc')
+										{
+											sOpenUrl=tools_web.get_mode_clean_url( null, fldTask.object_id.Value);
+										}
+										else
+										{
+											//sOpenUrl=tools_web.get_mode_clean_url( fldTask.type_document.Value, fldTask.object_id.Value, { doc_id: curDocID } );
+											sOpenUrl=tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } );
+										}
+%>
+										<Link Click="OPENWINDOW=<%=sOpenUrl%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>	
+<%
+									}
+									else
+									{
+%>
+										<Label Class="XAML-grid-label-value"><%=XmlAttrEncode(strTaskObjectName)%></Label>
+<%
+									}
+								}
+
+							}
+							else
+							{
+								strTaskObjectName=''
+								if (fldCRMT.id==fldTask.type_document)
+								{
+									strTaskObjectName=(fldTask.link_document)
+								}
+								if (fnCheckRight('career_reserve_task_edit_type'))
+								{
+									strObjectName=strTaskPrefix+fldElem.id+'_'+fldCRMT.id+'_link_document'
+
+									if ( !ISDIALOG )
+									{
+										strClearFields=strClearFields+'SET='+strObjectName+',;'
+									}
+%>
+									<Edit Name="<%=strObjectName%>" Width="<%=iDefaultWidth%>"><%=strTaskObjectName%></Edit>
+<%
+								}
+								else
+								{
+									sOpenUrl=(StrBegins(fldTask.link_document,'http')?fldTask.link_document:'http://'+fldTask.link_document)
+%>
+									<Link Click="OPENWINDOW=<%=sOpenUrl%>"><%=XmlAttrEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>	
+<%
+								}
+							}
+%>
+							</StackPanel>
+<%
+						}
+%>
+						</StackPanel>
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='assessment_appraise')
+					{
+						if (fnCheckRight('career_reserve_task_edit_type')||(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ))
+						{
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'z2j9y12gp0', curLngWeb ))%>:</Label>
+<%
+							strTaskObjectName=''
+							if (fldElem.id==fldTask.type)
+							{
+								strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+							}
+							if (fnCheckRight('career_reserve_task_edit_type'))
+							{
+								strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+								if ( !ISDIALOG )
+								{
+									strClearFields=strClearFields+'SET='+strObjectName+',;'
+									strClearFields=strClearFields+'SET=ObjectNameEdit'+strObjectName+',;'
+								}
+								iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+								curSelector = {
+								"id": strObjectName,
+								"object_id": iTaskObjectID,
+								"object_id_item_name": strObjectName,
+								"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+								"multi_select": "false",
+								"width":iDefaultWidth,
+								"xquery_qual":"$elem/is_model=true()",
+								"catalog_name": "assessment_appraise",
+								"selected_object_ids": iTaskObjectID
+								};
+								curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp}")
+								Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+							}
+							else
+							{
+%>
+							<Label Class="XAML-grid-label-value"><%=HtmlEncode( strTaskObjectName)%></Label>
+<%
+							}
+%>
+					</GridRow>
+<%
+						}
+%>
+					<GridRow>
+						<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_ass_appraise', curLngWeb ))%>:</Label>
+						<StackPanel Class="XAML-stack-container" Adapt="true">	
+<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.assessment_appraise_id.HasValue && fldTask.assessment_appraise_id.OptForeignElem != undefined ? fldTask.assessment_appraise_id.ForeignElem.name : "")
+
+						}
+						
+						strObjectName=strTaskPrefix+fldElem.id+'_assessment_appraise_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.assessment_appraise_id:null)
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"width":iDefaultWidth,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"catalog_name": "assessment_appraise",
+							"selected_object_ids": iTaskObjectID
+							};
+							curSelector.SetProperty("xquery_qual","$elem/is_model=false()")
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=ProcAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{	
+%>
+							<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.assessment_appraise_id%></Edit>
+							<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url("assessment_appraise", null, {"assessment_appraise_id": fldTask.assessment_appraise_id.Value, doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+<%						
+						}	
+						if (!bIsNew&&fnCheckRight('career_reserve_task_add_to_object'))
+						{
+							bButtonActive=(!fldTask.assessment_appraise_result_id.HasValue && fldTask.assessment_appraise_id.HasValue)
+%>							
+							<StackPanel Class="XAML-stack-container" Name="ProcAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+								<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_proc;ACTION=CREditTaskRunAction;"><%=HtmlEncode(tools_web.get_web_const( '1t1gnxv3i9', curLngWeb ))%></Button>
+							</StackPanel>
+<%
+						}
+%>	
+						</StackPanel>	
+					</GridRow>
+<%
+					}
+					if (fldElem.id=='poll_procedure')
+					{
+	%>
+						<GridRow>
+							<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'z2j9y12gp0', curLngWeb ))%>:</Label>	
+							<StackPanel Class="XAML-stack-container">						
+	<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.object_id.HasValue && fldTask.object_id.OptForeignElem != undefined ? fldTask.object_id.ForeignElem.name : "")
+						}
+						strObjectName=strTaskPrefix+fldElem.id+'_object_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.object_id:null)
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"xquery_qual":"$elem/is_model=true()",
+							"catalog_name": "poll_procedure",
+							"selected_object_ids": iTaskObjectID,
+							"width":iDefaultWidth
+							};
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=PollAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{					
+	%>
+								<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.object_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+	<%						
+						}
+	%>	
+							</StackPanel>
+						</GridRow>
+						<GridRow>
+							<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( '40764kbju5', curLngWeb ))%>:</Label>
+							<StackPanel Class="XAML-stack-container" Adapt="true">								
+	<%
+						strTaskObjectName=''
+						if (fldElem.id==fldTask.type)
+						{
+							strTaskObjectName=(fldTask.poll_procedure_id.HasValue && fldTask.poll_procedure_id.OptForeignElem != undefined ? fldTask.poll_procedure_id.ForeignElem.name : "")
+							
+						}
+						strObjectName=strTaskPrefix+fldElem.id+'_poll_procedure_id'
+						if (fnCheckRight('career_reserve_task_edit_type'))
+						{
+							iTaskObjectID=(fldElem.id==fldTask.type?fldTask.poll_procedure_id:null)
+							curSelector = {
+							"id": strObjectName,
+							"object_id": iTaskObjectID,
+							"object_id_item_name": strObjectName,
+							"object_name":  tools_web.get_cur_lng_name(strTaskObjectName, curLng.short_id ),
+							"multi_select": "false",
+							"catalog_name": "poll_procedure",
+							"selected_object_ids": iTaskObjectID,
+							"width":iDefaultWidth
+							};
+							curSelector.SetProperty("xquery_qual","$elem/is_model=false()")
+							curSelector.SetProperty("close_action","SET="+strTaskPrefix+"name,{CatalogListDataGridFullList:^/disp};SHOW=PollAddToObjectPanel")
+							Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+						}
+						else
+						{
+	%>
+								<Edit Name="<%=strObjectName%>" Hidden="1"><%=fldTask.poll_procedure_id%></Edit>
+								<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldTask.poll_procedure_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Link>
+	<%	
+						}
+						if (!bIsNew&&fnCheckRight('career_reserve_task_add_to_object'))
+						{
+								bButtonActive=(!fldTask.poll_result_id.HasValue && fldTask.poll_procedure_id.HasValue)
+	%>							
+								<StackPanel Class="XAML-stack-container" Name="PollAddToObjectPanel" Hidden="<%=!bButtonActive%>">
+									<Button Class="XAML-button" Click="SET=CREditTaskRunAction/sAction,assign_poll_proc;ACTION=CREditTaskRunAction"><%=HtmlEncode(tools_web.get_web_const( '1t1gnxv3i9', curLngWeb ))%></Button>
+								</StackPanel>
+	<%
+						}
+	%>
+							</StackPanel>
+						</GridRow>
+	<%
+					}					
+%>
+				</Grid>
+<%
+				}
+%>
+			</StackPanel>
+<%
+			}
+%>		
+	</TabItem>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'c_additional', curLngWeb ))%>">
+	<Grid Width="100%" Class="XAML-grid-info-table"  Adapt="true">
+		<GridColumns>
+			<GridColumn/>
+			<GridColumn/>
+		</GridColumns>		
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstPlanStartDate)%>:</Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_dates'))
+			{
+				strFieldName=strTaskPrefix+'start_date'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<DatePicker Name="<%=strFieldName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(fldTask.start_date,false,false)%></DatePicker>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(fldTask.start_date, false, false))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'kkf50pe6qe', curLngWeb ))%>:</Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_dates'))
+			{
+				strFieldName=strTaskPrefix+'plan_date'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<DatePicker Name="<%=strFieldName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(fldTask.plan_date,false,false)%></DatePicker>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(fldTask.plan_date, false, false))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 't22y39jexg', curLngWeb ))%>:</Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_dates'))
+			{
+				strFieldName=strTaskPrefix+'fact_date'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<DatePicker Name="<%=strFieldName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(fldTask.fact_date, false, false)%></DatePicker>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(fldTask.fact_date, false, false))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		if (fldTask.start_edit_date.HasValue||bIsNew||fnCheckRight('career_reserve_task_start_edit_date'))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(sConstEditDate)%>:</Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_start_edit_date'))
+			{
+				strFieldName=strTaskPrefix+'start_edit_date'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<DatePicker Name="<%=strFieldName%>" Format="d.m.Y" Width="<%=iDatePickerWidth%>"><%=StrDate(fldTask.start_edit_date, false, false)%></DatePicker>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(StrDate(fldTask.start_edit_date, false, false))%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}
+//--comp
+
+			if (false && (bIsNew||(fnCheckRight('career_reserve_task_edit_comp'))))
+			{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'kompetenciyadlya', curLngWeb ))%>:</Label>
+<%
+					strObjectName=strTaskPrefix+'competence_id'
+					if ( !ISDIALOG )
+					{
+						strClearFields=strClearFields+'SET='+strObjectName+',;'
+						strClearFields=strClearFields+'SET=ObjectNameEdit'+strObjectName+',;'
+					}
+
+					iCompID=fldTask.competence_id
+					strCompName=(fldTask.competence_id.HasValue && fldTask.competence_id.OptForeignElem != undefined ? fldTask.competence_id.ForeignElem.name : "")
+
+					curSelector = {
+					"id": strObjectName,
+					"object_id": iCompID,
+					"object_id_item_name": strObjectName,
+					"object_name":  tools_web.get_cur_lng_name(strCompName, curLng.short_id ),
+					"display_object_ids":"{strPlanCompIDs}",
+					"multi_select": "false",
+					"width":iDefaultWidth,
+					"catalog_name": "competence",
+					"selected_object_ids": iCompID
+					};
+
+/*					if (bSelectOnlyTutors)
+					{
+						strXQueryQual=' MatchSome( $elem/id, ('+ArrayMerge(teCareerReserve.tutors,'person_id',',')+' ) ) '
+						curSelector.SetProperty('xquery_qual',strXQueryQual)
+					}*/
+					Response.Write( EvalCodePageUrl( global_settings.web_path + "view_selector.xaml" ) );
+%>
+				</GridRow>
+<%
+			}
+			else
+			{
+				strTaskObjectName=""
+				if (fldTask.competence_id.HasValue)
+				{
+
+					try
+					{
+						if (fldTask.competence_id.OptForeignElem!=undefined)
+							strTaskObjectName=ArrayFirstElem(XQuery("for $elem in competences where $elem/id="+fldTask.competence_id+" return $elem")).name
+					}
+					catch(ex)
+					{
+					}
+%>
+				<GridRow>
+					<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'kompetenciyadlya', curLngWeb ))%>:</Label>
+					<Label Class="XAML-grid-label-value"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Label>	
+				</GridRow>
+<%
+				}
+			}
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vdb_aim_value', curLngWeb ))%></Label>
+<%
+			if (fnCheckRight('career_reserve_task_edit_mark'))
+			{
+				strFieldName=strTaskPrefix+'score'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<Edit Name="<%=strFieldName%>" Width="100"><%=fldTask.score%></Edit>
+<%
+			}
+			else
+			{
+%>
+			<Label Class="XAML-grid-label-value"><%=HtmlEncode(fldTask.score)%></Label>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		if (bIsNew||(fnCheckRight('career_reserve_task_edit_desc')||(fnCheckRight('career_reserve_task_see_desc')&&fldTask.desc.HasValue)))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'c_desc', curLngWeb ))%></Label>
+<%
+			if (bIsNew||fnCheckRight('career_reserve_task_edit_desc'))
+			{
+				strFieldName=strTaskPrefix+'desc'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<EditBox Name="<%=strFieldName%>" Height="50"  Width="100%"><%=XmlAttrEncode(fldTask.desc)%></EditBox>
+<%
+			}
+			else
+			{
+%>
+			<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.desc)%>]]></HTMLBox>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}
+		if ((fnCheckRight('career_reserve_task_see_person_comment')&&fldTask.person_comment.HasValue)||fnCheckRight('career_reserve_task_edit_person_comment'))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'veresb_p_comment', curLngWeb ))%></Label>
+<%
+			if (fnCheckRight('career_reserve_task_edit_person_comment'))
+			{
+				strFieldName=strTaskPrefix+'person_comment'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<EditBox Name="<%=strFieldName%>" Height="50"  Width="100%"><%=XmlAttrEncode(fldTask.person_comment)%></EditBox>
+<%
+			}
+			else
+			{
+%>
+			<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.person_comment)%>]]></HTMLBox>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}
+		if (fnCheckRight('career_reserve_task_edit_mentor_comment')||(fnCheckRight('career_reserve_task_see_mentor_comment')&&fldTask.tutor_comment.HasValue))
+		{
+%>
+		<GridRow>
+			<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'vcrb_mentor_comment', curLngWeb ))%></Label>
+<%
+			if (fnCheckRight('career_reserve_task_edit_mentor_comment'))
+			{
+				strFieldName=strTaskPrefix+'tutor_comment'
+				if ( !ISDIALOG )
+				{
+					strClearFields=strClearFields+'SET='+strFieldName+',;'
+				}
+%>
+			<EditBox Name="<%=strFieldName%>" Height="50"  Width="100%"><%=XmlAttrEncode(fldTask.tutor_comment)%></EditBox>
+<%
+			}
+			else
+			{
+%>
+			<HTMLBox><![CDATA[<%=HtmlEncode(fldTask.tutor_comment)%>]]></HTMLBox>
+<%
+			}
+%>
+
+		</GridRow>
+<%
+		}
+
+
+		if (fldTask.typical_development_program_id.HasValue)
+		{
+			strTaskObjectName=""
+			try
+			{
+				if (fldTask.typical_development_program_id.OptForeignElem!=undefined)
+					strTaskObjectName=ArrayFirstElem(XQuery("for $elem in typical_development_programs where $elem/id="+fldTask.typical_development_program_id+" return $elem")).name
+			}
+			catch(ex)
+			{
+			}
+%>
+	<GridRow>
+		<Label Class="XAML-grid-label-name"><%=HtmlEncode(tools_web.get_web_const( 'f89jhp79yo', curLngWeb ))%>:</Label>
+		<Label Class="XAML-grid-label-value"><%=HtmlEncode(tools_web.get_cur_lng_name( strTaskObjectName, curLng.short_id ))%></Label>
+	</GridRow>
+<%
+		}
+
+%>
+	</Grid>
+<%
+	if (fldTask.type=='defence'&&!(bIsNew&&fnCheckRight('career_reserve_task_change_commission')))
+	{
+		if ((fnCheckRight('career_reserve_task_see_commission')||fnCheckRight('career_reserve_task_edit_commission')||fldTask.commission_persons.ChildByKeyExists(curUserID))&&ISDIALOG)
+		{
+				sTitleTop=tools_web.get_web_const( 'vkpb_comment', curLngWeb )
+				if(!bDesctop)
+				{
+					var iNameLength=5
+					sTitleTop=(StrCharCount(  sTitleTop ) > iNameLength ? StrLeftCharRange(  sTitleTop, iNameLength ) + '...' :  sTitleTop);
+				}
+%>
+			<Grid Width="100%" Class="XAML-grid-info-table">
+				<GridColumns>
+					<GridColumn Width_="50%"/>
+					<GridColumn Width="50" Align="center"/>
+					<GridColumn Width="50%" Align="left"/>
+				</GridColumns>
+
+				<GridRow Class="XAML-course-map-header-row">
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( 'c_fio', curLngWeb ))%></Label>
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(tools_web.get_web_const( 'c_score', curLngWeb ))%></Label>
+					<Label Class="XAML-grid-header-label"><%=HtmlEncode(sTitleTop)%></Label>
+				</GridRow>
+<%
+				for (fldComPerson in fldTask.commission_persons)
+				{
+					if (fnCheckRight('career_reserve_task_see_commission')||fnCheckRight('career_reserve_task_edit_commission')||(curUserID==fldComPerson.person_id))
+					{
+%>
+				<GridRow>
+					<Link Click="OPENWINDOW=<%= tools_web.get_mode_clean_url( null, fldComPerson.person_id.Value, { doc_id: curDocID } ) %>"><%=HtmlEncode(fldComPerson.person_fullname)%></Link>
+<%
+						if (fnCheckRight('career_reserve_task_edit_commission')||(curUserID==fldComPerson.person_id))
+						{
+						
+							strFieldName=strTaskPrefix+'_score_'+fldComPerson.person_id.Value
+							if ( !ISDIALOG )
+							{
+								strClearFields=strClearFields+'SET='+strFieldName+',;'
+							}
+%>
+						<Edit Name="<%=strFieldName%>" Width="50"><%=fldComPerson.score%></Edit>
+<%
+						strFieldName=strTaskPrefix+'_comment_'+fldComPerson.person_id.Value
+						if ( !ISDIALOG )
+						{
+							strClearFields=strClearFields+'SET='+strFieldName+',;'
+						}
+%>
+						<EditBox Name="<%=strFieldName%>" Height="50"  Width="100%"><%=XmlAttrEncode(fldComPerson.comment)%></EditBox>
+<%
+						}
+						else
+						{
+%>
+						<Label Class="XAML-grid-label-value"><%=HtmlEncode(fldComPerson.score)%></Label>			
+						<HTMLBox><![CDATA[<%=HtmlEncode(fldComPerson.comment)%>]]></HTMLBox>
+<%
+						}
+%>
+				</GridRow>
+<%
+					}
+				}
+%>
+			</Grid>
+<%
+		}
+	}
+%>
+	</TabItem>
+<%
+if (!bIsNew&&ISDIALOG)
+{
+	if ((fnCheckRight('career_reserve_task_edit_files')||(fnCheckRight('career_reserve_task_see_files')&&ArrayOptFirstElem(fldTask.files)!=undefined)))
+	{
+%>
+	<TabItem Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vdb_files', curLngWeb ))%>">
+<%
+		if(fnCheckRight('career_reserve_task_edit_files'))
+		{
+			allowChangeFiles = true;
+			bStaticCollection = false;
+			sFilesListViewType = "datagrid";
+		}
+		sID_curFiles=fldTask.id+Random(1,100000)
+		dummyObjectID=teCareerReserveID
+		dummyObject=teCareerReserve
+		sFilePath='tasks'
+		sFileObjectSubArrayID=fldTask.id.Value
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+	</TabItem>
+<%
+	}
+}
+%>	
+</TabControl>
+<%
+
+	if (bAllowEdit)
+	{
+		if (strTaskPrefix!='')
+		{
+%>
+			<Edit Name="field_prefix" Hidden="1"><%=strTaskPrefix%></Edit>
+<%
+		}
+		strAction=(ISDIALOG?'CLOSEDIALOG':'HIDE=SPTask'+strIncludeID)
+		if (iFlag==1)
+		{
+			strAction=(ISDIALOG?'Action=SaveTask':'Action='+strIncludeID+'SaveTask;'+strClearFields+'HIDE=SPTask'+strIncludeID)
+%>
+	<Edit Name="EditDialogAction" Hidden="true"><%=strAction%></Edit>
+	<Action Name="<%=strIncludeID%>SaveTask" Source="talent_pool_edit_cr_task" Success="<%=(ISDIALOG?'SET=NewUpdatedManagersResultSet,{ResultSet};CLOSEDIALOG':strClearFields+'HIDE=SPTask'+strIncludeID+';ALERT={messageText};Update=TalentPoolCRTask'+strIncludeID+'DataGrid,CatalogListDataGridCRFuncManagers;SET=TempDestinationEditCRFuncManagers,{ResultSet};')%>" Failure="ALERT={messageText}">
+		<Param Name="CONTEXT" Value="{CONTEXT}"/>
+		<Param Name="task_id" Value="<%=strTaskID%>"/>
+		<Param Name="iObjectId" Value="<%=(ISDIALOG?teCareerReserveID:iObjectID)%>"/>
+  		<Param Name="sAction" Value="edit_cr_task"/>
+	</Action>
+<%
+		}
+	}
+%>
+<Grid Width="100%" Class="XAML-dialog-buttons-grid XAML-grid-dialog-buttons">
+	<GridColumns>
+		<GridColumn/>
+<%
+	if (bAllowEdit)
+	{
+%>
+		<GridColumn Width="110"/>
+<%
+	}
+	if (ISDIALOG) 
+	{
+%>
+		<GridColumn Width="110"/>
+<%	
+	}
+%>
+	</GridColumns>
+
+	<GridRow>
+		<Label/>
+<%
+	if (bAllowEdit)
+	{
+%>
+		<Button Width="110" Click="{!EditDialogAction}"><%=tools_web.get_web_const( 'c_save', curLngWeb )%></Button>
+<%
+	}
+	if (ISDIALOG)
+	{
+%>		
+		<Button Width="110" Click="<%=(ISDIALOG?'CANCELDIALOG':strClearFields+'HIDE=SPTask')%>"><%=tools_web.get_web_const( 'c_close', curLngWeb )%></Button>
+<%	
+	}
+%>
+	</GridRow>
+</Grid>
+</SPXMLScreen>

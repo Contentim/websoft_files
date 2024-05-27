@@ -1,0 +1,292 @@
+﻿<SPXMLScreen>
+
+<!-------------------------------------- Collections -------------------------------------------->
+<Collection Name="ContextMenu" Source="context_menu">
+	<Param Name="iUserId" Value="<%=curUserID%>"/>
+	<Param Name="iObjectId" Value="{id}"/>
+</Collection>
+	
+<Collection Name="Courses" Source="competence_info_body_courses_collection">
+	<Param Name="sSelectedType" Value="{SelectType}"/>
+	<Param Name="sSelectedStatus" Value="{SelectStatus}"/>
+	<Param Name="sSelectedCategory" Value="{SelectCategory}"/>
+	<Param Name="sSelectedTab" Value="{ListViewTab}"/>
+</Collection>
+	
+<!----------------------------------------- Code -------------------------------------------->
+<%
+	var paramListViewTab = ArrayOptFind(PARAMETERS, "key == \"ListViewTab\"");
+	paramListViewTab = (paramListViewTab != undefined ? paramListViewTab.value : "0");
+	
+	curTitle = {
+		"object": curObject,
+		"image_url": tools_web.get_object_source_url( "competence", curObjectID, "200x200" ),
+		"disp_image": true
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+	
+%>
+<TabControl ActiveTab="<%=paramListViewTab%>" TabsLocation="<%=( curDevice.disp_type == "" ? "w": "n" )%>" Width="100%">
+
+	<TabItem Title="<%=tools_web.get_web_const( "cavr3d3iwk", curLngWeb )%>" Class="icon-info2">
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn Width="500"/>
+				<GridColumn/>
+			</GridColumns>
+			
+			<%
+				if(curObject.comment != "")
+				{
+			%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "dmrmhi36f3", curLngWeb )%>:</Label>
+				<Label><%=HtmlEncode(curObject.comment)%></Label>
+			</GridRow>
+			<%
+				}
+				sBlockPath = "";
+				if(curObject.competence_block_id.HasValue)
+				{
+					sBlockPath = curObject.competence_block_id.ForeignElem.name
+					catBlock = curObject.competence_block_id.ForeignElem;
+					while(catBlock.parent_object_id.HasValue)
+					{
+						catBlock = catBlock.parent_object_id.ForeignElem;
+						sBlockPath += (" -> " + catBlock.name);
+					}
+				}
+				if(sBlockPath != "")
+				{
+			%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vhoditvblok", curLngWeb )%>:</Label>
+				<Label><%=sBlockPath%></Label>
+			</GridRow>
+			<%
+				}
+				
+				sRequiredLevel = "";
+				sRequiredLevelDesc = "";
+				sCurrentLevel = "";
+				sCurrentLevelDesc = "";
+				
+				xarrCompterenceProfiles = tools.get_user_comp_profiles(curUserID);
+				if( ArrayOptFirstElem(xarrCompterenceProfiles) != undefined )
+				{
+					for(catCompProfile in xarrCompterenceProfiles)
+					{
+						teProfile = OpenDoc(UrlFromDocID(catCompProfile.PrimaryKey)).TopElem;
+						if(teProfile.competences.ChildByKeyExists(curObjectID))
+						{
+							fldCompetence = teProfile.competences.GetChildByKey(curObjectID);
+							if(fldCompetence.plan.HasValue && curObject.scales.ChildByKeyExists(fldCompetence.plan))
+							{
+								sRequiredLevel = curObject.scales.GetChildByKey(fldCompetence.plan).name;
+								sRequiredLevelDesc = curObject.scales.GetChildByKey(fldCompetence.plan).desc; 
+							}
+							if(sRequiredLevel != "")
+								break;
+						}
+					}
+				}
+				
+				xarrPAs = XQuery("for $elem in pas where $elem/is_done=true() and $elem/person_id=" + curUserID + " order by $elem/modification_date descending return $elem");
+				for(catPA in xarrPAs)
+				{
+					tePA = OpenDoc(UrlFromDocID(catPA.PrimaryKey)).TopElem;
+					if(tePA.competences.ChildByKeyExists(curObjectID))
+					{
+						fldCompetence = tePA.competences.GetChildByKey(curObjectID);
+						if(fldCompetence.mark.HasValue)
+						{
+							if(curObject.scales.ChildByKeyExists(fldCompetence.mark))
+							{
+								sCurrentLevel = curObject.scales.GetChildByKey(fldCompetence.mark).name;
+								sCurrentLevelDesc = curObject.scales.GetChildByKey(fldCompetence.mark).desc; 
+							}
+						}
+						if ( fldCompetence.plan.HasValue && sRequiredLevel == "" )
+						{
+							if(curObject.scales.ChildByKeyExists(fldCompetence.plan))
+							{
+								sRequiredLevel = curObject.scales.GetChildByKey(fldCompetence.plan).name;
+								sRequiredLevelDesc = curObject.scales.GetChildByKey(fldCompetence.plan).desc; 
+							}
+						}
+						if(sCurrentLevel != "")
+							break;
+					}
+				}
+				
+				if(sRequiredLevel == "")
+					sRequiredLevel = tools_web.get_web_const("c_no", curLngWeb);
+				if(sCurrentLevel == "")
+					sCurrentLevel = tools_web.get_web_const("c_no", curLngWeb);
+			%>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "suznb72uoa", curLngWeb )%>:</Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+						<Label>
+							<%=sRequiredLevel%>
+						</Label>
+						<%
+							if(sRequiredLevelDesc != "")
+							{
+						%>
+							<Image Source="/pics/1blank.gif" Click="TOGGLE=LevelDesc" Class="XAML-icon-info XAML-left-margin">
+								<HTMLTip><%=tools_web.get_web_const( "c_desc", curLngWeb )%></HTMLTip>
+							</Image>					
+						<%
+							}
+						%>
+					</StackPanel>
+					<%
+						if(sRequiredLevelDesc != "")
+						{
+					%>
+							<StackPanel Name="LevelDesc" Hidden="1" Class="XAML-stack-description">
+								<Label>							
+									<%=sRequiredLevelDesc%>
+								</Label>			
+							</StackPanel>
+					<%
+						}
+					%>
+				</StackPanel>
+			</GridRow>
+			<GridRow>
+				<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "ib4f868k39", curLngWeb )%>:</Label>
+				<StackPanel Orientation="Vertical" Class="XAML-stack-container">
+					<StackPanel Orientation="Horizontal" Class="XAML-stack-container">
+						<Label>
+							<%=sCurrentLevel%>
+						</Label>
+						<%
+							if(sCurrentLevelDesc != "")
+							{
+						%>
+							<Image Source="/pics/1blank.gif" Click="TOGGLE=LevelMark" Class="XAML-icon-info XAML-left-margin">
+								<HTMLTip><%=tools_web.get_web_const( "c_desc", curLngWeb )%></HTMLTip>
+							</Image>					
+						<%
+							}
+						%>
+					</StackPanel>
+					<%
+						if(sCurrentLevelDesc != "")
+						{
+					%>
+							<StackPanel Name="LevelMark" Hidden="1" Class="XAML-stack-description">
+								<Label>							
+									<%=sCurrentLevelDesc%>
+								</Label>			
+							</StackPanel>
+					<%
+						}
+					%>
+				</StackPanel>
+			</GridRow>
+		</Grid>
+		<%
+			arrCustomFieldNames = Array();
+			fldCustomElems = tools.get_custom_template( curObject.Name, curObjectID, curObject );
+			if ( fldCustomElems != null )
+			{
+				curCustomFields = {
+					"fields": ArraySelectByKey( fldCustomElems.fields, true, "disp_web" ),
+					"source": curObject.custom_elems,
+					"modify_eval": false
+				};
+				Response.Write( EvalCodePageUrl( global_settings.web_path + "view_custom_fields.xaml" ) );
+		
+			}
+		
+			if(curObject.desc != "")
+			{
+		%>
+			<HTMLBox>
+				<%=HtmlEncode( tools_web.get_web_desc( curObject.desc, UrlFromDocID( curObjectID ), "curObject.desc" ) )%>
+			</HTMLBox>
+		<%
+			}
+		%>
+		
+	</TabItem>
+	
+	<TabItem Title="<%=tools_web.get_web_const( "vci_scale", curLngWeb )%>" ActiveTab="<%=paramListViewTab%>" Class="icon-tasks">
+		
+		<Grid Width="100%" Class="XAML-grid-info-table">
+			<GridColumns>
+				<GridColumn Width="10%" />
+				<GridColumn Width="90%" />
+			</GridColumns>
+			
+			<GridRow Class="XAML-gridrow-header">
+				<Label Class="XAML-label-name"><%=tools_web.get_web_const( "c_name", curLngWeb )%></Label>
+				<Label Class="XAML-label-name"><%=tools_web.get_web_const( "c_desc", curLngWeb )%></Label>
+			</GridRow>			
+			
+			<%
+				for(fldScale in curObject.scales)
+				{
+			%>
+			<GridRow>
+				<Label><%=fldScale.name%></Label>
+				<Label><%=fldScale.desc%></Label>
+			</GridRow>			
+			<%
+				}
+			%>
+		</Grid>
+	</TabItem>
+	
+	<TabItem Title="<%=tools_web.get_web_const( "razvitie", curLngWeb )%>" ActiveTab="<%=paramListViewTab%>" Class="icon-random">		
+		<DataGrid Title="<%=tools_web.get_web_const( "c_tests", curLngWeb )%>" Name="TestsDataGrid" Source="competence_info_body_tests_collection" PageSize="25" Selection="single" >
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" MinWidth="250" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", {"doc_id": ""+curDocID})%>"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "jaw754vpm1", curLngWeb )%>" Value="levels" Width="100" Type="string"  Sortable="True"/>			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_status", curLngWeb )%>" Value="state" Width="100" Type="string"  Sortable="True"/>			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vdb_aim_date", curLngWeb )%>" Value="last_date" Width="140" Type="string"  Sortable="True"/>			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_score", curLngWeb )%>" Value="score" Width="100" Type="string"  Sortable="True"/>		
+		</DataGrid>	
+	
+	
+		
+		<DataGrid Name="EducationMethodsDataGrid" Title="<%=tools_web.get_web_const( "vepb_edu_methods", curLngWeb )%>" Source="competence_info_body_education_methods_collection" PageSize="25" Selection="single" >				
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" MinWidth="250" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", {"doc_id": ""+curDocID})%>"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_type", curLngWeb )%>" Value="type" Width="200" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "izuchil", curLngWeb )%>" Value="learned" Width="100" Type="string" ColorSource="color" Sortable="True"/>	
+			<DataGridColumn Title="<%=tools_web.get_web_const( "rekomendovano", curLngWeb )%>" Value="recommended" Width="120" Type="string"  Sortable="True"/>	
+		</DataGrid>	
+	
+		<DataGrid Name="DevelopmentMethodsDataGrid" Source="competence_info_body_development_methods_collection" Height1="300" PageSize="25" Selection="single" Title="<%=tools_web.get_web_const( "vdb_development_method", curLngWeb )%>">
+			<!--<DataGridColumn Title="<%=tools_web.get_web_const( "c_code", curLngWeb )%>" Value="code" Width="200" Type="string" Sortable="True"/>-->
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_name", curLngWeb )%>" Value="name" MinWidth="350" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "jaw754vpm1", curLngWeb )%>" Value="levels" Width="100" Type="string"  Sortable="True"/>	
+		</DataGrid>	
+	</TabItem>
+
+	<TabItem Title="<%=tools_web.get_web_const( "podchinennye", curLngWeb )%>" ActiveTab="<%=paramListViewTab%>" Class="icon-group">
+		<%
+		curCollectionMenu = {
+			"id": "SubPerson",
+			"catalog_name": "collaborator",
+			"data_grid_id": "SubUsersDataGrid"
+		};
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list_menu.xaml" ) );
+		%>
+		<DataGrid Name="SubUsersDataGrid" Source="competence_info_body_sub_users" PageSize="25" Selection="single">
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_fio", curLngWeb )%>" Value="fullname" MinWidth="200" Type="link" Sortable="True" Click="OPENURL=<%=tools_web.get_mode_clean_url(null, "{id}", {"doc_id": ""+curDocID})%>"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "c_position", curLngWeb )%>" Value="position" Width="200" Type="string" Sortable="True"/>
+			<DataGridColumn Title="<%=tools_web.get_web_const( "suznb72uoa", curLngWeb )%>" Value="required_level" Width="160" Type="string" ColorSource="color"  Sortable="True"/>			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "ib4f868k39", curLngWeb )%>" Value="current_level" Width="140" Type="string" ColorSource="color" Sortable="True"/>			
+			<DataGridColumn Title="<%=tools_web.get_web_const( "vppb_procedure", curLngWeb )%>" Value="pa" Width="150" Type="string"  Sortable="True"/>
+
+			<DataGridColumn Value="id" Hidden="1" Ghost="0"/>
+			<Menu Source="{CatalogListMenuSubPerson}"/>			
+		</DataGrid>	
+	</TabItem>
+	
+	</TabControl>
+</SPXMLScreen>

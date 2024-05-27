@@ -1,0 +1,203 @@
+﻿<SPXMLScreen>
+<%
+try
+{
+	curMaterials;
+}
+catch ( err )
+{
+	curMaterials = ({});
+}
+curMaterials_arrBlocks = String( curMaterials.GetOptProperty( 'blocks', 'desc;files;course_forums;catalogs;knowledge' ) ).split( ';' );
+curMaterials_bHideEmpty = ( curDevice.disp_type != "" );
+curMaterials_teObject = curMaterials.GetOptProperty( 'object', curObject );
+
+curMaterials_arrEvalBlocks = [];
+for ( curMaterials_sBlockElem in curMaterials_arrBlocks )
+{
+	switch ( curMaterials_sBlockElem )
+	{
+		case 'desc':
+			if ( ! curMaterials_teObject.ChildExists( 'desc' ) || ! curMaterials_teObject.desc.HasValue )
+				continue;
+			break;
+
+		case 'files':
+			if ( ! curMaterials_teObject.ChildExists( 'files' ) || curMaterials_teObject.files.ChildNum == 0 )
+				continue;
+			break;
+
+		case 'course_forums':
+			if ( curMaterials_teObject.Name != 'course' )
+				continue;
+			curMaterials_xarrForums = XQuery( "for $elem in forums where $elem/course_id = " + curObjectID + " return $elem/Fields('id')" );
+			if ( ArrayOptFirstElem( curMaterials_xarrForums ) == undefined )
+				continue;
+			break;
+
+		case 'catalogs':
+			if ( ! curMaterials_teObject.ChildExists( 'catalogs' ) || curMaterials_teObject.catalogs.ChildNum == 0 )
+				continue;
+			break;
+
+		case 'knowledge':
+			if ( ! curMaterials_teObject.ChildExists( 'knowledge_parts' ) || curMaterials_teObject.knowledge_parts.ChildNum == 0 )
+				continue;
+			break;
+	}
+	curMaterials_arrEvalBlocks.push( curMaterials_sBlockElem );
+}
+curMaterials_iEvalBlocksCount = ArrayCount( curMaterials_arrEvalBlocks );
+
+if ( curMaterials_iEvalBlocksCount == 0 )
+{
+	if ( ! curMaterials_bHideEmpty )
+	{
+%>
+	<Label Class="XAML-label-empty-data"><![CDATA[<%=tools_web.get_web_const( 'materialyotsut', curLngWeb )%>]]></Label>
+<%
+	}
+%>
+</SPXMLScreen>
+<%
+	Cancel();
+}
+
+
+if ( curMaterials_teObject != undefined )
+{
+	curDescObject = curMaterials_teObject;
+	curDescObjectID = curMaterials.GetOptProperty( 'object_id', null );
+	curCatalogsDoc = curMaterials_teObject;
+	curFilesDoc = curMaterials_teObject;
+	curKnowlegedDoc = curMaterials_teObject;
+}
+
+curMaterials_sSearch = CONTEXT.GetOptProperty( 'MaterialsSearch', '' );
+curMaterials_sUpdateAction = "REFRESH";
+curMaterials_sSelector = CONTEXT.GetOptProperty( 'MaterialsSelector', 'all' );
+curMaterials_bDispFilters = tools_web.is_true( curMaterials.GetOptProperty( 'disp_filters', ( curDevice.disp_type == "" ) ) );
+curMaterials_bParamPreffix = curMaterials.GetOptProperty( "param_preffix", "" );
+
+if ( curMaterials_bDispFilters )
+{
+	curFilter = {
+		'id': 'materials',
+		'title': tools_web.get_web_const( 'c_materials', curLngWeb ),
+		'action': curMaterials_sUpdateAction,
+		'disp_selector': false,
+		'search_field': 'MaterialsSearch'
+	};
+	if ( curMaterials_iEvalBlocksCount > 1 )
+	{
+		curFilter.SetProperty( 'filters', [] );
+		arrItems = [];
+		arrItems.push( { 'value': 'all', 'title': tools_web.get_web_const( 'f0j4vfoxrb', curLngWeb ), 'change': 'SHOW=curMaterialsFiles,curMaterialsCourseForums,curMaterialsCatalogs,curMaterialsDesc,curMaterialsKnowledge' } );
+		if ( ArrayOptFind( curMaterials_arrEvalBlocks, "This=='desc'" ) != undefined )
+			arrItems.push( { 'value': 'desc', 'title': tools_web.get_web_const( 'c_desc', curLngWeb ), 'change': 'SHOW=curMaterialsDesc;HIDE=curMaterialsCourseForums,curMaterialsCatalogs,curMaterialsFiles,curMaterialsKnowledge' } );
+		if ( ArrayOptFind( curMaterials_arrEvalBlocks, "This=='files'" ) != undefined )
+			arrItems.push( { 'value': 'files', 'title': tools_web.get_web_const( 'vdb_files', curLngWeb ), 'change': 'SHOW=curMaterialsFiles;HIDE=curMaterialsCourseForums,curMaterialsCatalogs,curMaterialsDesc,curMaterialsKnowledge' } );
+		if ( ArrayOptFind( curMaterials_arrEvalBlocks, "This=='course_forums'" ) != undefined )
+			arrItems.push( { 'value': 'course_forums', 'title': tools_web.get_web_const( 'svyazannyeforumy', curLngWeb ), 'change': 'SHOW=curMaterialsCourseForums;HIDE=curMaterialsFiles,curMaterialsCatalogs,curMaterialsDesc,curMaterialsKnowledge' } );
+		if ( ArrayOptFind( curMaterials_arrEvalBlocks, "This=='catalogs'" ) != undefined )
+			arrItems.push( { 'value': 'catalogs', 'title': tools_web.get_web_const( 'prikreplennyeo', curLngWeb ), 'change': 'SHOW=curMaterialsCatalogs;HIDE=curMaterialsCourseForums,curMaterialsFiles,curMaterialsDesc,curMaterialsKnowledge' } );
+		if ( ArrayOptFind( curMaterials_arrEvalBlocks, "This=='knowledge'" ) != undefined )
+			arrItems.push( { 'value': 'knowledge', 'title': tools_web.get_web_const( 'vkpb_knowledge_parts_title', curLngWeb ), 'change': 'SHOW=curMaterialsKnowledge;HIDE=curMaterialsCatalogs,curMaterialsCourseForums,curMaterialsFiles,curMaterialsDesc' } );
+		curFilter.filters.push( { 'name': 'MaterialsSelector', 'type': 'combo', 'selected': curMaterials_sSelector, 'items': arrItems } );
+	}
+	Response.Write( EvalCodePageUrl( global_settings.web_path + "view_filter.xaml" ) );
+}
+
+for ( curMaterials_sTabElem in curMaterials_arrEvalBlocks )
+{
+	if ( curMaterials_sTabElem == 'desc' && ( curMaterials_sSelector == 'all' || curMaterials_sSelector == 'desc' ) )
+	{
+%>
+<StackPanel Name="curMaterialsDesc" Class="XAML-stack-container">
+<%
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_desc.xaml" ) );
+%>
+</StackPanel>
+<Label Class="XAML-label-spacer"/>
+<%
+	}
+
+	if ( curMaterials_sTabElem == 'files' && ( curMaterials_sSelector == 'all' || curMaterials_sSelector == 'files' ) )
+	{
+%>
+<StackPanel Name="curMaterialsFiles" Class="XAML-stack-container">
+<%
+		curFiles = {
+			"search": curMaterials_sSearch,
+			"param_preffix": ( curMaterials_bParamPreffix + ".files_block" )
+		};
+		if ( curMaterials_bParamPreffix != "" )
+			curFiles.SetProperty( "param_preffix", ( curMaterials_bParamPreffix + ".files_block" ) );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_files.xaml" ) );
+%>
+</StackPanel>
+<Label Class="XAML-label-spacer"/>
+<%
+	}
+
+	if ( curMaterials_sTabElem == 'course_forums' && ( curMaterials_sSelector == 'all' || curMaterials_sSelector == 'course_forums' ) )
+	{
+%>
+<StackPanel Name="curMaterialsCourseForums" Class="XAML-stack-container">
+<%
+		curView = {
+			"id": "CourseForums",
+			"disp_type": "list",
+			"catalog_name": "forum",
+			"array": ArrayMerge( curMaterials_xarrForums, 'id', ';' ),
+			"disp_sort": true,
+			"disp_link": true,
+			"disp_filter": false,
+			"disp_search": false,
+			"search": curMaterials_sSearch
+		};
+		if ( curMaterials_bParamPreffix != "" )
+			curView.SetProperty( "param_preffix", ( curMaterials_bParamPreffix + ".course_forums_block" ) );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+%>
+</StackPanel>
+<Label Class="XAML-label-spacer"/>
+<%
+	}
+
+	if ( curMaterials_sTabElem == 'catalogs' && ( curMaterials_sSelector == 'all' || curMaterials_sSelector == 'catalogs' ) )
+	{
+%>
+<StackPanel Name="curMaterialsCatalogs" Class="XAML-stack-container">
+<%
+		curCatalogs = {
+			"objects_view_type": "list",
+			"disp_catalog_title": true,
+			"disp_filters": false,
+			"search": curMaterials_sSearch
+		};
+		if ( curMaterials_bParamPreffix != "" )
+			curCatalogs.SetProperty( "param_preffix", ( curMaterials_bParamPreffix + ".catalogs_block" ) );
+		Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalogs.xaml" ) );
+%>
+</StackPanel>
+<Label Class="XAML-label-spacer"/>
+<%
+	}
+
+	if ( curMaterials_sTabElem == 'knowledge' && ( curMaterials_sSelector == 'all' || curMaterials_sSelector == 'knowledge' ) )
+	{
+		curKnowlegedDoc = curMaterials_teObject;
+		curKnowlegedID = curMaterials_teObject.id.Value;
+%>
+<StackPanel Name="curMaterialsKnowledge" Class="XAML-stack-container">
+<%
+		Response.Write( tools_web.place_xaml( "list_knowledge_parts" ) );
+%>
+</StackPanel>
+<Label Class="XAML-label-spacer"/>
+<%
+	}
+}
+%>
+</SPXMLScreen>

@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>kk5rit9ykf</id>
+		<create_date>2024-03-08T09:52:29+00:00</create_date>
+		<server_version>2023.2.845 (2024-02-20)</server_version>
+	</basic>
+	<remote_collections>
+		<remote_collection>
+			<id>0x633443576D9B271A</id>
+			<code>GetRequestGroupPersons</code>
+			<name>Состав участников групповой заявки</name>
+			<exec_code>
+				<code_url>x-local://wtv/remote_collections/GetRequestGroupPersons.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_collections/GetRequestGroupPersons.bs</url>
+			<catalog_name>request</catalog_name>
+			<wvars>
+				<wvar>
+					<name>sRequestID</name>
+					<type>string</type>
+					<description>ID заявки</description>
+					<silent>false</silent>
+					<position>1</position>
+					<required>false</required>
+				</wvar>
+				<wvar>
+					<name>bHasDismissed</name>
+					<value>0</value>
+					<type>bool</type>
+					<description>В списке присутствуют уволенные</description>
+					<silent>false</silent>
+					<position>2</position>
+					<required>false</required>
+				</wvar>
+			</wvars>
+			<result_fields>
+				<result_field>
+					<id>txj0iy</id>
+					<name>name</name>
+					<type>string</type>
+					<title>i18n.t( 'fio' )</title>
+					<for_analytics>false</for_analytics>
+					<for_analytics_aggregation>false</for_analytics_aggregation>
+					<prohibit_sort>false</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>0avlpt</id>
+					<name>position</name>
+					<type>string</type>
+					<title>i18n.t( 'dolzhnost' )</title>
+					<for_analytics>false</for_analytics>
+					<for_analytics_aggregation>false</for_analytics_aggregation>
+					<prohibit_sort>false</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>ik7ico</id>
+					<name>subdivision</name>
+					<type>string</type>
+					<title>i18n.t( 'podrazdelenie' )</title>
+					<for_analytics>false</for_analytics>
+					<for_analytics_aggregation>false</for_analytics_aggregation>
+					<prohibit_sort>false</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>to3f84</id>
+					<name>image_url</name>
+					<type>string</type>
+					<title>i18n.t( 'urlavatarki' )</title>
+					<for_analytics>false</for_analytics>
+					<for_analytics_aggregation>false</for_analytics_aggregation>
+					<prohibit_sort>false</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>yucc10</id>
+					<name>link</name>
+					<type>string</type>
+					<title>i18n.t( 'urlkartochkisot' )</title>
+					<for_analytics>false</for_analytics>
+					<for_analytics_aggregation>false</for_analytics_aggregation>
+					<prohibit_sort>false</prohibit_sort>
+				</result_field>
+			</result_fields>
+			<api_ver>0</api_ver>
+			<api_search>
+				<has_fulltext>true</has_fulltext>
+			</api_search>
+			<ready_to_analytics>false</ready_to_analytics>
+			<constructor>
+				<use>false</use>
+			</constructor>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<i18n_param>
+				<load_path>x-local://i18n/new_portal/web_mode/request_std_20203/remote_collection/GetRequestGroupPersons</load_path>
+				<code>request_std_20203/remote_collection/GetRequestGroupPersons</code>
+			</i18n_param>
+			<is_std>true</is_std>
+			<changed>true</changed>
+		</remote_collection>
+	</remote_collections>
+</data>

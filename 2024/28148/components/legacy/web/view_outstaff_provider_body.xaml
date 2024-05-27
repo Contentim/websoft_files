@@ -1,0 +1,214 @@
+﻿<%
+// const_start
+sConstNotIndicated = tools_web.get_web_const( 'vrb_not_specified', curLngWeb );
+// const_end
+%>
+<SPXMLScreen>
+<%
+oParamSource = ISDIALOG ? PARAMETERS : curUrlQuery;
+bShowTitle = tools_web.is_true(tools_web.get_web_param( curParams, "outstaff_provider_body.show_title", "true", true ));
+
+var strActiveTab = ArrayOptFind(PARAMETERS, "key == \"OutstaffProviderBodyTab\"");
+
+strActiveTab = (strActiveTab != undefined ? strActiveTab.value : OptInt( CONTEXT.GetOptProperty( 'OutstaffProviderBodyTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab' ), 0 ) ));
+
+//request_type = ArrayOptFirstElem(XQuery("for $elem in request_types where $elem/code='request_recruitment' return $elem"));
+curTitle = {
+		"object": curObject,
+		"object_title": tools_web.get_web_const( "provaydervreme", curLngWeb)
+	};
+Response.Write( EvalCodePageUrl( global_settings.web_path + "view_object_title.xaml" ) );
+if ( bShowTitle )
+{
+}
+
+objectID = OptInt( oParamSource.GetOptProperty( "object_id" ), null );
+curObject = (objectID != null ? OpenDoc(UrlFromDocID(objectID)).TopElem : undefiend);
+
+
+%>
+<!-- ========= Actions ============= -->
+
+<!-- ========= Collections ============= -->
+
+<%
+arrTabListParam = String( tools_web.get_web_param( curParams, "outstaff_provider_body.tab_list", "general_info;additional_info", true ) ).split( ";" );
+
+if (curUser.access.access_role == "admin" || curUser.access.access_role == "hr" || curUser.access.access_role == "upr")
+{
+
+	if ( ArrayCount( arrTabListParam ) > 1 )
+	{
+%>
+
+<TabControl Name="OutstaffProviderBodyTab" ActiveTab="<%=strActiveTab%>" Width="100%">
+<%
+	}
+for ( sTabListParam in arrTabListParam )
+{
+	if ( sTabListParam == "general_info")
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+	<TabItem Class="icon-profile" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vrb_basic_info', curLngWeb ))%>">
+<%
+		}
+		
+		
+%>
+			<Panel  Title="<%=XmlAttrEncode( tools_web.get_web_const( "cavr3d3iwk", curLngWeb ) )%>" Width="100%" Expanded="1">
+<%
+				
+			arrCommonTabFildsList = String( tools_web.get_web_param( curParams, "outstaff_provider_body.common_tab.fields_list", "name,region,place,collaborator", true ) ).split( ";" );
+					
+						
+			if ( ArrayOptFirstElem(arrCommonTabFildsList) != undefined )
+			{
+				
+%>			
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn Width="300" Align="right"/>
+							<GridColumn/>
+						</GridColumns>
+							
+<%
+						if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'name'")) != undefined)
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_name", curLngWeb )%>:</Label>
+								<Label><![CDATA[<%=( curObject.name.HasValue ? tools_web.get_cur_lng_name( curObject.name, curLng.short_id ) : "" )%>]]></Label>
+							</GridRow>
+<%
+						}
+						
+						if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'region'")) != undefined)
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "vrb_region", curLngWeb )%>:</Label>
+								<Label><![CDATA[<%=( curObject.region_id.HasValue ? ( oTemp = curObject.region_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.name, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+							</GridRow>
+<%
+						}
+						
+						if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'place'")) != undefined)
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_place", curLngWeb )%>:</Label>
+								<Label><![CDATA[<%=( curObject.place_id.HasValue ? ( oTemp = curObject.place_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.name, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+							</GridRow>
+<%
+						}
+						
+						if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'collaborator'")) != undefined)
+						{
+%>
+							<GridRow>
+								<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "c_coll", curLngWeb )%>:</Label>
+								<Label><![CDATA[<%=( curObject.collaborator_id.HasValue ? ( oTemp = curObject.collaborator_id.OptForeignElem, ( oTemp == undefined ? tools_web.get_web_const( "c_deleted", curLngWeb ) : tools_web.get_cur_lng_name( oTemp.fullname, curLng.short_id ) ) ) : sConstNotIndicated )%>]]></Label>
+							</GridRow>
+<%
+						}
+%>			
+					</Grid>
+				
+<%
+			}
+%>
+			</Panel>
+<%
+				
+		//if ( sTabListParam == "additional_info" )
+		//{
+%>
+			<Panel  Title="<%=XmlAttrEncode( tools_web.get_web_const( "vrb_contacts", curLngWeb ) )%>" Width="100%" Expanded="1">
+<%
+			
+				arrCommonTabFildsList = String( tools_web.get_web_param( curParams, "outstaff_provider_body.additional_tab.fields_list", "address,phone,e-mail", true ) ).split( ";" );
+					
+						
+				if ( ArrayOptFirstElem(arrCommonTabFildsList) != undefined )
+				{
+%>	
+					<Grid Width="100%" Class="XAML-grid-info-table">
+						<GridColumns>
+							<GridColumn Width="300" Align="right"/>
+							<GridColumn/>
+						</GridColumns>
+								
+<%
+							if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'address'")) != undefined)
+							{
+%>
+								<GridRow>
+									<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "7kn6v1vaoy", curLngWeb )%>:</Label>
+									<Label><![CDATA[<%=( curObject.postal_address.HasValue ? tools_web.get_cur_lng_name( curObject.postal_address, curLng.short_id ) : "" )%>]]></Label>
+								</GridRow>
+<%
+							}
+							
+							if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'phone'")) != undefined)
+							{
+%>
+								<GridRow>
+									<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "np2srn9rg6", curLngWeb )%>:</Label>
+									<Label><![CDATA[<%=( curObject.phone.HasValue ? tools_web.get_cur_lng_name( curObject.phone, curLng.short_id ) : "" )%>]]></Label>
+								</GridRow>
+<%
+							}
+							
+							if ( ArrayOptFirstElem(ArraySelect(arrCommonTabFildsList, "This == 'e-mail'")) != undefined)
+							{
+%>
+								<GridRow>
+									<Label Class="XAML-info-grid-title-column"><%=tools_web.get_web_const( "uf_email", curLngWeb )%>:</Label>
+									<Label><![CDATA[<%=( curObject.email.HasValue ? tools_web.get_cur_lng_name( curObject.email, curLng.short_id ) : "" )%>]]></Label>
+								</GridRow>
+<%
+							}
+%>			
+					</Grid>
+<%
+				}
+%>
+			</Panel>
+<%
+		//}
+	
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>	
+	</TabItem>
+<%
+		}
+	}
+	
+		
+	if ( sTabListParam == "general_info")
+	{
+		if ( ArrayCount( arrTabListParam ) > 1 )
+		{
+%>
+			<TabItem Class="icon-file-text2" Title="<%=XmlAttrEncode(tools_web.get_web_const( 'vnrqm9djn5', curLngWeb ))%>"></TabItem>
+<%
+		}
+
+	}
+	
+	
+	
+	
+}
+	if ( ArrayCount( arrTabListParam ) > 1 )
+	{
+%>
+</TabControl>
+<%
+	}
+}
+%>
+</SPXMLScreen>

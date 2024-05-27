@@ -1,0 +1,198 @@
+﻿<SPXMLScreen>
+<%
+iDefaultTab = OptInt( CONTEXT.GetOptProperty( 'RequestsTab' ), OptInt( curUrlQuery.GetOptProperty( 'tab_requests' ), 0 ) );
+iCurTab = 0-1;
+
+bOpenWindow = tools_web.is_true( tools_web.get_web_param( curParams, 'requests_body.open_window', false, true ) );
+sLinkOpen = bOpenWindow ? 'OPENWINDOW' : 'OPENURL';
+
+bDispFilters = tools_web.is_true( tools_web.get_web_param( curParams, 'requests_body.disp_filters', true, true ) );
+
+iRequestTypeID = OptInt( tools_web.get_web_param( curParams, 'requests_body.request_type_id', null, true ), null );
+
+bOpenDoc = false;
+arrHeaders = [];
+arrCells = [];
+sListColumns = tools_web.get_web_param( curParams, 'requests_body.list_columns', "create_date;code;request_type_id;type;object_name;status_id", true );
+sListAddColumns = tools_web.get_web_param( curParams, 'requests_body.list_add_columns', '', true );
+if ( sListAddColumns != "" )
+{
+	arrParamColumns = sListAddColumns.split( ";" );
+	fldViewColunms = view_types.GetChildByKey( "request" ).columns;
+	fldCustomTemplate = tools.get_custom_template( "request_type", iRequestTypeID, null );
+	fldCustomFields = fldCustomTemplate == null ? [] : fldCustomTemplate.fields;
+	for ( sColumnNameElem in arrParamColumns )
+	{
+		fldViewColunm = ArrayOptFindByKey( fldViewColunms, sColumnNameElem, 'order' );
+		if ( fldViewColunm == undefined )
+		{
+			if ( iRequestTypeID == null )
+				continue;
+
+			fldCustomField = ArrayOptFindByKey( fldCustomFields, sColumnNameElem, 'name' );
+			if ( fldCustomField == undefined )
+			{
+				arrHeaders.push( "Workflow field" );
+				arrCells.push( "ListElemDoc.workflow_fields.ObtainChildByKey(" + CodeLiteral( sColumnNameElem ) + ").value" );
+				bOpenDoc = true;
+			}
+			else
+			{
+				arrHeaders.push( tools_web.get_cur_lng_name( fldCustomField.title.Value, curLng.short_id ) );
+				if ( fldCustomField.type == 'date' )
+				{
+					arrCells.push( "StrDate(tools.opt_date(ListElemDoc.custom_elems.ObtainChildByKey(" + CodeLiteral( sColumnNameElem ) + ").value,null))" );
+				}
+				else
+				{
+					arrCells.push( "ListElemDoc.custom_elems.ObtainChildByKey(" + CodeLiteral( sColumnNameElem ) + ").value" );
+				}
+				bOpenDoc = true;
+			}
+		}
+		else
+		{
+			arrHeaders.push( tools_web.get_web_const( fldViewColunm.const, curLngWeb ) );
+			arrCells.push( fldViewColunm.name.Value );
+		}
+	}
+}
+
+try
+{
+	curListemplateID;
+}
+catch ( err )
+{
+	curListemplateID = "";
+}
+
+arrTabListParam = String( tools_web.get_web_param( curParams, 'requests_body.tab_list', 'main;workflow', true ) ).split( ';' );
+%>
+<TabControl Name="RequestsTab" ActiveTab="<%=iDefaultTab%>" Width="100%" Class="XAML-tabcontrol-filter">
+<%
+for ( sTabListParam in arrTabListParam )
+{
+///////////////////////////////////////////////   MAIN TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'main' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'requests_body.tab_list.main_tab.block_list', 'requests', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "requests_body.tab_list.main_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'moizayavki', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'requests' )
+		{
+			sStatusFilter = CONTEXT.GetOptProperty( 'status_id', 'active' );
+			sRequestTypeFilter = "";
+
+			if ( iRequestTypeID != null )
+			{
+				sRequestTypeFilter = " and $elem/request_type_id = " + iRequestTypeID;
+			}
+			sViewID = "All" + curListemplateID;
+			curView = {
+				"id": sViewID,
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "request",
+				"xquery_qual": ( "$elem/person_id = " + curUserID + sRequestTypeFilter ),
+				"disp_filter": true,
+				"filter_mode": "custom",
+				"disp_search": true,
+				"sort_index": 0,
+				"sort_direct": "-",
+				"filter_items": [
+					{ "id": ( "status_id" + sViewID ), "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": sStatusFilter }
+				],
+				"list_columns": sListColumns,
+				"link_open": sLinkOpen
+			};
+			if ( bDispFilters )
+			{
+				iRequestTypeIDFilter = OptInt( CONTEXT.GetOptProperty( 'request_type_id' ), ( iRequestTypeID == null ? '#empty#' : iRequestTypeID ) );
+				curView.filter_items.push( { "id": ( "request_type_id" + sViewID ), "field": "request_type_id", "name": tools_web.get_web_const( 'c_type', curLngWeb ), "type": "foreign_elem", "catalog_name": "request_type", "default": iRequestTypeIDFilter } );
+			}
+			if ( ArrayCount( arrCells ) != 0 )
+			{
+				curView.open_doc = bOpenDoc;
+				curView.col_headers = ArrayMerge( arrHeaders, "This", ";" );
+				curView.col_cells = ArrayMerge( arrCells, "This", ";" );
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+
+///////////////////////////////////////////////   WORKFLOW TAB   /////////////////////////////////////////////
+if ( sTabListParam == 'workflow' )
+{
+	iCurTab++;
+	arrBlockListParam = String( tools_web.get_web_param( curParams, 'requests_body.tab_list.workflow_tab.block_list', 'requests', true ) ).split( ';' );
+	sTabTitle = tools_web.get_web_param( curParams, "requests_body.tab_list.workflow_tab", "", true );
+%>
+	<TabItem Title="<%=XmlAttrEncode( sTabTitle == "" ? tools_web.get_web_const( 'soglasovanieza', curLngWeb ) : tools_web.get_cur_lng_name( sTabTitle, curLng.short_id ) )%>" Reload="1">
+<%
+	for ( sTabElem in arrBlockListParam )
+	{
+		if ( sTabElem == 'requests' )
+		{
+			sStatusFilterWork = CONTEXT.GetOptProperty( 'status_id_work', 'active' );
+			sRequestTypeFilter = "";
+
+			if ( iRequestTypeID != null )
+			{
+				sRequestTypeFilter = "$elem/request_type_id = " + iRequestTypeID;
+			}
+			sViewID = "WF" + curListemplateID;
+			curView = {
+				"id": sViewID,
+				"height": "",
+				"disp_paging": true,
+				"paging_size": 100,
+				"catalog_name": "request",
+				"external_eval": "workflow_condition_requests",
+				"xquery_qual": sRequestTypeFilter,
+				"disp_search": true,
+				"sort_index": 1,
+				"sort_direct": "-",
+				"disp_filter": true,
+				"filter_mode": "custom",
+				"filter_items": ([
+					{ "id": ( "status_id_work" + sViewID ), "field": "status_id", "name": tools_web.get_web_const( 'c_status', curLngWeb ), "default": sStatusFilterWork }
+				]),
+				"list_columns": sListColumns,
+				"link_open": sLinkOpen
+			};
+			if ( bDispFilters )
+			{
+				iRequestTypeIDFilter = OptInt( CONTEXT.GetOptProperty( 'request_type_id_work' ), ( iRequestTypeID == null ? '#empty#' : iRequestTypeID ) );
+				curView.filter_items.push( { "id": ( "request_type_id_work" + sViewID ), "field": "request_type_id", "name": tools_web.get_web_const( 'c_type', curLngWeb ), "type": "foreign_elem", "catalog_name": "request_type", "default": iRequestTypeIDFilter } );
+			}
+			if ( ArrayCount( arrCells ) != 0 )
+			{
+				curView.open_doc = bOpenDoc;
+				curView.col_headers = ArrayMerge( arrHeaders, "This", ";" );
+				curView.col_cells = ArrayMerge( arrCells, "This", ";" );
+			}
+			Response.Write( EvalCodePageUrl( global_settings.web_path + "view_catalog_list.xaml" ) );
+		}
+	}
+%>
+	</TabItem>
+<%
+}
+
+}
+%>
+</TabControl>
+
+</SPXMLScreen>
