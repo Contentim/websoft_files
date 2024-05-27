@@ -1,0 +1,184 @@
+﻿iPersonID = OptInt(OptInt(iPersonID, sPersonID), curUserID);
+if(sObjectParam != "" && sObjectParam != null && sObjectParam != undefined)
+{
+	if(OptInt(sObjectParam) == undefined)
+	{
+		var catObject = common.exchange_object_types.GetOptChildByKey( "" + sObjectParam )
+		if(catObject == undefined)
+		{
+			sObjectParam = "" + OptInt(curObjectID, "");
+		}
+		else
+		{
+			sObjectParam = catObject.name.Value;
+		}
+	}
+}
+else
+{
+	sObjectParam = "" + OptInt(curObjectID, "");
+}
+var sRootMOName = "Выбрать подразделение";
+var sRootMOID = tools_web.get_md5_id(sRootMOName);
+var sRootActionName = "Выбрать действие";
+var sRootActionID = tools_web.get_md5_id(sRootActionName);
+var sRootAppName = "Приложения";
+var sRootAppID = tools_web.get_md5_id(sRootAppName);
+
+RESULT = [
+	{id: sRootMOID, parent_id: null, name: sRootMOName, ra_id: null, ra_params: ""},
+	//{id: sRootActionID, parent_id: null, name: sRootActionName, ra_id: null, ra_params: ""} // todo
+];
+
+
+
+var oRes = tools.call_code_library_method( "libMain", "GetBossManagementObjects", [ iPersonID, bHierSubdivisions ] );
+var catManagementObjectRemoteAction = ArrayOptFirstElem(tools.xquery("for $elem in remote_actions where $elem/code = 'LPSetManagementObject' return $elem"));
+var iRAID = null;
+var sRAName = "";
+var curParams = {};
+var oRAParams = {};
+var iAppRAID = null;
+var oAppRAParams = {};
+
+if(catManagementObjectRemoteAction != undefined)
+{
+	iRAID = catManagementObjectRemoteAction.id.Value;
+	var docMORA = tools.open_doc(iRAID);
+	tools_web.set_override_web_params(curParams, docMORA.TopElem);
+	if(docMORA != undefined)
+	{
+		for(fldVWarElem in docMORA.TopElem.wvars)
+		{
+			oRAParams.SetProperty( fldVWarElem.name.Value, {name: fldVWarElem.name.Value, type: fldVWarElem.type.Value, value: curParams.GetOptProperty(fldVWarElem.name.Value)});
+		}
+	}
+	oRAParams.sPersonID.value = String(iPersonID);
+	sRAName = catManagementObjectRemoteAction.name.Value;
+}
+
+for(itemOM in oRes.array)
+{
+	oRAParams.iManagementObjectID.value = String(itemOM.id);
+	
+	RESULT.push({id: itemOM.id, parent_id: ((itemOM.HasProperty("parent_id") && itemOM.parent_id != null && itemOM.parent_id != '') ? itemOM.parent_id : sRootMOID), name: itemOM.name, ra_id: iRAID, ra_params: EncodeJson(oRAParams) });
+}
+ERROR += oRes.error;
+MESSAGE += oRes.errorText;
+if(MESSAGE != "")
+	MESSAGE += "\r\n";
+
+oRes = tools.call_code_library_method("libMain", "GetRemoteActions", [ iPersonID, sObjectParam, true ])
+
+for(itemOperation in oRes.result)
+{
+	//RESULT.push({id: itemOperation.id, parent_id: sRootActionID, name: itemOperation.ra_name, ra_id: itemOperation.ra_id, ra_params: itemOperation.ra_params });
+}
+
+/**/
+var sReqGroup = "for $elem in func_managers where $elem/catalog = 'group' and $elem/person_id = " + iPersonID + " return $elem";
+var arrGroup = tools.xquery(sReqGroup);
+oGroup = ArrayOptFirstElem(arrGroup);
+
+if(oGroup != undefined)
+{
+	docObject = tools.open_doc( oGroup.boss_type_id.Value );
+	docObjectTE = docObject.TopElem;
+	arrOperationIDs = ArraySelect(ArrayExtract(docObjectTE.operations, "OptInt(This.operation_id)"), "This != undefined")
+
+	isItemActive = false
+	for( iOperationID in arrOperationIDs )
+	{
+		if(isItemActive == false)
+		{
+			docOperation = tools.open_doc(iOperationID);
+			if(docOperation == undefined)
+				continue;
+
+			docOperationTE = docOperation.TopElem;
+			
+			if(docOperationTE != undefined && !tools_web.is_true(docOperationTE.operation_type.Value))
+			{
+				RESULT.push({id: sRootActionID, parent_id: null, name: sRootActionName, ra_id: null, ra_params: ""});
+				isItemActive = true
+			}
+		}
+	}
+	
+	if(isItemActive == true)
+	{
+		for( iOperationID in arrOperationIDs )
+		{
+			docOperation = tools.open_doc(iOperationID);
+			if(docOperation == undefined)
+				continue;
+
+			docOperationTE = docOperation.TopElem;
+			
+			if(docOperationTE != undefined && !tools_web.is_true(docOperationTE.operation_type.Value))
+			{
+				for(fldVWarElem in docOperationTE.wvars)
+				{
+					oRAParams.SetProperty( fldVWarElem.name.Value, {name: fldVWarElem.name.Value, type: fldVWarElem.type.Value, value: curParams.GetOptProperty(fldVWarElem.name.Value)});
+				}
+				RESULT.push({
+					id: docOperationTE.id.Value, 
+					parent_id: sRootActionID, 
+					name: docOperationTE.name.Value, 
+					ra_id: docOperationTE.remote_action_id.Value, 
+					ra_params: EncodeJson(oRAParams)
+				});
+			}
+		}
+	}
+}
+/**/
+
+ERROR += oRes.error;
+MESSAGE += oRes.errorText;
+
+//------------------------------------------------------------------------------------------------------------------------------
+// Applications
+
+iWebModeID = OptInt(iWebModeID, null);
+if(iWebModeID == null)
+{
+	iWebModeID = OptInt(sWebMode, null);
+	if(iWebModeID == null)
+	{
+		if(sWebMode == "")
+			sWebMode = curMode;
+		iWebModeID = ArrayOptFirstElem(tools.xquery("for $elem in web_modes where $elem/code=" + XQueryLiteral(sWebMode) + " return $elem"), {id: null}).id;
+	}
+}
+
+oRes = tools.call_code_library_method("libApplication", "GetReachableApplications", [ iWebModeID,  curUserID ]);
+
+if ( ArrayOptFirstElem( oRes.array ) != undefined)
+{
+	RESULT.push( {id: sRootAppID, parent_id: null, name: sRootAppName, ra_id: null, ra_params: ""} );
+}
+
+var catApplicationRemoteAction = ArrayOptFirstElem(tools.xquery("for $elem in remote_actions where $elem/code = 'RedirectURL' return $elem"));
+
+if( catApplicationRemoteAction != undefined )
+{
+	iAppRAID = catApplicationRemoteAction.id.Value;
+}
+
+for( itemApp in oRes.array )
+{
+	oAppRAParams.sURL = { name: "sURL", type: "string", value: itemApp.link }
+	oAppRAParams.bNewWindow = { name: "bNewWindow", type: "bool", value: true }
+	RESULT.push({id: itemApp.id, parent_id: sRootAppID, name: itemApp.name, ra_id: iAppRAID, ra_params: EncodeJson(oAppRAParams) });
+}
+
+
+ERROR += oRes.error;
+MESSAGE += oRes.errorText;
+
+//------------------------------------------------------------------------------------------------------------------------------
+
+//alert("RemoteCollection: GetUniManagementObjectsNActions: RESULT: " + EncodeJson(RESULT))
+
+if(ERROR != 0) alert("RemoteCollection: GetUniManagementObjectsNActions: " + MESSAGE)

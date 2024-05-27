@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_course_module_report>
+	<error TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<report_name TYPE="string" DEFAULT="course_module_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+	<course_id TYPE="integer" FOREIGN-ARRAY="courses"/>
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+	
+	<part_id TYPE="string"/>
+	
+	<learnings>
+		<learning MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			
+			<course_start_usage_date TYPE="date"/>
+			<start_usage_date TYPE="date"/>
+			
+			<score TYPE="real"/>
+			<state_id TYPE="integer" NOT-NULL="1" DEFAULT="0" FOREIGN-ARRAY="common.learning_states"/>
+			
+			<max_score TYPE="real"/>
+			<per_cent TYPE="real" NOT-NULL="1"/>
+			
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+			<person_fullname TYPE="string"/>
+			<person_code TYPE="string"/>
+			<person_position_name TYPE="string"/>
+			<person_subdivision_name TYPE="string"/>
+			<person_list_staff TYPE="string"/>	
+			
+			<interactions>
+				<lines>
+					<line MULTIPLE="1" PRIMARY-KEY="interaction_id">
+						<INHERIT TYPE="interaction_base"/>
+					</line>
+				</lines>
+			</interactions>
+		</learning>
+	</learnings>
+	
+	<interactions>
+		<interaction MULTIPLE="1" PRIMARY-KEY="interaction_id">
+			<interaction_id TYPE="string"/>
+		</interaction>
+	</interactions>
+	
+	<course_obj TYPE="variant"/>
+	
+	
+	<disp_parts TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<disp_learning_type TYPE="string" NOT-NULL="1" DEFAULT="learnings"/>
+	
+	<is_create TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			row_list_field.Clear();
+			row_key_field = '.id';				
+			rowsArray = Array();
+			rowsArrayCounter = 0;
+			for ( _row in rows.Object )
+			{
+					rowsArray[ rowsArrayCounter ] = _row.Env.ListElem.person_id;
+					rowsArrayCounter++;
+			}
+			rows = ArraySelectDistinct( QueryCatalogByKeys( 'collaborators', 'id', rowsArray ), 'id')	;
+			_num = ArrayCount( rows.Object );
+			
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+			if ( _num == 0 )
+			{   
+			Screen.MsgBox( ms_tools.get_const('u0mnmz31kn'), ms_tools.get_const('7ey6j94yku'), 'warning');
+				Cancel();
+			}
+			
+			return _num;
+	"/>
+</view_course_module_report>
+
+</SPXML-INLINE-FORM>

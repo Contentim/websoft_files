@@ -1,0 +1,622 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>0fcdllygtt</id>
+		<create_date>2023-03-06T17:14:53+00:00</create_date>
+		<server_version>2023.1.595 (2023-02-16)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x59BF69CB53D82138</id>
+			<code>adpts_8</code>
+			<name>Уведомление наставнику о том, что срок исполнения задания вскором времени истечет</name>
+			<subject>Срок исполнения задания вскором времени истечет</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В рамках программы адаптации сотруднику &lt;%=objDocSec.person_id.sd.fullname%&gt; необходимо выполнить задание "&lt;%=_task.name%&gt;".&#10;Дата исполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;.&#10;Ссылка на программу: &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:57:50+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x59BF699D0B737253</id>
+			<code>adpts_7</code>
+			<name>Уведомление сотруднику о том, что срок исполнения задания вскором времени истечет</name>
+			<subject>Срок исполнения задания вскором времени истечет</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Необходимо выполнить задание "&lt;%=_task.name%&gt;" в рамках программы адаптации.&#10;Дата исполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;.&#10;Ссылка на программу: &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:57:41+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x59BF69CC6B5B6559</id>
+			<code>adpts_9</code>
+			<name>Уведомление администратору о том, что срок исполнения задания вскором времени истечет</name>
+			<subject>Срок исполнения задания  вскором времени истечет</subject>
+			<body>&lt;%&#10;// objDoc - карточка администратора&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В рамках программы адаптации сотруднику &lt;%=objDocSec.person_id.sd.fullname%&gt; необходимо выполнить задание "&lt;%=_task.name%&gt;".&#10;Дата исполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;.&#10;Ссылка на программу: &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:57:21+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x5B4478DD0F6438C4</id>
+			<code>adpts_10</code>
+			<name>Уведомление сотруднику о приближении срока окончания программы адаптации</name>
+			<subject>Приближается срок окончании программы адаптации</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваша прорамма адптации заканчивается &lt;%=StrDate(objDocSec.plan_readiness_date,false,false)%&gt;.&#10;Ссылка на программу &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:44:15+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x5B447ADA694814F4</id>
+			<code>adpts_11</code>
+			<name>Уведомление руководителю о приближении срока окончания программы адаптации</name>
+			<subject>Заканчивается программа адаптации сотрудника &lt;%=objDocSec.person_id.sd.fullname%&gt;</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Программа адаптации сотрудника &lt;%=objDocSec.person_id.sd.fullname%&gt; заканчивается &lt;%=DateNewTime(objDocSec.plan_readiness_date)%&gt;.&#10;Ссылка на программу &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:48:54+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x59BF68F641584B98</id>
+			<code>adpts_4</code>
+			<name>Уведомление сотруднику о необходимости выполнить задание</name>
+			<subject>Необходимо выполнить задание в рамках программы адаптации</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Необходимо выполнить задание "&lt;%=_task.name%&gt;" в рамках выполнения программы адаптации.&#10;Срок исполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;.&#10;Ссылка на программу: &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:56:06+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x59BF696E31866AB6</id>
+			<code>adpts_5</code>
+			<name>Уведомление наставнику о необходимости выполнить задание</name>
+			<subject>Необходимо выполнить задание в рамках программы адаптации сотрудника &lt;%=objDocSec.person_id.sd.fullname%&gt;</subject>
+			<body>&lt;%&#10;// objDoc - карточка сотрудника&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В рамках программы адаптации сотруднику &lt;%=objDocSec.person_id.sd.fullname%&gt; необходимо выполнить задание "&lt;%=_task.name%&gt;"&#10;Срок исполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;.&#10;Ссылка на программу &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T16:55:56+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+		<notification_template>
+			<id>0x59BF696F4A0A23BB</id>
+			<code>adpts_6</code>
+			<name>Уведомление администратору о необходимости выполнить задание</name>
+			<subject>Необходимо выполнить задание в рамках выполнения программы адаптации сотрудника &lt;%=objDocSec.person_id.sd.fullname%&gt;.</subject>
+			<body>&lt;%&#10;// objDoc - карточка администратора&#10;// objDocSec - карточка назначенной программы адаптации (career_reserve)&#10;// Text - id текущей задачи&#10;_task = ArrayOptFind(objDocSec.tasks, "This.id == "+CodeLiteral(Text)); // объект текущей задачи&#10;// teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Необходимо выполнить задание "&lt;%=_task.name%&gt;" в рамках программы адаптации сотрудника &lt;%=objDocSec.person_id.sd.fullname%&gt;.&#10;Дата выполнения задачи: &lt;%=DateNewTime(_task.plan_date)%&gt;&#10;Ссылка на программу &lt;%=(global_settings.settings.portal_base_url+ '/view_doc.html?mode=career_reserve&amp;object_id='+objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T09:34:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T17:11:32+00:00</date>
+				</modification>
+			</doc_info>
+		</notification_template>
+	</notification_templates>
+	<server_agents>
+		<server_agent>
+			<id>0x59BF52910D3C38C3</id>
+			<code>adpts_adaptation_notification</code>
+			<name>Агент уведомлений о планируемых задачах</name>
+			<trigger_type>never</trigger_type>
+			<period>1</period>
+			<start_time>00:00</start_time>
+			<finish_time>24:00</finish_time>
+			<all_day>1</all_day>
+			<start_day>1</start_day>
+			<start_week_day>1</start_week_day>
+			<last_run_date>2023-03-06T16:55:19+00:00</last_run_date>
+			<type>code</type>
+			<wvars>
+				<wvar>
+					<name>send_user</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять уведомления пользователю</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>send_manager</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять уведомления руководителю</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>send_admin</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять уведомления администратору</description>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>user_warning</name>
+					<parent_wvar_name>send_user</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять по предстоящим задачам</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>user_warning_template_id</name>
+					<parent_wvar_name>user_warning</parent_wvar_name>
+					<value>6467004228513628715</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>user_warning_days</name>
+					<parent_wvar_name>user_warning</parent_wvar_name>
+					<value>3</value>
+					<type>integer</type>
+					<description>Число дней до события, когда отправлять уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>user_error</name>
+					<parent_wvar_name>send_user</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять о просрочке</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>user_error_template_id</name>
+					<parent_wvar_name>user_error</parent_wvar_name>
+					<value>6467004251008270663</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>manager_warning</name>
+					<parent_wvar_name>send_manager</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять по предстоящим задачам</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>manager_warning_template_id</name>
+					<parent_wvar_name>manager_warning</parent_wvar_name>
+					<value>6467004237498041932</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>manager_warning_days</name>
+					<parent_wvar_name>manager_warning</parent_wvar_name>
+					<value>3</value>
+					<type>integer</type>
+					<description>Число дней до события, когда отправлять уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>manager_error</name>
+					<parent_wvar_name>send_manager</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять о просрочке</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>manager_error_template_id</name>
+					<parent_wvar_name>manager_error</parent_wvar_name>
+					<value>6467004259905919255</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип увеломления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>admin_warning</name>
+					<parent_wvar_name>send_admin</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Отправлять по предстоящим задачам</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>admin_warning_template_id</name>
+					<parent_wvar_name>admin_warning</parent_wvar_name>
+					<value>6467004246399139299</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>admin_warning_days</name>
+					<parent_wvar_name>admin_warning</parent_wvar_name>
+					<value>3</value>
+					<type>integer</type>
+					<description>Число дней до события, когда отправлять уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>admin_error</name>
+					<parent_wvar_name>send_admin</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять о просрочке</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>admin_error_template_id</name>
+					<parent_wvar_name>admin_error</parent_wvar_name>
+					<value>6467004264535164714</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип увеломления</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>admin_group_id</name>
+					<parent_wvar_name>send_admin</parent_wvar_name>
+					<value>6548698659903140551</value>
+					<type>foreign_elem</type>
+					<catalog>group</catalog>
+					<description>Группа администраторов адаптации</description>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>user_error_days</name>
+					<parent_wvar_name>user_error</parent_wvar_name>
+					<value>2</value>
+					<type>integer</type>
+					<description>Число дней до даты завершения задания, за которое отправляется уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>manager_error_days</name>
+					<parent_wvar_name>manager_error</parent_wvar_name>
+					<value>2</value>
+					<type>integer</type>
+					<description>Число дней до даты завершения задания, за которое отправляется уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>admin_error_days</name>
+					<parent_wvar_name>admin_error</parent_wvar_name>
+					<value>2</value>
+					<type>integer</type>
+					<description>Число дней до даты завершения задания, за которое отправляется уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>user_end</name>
+					<parent_wvar_name>send_user</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять сотрудника об окончании срока адаптации</description>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>user_end_template_id</name>
+					<parent_wvar_name>user_end</parent_wvar_name>
+					<value>6576515532540115095</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления об окончании срока адаптации</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>user_end_days</name>
+					<parent_wvar_name>user_end</parent_wvar_name>
+					<value>10</value>
+					<type>integer</type>
+					<description>Число дней до события, когда отправлять уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>manager_end</name>
+					<parent_wvar_name>send_manager</parent_wvar_name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Уведомлять сотрудника об окончании срока адаптации</description>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+				<wvar>
+					<name>manager_end_template_id</name>
+					<parent_wvar_name>manager_end</parent_wvar_name>
+					<value>6576516875265269777</value>
+					<type>foreign_elem</type>
+					<catalog>notification</catalog>
+					<description>Тип уведомления об окончании срока адаптации</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>manager_end_days</name>
+					<parent_wvar_name>manager_end</parent_wvar_name>
+					<value>10</value>
+					<type>integer</type>
+					<description>Число дней до события, когда отправлять уведомление</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+			</wvars>
+			<exec_code>
+				<code_text>_adpats = XQuery("for $obj in career_reserves where $obj/status='active' or $obj/status='plan' return $obj");&#10;&#10;_is_user =  tools_web.is_true(Param.send_user);&#10;_is_user_warning =  tools_web.is_true(Param.user_warning);&#10;_user_warning_template_id = OptInt(Param.user_warning_template_id,0);&#10;_user_warning_days = OptInt(Param.user_warning_days,0);&#10;if (!_is_user || _user_warning_template_id==0)&#10;&#9;_is_user_warning = false;&#10;&#10;_is_user_error =  tools_web.is_true(Param.user_error);&#10;_user_error_template_id = OptInt(Param.user_error_template_id,0);&#10;_user_error_days = OptInt(Param.user_error_days,0);&#10;if (!_is_user || _user_error_template_id==0)&#10;&#9;_is_user_error = false;&#10;&#10;_is_user_end =  tools_web.is_true(Param.user_end);&#10;_user_end_template_id = OptInt(Param.user_end_template_id,0);&#10;_user_end_days = OptInt(Param.user_end_days,0);&#10;if (!_is_user || _user_end_template_id==0)&#10;&#9;_is_user_end = false;&#10;&#10;_is_manager =  tools_web.is_true(Param.send_manager);&#10;_is_manager_warning =  tools_web.is_true(Param.manager_warning);&#10;_manager_warning_template_id = OptInt(Param.manager_warning_template_id,0);&#10;_manager_warning_days = OptInt(Param.manager_warning_days,0);&#10;if (!_is_manager || _manager_warning_template_id==0)&#10;&#9;_is_manager_warning = false;&#10;&#10;_is_manager_error =  tools_web.is_true(Param.manager_error);&#10;_manager_error_template_id = OptInt(Param.manager_error_template_id,0);&#10;_manager_error_days = OptInt(Param.manager_error_days,0);&#10;if (!_is_manager || _manager_error_template_id==0)&#10;&#9;_is_manager_error = false;&#10;&#10;_is_manager_end =  tools_web.is_true(Param.manager_end);&#10;_manager_end_template_id = OptInt(Param.manager_end_template_id,0);&#10;_manager_end_days = OptInt(Param.manager_end_days,0);&#10;if (!_is_manager || _manager_end_template_id==0)&#10;&#9;_is_manager_end = false;&#10;&#10;_is_admin =  tools_web.is_true(Param.send_admin);&#10;if (_is_admin)&#10;{&#10;&#9;_admins = ArraySelectAll(XQuery("for $obj in group_collaborators where $obj/group_id="+OptInt(Param.admin_group_id,0)+" return $obj"));&#10;&#9;if (ArrayOptFirstElem(_admins)==undefined)&#10;&#9;&#9;_is_admin = false;&#10;}&#10;_is_admin_warning =  tools_web.is_true(Param.admin_warning);&#10;_admin_warning_template_id = OptInt(Param.admin_warning_template_id,0);&#10;_admin_warning_days = OptInt(Param.admin_warning_days,0);&#10;if (!_is_admin || _admin_warning_template_id==0)&#10;&#9;_is_admin_warning = false;&#10;&#10;_is_admin_error =  tools_web.is_true(Param.admin_error);&#10;_admin_error_template_id = OptInt(Param.admin_error_template_id,0);&#10;_admin_error_days = OptInt(Param.admin_error_days,0);&#10;if (!_is_admin || _admin_error_template_id==0)&#10;&#9;_is_admin_error = false;&#10;&#10;for (_a in _adpats)&#10;{&#10;&#9;_doc = OpenDoc(UrlFromDocID(_a.id)).TopElem;&#10;&#10;&#9;for (_t in _doc.tasks)&#10;&#9;{&#10;&#9;&#9;if (_t.start_date.HasValue &amp;&amp; (_t.status=="plan" || _t.status=="active"))&#10;&#9;&#9;{&#10;&#9;&#9;&#9;// Число дней до события, когда отправлять уведомление - user&#10;&#9;&#9;&#9;if (_is_user_warning &amp;&amp; DateNewTime(_t.start_date) == DateNewTime(tools.AdjustDate(Date(), _user_warning_days)) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;tools.create_notification(_user_warning_template_id, _doc.person_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;&#10;&#9;&#9;&#9;// Число дней до события, когда отправлять уведомление - manager&#10;&#9;&#9;&#9;if (_is_manager_warning &amp;&amp; DateNewTime(_t.start_date)==DateNewTime(tools.AdjustDate(Date(), _manager_warning_days)) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;_tutor_id = OptInt(_t.tutor_id,0);&#10;&#9;&#9;&#9;&#9;if (_tutor_id==0)&#10;&#9;&#9;&#9;&#9;&#9;_tutor_id = OptInt(ArrayOptFirstElem(_doc.tutors,({"person_id": 0})).person_id,0);&#10;&#9;&#9;&#9;&#9;if (_tutor_id==0)&#10;&#9;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;&#9;_tutor = tools.get_uni_user_boss(_doc.person_id);&#10;&#9;&#9;&#9;&#9;&#9;if (_tutor!=undefined)&#10;&#9;&#9;&#9;&#9;&#9;&#9;_tutor_id = _tutor.id;&#10;&#9;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;&#9;if (_tutor_id&gt;0)&#10;&#9;&#9;&#9;&#9;&#9;tools.create_notification(_manager_warning_template_id, _tutor_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;// Число дней до события, когда отправлять уведомление - admin&#10;&#9;&#9;&#9;if (_is_admin_warning &amp;&amp; DateNewTime(_t.start_date)==DateNewTime(tools.AdjustDate(Date(), _admin_warning_days)) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;for (_c in _admins)&#10;&#9;&#9;&#9;&#9;&#9;tools.create_notification(_admin_warning_template_id, _c.collaborator_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;}&#10;&#10;&#9;&#9;if (_t.plan_date.HasValue &amp;&amp; (_t.status=="plan" || _t.status=="active"))&#10;&#9;&#9;{ &#10;&#9;&#9;&#9;// Число дней до даты завершения задания, за которое отправляется уведомление // _user_error_days&#10;&#9;&#9;&#9;if (_is_user_error &amp;&amp; DateNewTime(_t.plan_date)&gt;DateNewTime(Date()) &amp;&amp; DateNewTime(_t.plan_date)&lt;=tools.AdjustDate(DateNewTime(Date()), _user_error_days) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;tools.create_notification(_user_error_template_id, _doc.person_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;&#10;&#9;&#9;&#9;// Число дней до даты завершения задания, за которое отправляется уведомление // _manager_error_days&#10;&#9;&#9;&#9;if (_is_manager_error &amp;&amp; DateNewTime(_t.plan_date)&gt;DateNewTime(Date()) &amp;&amp; DateNewTime(_t.plan_date)&lt;=tools.AdjustDate(DateNewTime(Date()), _manager_error_days) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;_tutor_id = OptInt(_t.tutor_id,0);&#10;&#9;&#9;&#9;&#9;if (_tutor_id==0)&#10;&#9;&#9;&#9;&#9;&#9;_tutor_id = OptInt(ArrayOptFirstElem(_doc.tutors,({"person_id": 0})).person_id,0);&#10;&#9;&#9;&#9;&#9;if (_tutor_id==0)&#10;&#9;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;&#9;_tutor = tools.get_uni_user_boss(_doc.person_id);&#10;&#9;&#9;&#9;&#9;&#9;if (_tutor!=undefined)&#10;&#9;&#9;&#9;&#9;&#9;&#9;_tutor_id = _tutor.id;&#10;&#9;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;&#9;if (_tutor_id&gt;0)&#10;&#9;&#9;&#9;&#9;&#9;tools.create_notification(_manager_error_template_id, _tutor_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;&#9;&#10;&#9;&#9;&#9;// Число дней до даты завершения задания, за которое отправляется уведомление // _admin_error_days&#10;&#9;&#9;&#9;if (_is_admin_error &amp;&amp; DateNewTime(_t.plan_date)&gt;DateNewTime(Date()) &amp;&amp; DateNewTime(_t.plan_date)&lt;=tools.AdjustDate(DateNewTime(Date()), _admin_error_days) )&#10;&#9;&#9;&#9;{&#10;&#9;&#9;&#9;&#9;for (_c in _admins)&#10;&#9;&#9;&#9;&#9;&#9;tools.create_notification(_admin_error_template_id, _c.collaborator_id , String(_t.id), _a.id);&#10;&#9;&#9;&#9;}&#10;&#9;&#9;}&#10;&#9;}&#10;&#10;&#9;// Число дней до события, когда отправлять уведомление&#10;&#9;if (_is_user_end &amp;&amp; DateNewTime(_doc.plan_readiness_date)==DateNewTime(tools.AdjustDate(Date(), _user_end_days)) )&#10;&#9;{&#10;&#9;&#9;tools.create_notification(_user_end_template_id, _doc.person_id , "", _a.id);&#10;&#9;}&#10;&#9;&#10;&#9;// Число дней до события, когда отправлять уведомление&#10;&#9;if (_is_manager_end &amp;&amp; DateNewTime(_doc.plan_readiness_date)==DateNewTime(tools.AdjustDate(Date(), _manager_end_days)) )&#10;&#9;{&#10;&#9;&#9;tools.create_notification(_manager_end_template_id, _doc.person_id , "", _a.id);&#10;&#9;}&#10;&#10;}&#10;</code_text>
+			</exec_code>
+			<run_code><![CDATA[_adpats = XQuery("for $obj in career_reserves where $obj/status='active' or $obj/status='plan' return $obj");
+
+_is_user =  tools_web.is_true(Param.send_user);
+_is_user_warning =  tools_web.is_true(Param.user_warning);
+_user_warning_template_id = OptInt(Param.user_warning_template_id,0);
+_user_warning_days = OptInt(Param.user_warning_days,0);
+if (!_is_user || _user_warning_template_id==0)
+	_is_user_warning = false;
+
+_is_user_error =  tools_web.is_true(Param.user_error);
+_user_error_template_id = OptInt(Param.user_error_template_id,0);
+_user_error_days = OptInt(Param.user_error_days,0);
+if (!_is_user || _user_error_template_id==0)
+	_is_user_error = false;
+
+_is_user_end =  tools_web.is_true(Param.user_end);
+_user_end_template_id = OptInt(Param.user_end_template_id,0);
+_user_end_days = OptInt(Param.user_end_days,0);
+if (!_is_user || _user_end_template_id==0)
+	_is_user_end = false;
+
+_is_manager =  tools_web.is_true(Param.send_manager);
+_is_manager_warning =  tools_web.is_true(Param.manager_warning);
+_manager_warning_template_id = OptInt(Param.manager_warning_template_id,0);
+_manager_warning_days = OptInt(Param.manager_warning_days,0);
+if (!_is_manager || _manager_warning_template_id==0)
+	_is_manager_warning = false;
+
+_is_manager_error =  tools_web.is_true(Param.manager_error);
+_manager_error_template_id = OptInt(Param.manager_error_template_id,0);
+_manager_error_days = OptInt(Param.manager_error_days,0);
+if (!_is_manager || _manager_error_template_id==0)
+	_is_manager_error = false;
+
+_is_manager_end =  tools_web.is_true(Param.manager_end);
+_manager_end_template_id = OptInt(Param.manager_end_template_id,0);
+_manager_end_days = OptInt(Param.manager_end_days,0);
+if (!_is_manager || _manager_end_template_id==0)
+	_is_manager_end = false;
+
+_is_admin =  tools_web.is_true(Param.send_admin);
+if (_is_admin)
+{
+	_admins = ArraySelectAll(XQuery("for $obj in group_collaborators where $obj/group_id="+OptInt(Param.admin_group_id,0)+" return $obj"));
+	if (ArrayOptFirstElem(_admins)==undefined)
+		_is_admin = false;
+}
+_is_admin_warning =  tools_web.is_true(Param.admin_warning);
+_admin_warning_template_id = OptInt(Param.admin_warning_template_id,0);
+_admin_warning_days = OptInt(Param.admin_warning_days,0);
+if (!_is_admin || _admin_warning_template_id==0)
+	_is_admin_warning = false;
+
+_is_admin_error =  tools_web.is_true(Param.admin_error);
+_admin_error_template_id = OptInt(Param.admin_error_template_id,0);
+_admin_error_days = OptInt(Param.admin_error_days,0);
+if (!_is_admin || _admin_error_template_id==0)
+	_is_admin_error = false;
+
+for (_a in _adpats)
+{
+	_doc = OpenDoc(UrlFromDocID(_a.id)).TopElem;
+
+	for (_t in _doc.tasks)
+	{
+		if (_t.start_date.HasValue && (_t.status=="plan" || _t.status=="active"))
+		{
+			// Число дней до события, когда отправлять уведомление - user
+			if (_is_user_warning && DateNewTime(_t.start_date) == DateNewTime(tools.AdjustDate(Date(), _user_warning_days)) )
+			{
+				tools.create_notification(_user_warning_template_id, _doc.person_id , String(_t.id), _a.id);
+			}
+			
+			// Число дней до события, когда отправлять уведомление - manager
+			if (_is_manager_warning && DateNewTime(_t.start_date)==DateNewTime(tools.AdjustDate(Date(), _manager_warning_days)) )
+			{
+				_tutor_id = OptInt(_t.tutor_id,0);
+				if (_tutor_id==0)
+					_tutor_id = OptInt(ArrayOptFirstElem(_doc.tutors,({"person_id": 0})).person_id,0);
+				if (_tutor_id==0)
+				{
+					_tutor = tools.get_uni_user_boss(_doc.person_id);
+					if (_tutor!=undefined)
+						_tutor_id = _tutor.id;
+				}
+				if (_tutor_id>0)
+					tools.create_notification(_manager_warning_template_id, _tutor_id , String(_t.id), _a.id);
+			}
+			// Число дней до события, когда отправлять уведомление - admin
+			if (_is_admin_warning && DateNewTime(_t.start_date)==DateNewTime(tools.AdjustDate(Date(), _admin_warning_days)) )
+			{
+				for (_c in _admins)
+					tools.create_notification(_admin_warning_template_id, _c.collaborator_id , String(_t.id), _a.id);
+			}
+		}
+
+		if (_t.plan_date.HasValue && (_t.status=="plan" || _t.status=="active"))
+		{ 
+			// Число дней до даты завершения задания, за которое отправляется уведомление // _user_error_days
+			if (_is_user_error && DateNewTime(_t.plan_date)>DateNewTime(Date()) && DateNewTime(_t.plan_date)<=tools.AdjustDate(DateNewTime(Date()), _user_error_days) )
+			{
+				tools.create_notification(_user_error_template_id, _doc.person_id , String(_t.id), _a.id);
+			}
+			
+			// Число дней до даты завершения задания, за которое отправляется уведомление // _manager_error_days
+			if (_is_manager_error && DateNewTime(_t.plan_date)>DateNewTime(Date()) && DateNewTime(_t.plan_date)<=tools.AdjustDate(DateNewTime(Date()), _manager_error_days) )
+			{
+				_tutor_id = OptInt(_t.tutor_id,0);
+				if (_tutor_id==0)
+					_tutor_id = OptInt(ArrayOptFirstElem(_doc.tutors,({"person_id": 0})).person_id,0);
+				if (_tutor_id==0)
+				{
+					_tutor = tools.get_uni_user_boss(_doc.person_id);
+					if (_tutor!=undefined)
+						_tutor_id = _tutor.id;
+				}
+				if (_tutor_id>0)
+					tools.create_notification(_manager_error_template_id, _tutor_id , String(_t.id), _a.id);
+			}
+			
+			// Число дней до даты завершения задания, за которое отправляется уведомление // _admin_error_days
+			if (_is_admin_error && DateNewTime(_t.plan_date)>DateNewTime(Date()) && DateNewTime(_t.plan_date)<=tools.AdjustDate(DateNewTime(Date()), _admin_error_days) )
+			{
+				for (_c in _admins)
+					tools.create_notification(_admin_error_template_id, _c.collaborator_id , String(_t.id), _a.id);
+			}
+		}
+	}
+
+	// Число дней до события, когда отправлять уведомление
+	if (_is_user_end && DateNewTime(_doc.plan_readiness_date)==DateNewTime(tools.AdjustDate(Date(), _user_end_days)) )
+	{
+		tools.create_notification(_user_end_template_id, _doc.person_id , "", _a.id);
+	}
+	
+	// Число дней до события, когда отправлять уведомление
+	if (_is_manager_end && DateNewTime(_doc.plan_readiness_date)==DateNewTime(tools.AdjustDate(Date(), _manager_end_days)) )
+	{
+		tools.create_notification(_manager_end_template_id, _doc.person_id , "", _a.id);
+	}
+
+}
+]]></run_code>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2017-09-18T07:58:57+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2023-03-06T17:13:45+00:00</date>
+				</modification>
+			</doc_info>
+		</server_agent>
+	</server_agents>
+</data>

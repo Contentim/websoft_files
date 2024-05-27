@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>lyo5lyyt1d</id>
+		<create_date>2022-11-08T18:04:11+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DB4</id>
+			<code>app_resource_std</code>
+			<name>Ресурс базы</name>
+			<form_name>app_resource_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_resource_std.xms</code_url>
+			</exec_code>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-08T17:35:13+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-08T17:35:13+00:00</date>
+				</modification>
+			</doc_info>
+			<changed>0</changed>
+			<is_std>0</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DB5</id>
+			<code>app_repositorium_std</code>
+			<name>Репозиторий</name>
+			<form_name>app_repositorium_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_repositorium_std.xms</code_url>
+			</exec_code>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-08T17:40:28+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-08T17:40:28+00:00</date>
+				</modification>
+			</doc_info>
+			<changed>0</changed>
+			<is_std>0</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

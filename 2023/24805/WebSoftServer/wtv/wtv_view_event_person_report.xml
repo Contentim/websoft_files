@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_event_person_report>
+
+	<report_name TYPE="string" DEFAULT="event_person_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+	<exported_file_link TYPE="string" TEMP="1"/>
+
+	<event_id TYPE="integer" FOREIGN-ARRAY="events"/>
+	<event_name TYPE="string"/>
+	
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<lector_id TYPE="integer" FOREIGN-ARRAY="lectors"/>
+	
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<person_fullname TYPE="string"/>
+	
+	<education_method_id TYPE="integer" FOREIGN-ARRAY="education_methods"/>	
+	<education_org_id TYPE="integer" FOREIGN-ARRAY="education_orgs"/>
+	
+	<catalog_name TYPE="string"/>
+	<view_type TYPE="string"/>
+	<view_type_env TYPE="variant"/>
+	<excel_file_url TYPE="string"/>
+	<disp_excel_file_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<is_web_client TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<INHERIT TYPE="view_columns_base"/>
+
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<data>
+		<INHERIT TYPE="table_data_base"/>
+	</data>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = QueryCatalogByKeys( 'collaborators', 'id', ArraySelectDistinct( ArrayExtract( Screen.FindItem( 'ViewGrid' ).SelRows, 'Int(Env.ListElem.cs.GetChildByKey(\'id\').t)' ) ) );
+			_num = ArrayCount( rows.Object );
+
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+
+			row_list_field.Clear();
+			return _num;
+	"/>
+
+	<set_sel_action PROPERTY="1" PARAM="List" PARAM="Screen" EXPR="
+		TopElem = Child(0).Parent;
+		iSelrowsCount = ArrayCount( List.SelRows );
+		TopElem.count_sel = iSelrowsCount;
+		Screen.FindItem( 'StatusPanel' ).Update();
+	"/>
+	
+	<disp_type_id TYPE="string" NOT-NULL="1" DEFAULT="all" FOREIGN-ARRAY="common.event_types"/>
+	<disp_status_id TYPE="string" NOT-NULL="1" DEFAULT="all" FOREIGN-ARRAY="common.event_status_types"/>
+
+</view_event_person_report>
+
+
+<OnInit PROPERTY="1" EXPR="
+	strRowImageUrl=''
+	strViewTypeName='event_person_report'
+	strRowImageUrl=view_types.GetChildByKey( strViewTypeName ).row_image_url
+	TopElem.catalog_name=strViewTypeName
+	TopElem.view_type=strViewTypeName
+	TopElem.AssignElem( view_types.GetChildByKey( TopElem.view_type ) );	
+	
+	ms_tools.init_view( TopElem );
+	TopElem.row_image_url=strRowImageUrl
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

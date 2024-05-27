@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>i9f4vhhvho</id>
+		<create_date>2022-04-12T17:25:21+00:00</create_date>
+		<server_version>2022.2.1.395 (2022-04-04)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x624EE39B47FC7854</id>
+			<code>RepositoriumChangeFile</code>
+			<name>Мои файлы / Переместить в репозиторий</name>
+			<type>eval</type>
+			<cache_vars>{"iRepositoriumID":{"name":"iRepositoriumID","type":"foreign_elem","silent":false},"sRepositoriumID":{"name":"sRepositoriumID","value":"","type":"string","silent":false},"iFileID":{"name":"iFileID","type":"foreign_elem","silent":false},"sFileID":{"name":"sFileID","value":"","type":"string","silent":false}}</cache_vars>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/RepositoriumChangeFile.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/RepositoriumChangeFile.bs</url>
+			<default_disp_evaluate>1</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>iRepositoriumID</name>
+					<type>foreign_elem</type>
+					<catalog>repositorium</catalog>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>sRepositoriumID</name>
+					<parent_wvar_name>iRepositoriumID</parent_wvar_name>
+					<type>string</type>
+					<description>ID репозитория</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>iFileID</name>
+					<type>foreign_elem</type>
+					<catalog>resource</catalog>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>sFileID</name>
+					<parent_wvar_name>iFileID</parent_wvar_name>
+					<type>string</type>
+					<description>ID файла</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+			</wvars>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+			<changed>0</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-04-11T18:28:15+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-04-12T17:21:55+00:00</date>
+				</modification>
+			</doc_info>
+		</remote_action>
+	</remote_actions>
+</data>

@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>binvqcpl40</id>
+		<create_date>2022-11-14T17:11:11+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x630F21C54DD83DD3</id>
+			<code>CompetenceBlockOpenFull</code>
+			<name VALUE="##'Открыть карточку блока компетенций (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>competence_block</catalog_name>
+			<link_name>competence_block</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/CompetenceBlockOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/CompetenceBlockOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83DD4</id>
+			<code>CompetenceProfileFamilyOpenFull</code>
+			<name VALUE="##'Открыть карточку семейства профилей (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>competence_profile_family</catalog_name>
+			<link_name>competence_profile_family</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/CompetenceProfileFamilyOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/CompetenceProfileFamilyOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83DD5</id>
+			<code>CompetenceProfileOpenFull</code>
+			<name VALUE="##'Открыть карточку профиля компетенций (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>competence_profile</catalog_name>
+			<link_name>competence_profile</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/CompetenceProfileOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/CompetenceProfileOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83DD6</id>
+			<code>CompetenceOpenFull</code>
+			<name VALUE="##'Открыть карточку компетенции (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>competence</catalog_name>
+			<link_name>competence</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/CompetenceOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/CompetenceOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83DD7</id>
+			<code>IndicatorOpenFull</code>
+			<name VALUE="##'Открыть карточку индикатора (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>indicator</catalog_name>
+			<link_name>indicator</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/IndicatorOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/IndicatorOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>0</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

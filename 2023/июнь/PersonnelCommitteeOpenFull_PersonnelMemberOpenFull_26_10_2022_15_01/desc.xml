@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<download_packages SPXML-FORM="x-local://wtv/wtv_form_download_packages.xmd">
+	<download_package>
+		<id>9dc88izylw</id>
+		<type>objects</type>
+		<url>update_2022_10_26_15_01_9dc88izylw.zip</url>
+		<package_date>2022-10-26T15:01:54+00:00</package_date>
+	</download_package>
+</download_packages>

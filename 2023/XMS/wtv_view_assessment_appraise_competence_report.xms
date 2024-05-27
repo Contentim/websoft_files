@@ -1,0 +1,521 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_assessment_appraise_competence_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/wtv_general_ass.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+
+<PANEL SUNKEN="1" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx">
+	
+	<LINE HORIZ-SPACING="16vpx">
+
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.assessment_appraise_id" titleExpr="ms_tools.get_const('ass_name') + ':'" catalogExpr="'assessment_appraise'" afterSelectAction="TopElem.person_id.Clear()" xqueryQualExpr="'$elem/is_model = false()'"/>
+
+		<WITH VAR="curAssessmentAppraise" EXPR="
+			var curAssessmentAppraise=null
+			if (Ps.assessment_appraise_id.HasValue&amp;&amp;Ps.assessment_appraise_id.OptForeignElem!=undefined)
+				curAssessmentAppraise= OpenDoc( UrlFromDocID(Ps.assessment_appraise_id)).TopElem
+			return curAssessmentAppraise
+			">
+			<ITEM TYPE="ms_object_selector" SOURCE="Ps.person_id" titleExpr="ms_tools.get_const('c_coll')" catalogExpr="'collaborator'" variantExpr="curAssessmentAppraise.auditorys" readOnlyExpr="curAssessmentAppraise==null"/>
+		</WITH>
+	</LINE>
+	<LINE HORIZ-SPACING="16vpx">
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.competence_profile_id" catalogExpr="'competence_profile'" />
+				
+		<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('3h5r0llv71')##" >
+			<EDIT SOURCE="Ps.test_weight" SET-VALUE-ACTION="
+					Ps.test_weight= OptReal(NewValue, null);" WIDTH="150vpx"/>
+		</TitleLabel>
+	</LINE>		
+</PANEL>
+<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+
+
+<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+	<ITEM TYPE="standard_report_actions_panel" />
+</PANEL>
+			
+
+<WITH VAR="_participants" EXPR="
+		try
+		{
+			return OpenDoc(UrlFromDocID(Ps.assessment_appraise_id)).TopElem.participants
+		}
+		catch(_fucked_)
+		{
+			return Array();
+		}
+">
+
+	<GRID NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+		<COLUMNS>
+			<COL WIDTH="30%"/>		
+			<COL WIDTH="5zr"/>
+			<COL WIDTH="4zr"/>
+			<COL WIDTH="12zr"/>
+			<COL WIDTH="4zr"/>
+			<COL WIDTH="12zr"/>
+			<COL WIDTH="4zr"/>
+			<LOOP EXPR="_participants" VAR="_participant">
+				<COL WIDTH="12zr"/>
+				<COL WIDTH="4zr"/>
+			</LOOP>
+			<COL WIDTH="6zr"/>
+		</COLUMNS>
+		<ROW HEADER="1">
+			<LABEL TITLE-EXPR="ms_tools.get_const('ass_competences')" ALIGN="center"/>
+			<LABEL TITLE-EXPR="ms_tools.get_const('wxz91gggpe')" ALIGN="center"/>
+			<LABEL TITLE="%" ALIGN="center"/>		
+			<LABEL TITLE-EXPR="ms_tools.get_const('a2gew825pj')" ALIGN="center"/>
+			<LABEL TITLE="%" ALIGN="center"/>
+			<LABEL TITLE-EXPR="ms_tools.get_const('c_test')" ALIGN="center"/>
+			<LABEL TITLE="%" ALIGN="center"/>
+			<LOOP EXPR="_participants" VAR="_participant">
+				<LABEL TITLE-EXPR="_participant.PrimaryKey.ForeignElem.name" ALIGN="center"/>
+				<LABEL TITLE="%" ALIGN="center"/>
+			</LOOP>		
+		</ROW>
+		
+		<LOOP EXPR="Ps.blocks" VAR="_block">
+			<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+				<LABEL TITLE-EXPR="_block.block_name" FLAT="1" BOLD="1"/>
+				<EDIT SOURCE="_block.global_results.previous_mark" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{			
+							_block.global_results.previous_mark = rValue
+						}"/>
+				<EDIT SOURCE="_block.global_results.previous_weight" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{			
+							_block.global_results.previous_weight = rValue
+						}"/>
+				<LABEL TITLE-EXPR="StrReal(_block.block_mark, 2)" FLAT="1" BOLD="1"/>
+				<EDIT SOURCE="_block.global_results.current_weight" BOLD="1" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{			
+							_block.global_results.current_weight = rValue
+						}"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LOOP EXPR="_participants" VAR="_participant">
+					<LABEL FLAT="1"/>
+					<LABEL FLAT="1"/>
+				</LOOP>
+			</ROW>
+			<LOOP EXPR="_block.competences" VAR="_competence">
+				<ROW>
+					<LABEL TITLE-EXPR="_competence.competence_name" FLAT="1"/>
+					<LABEL FLAT="1"/>
+					<LABEL FLAT="1"/>
+					<EDIT SOURCE="StrReal(_competence.competence_mark, 2)" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_competence.competence_mark = rValue
+						}
+						"/>		
+					<EDIT SOURCE=" _competence.competence_weight" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_competence.competence_weight = rValue
+						}
+						"/>		
+					<EDIT SOURCE="_competence.test_mark" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_competence.test_mark = rValue
+						}
+						"/>	
+					<EDIT SOURCE="(_competence.test_weight)" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_competence.test_weight = rValue
+						}
+						"/>	
+					<LOOP EXPR="_participants" VAR="_participant">					
+						<EDIT SOURCE="
+							_elem = _competence.statuses.ObtainChildByKey(_participant.PrimaryKey);					
+							return ( _elem.mark );
+						" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_elem = _competence.statuses.ObtainChildByKey(_participant.PrimaryKey);					
+							_elem.mark = rValue
+						}
+						"/>					
+						<EDIT SOURCE="
+								_elem = _competence.statuses.ObtainChildByKey(_participant.PrimaryKey);
+								return ( _elem.weight );
+						" SET-VALUE-ACTION="
+						try{rValue = Real(NewValue)}catch(ex){rValue = null}
+						if (rValue ==null)
+						{
+							Screen.MsgBox( ms_tools.get_const('vct_message1'), ms_tools.get_const('c_error'), 'error', 'ok' );
+						}
+						else
+						{
+							_elem = _competence.statuses.ObtainChildByKey(_participant.PrimaryKey);					
+							_elem.weight = rValue
+						}"/>
+					</LOOP>
+				</ROW>
+			</LOOP>
+			
+			<ROW BK-COLOR="250,245,245">
+				<LABEL TITLE-EXPR="ms_tools.get_const('thz3o8beh8') + ': ' + _block.global_results.result_mark" FLAT="1" ALIGN="right" BOLD="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>			
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LOOP EXPR="_participants" VAR="_participant">
+					<LABEL FLAT="1"/>
+					<LABEL FLAT="1"/>
+				</LOOP>
+			</ROW>
+					
+		</LOOP>
+				
+	</GRID>
+</WITH>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+	
+	try
+	{
+		curProfile = OpenDoc(UrlFromDocID(Ps.competence_profile_id)).TopElem;		
+	}
+	catch(_lazha_)
+	{
+		Screen.MsgBox( ms_tools.get_const('7af9m2md5k'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		return;
+	}
+	try
+	{
+		curAssessmentAppraise = OpenDoc(UrlFromDocID(Ps.assessment_appraise_id)).TopElem;
+	}
+	catch(_escho_lazha_)
+	{
+		Screen.MsgBox( ms_tools.get_const('mk6zdveust'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		return;
+	}
+	
+	
+	_startdate = curAssessmentAppraise.start_date;
+	_enddate =curAssessmentAppraise.end_date;
+
+//--------------------------------------------------------------	
+	
+function test_mark(COMPETENCE, PERSON_ID)	
+{
+
+	var assessments = Array();
+	_assessments_str = '';
+	i = 0;
+	for (_level in COMPETENCE.levels)
+	{
+		for (_assessment in _level.assessments)
+		{
+			if( !StrContains(_assessments_str, _assessment.assessment_id))
+			{
+			 assessments[i] = _assessment.assessment_id;
+			 _assessments_str = _assessments_str + _assessment.assessment_id + '^';
+			 i=i+1;
+			}
+		}	
+	}
+	
+	_m = 0;
+	_count = 0;	
+	for (_assessment_id in assessments)
+	{
+		_xquery = 'for $test_learning in test_learnings where $test_learning/assessment_id = ' + _assessment_id + ' and $test_learning/state_id = 2 and $test_learning/person_id = ' + PERSON_ID + ' return $test_learning';
+		
+		_test_learnings = XQuery( _xquery );
+		
+		for (_tl in _test_learnings)
+		{
+			if (_tl.last_usage_date != null &amp;&amp; DateNewTime(_tl.last_usage_date) &lt; DateNewTime(_enddate) &amp;&amp; DateNewTime(_tl.last_usage_date) &gt; DateNewTime(_startdate))
+			{
+				if (_tl.score != null )
+				{
+					_m = _m + _tl.score;
+					_count = _count + 1;
+				}
+			}
+		}			
+	}
+	
+	return (_count > 0 ? (_m / _count) : null );
+	
+}
+//------------------------------------------------------------------
+
+function comp_data( _pa_data_array)
+{		
+	for ( _pa_data in _pa_data_array )
+	{
+		try
+		{
+			curPA = OpenDoc(UrlFromDocID(_pa_data.id)).TopElem;
+		}
+		catch(_huina_)
+		{
+			continue;
+		}
+					
+		
+		for (_competence in curPA.competences)
+		{
+			
+			try
+			{
+				competenceDoc = OpenDoc(UrlFromDocID(_competence.competence_id)).TopElem;
+				_comp_weight = _competence.weight;
+				//_comp_weight = 100.0 / Real(ArrayCount(curPA.competences));
+			}
+			catch(_azztoy_)		
+			{
+				continue;
+			}
+			
+			
+			if (_comp_weight == null || _comp_weight == '') continue;
+			
+			_block_id = competenceDoc.competence_block_id;
+			if (_block_id != null)
+			{
+				_block = Ps.blocks.ObtainChildByKey(_block_id);
+				_block.block_name = _block_id.ForeignElem.name;
+			}	
+			else
+			{
+				_block = Ps.blocks.ObtainChildByKey(_block_id);
+				_block.block_name = '-';
+			}
+			
+			_comp = _block.competences.ObtainChildByKey(_competence.competence_id);
+			try
+			{
+				//_comp.competence_weight = curProfile.competences.GetChildByKey(_competence.competence_id).weight;
+				_comp.competence_weight = 100.0 / Real(ArrayCount(curProfile.competences));
+			}
+			catch(_figa_se_)
+			{}
+			
+			if (!_comp.competence_name.HasValue)
+				_comp.competence_name = competenceDoc.name;
+			//else
+				//_comp.competence_name = '???';
+			
+			if (_startdate != null &amp;&amp; _enddate != null )
+				_comp.test_mark = test_mark(competenceDoc, curPA.person_id);
+				
+			if (Ps.test_weight != null) _comp.test_weight = Ps.test_weight;
+
+			
+			_status = _comp.statuses.ObtainChildByKey(curPA.status);
+			
+			_status.weight = _comp_weight;
+			
+			try
+			{
+				_mark = competenceDoc.scales.GetChildByKey(_competence.mark);
+				
+				if (_mark.percent != null)
+					_status.mark = _status.mark + (_mark.percent / 100.0)
+				else
+					_status.mark = _status.mark + (_mark.ChildIndex + 1);
+				
+			}
+			catch(_fukin_mark_)
+			{
+				try
+				{
+					_status.mark = _status.mark + Real(_competence.mark);
+				}
+				catch(_really_fuckin_)
+				{
+					continue;
+				}
+			}
+			
+			
+			_status.count = _status.count + 1;
+			
+
+		}			
+	}
+
+
+	Screen.RunCommand('recalcBlocks');
+
+} 
+//--------------------------
+
+	Ps.blocks.Clear();
+	
+	_xquery = 'for $pa in pas';
+	_xquery = _xquery + ' where $pa/assessment_appraise_id = ' + Ps.assessment_appraise_id + ' and $pa/person_id = ' + Ps.person_id;
+						
+						
+	_pa_array = XQuery( _xquery + ' return $pa' );
+
+	comp_data( _pa_array );
+
+	//Ps.blocks.Sort( Ps.sort_type_id, '+' );
+	
+
+	
+"/>
+
+
+<COMMAND-HANDLER CMD="recalcBlocks" ACTION="
+	for (_block in Ps.blocks)
+	{	
+		_block.block_mark = 0.0;
+		for(_competence in _block.competences)
+		{
+			_overal_sum = 0.0;
+			for(_status in _competence.statuses)
+			{
+				if (_status.count > 0)
+				{
+					_status.mark = _status.mark / _status.count;
+					_status.count = 1;
+				}
+				_overal_sum = _overal_sum + (_status.mark * _status.weight / 100.0);
+			}
+			if (_competence.test_mark != null)
+				_overal_sum = _overal_sum + (_competence.test_mark * _competence.test_weight / 100.0);
+				
+			_competence.competence_mark = _overal_sum;
+			_block.block_mark = _block.block_mark + (_overal_sum * _competence.competence_weight / 100.0);
+			//_block.block_mark = _block.block_mark + (_overal_sum );
+			
+		}				
+					
+		try
+		{
+			_old_result = _block.global_results.previous_mark * _block.global_results.previous_weight / 100.0;
+		}
+		catch(_kosyak_)
+		{
+			_old_result = 0;
+		}
+		
+		try
+		{
+			_new_result = _block.block_mark * _block.global_results.current_weight / 100.0;
+		}
+		catch(_kosyak_)
+		{
+			_new_result = 0;
+		}
+		
+		
+		_block.global_results.result_mark = _old_result + _new_result;
+		
+		
+		
+		
+		
+		
+	}
+"/>
+
+
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl( 'x-local://templates/assessment_appraise_competence_report.html' );
+	_filemname = ObtainTempFile( '.xls' );		
+
+	PutUrlText( _filemname, _str );
+	ShellExecute( 'open', _filemname );
+"/>
+
+
+<COMMAND-HANDLER CMD="saveReportData" ACTION="
+fldAssApp=Ps.assessment_appraise_id.OptForeignElem;
+fldPerson=Ps.person_id.OptForeignElem;
+if (fldAssApp==undefined)
+{
+	Screen.MsgBox( ms_tools.get_const('cpp_err_ass_app_bad'), ms_tools.get_const('c_error'), 'error', 'ok' );
+}
+else if (fldPerson==undefined)
+{
+	Screen.MsgBox(ms_tools.get_const('sotrudniknenay'), ms_tools.get_const('c_error'), 'error', 'ok' );
+}
+else
+{
+	_url = Screen.AskFileSave( fldAssApp.name + ' (' + fldPerson.fullname + ') - report.xml', 'XML (*.xml)&#09;*.xml&#09;' + ms_tools.get_const('1d0p7epipp') + '&#09;*.*' );
+	PutUrlData( _url + ( UrlPathSuffix( _url ) == '' ? '.xml' : '' ), tools.xml_header() + Ps.Xml );
+}
+"/>
+
+<COMMAND-HANDLER CMD="loadReportData" ACTION="
+		_url = Screen.AskFileOpen( '', 'XML (*.xml)&#09;*.xml&#09;' + ms_tools.get_const('1d0p7epipp') + '&#09;*.*' );
+		if (FilePathExists(UrlToFilePath(_url)))
+		{
+			try
+			{
+				_val = OpenDoc( _url, 'form=x-local://wtv/wtv_form_assessment_appraise_competence_report.xmd' );		
+				Ps.AssignElem( _val.TopElem );
+			}
+			catch(ex)
+			{
+				Screen.MsgBox( ms_tools.get_const('oshibkaotkrytiya'), ms_tools.get_const('c_error'), 'error', 'ok' );
+			}
+		}
+		else
+		{
+			Screen.MsgBox( ms_tools.get_const('ioibk9xikl'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		}
+"/>
+
+
+
+
+</SPXML-SCREEN>

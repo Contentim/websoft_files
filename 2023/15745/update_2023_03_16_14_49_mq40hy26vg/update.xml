@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>mq40hy26vg</id>
+		<create_date>2023-03-16T14:49:14+00:00</create_date>
+		<server_version>2023.1.595 (2023-02-16)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x6396A13616611BE0</id>
+			<code>app_profile_std</code>
+			<name VALUE="##'Профили'##"/>
+			<form_name>app_profile_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_profile_std.xms</code_url>
+			</exec_code>
+			<changed>0</changed>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x6396A13616611BDE</id>
+			<code>app_statement_std</code>
+			<name VALUE="##'Сообщения учебных активностей'##"/>
+			<form_name>app_statement_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_statement_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x6396A13616611BDC</id>
+			<code>app_activity_state_std</code>
+			<name VALUE="##'Статус учебной активности'##"/>
+			<form_name>app_activity_state_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_activity_state_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x6396A13616611BDA</id>
+			<code>app_activity_std</code>
+			<name VALUE="##'Учебная активность'##"/>
+			<form_name>app_activity_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_activity_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x6396A13616611BD8</id>
+			<code>app_learning_storage_std</code>
+			<name VALUE="##'Хранилище учебных заведений'##"/>
+			<form_name>app_learning_storage_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_learning_storage_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

@@ -1,0 +1,36 @@
+<HTML xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<style>
+<!--
+.xl27
+	{mso-style-parent:style0;
+	mso-number-format:"\@";
+	vertical-align:top;
+	border:.5pt solid black;
+	mso-pattern:auto none;
+	white-space:normal;}
+	
+.x225
+	{mso-style-parent:style0;
+	mso-number-format:"\@";
+	vertical-align:top;
+	border:.5pt solid black;
+	background:#FFCC99;
+	mso-pattern:auto none;
+	white-space:normal;}	
+-->
+</style>
+
+</HEAD>
+<BODY>
+<TABLE BORDER="0" CELLPADDING="2" CELLSPACING="0">
+
+	<TR>
+		<TD align="right"><b>Мероприятие:</b></TD>
+		<TD align="left">
+Unknown object property: event_id
+(event_id,  Unknown source,   line 1)

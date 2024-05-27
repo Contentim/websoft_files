@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<UNIT NAME="ResList" SAMPLE="1">
+	<LIST NAME="ViewGrid" HEIGHT="100%" LOOP-EXPR="TopElem.disp_expense_items ? XmlArrayHier( TopElem.data.cost_centers ) : TopElem.data.cost_centers" HIER-EXPR="TopElem.disp_expense_items">
+		<ROW DELETE-ACTION="" BK-COLOR-EXPR="ListElem.level == 1 ? '240,240,250' : ''">
+			<COL WIDTH="100%" COL-TITLE="##ms_tools.get_const('u56wqbderi')##" TITLE-EXPR="ListElem.name"/>		
+			<COL WIDTH="15zr" COL-TITLE="##ms_tools.get_const('c_budget')##" TITLE-EXPR="StrReal( ListElem.plan, 2, true )" ALIGN="right" ORDER="plan"/>	
+			<COL WIDTH="15zr" COL-TITLE="##ms_tools.get_const('vkb_fact')##" TITLE-EXPR="StrReal( ListElem.fact, 2, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="fact"/>
+			<COL WIDTH="15zr" COL-TITLE="%" TITLE-EXPR="StrReal( ListElem.percent, 1 )" TEXT-COLOR-EXPR="ListElem.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="percent"/>
+			<COL WIDTH="15zr" COL-TITLE="##ms_tools.get_const('vbrb_remainder')##" TITLE-EXPR="StrReal( ListElem.delta, 1, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem.delta &lt; 0.0 ? '255,100,100 ' : ''" ORDER="delta"/>		
+		</ROW>
+	</LIST>
+</UNIT>
+
+<UNIT NAME="ResListWebClient" SAMPLE="1">
+	<LOOP EXPR="return [Random( 1, 1000000 )]" VAR="grid">
+		<LIST NAME="ViewGrid" HEIGHT="100%" HIER-EXPR="TopElem.disp_expense_items" >
+			<COLUMNS>
+				<COL WIDTH="100%" TITLE="##ms_tools.get_const('u56wqbderi')##"/>		
+				<COL WIDTH="15zr" TITLE="##ms_tools.get_const('c_budget')##" ORDER="plan"/>	
+				<COL WIDTH="15zr" TITLE="##ms_tools.get_const('vkb_fact')##" ORDER="fact"/>
+				<COL WIDTH="15zr" TITLE="%" ORDER="percent"/>
+				<COL WIDTH="15zr" TITLE="##ms_tools.get_const('vbrb_remainder')##"  ORDER="delta"/>
+			</COLUMNS>
+			<LOOP EXPR="TopElem.data.cost_centers" VAR="ListElem">
+				<ROW DELETE-ACTION="" BK-COLOR-EXPR="'240,240,250'" HIER-LEVEL-EXPR="0" HIER-EXPR="TopElem.disp_expense_items" HAS-HIER-CHILDREN-EXPR="false" EXPANDED-EXPR="true" IMAGE-URL="ico/budget_period.ico">
+					<COL TITLE-EXPR="ListElem.name"/>		
+					<COL TITLE-EXPR="StrReal( ListElem.plan, 2, true )" ALIGN="right" ORDER="plan"/>	
+					<COL TITLE-EXPR="StrReal( ListElem.fact, 2, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="fact"/>
+					<COL TITLE-EXPR="StrReal( ListElem.percent, 1 )" TEXT-COLOR-EXPR="ListElem.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="percent"/>
+					<COL TITLE-EXPR="StrReal( ListElem.delta, 1, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem.delta &lt; 0.0 ? '255,100,100 ' : ''" ORDER="delta"/>	
+				</ROW>
+				<IF EXPR="TopElem.disp_expense_items">
+					<LOOP EXPR="ListElem.cost_centers" VAR="ListElem2">
+						<ROW DELETE-ACTION="" HIER-LEVEL-EXPR="1">
+							<COL TITLE-EXPR="ListElem2.name"/>		
+							<COL TITLE-EXPR="StrReal( ListElem2.plan, 2, true )" ALIGN="right" ORDER="plan"/>	
+							<COL TITLE-EXPR="StrReal( ListElem2.fact, 2, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem2.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="fact"/>
+							<COL TITLE-EXPR="StrReal( ListElem2.percent, 1 )" TEXT-COLOR-EXPR="ListElem2.percent &gt; 100.0 ? '255,100,100 ' : ''" ORDER="percent"/>
+							<COL TITLE-EXPR="StrReal( ListElem2.delta, 1, true )" ALIGN="right" TEXT-COLOR-EXPR="ListElem2.delta &lt; 0.0 ? '255,100,100 ' : ''" ORDER="delta"/>	
+						</ROW>
+					</LOOP>
+				</IF>
+			</LOOP>
+		</LIST>
+	</LOOP>
+</UNIT>
+
+<PANEL SUNKEN="1" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx">
+	<LINE HORIZ-SPACING="16vpx">
+		<ITEM TYPE="ms_object_selector" SOURCE="Ps.budget_period_id" catalogExpr="'budget_period'"/>
+		<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('c_status')##" >
+			<COMBO SOURCE="TopElem.status_id" WIDTH="150vpx">
+				<COMBO-ENTRY TITLE="##'-' + ms_tools.get_const('f0j4vfoxrb') + '-'##" VALUE=""/>
+				<LOOP EXPR="common.event_status_types" VAR="ListElem">
+					<COMBO-ENTRY TITLE-EXPR="ListElem.name" VALUE-EXPR="ListElem.PrimaryKey"/>
+				</LOOP>
+			</COMBO>
+		</TitleLabel>
+	</LINE>
+</PANEL>
+<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+
+
+<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+	<ITEM TYPE="standard_report_actions_panel" />
+</PANEL>
+
+
+<PANEL SUNKEN="1">
+	<IF EXPR="System.IsWebClient">
+		<INHERIT TYPE="ResListWebClient"/>
+	</IF>
+	<ELSE>
+		<INHERIT TYPE="ResList"/>
+	</ELSE>
+</PANEL>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+	if ( ! TopElem.budget_period_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const('nit19dd3xi'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+	teParams = OpenNewDoc( 'x-local://wtv/wtv_form_func_params.xmd' ).TopElem;
+	teParams.budget_report.AssignElem( TopElem );
+
+	res = tools_report.budget_report(UrlEncode(teParams.Xml));
+	TopElem.data.Clear();
+	try
+	{
+		TopElem.data.LoadData( res );
+	}
+	catch(ex)
+	{
+	}
+"/>
+
+
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl( 'x-local://templates/budget_report.html' );
+	_filemname = ObtainTempFile( '.xls' );
+
+	PutUrlText( _filemname, _str );
+	ShellExecute( 'open', _filemname );
+"/>
+
+</SPXML-SCREEN>

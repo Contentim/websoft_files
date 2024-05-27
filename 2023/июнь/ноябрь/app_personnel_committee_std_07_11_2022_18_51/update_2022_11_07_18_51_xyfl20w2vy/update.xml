@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>xyfl20w2vy</id>
+		<create_date>2022-11-07T18:51:04+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DB0</id>
+			<code>app_personnel_committee_std</code>
+			<name>Кадровый комитет</name>
+			<form_name>app_personnel_committee_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_personnel_committee_std.xms</code_url>
+			</exec_code>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-07T17:41:14+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-11-07T17:41:14+00:00</date>
+				</modification>
+			</doc_info>
+			<changed>0</changed>
+			<is_std>0</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

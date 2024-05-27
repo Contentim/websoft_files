@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>m89w6j3aca</id>
+		<create_date>2022-10-26T14:27:58+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x6204582027ACFE9E</id>
+			<code>DeletePersonnelCommittee</code>
+			<name>Кадровый резерв / Кадровый комитет / Удаление кадрового комитета</name>
+			<type>eval</type>
+			<cache_vars>{"sPersonnelCommitteeID":{"name":"sPersonnelCommitteeID","value":"","type":"string","title":"","silent":false}}</cache_vars>
+			<catalog_name>personnel_committee</catalog_name>
+			<link_name>personnel_committee</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeletePersonnelCommittee.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeletePersonnelCommittee.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<wvars>
+				<wvar>
+					<name>sPersonnelCommitteeID</name>
+					<type>string</type>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+			</wvars>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+			<changed>1</changed>
+			<doc_info>
+				<creation>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-10-25T19:04:11+00:00</date>
+				</creation>
+				<modification>
+					<user_login>user1</user_login>
+					<user_id>0x5555555555555501</user_id>
+					<date>2022-10-25T19:04:11+00:00</date>
+				</modification>
+			</doc_info>
+			<role_id>0x61EE8E0C30032558</role_id>
+			<role_id>0x5ED4F87A34A66C31</role_id>
+		</remote_action>
+	</remote_actions>
+</data>

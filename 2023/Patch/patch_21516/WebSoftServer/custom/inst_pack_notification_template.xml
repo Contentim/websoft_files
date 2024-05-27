@@ -1,0 +1,1488 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>3b0v59o234</id>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA65</id>
+			<code>101</code>
+			<name VALUE="##ms_tools.get_const('zayavkasotrudni')##"/>
+			<subject VALUE="##ms_tools.get_const('zayavkasotrudni')##"/>
+			<body VALUE="##ms_tools.get_const('objdocpersonfu')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA66</id>
+			<code>102</code>
+			<name VALUE="##ms_tools.get_const('aktivaciyakursa')##"/>
+			<subject VALUE="##ms_tools.get_const('aktivaciyakursa')##"/>
+			<body VALUE="##ms_tools.get_const('aktivirovanele')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA67</id>
+			<code>103</code>
+			<name VALUE="##ms_tools.get_const('otkloneniezayav_3')##"/>
+			<subject VALUE="##ms_tools.get_const('otkloneniezayav_3')##"/>
+			<body VALUE="##ms_tools.get_const('zayavkaobjdocco')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA68</id>
+			<code>104</code>
+			<name VALUE="##ms_tools.get_const('oformlenschet')##"/>
+			<subject VALUE="##ms_tools.get_const('oformlenschet')##"/>
+			<body VALUE="##ms_tools.get_const('oformlenschetob')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA69</id>
+			<code>105</code>
+			<name VALUE="##ms_tools.get_const('podtverzhdenieo')##"/>
+			<subject VALUE="##ms_tools.get_const('podtverzhdenieo')##"/>
+			<body VALUE="##ms_tools.get_const('podtverzhdenaop')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6A</id>
+			<code>106</code>
+			<name VALUE="##ms_tools.get_const('samoregistraci')##"/>
+			<subject VALUE="##ms_tools.get_const('samoregistraci')##"/>
+			<body VALUE="##ms_tools.get_const('naportaledatez')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6B</id>
+			<code>107</code>
+			<name VALUE="##ms_tools.get_const('izmeneniestatu_1')##"/>
+			<subject VALUE="##ms_tools.get_const('izmeneniestatu_1')##"/>
+			<body VALUE="##ms_tools.get_const('datevamobjdoca')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6C</id>
+			<code>108</code>
+			<name VALUE="##ms_tools.get_const('novoesoobshenie_3')##"/>
+			<subject VALUE="##ms_tools.get_const('novoesoobshenie_3')##"/>
+			<body VALUE="##ms_tools.get_const('datenaforumeob')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6D</id>
+			<code>109</code>
+			<name VALUE="##ms_tools.get_const('uvedomlenieolo')##"/>
+			<subject VALUE="##ms_tools.get_const('uvedomlenieolo')##"/>
+			<body VALUE="##ms_tools.get_const('vashloginobjdoc')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA77</id>
+			<code>119</code>
+			<name VALUE="##'Уведомление о сбросе пароля'##"/>
+			<subject VALUE="##'Уведомление о сбросе пароля'##"/>
+			<body VALUE="##'Для сброса пароля перейдите по ссылке &lt;%=Text%>. Ссылка актуальна в течение непродолжительного времени. После смены пароля, сразу можно зайти на портал.'##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6E</id>
+			<code>110</code>
+			<name VALUE="##ms_tools.get_const('zavershenieelek')##"/>
+			<subject VALUE="##ms_tools.get_const('zavershenieelek')##"/>
+			<body VALUE="##ms_tools.get_const('datesotrudniko')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA6F</id>
+			<code>111</code>
+			<name VALUE="##ms_tools.get_const('vnesenievcherny')##"/>
+			<subject VALUE="##ms_tools.get_const('vyvnesenyvchern')##"/>
+			<body VALUE="##ms_tools.get_const('vyvnesenyvchern_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>112</code>
+			<name lang-ru:VALUE="##'Завершение оцениваемого теста сотрудником'##"/>
+			<subject lang-ru:VALUE="##'Завершение оцениваемого теста сотрудником'##"/>
+			<body lang-ru:VALUE="##'&lt;%=Date()%> сотрудник &lt;%=objDocSec.fullname%> завершил тест &quot;&lt;%=objDoc.assessment_id.ForeignElem.title%>&quot;. Вам необходимо оценить результат по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( \'expert_test\', objDocID, { part_code: objDoc.code.Value} ) )%>&#10;&lt;%=Text%>'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x0AAAAAAAAAAAAA70</id>
+		</notification_template>
+		<notification_template>
+			<code>113</code>
+			<name lang-ru:VALUE="##'Завершение оцениваемого теста экспертом'##"/>
+			<subject lang-ru:VALUE="##'Эксперт оценил тест, завершенный Вами'##"/>
+			<body lang-ru:VALUE="##'Эксперт оценил завершенный тест &quot;&lt;%=objDocSec.assessment_id.ForeignElem.title%>&quot;.&#10;&lt;%=Text%>'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x0AAAAAAAAAAAAA71</id>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA79</id>
+			<code>121</code>
+			<name VALUE="##ms_tools.get_const('prinyatazayavkan')##"/>
+			<subject VALUE="##ms_tools.get_const('prinyatazayavkan')##"/>
+			<body VALUE="##ms_tools.get_const('vybylivklyucheny_4')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7A</id>
+			<code>122</code>
+			<name VALUE="##ms_tools.get_const('otkloneniezayav')##"/>
+			<subject VALUE="##ms_tools.get_const('otkloneniezayav')##"/>
+			<body VALUE="##ms_tools.get_const('zayavkaobjdocco_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7B</id>
+			<code>123</code>
+			<name VALUE="##ms_tools.get_const('vybylivklyucheny')##"/>
+			<subject VALUE="##ms_tools.get_const('vybylivklyucheny')##"/>
+			<body VALUE="##ms_tools.get_const('vybylivklyucheny_7')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7C</id>
+			<code>124</code>
+			<name VALUE="##ms_tools.get_const('vybyliisklyuchen')##"/>
+			<subject VALUE="##ms_tools.get_const('vybyliisklyuchen')##"/>
+			<body VALUE="##ms_tools.get_const('vybyliisklyuchen_6')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7D</id>
+			<code>125</code>
+			<name VALUE="##ms_tools.get_const('podchinennyysot')##"/>
+			<subject VALUE="##ms_tools.get_const('podchinennyysot')##"/>
+			<body VALUE="##ms_tools.get_const('podchinennyysot_3')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA7E</id>
+			<code>126</code>
+			<name VALUE="##ms_tools.get_const('sotrudnikotmen')##"/>
+			<subject VALUE="##ms_tools.get_const('sotrudnikotmen_2')##"/>
+			<body VALUE="##ms_tools.get_const('sotrudnikobjdo')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA82</id>
+			<code>130</code>
+			<name VALUE="##ms_tools.get_const('naznacheniekurs_1')##"/>
+			<subject VALUE="##ms_tools.get_const('vamnaznachenele')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyobjdo')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA83</id>
+			<code>131</code>
+			<name VALUE="##ms_tools.get_const('naznachenietest_1')##"/>
+			<subject VALUE="##ms_tools.get_const('vamnaznachentes')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyobjdo_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA84</id>
+			<code>132</code>
+			<name VALUE="##ms_tools.get_const('naznacheniekurs_2')##"/>
+			<subject VALUE="##ms_tools.get_const('sotrudnikunazn')##"/>
+			<body VALUE="##ms_tools.get_const('sotrudnikuobjd')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA85</id>
+			<code>133</code>
+			<name VALUE="##ms_tools.get_const('naznachenietest_2')##"/>
+			<subject VALUE="##ms_tools.get_const('sotrudnikunazn_1')##"/>
+			<body VALUE="##ms_tools.get_const('sotrudnikuobjd_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA8D</id>
+			<code>141</code>
+			<name VALUE="##ms_tools.get_const('uvedomlenieobi')##"/>
+			<subject VALUE="##ms_tools.get_const('izmenenievrazd')##"/>
+			<body VALUE="##ms_tools.get_const('obnovlenrazdel')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA8E</id>
+			<code>142</code>
+			<name VALUE="##ms_tools.get_const('uvedomlenieono')##"/>
+			<subject VALUE="##ms_tools.get_const('novoesoobshenie_2')##"/>
+			<body VALUE="##ms_tools.get_const('poyavilosnovoes')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA8F</id>
+			<code>143</code>
+			<name VALUE="##ms_tools.get_const('novoesoobshenie_1')##"/>
+			<subject VALUE="##ms_tools.get_const('novoesoobshenie_1')##"/>
+			<body VALUE="##ms_tools.get_const('vblogeobjdocdo')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA90</id>
+			<code>144</code>
+			<name VALUE="##ms_tools.get_const('uvedomlenieono_2')##"/>
+			<subject VALUE="##ms_tools.get_const('novoesoobshenie_9')##"/>
+			<body VALUE="##ms_tools.get_const('poyavilosnovoes_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x60F002F4187C40A3</id>
+			<code>145</code>
+			<name VALUE="##'Назначение процедуры опроса сотруднику'##"/>
+			<subject>Вам необходимо принять участие в &lt;%=( objDoc.poll_procedure_id.OptForeignElem == undefined ? ( 'опросе \"' + objDoc.poll_id.OptForeignElem.name + '\"' ) : ( 'процедуре опроса \"' + objDoc.poll_procedure_id.OptForeignElem.name + '\"' ) )%&gt;</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;.&#10;&#10;Вам необходимо принять участие в &lt;%=( objDoc.poll_procedure_id.OptForeignElem == undefined ? ( 'опросе \"' + objDoc.poll_id.OptForeignElem.name + '\"' ) : ( 'процедуре опроса \"' + objDoc.poll_procedure_id.OptForeignElem.name + '\"' ) )%&gt;.&#10;&#10;Вы можете пройти этот опрос с портала, зайдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, UrlAppendPath( '_wt/', ( objDoc.poll_procedure_id.OptForeignElem == undefined ? objDoc.poll_id.Value : objDoc.poll_procedure_id.Value ) ) ) %&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x60FB0CB94C527038</id>
+			<code>146</code>
+			<name VALUE="##'Приглашение заполнить опрос'##"/>
+			<subject VALUE="##'Приглашение заполнить опрос'##"/>
+			<body>Вас пригласили заполнить опрос "&lt;%=objDocSec.name%&gt;" &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;.&#10;&lt;%=Text%&gt;</body>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA97</id>
+			<code>151</code>
+			<name VALUE="##ms_tools.get_const('vybylivklyucheny_1')##"/>
+			<subject VALUE="##ms_tools.get_const('vybylivklyucheny_1')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA98</id>
+			<code>152</code>
+			<name VALUE="##ms_tools.get_const('vybyliisklyuchen_1')##"/>
+			<subject VALUE="##ms_tools.get_const('vybyliisklyuchen_1')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA99</id>
+			<code>153</code>
+			<name VALUE="##ms_tools.get_const('vybylivklyucheny_2')##"/>
+			<subject VALUE="##ms_tools.get_const('vybylivklyucheny_2')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_2')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9A</id>
+			<code>154</code>
+			<name VALUE="##ms_tools.get_const('vybyliisklyuchen_2')##"/>
+			<subject VALUE="##ms_tools.get_const('vybyliisklyuchen_2')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_3')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9B</id>
+			<code>155</code>
+			<name VALUE="##ms_tools.get_const('vybylivklyucheny_3')##"/>
+			<subject VALUE="##ms_tools.get_const('vybylivklyucheny_3')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_4')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9C</id>
+			<code>156</code>
+			<name VALUE="##ms_tools.get_const('vybyliisklyuchen_3')##"/>
+			<subject VALUE="##ms_tools.get_const('vybyliisklyuchen_3')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_5')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAA9D</id>
+			<code>157</code>
+			<name VALUE="##ms_tools.get_const('sotrudnikzapol_1')##"/>
+			<subject VALUE="##ms_tools.get_const('sotrudnikzapol_1')##"/>
+			<body VALUE="##ms_tools.get_const('uvazhaemyyayaobj_6')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAA1</id>
+			<code>161</code>
+			<name VALUE="##ms_tools.get_const('prisvoeniekval')##"/>
+			<subject VALUE="##ms_tools.get_const('vamprisvoenakv')##"/>
+			<body VALUE="##ms_tools.get_const('vamprisvoenakv_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAAA</id>
+			<code>170</code>
+			<name VALUE="##ms_tools.get_const('ekspertuzadali')##"/>
+			<subject VALUE="##ms_tools.get_const('vamzadalinovyy')##"/>
+			<body VALUE="##ms_tools.get_const('voprosobjdocqu')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAAB</id>
+			<code>171</code>
+			<name VALUE="##ms_tools.get_const('ekspertotvetil')##"/>
+			<subject VALUE="##ms_tools.get_const('ekspertotvetil_2')##"/>
+			<body VALUE="##ms_tools.get_const('navoprosobjdoc')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAB5</id>
+			<code>181</code>
+			<name VALUE="##ms_tools.get_const('sotrudnikureko')##"/>
+			<subject VALUE="##ms_tools.get_const('vamrekomendova')##"/>
+			<body VALUE="##ms_tools.get_const('vamrekomendova_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAA5</id>
+			<code>165</code>
+			<name VALUE="##ms_tools.get_const('odobreniezayavk')##"/>
+			<subject VALUE="##ms_tools.get_const('odobreniezayavk')##"/>
+			<body VALUE="##ms_tools.get_const('zayavkaobjdocse')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x0AAAAAAAAAAAAAA6</id>
+			<code>166</code>
+			<name VALUE="##ms_tools.get_const('otkloneniezayav_2')##"/>
+			<subject VALUE="##ms_tools.get_const('otkloneniezayav_2')##"/>
+			<body VALUE="##ms_tools.get_const('zayavkaobjdocse_1')##"/>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x53C5164865815539</id>
+			<code>custom_report_subscription</code>
+			<name VALUE="##ms_tools.get_const('podpiskananast')##"/>
+			<subject><![CDATA[<%=objDocSec.name%>]]></subject>
+			<body><![CDATA[<%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%>]]></body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0xAAAAAAAAAAAAAAC</id>
+			<code>172</code>
+			<name VALUE="##ms_tools.get_const('ekspertuperena')##"/>
+			<subject VALUE="##ms_tools.get_const('vamperenapravi')##"/>
+			<body VALUE="##ms_tools.get_const('voprosobjdocqu')##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>173</code>
+			<name VALUE="##'Назначение ознакомления'##"/>
+			<subject>Вам назначено ознакомление с "&lt;%=objDocSec.object_name%&gt;"</subject>
+			<body>&lt;%=objDoc.fullname%&gt;!&#10;Вам назначено ознакомление с "&lt;%=objDocSec.object_name%&gt;".&#10;Ознакомиться вы можете по ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.object_id ) )%&gt;&#10;&#10;Подтвердить ознакомление вы можете в своем профиле знаний&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( "my_knowledge_profile", null ) )%&gt;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0xAAAAAAAAAAAAAAD</id>
+		</notification_template>
+		<notification_template>
+			<code>congrats_birthday</code>
+			<name VALUE="##'Поздравление с днем рождения'##"/>
+			<subject>Поздравление с днем рождения</subject>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex.Value == "w" ) ? "ая" : "ый";&#10;&#10;    sLastName = ( objDoc.lastname.HasValue ) ? objDoc.lastname.Value : "";&#10;    sFirstName = ( objDoc.firstname.HasValue ) ? objDoc.firstname.Value : "";&#10;    sMiddleName = ( objDoc.middlename.HasValue ) ? objDoc.middlename.Value : "";&#10;   &#10;    sFullNameRcv = sSex + " " + sLastName + " " + sFirstName + " " + sMiddleName;&#10;&#10;    sLast = ( objDocSec.lastname.HasValue ) ? objDocSec.lastname.Value : "";&#10;    sFirst = ( objDocSec.firstname.HasValue ) ? objDocSec.firstname.Value : "";&#10;    sMiddle = ( objDocSec.middlename.HasValue ) ? objDocSec.middlename.Value : "";&#10;    &#10;    sFullName = " " + sLast + " " + sFirst + " " + sMiddle;&#10;%&gt;&#10;&lt;p&gt; Уважаем&lt;%=sFullNameRcv%&gt;! &lt;/br&gt; Вас поздравляет &lt;%=sFullName%&gt;: &lt;/br&gt; &lt;%=Text%&gt; &lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x5FA8C92239ED6631</id>
+		</notification_template>
+		<notification_template>
+			<code>outsorsing_plan_request</code>
+			<name VALUE="##'Уведомление поставщику о формировании новой плановой заявки'##"/>
+			<subject VALUE="##'Формирование новой плановой заявки'##"/>
+			<body>&lt;%&#10;_document = ArrayOptFirstElem(XQuery( "for $elem in documents where $elem/code='outstaff_requests' return $elem" ));&#10;sUrlRequest = UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( "request", null, { doc_id: ( _document != undefined ? _document.id : "" ) } ) );&#10;printForm = ArrayOptFirstElem( XQuery( "for $i in print_forms where $i/code = 'detmir' return $i" ) );&#10;&#10;//teOutstaffOrderExecut = OpenDoc(UrlFromDocID(objDocID)).TopElem;&#10;&#10;strFIO = "";&#10;iCollaboratorId = (objDoc.outstaff_provider_id.HasValue ? objDoc.outstaff_provider_id.OptForeignElem.collaborator_id : undefined);&#10;if (iCollaboratorId != undefined)&#10;    strFIO =  ArrayOptFirstElem(XQuery("for $elem in  collaborators where $elem/id=" + iCollaboratorId + " return $elem")).fullname;&#10;&#10;%&gt;&#10;&#10;Уважаемый, &lt;%=strFIO%&gt;. &lt;br&gt; По магазину &lt;%=(objDoc.subdivision_id.HasValue ? objDoc.subdivision_id.OptForeignElem.name : "")%&gt; сформирована новая плановая заявка на период с &lt;%=(objDoc.start_date.HasValue ? StrDate(objDoc.start_date, false,false) : "")%&gt; по &lt;%=(objDoc.finish_date.HasValue ? StrDate(objDoc.finish_date, false,false) : "")%&gt; по услуге &lt;%=(objDoc.position_common_id.HasValue ? objDoc.position_common_id.OptForeignElem.name : "")%&gt;.&lt;br&gt;&#10;Форма по &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "/view_print_form.html?print_form_id=" + printForm.id+ "&amp;object_id=" + objDocID  )%&gt;"&gt;ссылке&lt;/a&gt;&#10;&lt;%=Text%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x58D534C54AC70258</id>
+		</notification_template>
+		<notification_template>
+			<id>0x61155E5E782E4953</id>
+			<code>191</code>
+			<name VALUE="##'Создан новый сотрудник (уведомление руководителя)'##"/>
+			<subject VALUE="##'Создан новый сотрудник'##"/>
+			<body VALUE="##'Создан новый сотрудник &lt;%=objDocSec.fullname%>.&#10;&lt;%=Text%>'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>email_conf_code</code>
+			<name VALUE="##'Уведомление с кодом подтверждения E-mail'##"/>
+			<subject VALUE="##'Подтверждение E-Mail адреса'##"/>
+			<body>&lt;%&#10;    sOperatingMode =  Text != '' ? Text : 'native';&#10;    if (sOperatingMode == 'native') {&#10;        sVerificationCode = objDoc.email_conf_code;&#10;    } else {&#10;        sVerificationCode = objDoc.custom_elems.ObtainChildByKey('email_conf_code').value;&#10;    }&#10;%&gt;&#10;Код подтверждения: &lt;%=sVerificationCode%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x5DE7630842D35443</id>
+		</notification_template>
+		<notification_template>
+			<code>mobile_phone_conf</code>
+			<name VALUE="##'Уведомление с кодом подтверждения мобильного номера'##"/>
+			<subject VALUE="##'Подтверждение мобильного номера'##"/>
+			<body>&lt;%&#10;    sOperatingMode =  Text != '' ? Text : 'native';&#10;    if (sOperatingMode == 'native') {&#10;        sVerificationCode = objDoc.mobile_phone_conf_code;&#10;    } else {&#10;        sVerificationCode = objDoc.custom_elems.ObtainChildByKey('mobile_phone_conf_code').value;&#10;    }&#10;%&gt;&#10;Код подтверждения: &lt;%=sVerificationCode%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x5DE763B23E90225E</id>
+		</notification_template>
+		<notification_template>
+			<code>mobile_push</code>
+			<name VALUE="##'Мобильное Push-сообщение'##"/>
+			<body>&lt;%=objDoc.fullname%&gt;. Данные в мобильном приложении изменились.&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x601320871F1A5DEF</id>
+		</notification_template>
+		<notification_template>
+			<code>expert_learning_task</code>
+			<name VALUE="##'К вам пришло задание на проверку'##"/>
+			<subject VALUE="##'К вам пришло задание на проверку'##"/>
+			<body>К вам пришло задание на проверку&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x602E29BC580F164F</id>
+		</notification_template>
+		<notification_template>
+			<code>not_sub_expert</code>
+			<name VALUE="##'Вы больше не являетесь замещиющим экспертом'##"/>
+			<subject VALUE="##'Вы больше не являетесь замещиющим экспертом'##"/>
+			<body>Вы больше не являетесь замещающим экспертом у &lt;%=objDocSec.name%&gt;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x602E29BC580F164E</id>
+		</notification_template>
+		<notification_template>
+			<code>sub_expert</code>
+			<name VALUE="##'Назначение замещающего эксперта'##"/>
+			<subject VALUE="##'Назначение замещающего эксперта'##"/>
+			<body>Вы назначены замещающим экспертом у &lt;%=objDocSec.name%&gt;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x602E29BC580F164D</id>
+		</notification_template>
+		<notification_template>
+			<code>cancel_learning_task_result</code>
+			<name VALUE="##'Уведомление пользователю об отмене задания'##"/>
+			<subject VALUE="##'Задание отменено'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт отменил выполнение ранее назначенного Вам задания «&lt;%=objDocSec.learning_task_name%&gt;». Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371977</id>
+		</notification_template>
+		<notification_template>
+			<code>evaluation_learning_task_result</code>
+			<name VALUE="##'Уведомление эксперту о необходимости оценки выполнения задания'##"/>
+			<subject VALUE="##'Необходимо оценить выполнение задания'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам на оценку было передано задание «&lt;%=objDocSec.learning_task_name%&gt;», выполненное сотрудником &lt;%=objDocSec.person_fullname%&gt;. Оценить его можно на странице работы с заданиями на Портале или перейдя по следующей ссылке: &#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371974</id>
+		</notification_template>
+		<notification_template>
+			<code>failed_learning_task_result</code>
+			<name VALUE="##'Уведомление пользователю о невыполнении задания'##"/>
+			<subject VALUE="##'Задание не пройдено'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт считает, что вы не справились с назначенным Вам заданием «&lt;%=objDocSec.learning_task_name%&gt;» и выставил оценку &lt;%=objDocSec.mark%&gt;. Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10; &#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371976</id>
+		</notification_template>
+		<notification_template>
+			<code>return_learning_task_result</code>
+			<name VALUE="##'Уведомление пользователю о возврате задания на доработку'##"/>
+			<subject VALUE="##'Возврат задания на доработку'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт вернул выполненное Вами задание «&lt;%=objDocSec.learning_task_name%&gt;» на доработку. Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке: &#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371979</id>
+		</notification_template>
+		<notification_template>
+			<code>start_learning_task_result</code>
+			<name VALUE="##'Уведомление эксперту о начале выполнения задания'##"/>
+			<subject>Сотрудник &lt;%=objDocSec.person_fullname%&gt; приступил к выполнению задания «&lt;%=objDocSec.learning_task_name%&gt;»</subject>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Сотрудник &lt;%=objDocSec.person_fullname%&gt; приступил к выполнению задания «&lt;%=objDocSec.learning_task_name%&gt;». Узнать подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371973</id>
+		</notification_template>
+		<notification_template>
+			<code>success_learning_task_result</code>
+			<name VALUE="##'Уведомление пользователю о выполнении задания'##"/>
+			<subject VALUE="##'Задание успешно пройдено'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт подтвердил успешное выполнение Вами задания «&lt;%=objDocSec.learning_task_name%&gt;» и выставил оценку &lt;%=objDocSec.mark%&gt;. Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371975</id>
+		</notification_template>
+		<notification_template>
+			<code>viewed_learning_task_result</code>
+			<name VALUE="##'Уведомление пользователю о смене статуса задания на Просмотрен'##"/>
+			<subject VALUE="##'Задание просмотрено'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт просмотрел выполнение ранее назначенного Вам задания «&lt;%=objDocSec.learning_task_name%&gt;». Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке: &#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD06371978</id>
+		</notification_template>
+		<notification_template>
+			<code>create_new_wiki_article</code>
+			<name VALUE="##'Создана новая wiki статья'##"/>
+			<subject VALUE="##'Создана новая wiki статья'##"/>
+			<body>&lt;%&#10;feWikiBase = objDocSec.wiki_base_id.OptForeignElem;&#10;%&gt;&#10;В wiki базе &lt;%=feWikiBase != undefined ? feWikiBase.name : ""%&gt; появилась новая статья &lt;%=objDocSec.name%&gt;.&#10;Ознакомиться вы можете по ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD063719AE</id>
+		</notification_template>
+		<notification_template>
+			<code>update_wiki_article</code>
+			<name VALUE="##'Обновлена wiki статья'##"/>
+			<subject VALUE="##'Обновлена wiki статья'##"/>
+			<body>&lt;%&#10;feWikiBase = objDocSec.wiki_base_id.OptForeignElem;&#10;%&gt;&#10;В wiki базе &lt;%=feWikiBase != undefined ? feWikiBase.name : ""%&gt; обновлена статья &lt;%=objDocSec.name%&gt;.&#10;Ознакомиться вы можете по ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61094FAD063719C4</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_KeyPosition_change</code>
+			<name lang-ru:VALUE="##'Уведомление HR\'a об изменении ключевой должности'##"/>
+			<body lang-ru:VALUE="##'Уважаемый &lt;%=objDocSec.HRName%>!&#10;&#10;&lt;%=objDocSec.OperatorName%> изменил ключевую должность «&lt;%=objDoc.name%>».&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( &quot;key_positions_management&quot; ) )%>.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x614AF0771D86FC39</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_successor_change</code>
+			<name lang-ru:VALUE="##'Уведомление HR-а об изменении преемника'##"/>
+			<body lang-ru:VALUE="##'Уважаемый &lt;%=objDoc.fullname%>!&#10;&#10;&lt;%=objDocSec.OperatorName%> изменил преемника (&lt;%=objDocSec.SuccessorName%>) на ключевую должность «&lt;%=objDocSec.KeyPositionName%>».&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( &quot;key_positions_management&quot; ) )%>.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<main_object>
+				<catalog_name>successor</catalog_name>
+			</main_object>
+			<id>0x614AF0C71559E986</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_successor_became</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о том, что он стал преемником'##"/>
+			<body lang-ru:VALUE="##'Уважаемый(ая) &lt;%=objDoc.person_fullname%>!&#10;&#10;Вы назначены Преемником на должность «&lt;%=objDoc.key_position_id.person_position_name%>» подразделения «&lt;%=objDoc.key_position_id.person_subdivision_name%>» со статусом «&lt;%=objDoc.status.ForeignElem.name%>».&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<main_object>
+				<catalog_name>successor</catalog_name>
+			</main_object>
+			<id>0x614AF0985774F6D0</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_reservist_inclusion</code>
+			<name lang-ru:VALUE="##'Уведомление о включении в кадровый резерв'##"/>
+			<subject>Вы были включены в состав кадрового резерва</subject>
+			<body>Уважаемый &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;!&#10;&#10;Вы были включены в состав кадрового резерва "&lt;%=objDoc.career_reserve_type_id.ForeignElem.name%&gt;" со статусом «&lt;%=objDoc.status.ForeignElem.name%&gt;».&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDoc.person_id) %&gt;.&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x614AE9B4614FB67C</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_reservist_change</code>
+			<name lang-ru:VALUE="##'Уведомление HR\'а об изменении резервиста'##"/>
+			<body lang-ru:VALUE="##'Уважаемый &lt;%=objDoc.fullname%>!&#10;&#10;&lt;%=objDocSec.OperatorName%> внес изменения в информацию о резервисте (&lt;%=objDocSec.PersonnelReserveName%>).&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( &quot;key_positions_management&quot; ) )%>.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x614AF0FD7FC2F717</id>
+		</notification_template>
+		<notification_template>
+			<id>0x615FD4893D711BA8</id>
+			<code>change_project_participant_role</code>
+			<name VALUE="##'Проекты. Уведомление о смене роли в проекте'##"/>
+			<subject VALUE="##'Уведомление о смене роли в проекте'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex.Value == "w" ) ? "ая" : "ый";&#10;&#10;    sLastName = ( objDoc.lastname.HasValue ) ? objDoc.lastname.Value : "";&#10;    sFirstName = ( objDoc.firstname.HasValue ) ? objDoc.firstname.Value : "";&#10;    sMiddleName = ( objDoc.middlename.HasValue ) ? objDoc.middlename.Value : "";&#10;    sFullName = sSex + " " + sLastName + " " + sFirstName + " " + sMiddleName;&#10;&#10;    sProjectName = ( objDocSec.name.HasValue ) ? objDocSec.name.Value : "";&#10;%&gt;&#10;&lt;p&gt;Уважаем&lt;%=sFullName%&gt;!&lt;/p&gt;&#10;&lt;p&gt;&#10;    Руководитель проекта проекта «&lt;%=sProjectName%&gt;» изменил вашу роль в команде этого проекта.&lt;/br&gt;&#10;    Узнать подробности можно, перейдя по следующей &lt;a href="&lt;%=Text%&gt;"&gt;ссылке.&lt;/a&gt;&#10;&lt;/p&gt;&#10;&lt;p&gt;Это письмо отправлено автоматически и не требует ответа.&lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x615FD4893D711B62</id>
+			<code>include_person_to_project</code>
+			<name VALUE="##'Проекты. Уведомление о включении сотрудника в проект'##"/>
+			<subject VALUE="##'Уведомление о включении сотрудника в проект'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex.Value == "w" ) ? "ая" : "ый";&#10;&#10;    sLastName = ( objDoc.lastname.HasValue ) ? objDoc.lastname.Value : "";&#10;    sFirstName = ( objDoc.firstname.HasValue ) ? objDoc.firstname.Value : "";&#10;    sMiddleName = ( objDoc.middlename.HasValue ) ? objDoc.middlename.Value : "";&#10;    sFullName = sSex + " " + sLastName + " " + sFirstName + " " + sMiddleName;&#10;&#10;    sProjectName = ( objDocSec.name.HasValue ) ? objDocSec.name.Value : "";&#10;%&gt;&#10;&lt;p&gt;Уважаем&lt;%=sFullName%&gt;!&lt;/p&gt;&#10;&lt;p&gt;&#10;    Вы были включены в состав команды по проекту «&lt;%=sProjectName%&gt;».&lt;/br&gt;&#10;    Узнать подробности можно, перейдя по следующей &lt;a href="&lt;%=Text%&gt;"&gt;ссылке.&lt;/a&gt;&#10;&lt;/p&gt;&#10;&lt;p&gt;Это письмо отправлено автоматически и не требует ответа.&lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x615FD4893D711BE6</id>
+			<code>person_join_to_project</code>
+			<name VALUE="##'Проекты. Уведомление о вступлении сотрудника в проект'##"/>
+			<subject VALUE="##'Уведомление о вступлении сотрудника в проект'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex.Value == "w" ) ? "ая" : "ый";&#10;&#10;    sLastName = ( objDoc.lastname.HasValue ) ? objDoc.lastname.Value : "";&#10;    sFirstName = ( objDoc.firstname.HasValue ) ? objDoc.firstname.Value : "";&#10;    sMiddleName = ( objDoc.middlename.HasValue ) ? objDoc.middlename.Value : "";&#10;    sFullName = sSex + " " + sLastName + " " + sFirstName + " " + sMiddleName;&#10;    aText = Text.split(';');&#10;    sSubordinate = aText[0];&#10;    sLink = aText[1];&#10;&#10;    sProjectName = ( objDocSec.name.HasValue ) ? objDocSec.name.Value : "";&#10;%&gt;&#10;&lt;p&gt;Уважаем&lt;%=sFullName%&gt;!&lt;/p&gt;&#10;&lt;p&gt;&#10; &lt;%=sSubordinate%&gt; вошел в состав команды по проекту «&lt;%=sProjectName%&gt;».&lt;/br&gt;&#10;    Узнать подробности можно, перейдя по следующей &lt;a href="&lt;%=sLink%&gt;"&gt;ссылке.&lt;/a&gt;&#10;&lt;/p&gt;&#10;&lt;p&gt;Это письмо отправлено автоматически и не требует ответа.&lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x6166BD7151BB6A06</id>
+			<code>change_status_task_project</code>
+			<name VALUE="##'Проекты. Уведомление о смене статуса задачи в проекте'##"/>
+			<subject VALUE="##'Уведомление о смене статуса задачи в проекте'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex.Value == "w" ) ? "ая" : "ый";&#10;&#10;    sLastName = ( objDoc.lastname.HasValue ) ? objDoc.lastname.Value : "";&#10;    sFirstName = ( objDoc.firstname.HasValue ) ? objDoc.firstname.Value : "";&#10;    sMiddleName = ( objDoc.middlename.HasValue ) ? objDoc.middlename.Value : "";&#10;    sFullName = sSex + " " + sLastName + " " + sFirstName + " " + sMiddleName;&#10;&#10;    aText = Text.split(';');&#10;    sProjectName = aText[0];&#10;    sProjectUrl = aText[1];&#10;&#10;    sTaskName = ( objDocSec.name.HasValue ) ? objDocSec.name.Value : "Без названия";&#10;    sTaskStatus = ( objDocSec.status.HasValue ) ? common.assessment_appraise_statuses.GetOptChildByKey(objDocSec.status.Value).name.Value : 'Архив';&#10;%&gt;&#10;&lt;p&gt;Уважаем&lt;%=sFullName%&gt;!&lt;/p&gt;&#10;&lt;p&gt;&#10;    Ранее в рамках проекта «&lt;%=sProjectName%&gt;» вы были назначены исполнителем по задаче «&lt;%=sTaskName%&gt;». Обратите внимание, что статус этой задачи изменен на «&lt;%=sTaskStatus%&gt;». &lt;/br&gt;&#10;    Узнать подробности можно, перейдя по следующей &lt;a href="&lt;%=sProjectUrl%&gt;"&gt;ссылке.&lt;/a&gt;&#10;&lt;/p&gt;&#10;&lt;p&gt;Это письмо отправлено автоматически и не требует ответа.&lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>agreement_project_participant</code>
+			<name VALUE="##'Уведомление о подаче заявки на вступление в проект'##"/>
+			<subject VALUE="##'Подана заявка на вступление в проект'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.object_name%&gt; подал заявку на включение в состав команды по проекту «&lt;%=objDocSec.project_id.ForeignElem.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( "project_participant", objDocSecID ) )%&gt;.&#10;&#10;Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x615AF8851E0C024C</id>
+		</notification_template>
+		<notification_template>
+			<code>approve_project_participant</code>
+			<name VALUE="##'Уведомление о согласовании заявки на включение в проект'##"/>
+			<subject VALUE="##'Заявка на включение в проект согласована'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=Text%&gt; согласовал вашу заявку на включение в состав команды по проекту «&lt;%=objDocSec.project_id.ForeignElem.name%&gt;». Теперь вы можете ознакомиться с более подробной информацией о проекте: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.project_id ) )%&gt;.&#10;&#10;Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x615AF8851E0C024D</id>
+		</notification_template>
+		<notification_template>
+			<code>reject_project_participant</code>
+			<name VALUE="##'Уведомление об отклонении заявки на включение в проект'##"/>
+			<subject VALUE="##'Заявка на включение в проект отклонена'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=Text%&gt; отклонил вашу заявку на включение в состав команды по проекту «&lt;%=objDocSec.project_id.ForeignElem.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( "project_participant", objDocSecID ) )%&gt;.&#10;&#10;Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x615AF8851E0C024E</id>
+		</notification_template>
+		<notification_template>
+			<code>create_new_task</code>
+			<name VALUE="##'Уведомление о назначении задачи'##"/>
+			<subject VALUE="##'Уведомление о назначении задачи'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&lt;%&#10;&#9;switch( objDocSec.source_object_type )&#10;&#9;{&#10;&#9;&#9;case "project":&#10;&#9;&#9;{&#9;&#10;&#9;&#9;&#9;feProject = objDocSec.source_object_id.OptForeignElem;&#10;%&gt;&#10;Руководитель проекта «&lt;%=feProject != undefined ? feProject.name : ""%&gt;» назначил вас исполнителем по задаче «&lt;%=objDocSec.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.source_object_id ) )%&gt;.&#10;&lt;%&#10;&#9;&#9;&#9;break;&#10;&#9;&#9;}&#10;&#9;&#9;default:&#10;&#9;&#9;{&#10;%&gt;&#10;Вас назначил исполнителем по задаче «&lt;%=objDocSec.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;.&#10;&lt;%&#10;&#9;&#9;}&#10;&#9;}&#10;%&gt;&#10;&#10;Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x615AF8851E0C0277</id>
+		</notification_template>
+		<notification_template>
+			<code>update_task_executor_status</code>
+			<name VALUE="##'Уведомление о смене статуса задачи исполнителем'##"/>
+			<subject VALUE="##'Уведомление о смене статуса задачи исполнителем'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&lt;%&#10;&#9;switch( objDocSec.source_object_type )&#10;&#9;{&#10;&#9;&#9;case "project":&#10;&#9;&#9;{&#9;&#10;&#9;&#9;&#9;feProject = objDocSec.source_object_id.OptForeignElem;&#10;%&gt;&#10;&lt;%=objDocSec.executor_id.ForeignElem.fullname%&gt; в рамках проекта «&lt;%=feProject != undefined ? feProject.name : ""%&gt;» изменил статус задачи «&lt;%=objDocSec.name%&gt;» на «&lt;%=objDocSec.status.ForeignElem.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.source_object_id ) )%&gt;.&#10;&lt;%&#10;&#9;&#9;&#9;break;&#10;&#9;&#9;}&#10;&#9;&#9;default:&#10;&#9;&#9;{&#10;%&gt;&#10;&lt;%=objDocSec.executor_id.ForeignElem.fullname%&gt; изменил статус задачи «&lt;%=objDocSec.name%&gt;» на «&lt;%=objDocSec.status.ForeignElem.name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;.&#10;&lt;%&#10;&#9;&#9;}&#10;&#9;}&#10;%&gt;&#10;&#10;Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x615AF8851E0C027A</id>
+		</notification_template>
+		<notification_template>
+			<code>learning_end_date</code>
+			<name>Напоминание о необходимости закончить курс</name>
+			<subject>Необходимо закончить обучение</subject>
+			<body>&lt;%   &#10;   sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;   iDateDiff = DateDiff(DateNewTime(Date()), DateNewTime(objDocSec.max_end_date)) / 86400;&#10;   sEnding = ( iDateDiff &gt; 0 ) ? "закончилось" : "заканчивается";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Напоминаем, что обучение по курсу "&lt;%=objDocSec.course_name%&gt;" &lt;%=sEnding%&gt; &lt;%=StrDate(objDocSec.max_end_date, false)%&gt;.&#10;Вы можете завершить этот курс с портала, зайдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSec.course_id.Value)%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6155ABE135F613D3</id>
+		</notification_template>
+		<notification_template>
+			<code>learning_response</code>
+			<name>Напоминание о необходимости заполнить отзыв</name>
+			<subject>Необходимо заполнить отзыв</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;! &#10;&#10;Просим Вас заполнить отзыв по пройденному курсу "&lt;%=objDocSec.course_name%&gt;". &#10;Заполнить отзыв можно с портала, зайдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.course_id) )%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6155A7100EE2497D</id>
+		</notification_template>
+		<notification_template>
+			<code>learning_response_manager</code>
+			<name>Напоминание руководителю - сотруднику необходимо заполнить отзыв</name>
+			<subject>Сотрудник не заполнил отзыв по курсу</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;! &#10;&#10;Ваш сотрудник &lt;%=objDocSec.person_fullname%&gt; не заполнил отзыв по пройденному курсу "&lt;%=objDocSec.course_name%&gt;". &#10;Он может заполнить отзыв с портала, зайдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt; &#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x619E699C5B2FB2AB</id>
+		</notification_template>
+		<notification_template>
+			<code>testing_end_date</code>
+			<name>Напоминание о необходимости закончить тест</name>
+			<subject>Необходимо закончить тестирование</subject>
+			<body>&lt;%   &#10;   sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Напоминаем, что тестирование "&lt;%=objDocSec.assessment_name%&gt;" заканчивается &lt;%=StrDate(objDocSec.max_end_date, false)%&gt;.&#10;Вы можете завершить этот тест с портала, зайдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSec.assessment_id.Value)%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6155AD5F7CA24974</id>
+		</notification_template>
+		<notification_template>
+			<code>event_response_person</code>
+			<name VALUE="##'Напоминание о необходимости заполнить отзыв по мероприятию'##"/>
+			<subject VALUE="##'Необходимо заполнить отзыв по мероприятию'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Недавно Вы приняли участие в мероприятии «&lt;%=objDocSec.name%&gt;». Просим Вас оставить отзыв о нем, чтобы мы могли сделать процесс обучения еще лучше. &#10; &#10;Для заполнения отзыва перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;. &#10; &#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x619429DF5C9332F3</id>
+		</notification_template>
+		<notification_template>
+			<code>event_response_boss</code>
+			<name VALUE="##'Напоминание о необходимости заполнить отзыв по мероприятию (для руководителя)'##"/>
+			<subject VALUE="##'Ваш подчиненный сотрудник не заполнил отзыв по мероприятию'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Ваш подчиненный сотрудник &lt;%=Text%&gt; не заполнил отзыв по мероприятию «&lt;%=objDocSec.name%&gt;».&#10;Перейти в мероприятие можно с портала, перейдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61942A340C9F625A</id>
+		</notification_template>
+		<notification_template>
+			<code>timing_event_plan</code>
+			<name lang-ru:VALUE="##'Напоминание о планируемом мероприятии'##"/>
+			<subject lang-ru:VALUE="##'Напоминание о планируемом мероприятии'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Мероприятие «&lt;%=objDocSec.name%&gt;» начнется &lt;%=StrDate(objDocSec.start_date, true, false)%&gt;.&#10;Ссылка на мероприятие &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6196879A48EC54B9</id>
+		</notification_template>
+		<notification_template>
+			<code>timing_event_close</code>
+			<name lang-ru:VALUE="##'Напоминание о необходимости завершить мероприятие'##"/>
+			<subject lang-ru:VALUE="##'Напоминание о необходимости завершить мероприятие'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Согласно плану мероприятие  «&lt;%=objDocSec.name%&gt;» должно было быть завершено &lt;%=objDocSec.max_end_date%&gt;. Однако мероприятие до сих пор находится в стадии проведения. Пожалуйста, после окончания мероприятия не забудьте сменить его статус на «Завершено». &#10; &#10;Для смены статуса мероприятия перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;. &#10; &#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x619689B317AE2297</id>
+		</notification_template>
+		<notification_template>
+			<code>learning_response_boss</code>
+			<name>Напоминание о необходимости заполнить отзыв (для руководителя)</name>
+			<subject>Необходимо заполнить отзыв (для руководителя)</subject>
+			<body>&lt;%&#10;tePerson = tools.open_doc(Int(Text)).TopElem;&#10; %&gt;&#10;Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;!&#10;&#10;Ваш подчиненный &lt;%=tePerson.lastname + " " + tePerson.firstname + " " + tePerson.middlename%&gt; не заполнил отзыв по пройденному курсу "&lt;%=objDocSec.course_name%&gt;".&#10;Ссылка на пройденный курс &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x619282437DE306EB</id>
+		</notification_template>
+		<notification_template>
+			<code>add_learning_task_result</code>
+			<name>Уведомление пользователю о назначении задания</name>
+			<subject>Создано новое задание</subject>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Для вас создано новое задание «&lt;%=objDocSec.learning_task_name%&gt;»&#10;Посмотреть подробности можно на странице работы с заданиями на Портале или перейдя по следующей ссылке:&#10;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;&#10;&lt;%=Text%&gt;&#10;&#10; PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x617B63E054B85928</id>
+		</notification_template>
+		<notification_template>
+			<code>education_plan_manager</code>
+			<name>Уведомление руководителю о назначении плана обучения</name>
+			<subject>Назначен план обучения сотруднику "&lt;%=objDocSec.name%&gt;"</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Сотруднику &lt;%=objDocSec.person_fullname%&gt; назначен план обучения "&lt;%=objDocSec.name%&gt;"</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x619609E1202CF857</id>
+		</notification_template>
+		<notification_template>
+			<code>education_plan_user</code>
+			<name>Уведомление сотруднику о назначении плана обучения</name>
+			<subject>Вам назначен план обучения "&lt;%=objDocSec.name%&gt;"</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Вам назначен план обучения "&lt;%=objDocSec.name%&gt;"&#10;&#10;Вы можете перейти к Плану обучения по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&#10; &#10; &lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61952C1719185E31</id>
+		</notification_template>
+		<notification_template>
+			<code>event_begin_person</code>
+			<name>Напоминания обучаемому о будущем мероприятии</name>
+			<subject>Напоминания обучаемому о будущем мероприятии</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Напоминаем Вам, что &lt;%=StrDate(objDocSec.start_date, false)%&gt; в &lt;%=StrTime(objDocSec.start_date)%&gt; состоится мероприятие «&lt;%=objDocSec.name%&gt;», в котором вы записаны в качестве участника.  &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;. &#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6197FAE75AC84DA7</id>
+		</notification_template>
+		<notification_template>
+			<code>event_begin_boss</code>
+			<name>Напоминания для руководителей и менеджеров обучения о будущем мероприятии подчиненного сотрудника</name>
+			<subject>Напоминания для руководителей и менеджеров обучения о будущем мероприятии подчиненного сотрудника</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;У вашего подчиненного сотрудника &lt;%=Text%&gt; состоится мероприятие «&lt;%=objDocSec.name%&gt;» в &lt;%=StrDate(objDocSec.start_date, true, false)%&gt;.&#10;Перейти в мероприятие можно с портала, перейдя по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6197FB2A43CA28F3</id>
+		</notification_template>
+		<notification_template>
+			<code>event_begin_lector</code>
+			<name>Напоминания для ответственных и преподавателей о будущем мероприятии</name>
+			<subject>Напоминания для ответственных и преподавателей о будущем мероприятии</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename%&gt;.&#10;&#10;Мероприятие «&lt;%=objDocSec.name%&gt;» начнется &lt;%=StrDate(objDocSec.start_date, true, false)%&gt;.&#10;Ссылка на мероприятие &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61982153558E7AB8</id>
+		</notification_template>
+		<notification_template>
+			<code>learning_end_date_boss</code>
+			<name>Напоминание о необходимости закончить курс (уведомление руководителя)</name>
+			<subject>Необходимо закончить обучение</subject>
+			<body>&lt;%   &#10;   sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;   iDateDiff = DateDiff(DateNewTime(Date()), DateNewTime(objDocSec.max_end_date)) / 86400;&#10;   sEnding = ( iDateDiff &gt; 0 ) ? "закончилось" : "заканчивается";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Напоминаем, что обучение по курсу "&lt;%=objDocSec.course_name%&gt;" у вашего сотрудника &lt;%=objDocSec.person_fullname%&gt; &lt;%=sEnding%&gt; &lt;%=StrDate(objDocSec.max_end_date, false)%&gt;.&#10;Курс можно завершить по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSec.course_id.Value)%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61B0B7392D04B5E0</id>
+		</notification_template>
+		<notification_template>
+			<code>testing_end_date_boss</code>
+			<name>Напоминание о необходимости закончить тест (уведомление руководителя)</name>
+			<subject>Необходимо закончить тестирование</subject>
+			<body>&lt;%   &#10;   sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;%&gt;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Напоминаем, что тестирование "&lt;%=objDocSec.assessment_name%&gt;" вашего сотрудника &lt;%=objDocSec.person_fullname%&gt; заканчивается &lt;%=StrDate(objDocSec.max_end_date, false)%&gt;.&#10;Завершить тестирование можно по ссылке &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSec.course_id.Value)%&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61B0B81A323F8F06</id>
+		</notification_template>
+		<notification_template>
+			<code>change_knowledge_acquaint</code>
+			<name VALUE="##'Уведомление сотруднику об изменении знания руководителем'##"/>
+			<subject VALUE="##'Уведомление сотруднику об изменении знания руководителем'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваше корпоративное знание «&lt;%=objDocSec.knowledge_part_name%&gt;» было изменено руководителем.&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895AA0</id>
+		</notification_template>
+		<notification_template>
+			<code>change_knowledge_acquaint_boss</code>
+			<name VALUE="##'Уведомление руководителя об изменении знания подчиненным'##"/>
+			<subject VALUE="##'Уведомление руководителя об изменении знания подчиненным'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_fullname%&gt; изменил знание «&lt;%=objDocSec.knowledge_part_name%&gt;» в области своих интересов.&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895AA1</id>
+		</notification_template>
+		<notification_template>
+			<code>create_knowledge_acquaint</code>
+			<name VALUE="##'Уведомление сотруднику о назначении нового знания руководителем'##"/>
+			<subject VALUE="##'Уведомление сотруднику о назначении нового знания руководителем'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам было назначено новое корпоративное знание «&lt;%=objDocSec.knowledge_part_name%&gt;».&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895A9E</id>
+		</notification_template>
+		<notification_template>
+			<code>create_knowledge_acquaint_boss</code>
+			<name VALUE="##'Уведомление руководителя о назначении нового знания подчиненным'##"/>
+			<subject VALUE="##'Уведомление руководителя о назначении нового знания подчиненным'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_fullname%&gt; добавил новое знание «&lt;%=objDocSec.knowledge_part_name%&gt;» в область своих интересов.&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895A9F</id>
+		</notification_template>
+		<notification_template>
+			<code>delete_knowledge_acquaint</code>
+			<name VALUE="##'Уведомление сотруднику об удалении знания руководителем'##"/>
+			<subject VALUE="##'Уведомление сотруднику об удалении знания руководителем'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваше корпоративное знание «&lt;%=objDocSec.knowledge_part_name%&gt;» было удалено руководителем.&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895AA2</id>
+		</notification_template>
+		<notification_template>
+			<code>delete_knowledge_part_boss</code>
+			<name VALUE="##'Уведомление руководителя об удаления знания подчиненным'##"/>
+			<subject VALUE="##'Уведомление руководителя об удаления знания подчиненным'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_fullname%&gt; удалил знание «&lt;%=objDocSec.knowledge_part_name%&gt;» из области своих интересов.&#10;Для просмотра подробностей перейдите по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x618BD9724D895AA3</id>
+		</notification_template>
+		<notification_template>
+			<code>trainer_event_status</code>
+			<name>Изменен статус мероприятия</name>
+			<subject>Изменен статус мероприятия "&lt;%=objDocSec.name%&gt;"</subject>
+			<body>Уважаемый(ая) &lt;%= objDoc.lastname + " " + objDoc.firstname + " " + objDoc.middlename %&gt;&#10;&#10;Изменен статус мероприятия "&lt;%=objDocSec.name%&gt;", &lt;%=ArrayOptFindByKey(objDocSec.collaborators, objDoc.id, 'collaborator_id') != undefined &amp;&amp; objDoc.Name == 'collaborator' ? 'в котором Вы являетесь участником.' : ''%&gt;&lt;%=ArrayOptFindByKey(objDocSec.even_preparations, objDoc.id, 'person_id') != undefined  &amp;&amp; objDoc.Name == 'collaborator' ? 'в котором Вы являетесь ответственным за подготовку.' : ''%&gt;&lt;%=ArrayOptFindByKey(objDocSec.tutors, objDoc.id, 'collaborator_id') != undefined  &amp;&amp; objDoc.Name == 'collaborator' ? 'в котором Вы являетесь ответственным за проведение.' : ''%&gt;&lt;%= objDoc.Name == 'collaborator' &amp;&amp; ArrayOptFindByKey(objDocSec.collaborators, objDoc.id, 'collaborator_id') == undefined &amp;&amp;  ArrayOptFindByKey(objDocSec.even_preparations, objDoc.id, 'person_id') == undefined &amp;&amp; ArrayOptFindByKey(objDocSec.tutors, objDoc.id, 'collaborator_id') == undefined? 'в котором участвуют ваши сотрудники.' : ''%&gt;&#10;Мероприятие переведено в состояние "&lt;%=ArrayOptFindByKey (common.event_status_types, objDocSec.status_id, 'id').name %&gt;"&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x61EECFD0719BF60C</id>
+		</notification_template>
+		<notification_template>
+			<code>trainer_event_status_lector</code>
+			<name>Изменен статус мероприятия (для преподавателей)</name>
+			<subject>Изменен статус мероприятия "&lt;%=objDocSec.name%&gt;"</subject>
+			<body>Уважаемый(ая) &lt;%= objDoc.lector_fullname%&gt;&#10;&#10;Изменен статус мероприятия "&lt;%=objDocSec.name%&gt;", в котором Вы являетесь преподавателем.&#10;Мероприятие переведено в состояние "&lt;%=ArrayOptFindByKey (common.event_status_types, objDocSec.status_id, 'id').name %&gt;"&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620CB9651B6C39E3</id>
+		</notification_template>
+		<notification_template>
+			<code>knowledge_acquaint_agreement</code>
+			<name VALUE="##'Уведомление сотруднику о подтверждении уровня знаний экспертом/руководителем'##"/>
+			<subject VALUE="##'Уведомление сотруднику о подтверждении уровня знаний экспертом/руководителем'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваш уровень «&lt;%=objDocSec.level_name%&gt;» в знании «&lt;%=objDocSec.knowledge_part_name%&gt;» был успешно подтвержден.&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "knowledges" )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620280B1373B33C1</id>
+		</notification_template>
+		<notification_template>
+			<code>knowledge_acquaint_agreement_boss</code>
+			<name VALUE="##'Уведомление эксперту о подтверждении уровня знаний сотрудником'##"/>
+			<subject VALUE="##'Уведомление эксперту о подтверждении уровня знаний сотрудником'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Сотруднику &lt;%=objDocSec.person_fullname%&gt; подтвердил уровень «&lt;%=objDocSec.person_fullname%&gt;» в знании «&lt;%=objDocSec.person_fullname%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "knowledge/" +objDocSec.person_id  )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620280B1373B33C2</id>
+		</notification_template>
+		<notification_template>
+			<code>knowledge_acquaint_on_agree</code>
+			<name VALUE="##'Уведомление эксперту/руководителю о необходимости проверки уровня знаний'##"/>
+			<subject VALUE="##'Уведомление эксперту/руководителю о необходимости проверки уровня знаний'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_fullname%&gt; подал запрос на подтверждение своего уровня в знании «&lt;%=objDocSec.knowledge_part%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620280B1373B33C0</id>
+		</notification_template>
+		<notification_template>
+			<code>knowledge_acquaint_reject</code>
+			<name VALUE="##'Уведомление сотруднику об отклонении уровня знаний экспертом/руководителем'##"/>
+			<subject VALUE="##'Уведомление сотруднику об отклонении уровня знаний экспертом/руководителем'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Эксперт отклонил ваш запрос на подтверждение уровня «&lt;%=objDocSec.level_name%&gt;» в знании «&lt;%=objDocSec.knowledge_part_name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSec.knowledge_part_id ) )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620280B1373B33C3</id>
+		</notification_template>
+		<notification_template>
+			<code>knowledge_acquaint_start</code>
+			<name VALUE="##'Уведомление руководителя/эксперта о запуске подчиненным процесса подтверждения знания'##"/>
+			<subject VALUE="##'Уведомление руководителя/эксперта о запуске подчиненным процесса подтверждения знания'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_fullname%&gt; начал подтверждать свой уровень в знании «&lt;%=objDocSec.knowledge_part_name%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "knowledge/" +objDocSec.person_id  )%&gt;.&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x620280B1373B33BF</id>
+		</notification_template>
+		<notification_template>
+			<code>edo_must_signature</code>
+			<name VALUE="##'Уведомление о необходимости подписать кадровый документ'##"/>
+			<subject VALUE="##'Уведомление о необходимости подписать кадровый документ'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам необходимо подписать кадровый документ «&lt;%=objDocSec.name%&gt;» от &lt;%=objDocSec.create_date.HasValue ? StrDate( objDocSec.create_date, false ) : ""%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x625004AF35745E27</id>
+		</notification_template>
+		<notification_template>
+			<code>edo_must_signature_boss</code>
+			<name VALUE="##'Уведомление о необходимости подписать кадровый документ со стороны организации'##"/>
+			<subject VALUE="##'Уведомление о необходимости подписать кадровый документ со стороны организации'##"/>
+			<body>Уважаемый &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам необходимо подписать кадровый документ «&lt;%=objDocSec.name%&gt;» от &lt;%=objDocSec.create_date.HasValue ? StrDate( objDocSec.create_date, false ) : ""%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "spxml_web/main.htm?application_id=7076365165816242874" )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x64492E73698F5455</id>
+		</notification_template>
+		<notification_template>
+			<code>event_reminder</code>
+			<name VALUE="##'Напоминание об участии в мероприятии'##"/>
+			<subject>Мероприятие &lt;%=objDocSec.name%&gt; начнется через &lt;%=tools.call_code_library_method( 'libSchedule', 'get_str_time_from_second', [ OptInt( Text, 0 )*60 ] ).time_str%&gt;</subject>
+			<body>&lt;%=objDoc.fullname%&gt;!&#10;Напоминаем что мероприятие &lt;%=objDocSec.name%&gt; начнется через &lt;%=tools.call_code_library_method( 'libSchedule', 'get_str_time_from_second', [ OptInt( Text, 0 )*60 ] ).time_str%&gt;&#10;Для перехода к карточке мероприятия используйте ссылку: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, tools_web.get_mode_clean_url( null, objDocSecID ) )%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x629DFAB95C195618</id>
+		</notification_template>
+		<notification_template>
+			<code>candidate_response_for_reserve</code>
+			<name lang-ru:VALUE="##'Уведомление кандидата об отклике в резерв'##"/>
+			<subject lang-ru:VALUE="##'Отклик в резерв'##"/>
+			<body lang-ru:VALUE="##'Здравствуйте, &lt;%=objDoc.person_id.sd.fullname%>!&#10;&#10;Спасибо за проявленный интерес и желание работать в нашей команде. &#10;Мы уже взяли ваш отклик в работу и свяжемся с вами в ближайшее время.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x62DF9F126E9A202C</role_id>
+			<id>0x62DF9F126E9A202E</id>
+		</notification_template>
+		<notification_template>
+			<code>candidate_vacancy_response</code>
+			<name lang-ru:VALUE="##'Уведомление кандидата об отклике на вакансию'##"/>
+			<subject lang-ru:VALUE="##'Отклик на вакансию &lt;%=objDoc.vacancy_name%>'##"/>
+			<body lang-ru:VALUE="##'Здравствуйте, &lt;%=objDoc.person_id.sd.fullname%>!&#10;&#10;Вы откликнулись на вакансию &lt;%=objDoc.vacancy_name%>.&#10;Мы уже взяли ваш отклик в работу и свяжемся с вами в ближайшее время.'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x62DF9F126E9A202C</role_id>
+			<id>0x62DF9F126E9A2030</id>
+		</notification_template>
+		<notification_template>
+			<code>online_meeting_update_dates</code>
+			<name VALUE="##'В мероприятии изменены даты начала/завершения'##"/>
+			<subject VALUE="##'В мероприятии изменены даты начала/завершения'##"/>
+			<body>&lt;%=objDoc.fullname%&gt;!&#10;В мероприятии &lt;%=objDocSec.name%&gt; изменены даты начала/завершения мероприятия.&#10;Необходимо подтвердить участие.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63067F6D7F273D50</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_update_plan_collaborator</code>
+			<name VALUE="##'Уведомление сотрудника об обновлении плана деятельности'##"/>
+			<subject VALUE="##'Уведомление об обновлении плана деятельности'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'вашей адаптации'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'вашего развития карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;План &lt;%=sName%&gt; был обновлен в связи с обновлением программы развития.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63105D7066A04628</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_update_plan_collaborator_boss</code>
+			<name VALUE="##'Уведомление сотрудника об обновлении плана деятельности сотруднику наставнику'##"/>
+			<subject VALUE="##'Уведомление сотрудника об обновлении плана деятельности сотруднику наставнику'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'вашей адаптации'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'вашего развития карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;План &lt;%=sName%&gt; был обновлен в связи с обновлением программы развития. Сотрудник: &lt;%=objDocSec.person_id.OptForeignElem.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x6315F5237BB43383</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_change_state_collaborator</code>
+			<name VALUE="##'Уведомление сотрудника об изменении статуса развития карьеры'##"/>
+			<subject VALUE="##'Уведомление сотрудника об изменении статуса развития карьеры'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'вашей адаптации'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'вашего развития карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Статус &lt;%=sName%&gt; был изменен на "&lt;%=objDocSec.status.ForeignElem.name%&gt;".&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x631758EE6A1836DB</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_change_state_boss</code>
+			<name VALUE="##'Уведомление наставника/руководителя об изменении статуса развития карьеры'##"/>
+			<subject VALUE="##'Изменение статуса развития карьеры подчиненного'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'адаптации'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'развития карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Статус &lt;%=sName%&gt; был изменен на "&lt;%=objDocSec.status.ForeignElem.name%&gt;". Сотрудник: &lt;%=objDocSec.person_id.OptForeignElem.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x63188BBB1CD423DA</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_tutor</code>
+			<name VALUE="##'Уведомление сотрудника о включении наставника в развитие карьеры'##"/>
+			<subject VALUE="##'Уведомление сотрудника о включении наставника в развитие карьеры'##"/>
+			<body>&lt;%&#10;teObject = OpenDoc( UrlFromDocID( Int( objDocSecID ) ) ).TopElem;&#10;%&gt;&#10;&#10;&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'вашу адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'ваше развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В &lt;%=sName%&gt; был добавлен наставник &lt;%=teObject.fullname%&gt;&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x6319EF2C6CD80EE9</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_tutor_boss</code>
+			<name VALUE="##'Уведомление наставника о включении в развитие карьеры'##"/>
+			<subject VALUE="##'Уведомление наставника о включении в развитие карьеры'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sName = 'адаптации'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sName = 'развитию карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вы были назначены наставником по &lt;%=sName%&gt;. Сотрудник: &lt;%=objDocSec.person_id.OptForeignElem.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "adaptation/" +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x6319BA242A2F04EC</id>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B4771B</id>
+			<code>career_plan_change</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника об изменении карьерного плана'##"/>
+			<subject>Изменение карьерного плана  «&lt;%=objDocSec.name%&gt;»</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваш карьерный маршрут «&lt;%=objDocSec.name%&gt;» был изменен. &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&lt;/a&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B47720</id>
+			<code>career_plan_change_state</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника об изменении статуса карьерного плана'##"/>
+			<subject>Изменение статуса карьерного плана  «&lt;%=objDocSec.name%&gt;»</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Статус вашего карьерного маршрута «&lt;%=objDocSec.name%&gt;»  был изменен на «&lt;%=ArrayOptFind(common.career_reserve_status_types, "This.id == objDocSec.status").name%&gt;». &#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&lt;/a&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B47724</id>
+			<code>request_processing</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о согласовании заявки'##"/>
+			<subject>Заявка согласована</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваша заявка с типом «&lt;%=objDocSec.request_type_id.ForeignElem.name%&gt;», поданная &lt;%=StrDate(objDocSec.create_date, false)%&gt; была согласована. &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&lt;/a&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B47729</id>
+			<code>request_rejecting</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника об отклонении заявки'##"/>
+			<subject>Заявка отклонена</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Ваша заявка с типом «&lt;%=objDocSec.request_type_id.ForeignElem.name%&gt;», поданная &lt;%=StrDate(objDocSec.create_date, false)%&gt; была отклонена. &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&lt;/a&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x632874C436B4772B</id>
+			<code>collaborator_career_plan_assign</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о назначении карьерного плана'##"/>
+			<subject>Вам назначен карьерный маршрут «&lt;%=objDocSec.name%&gt;». </subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.fullname%&gt;!&#10;&#10;Вам был назначен карьерный маршрут «&lt;%=objDocSec.name%&gt;». &#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;a href="&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;"&gt;&lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID )%&gt;&lt;/a&gt;&#10;&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_program</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о добавлении типовой программы в развитие карьеры'##"/>
+			<subject lang-ru:VALUE="##'Уведомление сотрудника о добавлении типовой программы в развитие карьеры'##"/>
+			<body>&lt;%&#10;   teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;&#10;    sSex = ( teObject.sex.HasValue &amp;&amp; teObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'вашу адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'ваше развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В &lt;%=sName%&gt; была добавлена типовая программа "&lt;%=objDocSec.name%&gt;".&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x63230C9065DA23B1</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_program_boss</code>
+			<name lang-ru:VALUE="##'Уведомление наставника/руководителя о добавлении типовой программы в развитие карьеры'##"/>
+			<subject lang-ru:VALUE="##'Уведомление наставника/руководителя о добавлении типовой программы в развитие карьеры'##"/>
+			<body>&lt;%&#10;    // objDocID - наставник&#10;    teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;&#10;    // objDocSecID - сотрудник&#10;    teObjectSecond = OpenDoc( UrlFromDocID( OptInt( objDocSecID ) ) ).TopElem;&#10;&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В &lt;%=sName%&gt; была добавлена типовая программа "&lt;%=objDocSec.name.Value%&gt;". Сотрудник: &lt;%=teObjectSecond.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL +objDocID)%&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x63230C5346FC7ECF</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_task</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о добавлении задачи в развитие карьеры'##"/>
+			<subject lang-ru:VALUE="##'Уведомление сотрудника о добавлении задачи в развитие карьеры'##"/>
+			<body lang-ru:VALUE="##'&lt;% &#10; sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == &quot;w&quot; ) ? &quot;ая&quot; : &quot;ый&quot;;&#10;&#10; sName = \'\'&#10; sURL = \'\'&#10; if(objDocSec.type == \'career_reserve\'){&#10; sURL = \'adaptation/\'&#10; sName = \'адаптацию\'&#10; }&#10; if(objDocSec.type == \'typical_development_program\'){&#10; sURL = \'career/\'&#10; sName = \'развитие карьеры\'&#10; }&#10;%>&#10;Уважаем&lt;%=sSex%>, &lt;%= objDoc.fullname%>!&#10;&#10;В &lt;%=sName%> была добавлена новая задача &quot;&lt;%=objDocSec.name%>&quot;. Сотрудник: &lt;%=objDocSec.person_fullname%>&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + objDocSec.id)%>'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x632AE31233EB75D3</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_add_task_boss</code>
+			<name lang-ru:VALUE="##'Уведомление наставника/руководителя о добавлении задачи в развитие карьеры'##"/>
+			<subject lang-ru:VALUE="##'Уведомление наставника/руководителя о добавлении задачи в развитие карьеры'##"/>
+			<body lang-ru:VALUE="##'&lt;% &#10; sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == &quot;w&quot; ) ? &quot;ая&quot; : &quot;ый&quot;;&#10;&#10; sName = \'\'&#10; sURL = \'\'&#10; if(objDocSec.type == \'career_reserve\'){&#10; sURL = \'adaptation/\'&#10; sName = \'адаптацию\'&#10; }&#10; if(objDocSec.type == \'typical_development_program\'){&#10; sURL = \'career/\'&#10; sName = \'развитие карьеры\'&#10; }&#10;%>&#10;Уважаем&lt;%=sSex%>, &lt;%= objDoc.fullname%>!&#10;&#10;В &lt;%=sName%> была добавлена новая задача &quot;&lt;%=objDocSec.name%>&quot;. Сотрудник: &lt;%=objDocSec.person_fullname%>&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + objDocSec.id)%>'##"/>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x632AE2E8319057D9</id>
+		</notification_template>
+		<notification_template>
+			<code>manual_send_request</code>
+			<name lang-ru:VALUE="##'Уведомление о необходимости вручную отправить заявки на согласование'##"/>
+			<subject lang-ru:VALUE="##'Заявка &lt;%=Text.sRequest%> требует отправки на согласование'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' +Text.iRequestID );&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Заявка &lt;%=Text.sRequest%> на получение льготы &lt;%=Text.sGood%> требует отправки на согласование.&lt;/p>&#10;&lt;p>Вы можете просмотреть заявку по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x632858AF7CC14326</id>
+		</notification_template>
+		<notification_template>
+			<code>request_created</code>
+			<name lang-ru:VALUE="##'Уведомление о подаче заявки'##"/>
+			<subject lang-ru:VALUE="##'Вы подали заявку &lt;%=objDocSec.code%>'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Вы подали заявку &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text%>. &lt;/p>&#10;&lt;p>Вы можете следить за ходом согласования вашей заявки по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<comment>1</comment>
+			<id>0x63048F7C754910E2</id>
+		</notification_template>
+		<notification_template>
+			<code>request_end_date</code>
+			<name lang-ru:VALUE="##'Уведомление о приближении даты окончания БП'##"/>
+			<subject lang-ru:VALUE="##'Заканчивается бюджетный период'##"/>
+			<body>&lt;%&#10;sAddress = "Уважаем&lt;ая/ый&gt;";&#10;if (String(objDoc.sex) != "" )&#10;{&#10;&#9;if (String(objDoc.sex) == "w")&#10;&#9;{&#10;&#9;&#9;sAddress = "Уважаемая";&#10;&#9;}&#10;&#9;else if (String(objDoc.sex) == "m")&#10;&#9;{&#10;&#9;&#9;sAddress = "Уважаемый";&#10;&#9;}&#10;}&#10;strLink = UrlAppendPath( global_settings.settings.portal_base_url, "/requests/"+objDocID);&#10;%&gt;&#10;&#10;&lt;p style="text-align:left;"&gt;&lt;b&gt;&lt;%=sAddress%&gt; &lt;%=objDoc.fullname%&gt;!&lt;/b&gt;&lt;/p&gt;&#10;&lt;p style="text-align:left; text-indent: 30px"&gt;Текущий бюджетный период «&lt;b&gt;&lt;span style="color:#2e74b5;font-style:italic;"&gt;&lt;%=Text.budget_period_name%&gt;&lt;/span&gt;&lt;/b&gt;» заканчивается &lt;b&gt;&lt;span style="color:#2e74b5;font-style:italic;"&gt;&lt;%=Text.budget_period_date%&gt;.&lt;/span&gt;&lt;/b&gt;&lt;/p&gt;&#10;&lt;p style="text-align:left;"&gt;&lt;b&gt;Обратите внимание, у вас есть еще не согласованные заявки!&lt;/b&gt;&lt;/p&gt;&#10;&lt;p style="text-align:left; text-indent: 30px"&gt;Посмотреть список заявок: &lt;a href="&lt;%=strLink%&gt;"&gt;«Список заявок»&lt;/a&gt;&lt;/p&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x630C9B0A289246D8</id>
+		</notification_template>
+		<notification_template>
+			<code>request_stuck</code>
+			<name lang-ru:VALUE="##'Уведомление Администратору кафетерия о зависших заявках'##"/>
+			<subject lang-ru:VALUE="##'Зависшие заявки'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Следующие заявки не были обработаны в течение &lt;%=Text.sLimit%> дней, необходимо их обработать вручную: &lt;/p>&#10;&lt;table style=&quot;border: 1px solid #dddddd;border-collapse: collapse;&quot;>&#10;&#09;&lt;thead>&#10;&#09;&#09;&lt;tr>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>Номер&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>Дата создания&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>Сумма в валюте&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>Льгота&lt;/td>&#10;&#09;&#09;&lt;/tr>&#10;&#09;&lt;/thead>&#10;&#09;&lt;tbody>&#10;&#09;&#09;&lt;%=Text.sTable%>&#10;&#09;&lt;/tbody>&#10;&lt;/table>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<comment>7</comment>
+			<id>0x6308CE3A3B167968</id>
+		</notification_template>
+		<notification_template>
+			<code>accept_queue</code>
+			<name lang-ru:VALUE="##'Уведомление о списке в очереди на взятие в работу'##"/>
+			<subject lang-ru:VALUE="##'Заявки требуют согласования'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Требуется согласование следующих заявок: &lt;/p>&#10;&lt;table style=&quot;border: 1px solid #dddddd;border-collapse: collapse;&quot;>&#10;&#09;&lt;thead>&#10;&#09;&#09;&lt;tr>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>&quot;Номер&quot;&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>&quot;Дата создания&quot;&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>&quot;Сумма в валюте&quot;&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>&quot;Льгота&quot;&lt;/td>&#10;&#09;&#09;&#09;&lt;th style=&quot;font-weight: bold;padding: 5px;background: #efefef;border: 1px solid #dddddd;&quot;>&quot;Владелец заявки&quot;&lt;/td>&#10;&#09;&#09;&lt;/tr>&#10;&#09;&lt;/thead>&#10;&#09;&lt;tbody>&#10;&#09;&#09;&lt;%=Text%>&#10;&#09;&lt;/tbody>&#10;&lt;/table>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x6308EBCB216D088F</id>
+		</notification_template>
+		<notification_template>
+			<code>request_returned</code>
+			<name lang-ru:VALUE="##'Уведомление о возврате заявки'##"/>
+			<subject lang-ru:VALUE="##'Возврат заявки &lt;%=objDocSec.code%>'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Ваша заявка &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text.sGoodText%> возвращена на доработку с комментарием:&lt;/p>&#10;&lt;p>&quot;&lt;%=Text.sComment%>&quot;&lt;/p>&#10;&lt;p>Ознакомьтесь с комментарием, выполните приведенные в нем требования и отправьте заявку на согласование повторно.&lt;/p>&#10;&lt;p>Вы можете следить за ходом согласования вашей заявки по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x63048F7732B86D47</id>
+		</notification_template>
+		<notification_template>
+			<code>request_rejected</code>
+			<name lang-ru:VALUE="##'Уведомление об отклонении заявки'##"/>
+			<subject lang-ru:VALUE="##'Ваша заявка &lt;%=objDocSec.code%> отклонена'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Ваша заявка &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text.sGoodText%> отклонена с комментарием:&lt;/p>&#10;&lt;p>&quot;&lt;%=Text.sComment%>&quot;&lt;/p>&#10;&lt;p>Вы можете просмотреть заявку по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x63048F7421D276BB</id>
+		</notification_template>
+		<notification_template>
+			<code>manager_request_approve</code>
+			<name lang-ru:VALUE="##'Уведомление руководителю о заявке, требующей согласования'##"/>
+			<subject lang-ru:VALUE="##'Заявка &lt;%=objDocSec.code%> требует вашего согласования'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Ваше согласование требуется по заявке &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text%>.&lt;/p>&#10;&lt;p>Обработать заявку &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x63049AB477EB4BC9</id>
+		</notification_template>
+		<notification_template>
+			<code>request_to_payment</code>
+			<name lang-ru:VALUE="##'Уведомление о передаче заявки в оплату'##"/>
+			<subject lang-ru:VALUE="##'Ваша заявка &lt;%=objDocSec.code%> передана в оплату'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Ваша заявка &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text%> согласована и передана в оплату. Обратитесь к ответственному сотруднику для получения льготы.&lt;/p>&#10;&lt;p>Вы можете следить за ходом согласования вашей заявки по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x63048F7A3AEF0C3D</id>
+		</notification_template>
+		<notification_template>
+			<code>request_cancelled</code>
+			<name lang-ru:VALUE="##'Уведомление об отмене заявки'##"/>
+			<subject lang-ru:VALUE="##'Ваша заявка &lt;%=objDocSec.code%> отменена'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Вы отменили заявку &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text%>. &lt;/p>&#10;&lt;p>Вы можете просмотреть заявку по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x63048F7167C4109E</id>
+		</notification_template>
+		<notification_template>
+			<code>request_approved</code>
+			<name lang-ru:VALUE="##'Уведомление о согласовании заявки'##"/>
+			<subject lang-ru:VALUE="##'Ваша заявка &lt;%=objDocSec.code%> согласована'##"/>
+			<body lang-ru:VALUE="##'&lt;%&#10;sAddress = &quot;Уважаем&lt;ая/ый>&quot;;&#10;if (String(objDoc.sex) != &quot;&quot; )&#10;{&#10;&#09;if (String(objDoc.sex) == &quot;w&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемая&quot;;&#10;&#09;}&#10;&#09;else if (String(objDoc.sex) == &quot;m&quot;)&#10;&#09;{&#10;&#09;&#09;sAddress = &quot;Уважаемый&quot;;&#10;&#09;}&#10;}&#10;strLink = UrlAppendPath (global_settings.settings.portal_base_url, \'/_wt/\' + objDocSecID);&#10;%>&#10;&lt;p>&lt;%=sAddress%> &lt;%=objDoc.fullname%>!&lt;/p>&#10;&lt;p>Ваша заявка &lt;%=objDocSec.code%> от &lt;%=objDocSec.create_date%> на получение льготы &lt;%=Text%> согласована. После передачи в оплату вы сможете получить льготу. &lt;/p>&#10;&lt;p>Вы можете следить за ходом согласования вашей заявки по ссылке &lt;a href=&quot;&lt;%=strLink%>&quot;>&lt;%=strLink%>&lt;/a>&lt;/p>'##"/>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+			<id>0x62FFA1663B6001A2</id>
+		</notification_template>
+		<notification_template>
+			<code>adaptation_create</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника о назначении адаптации'##"/>
+			<subject lang-ru:VALUE="##'Уведомление сотрудника о назначении адаптации'##"/>
+			<body>&lt;%&#10;// objDocID -  id collaborator&#10;// objDocSecID -  id program&#10;// objDoc - program object&#10;// objDocSec - task object&#10;%&gt;&#10;&#10;&lt;%&#10;   teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;&#10;    sSex = ( teObject.sex.HasValue &amp;&amp; teObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'вашу адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'ваше развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Начиная с &lt;%=objDocSec.start_date%&gt; начинается ваша адаптация.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL +objDocID) %&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x632C4A6A6A850636</id>
+		</notification_template>
+		<notification_template>
+			<code>adaptation_create_ boss</code>
+			<name lang-ru:VALUE="##'Уведомление наставника/руководителя о назначении адаптации'##"/>
+			<subject lang-ru:VALUE="##'Уведомление наставника/руководителя о назначении адаптации'##"/>
+			<body>&lt;%   &#10;// objDocID - id tutor&#10;// objDocSecID - id collaborator&#10;// objDoc - program object&#10;// objDocSec - task object&#10;&#10;    // objDocID - наставник&#10;    teObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;&#10;    // objDocSecID - сотрудник&#10;    teObjectSecond = OpenDoc( UrlFromDocID( OptInt( objDocSecID ) ) ).TopElem;&#10;&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Начиная с &lt;%=objDocSec.start_date%&gt; начинается адаптация сотрудника &lt;%=teObjectSecond.fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL +objDocID)%&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x632C48FB0FEE73A4</id>
+		</notification_template>
+		<notification_template>
+			<code>adaptation_notification_rate_tutor_after</code>
+			<name lang-ru:VALUE="##'Напоминание адаптанту об оценке наставника (после завершения)'##"/>
+			<subject lang-ru:VALUE="##'Напоминание адаптанту об оценке наставника (после завершения)'##"/>
+			<body>&lt;%   &#10;// objDocID -адаптант&#10;// objDocSec - объект программы развития/адаптации&#10;&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Недавно вы прошли &lt;%=sName %&gt;. Пожалуйста, оцените работу ваших наставников.&#10;&#10;Поставить оценку можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + objDocID)%&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x63345EF0311D2E0A</id>
+		</notification_template>
+		<notification_template>
+			<code>adaptation_notification_rate_tutor_before</code>
+			<name lang-ru:VALUE="##'Напоминание адаптанту об оценке наставника (до завершения)'##"/>
+			<subject lang-ru:VALUE="##'Напоминание адаптанту об оценке наставника (до завершения)'##"/>
+			<body>&lt;%   &#10;// objDocID -адаптант&#10;// objDocSec - объект программы развития/адаптации&#10;&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(objDocSec.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'адаптацию'&#10;    }&#10;    if(objDocSec.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'развитие карьеры'&#10;    }&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;В ближайшем будущем вы заканчиваете &lt;%=sName %&gt;. Пожалуйста, оцените работу ваших наставников.&#10;&#10;Поставить оценку можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + objDocID)%&gt;</body>
+			<body_type>plane</body_type>
+			<active>1</active>
+			<is_std>1</is_std>
+			<id>0x63345E1E3B6E56B4</id>
+		</notification_template>
+		<notification_template>
+			<code>active_learning_delete</code>
+			<name lang-ru:VALUE="##'Удаление назначенного курса'##"/>
+			<subject>Изучение электронного курса "&lt;%=objDoc.course_name%&gt;" отменено</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;.&#10;&#10;Прохождение электронного курса "&lt;%=objDoc.course_name%&gt;" отменено.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x633AB0162F24674E</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_assessment_360_start_assessment_hr</code>
+			<name>Уведомление о начале процесса для ответственного (выбор респондентов)</name>
+			<subject>Приглашаем Вас принять участие в процедуре обратной связи 360 градусов</subject>
+			<body>Уважаемый(ая) &lt;%=ArrayFirstElem(objDoc.custom_experts).person_id.ForeignElem.fullname%&gt;!&#10;&#9;&#9;&#9;Приглашаем Вас принять участие в процедуре обратной связи 360 градусов для сотрудника &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;.&#10;&#9;&#9;&#9;Процедура проводится с &lt;%=objDoc.assessment_appraise_id.ForeignElem.start_date%&gt; по &lt;%=objDoc.assessment_appraise_id.ForeignElem.end_date%&gt;.&#10;&#9;&#9;&#9;Необходимо выбрать список респондентов: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, '/appr_player.html?assessment_appraise_id=' + objDoc.assessment_appraise_id + '&amp;pa_id=' + objDocID )%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>websoft_assessment_360_start_assessment_manager</code>
+			<name>Уведомление о начале процесса для руководителя (выбор респондентов)</name>
+			<subject>Приглашаем Вас принять участие в процедуре обратной связи 360 градусов</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.boss_id.ForeignElem.fullname%&gt;!&#10;&#9;&#9;&#9;Приглашаем Вас принять участие в процедуре обратной связи 360 градусов для сотрудника &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;.&#10;&#9;&#9;&#9;Процедура проводится с &lt;%=objDoc.assessment_appraise_id.ForeignElem.start_date%&gt; по &lt;%=objDoc.assessment_appraise_id.ForeignElem.end_date%&gt;.&#10;&#9;&#9;&#9;Необходимо выбрать список респондентов: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, '/appr_player.html?assessment_appraise_id=' + objDoc.assessment_appraise_id + '&amp;pa_id=' + objDocID )%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>websoft_assessment_360_start_assessment_participant</code>
+			<name>Уведомление о начале процесса для участника (приступить к оценке)</name>
+			<subject>Приглашаем Вас принять участие в процедуре обратной связи 360 градусов</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.expert_person_id.ForeignElem.fullname%&gt;!&#10;&#9;&#9;&#9;Приглашаем Вас принять участие в процедуре обратной связи 360 градусов для сотрудника &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;.&#10;&#9;&#9;&#9;Процедура проводится с &lt;%=objDoc.assessment_appraise_id.ForeignElem.start_date%&gt; по &lt;%=objDoc.assessment_appraise_id.ForeignElem.end_date%&gt;.&#10;&#9;&#9;&#9;Заполнить форму можно по ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, '/appr_player.html?assessment_appraise_id=' + objDoc.assessment_appraise_id + '&amp;pa_id=' + objDocID )%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>websoft_assessment_360_start_assessment_person</code>
+			<name>Уведомление о начале процесса для оцениваемого (выбор респондентов)</name>
+			<subject>Приглашаем Вас принять участие в процедуре обратной связи 360 градусов</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;!&#10;&#9;&#9;&#9;Приглашаем Вас принять участие в процедуре обратной связи 360 градусов.&#10;&#9;&#9;&#9;Процедура проводится с &lt;%=objDoc.assessment_appraise_id.ForeignElem.start_date%&gt; по &lt;%=objDoc.assessment_appraise_id.ForeignElem.end_date%&gt;.&#10;&#9;&#9;&#9;Необходимо выбрать список респондентов: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, '/appr_player.html?assessment_appraise_id=' + objDoc.assessment_appraise_id + '&amp;pa_id=' + objDocID )%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_change_task_collaborator</code>
+			<name lang-ru:VALUE="##'Уведомление сотрудника об изменении задачи развития карьеры наставником'##"/>
+			<subject lang-ru:VALUE="##'Уведомление сотрудника об изменении задачи развития карьеры наставником'##"/>
+			<body>&lt;%&#10;// objDocXml - collaborator&#10;// objDocSecXml - task&#10;&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    teProgram = OpenDoc( UrlFromDocID( Int( objDocSecID ) ) ).TopElem;&#10;    teCollaborator =  OpenDoc( UrlFromDocID( Int( teProgram.person_id ) ) ).TopElem;&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(teProgram.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'вашей адаптации'&#10;    }&#10;    if(teProgram.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'вашего развития карьеры'&#10;    }&#10;&#10;teTutor = OpenDoc( UrlFromDocID( Int( objDocSec.tutor_id ) ) ).TopElem;&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;Наставник &lt;%=teTutor .fullname%&gt; по &lt;%=sName%&gt; изменил задачу "&lt;%=objDocSec.name%&gt;".&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + teCollaborator.id)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63501E7377F31E9A</id>
+		</notification_template>
+		<notification_template>
+			<code>career_reserve_change_task_tutor</code>
+			<name lang-ru:VALUE="##'Уведомление наставника об изменении задачи развития карьеры сотрудником'##"/>
+			<subject lang-ru:VALUE="##'Уведомление наставника об изменении задачи развития карьеры сотрудником'##"/>
+			<body>&lt;%&#10;    sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;    teProgram = OpenDoc( UrlFromDocID( Int( objDocSecID ) ) ).TopElem;&#10;&#10;    teCollaborator =  OpenDoc( UrlFromDocID( Int( teProgram.person_id ) ) ).TopElem;&#10;    sWhich = ( teCollaborator.sex.HasValue &amp;&amp; teCollaborator.sex == "w" ) ? "которой" : "которому";&#10;    sComment = ( teCollaborator.sex.HasValue &amp;&amp; teCollaborator.sex == "w" ) ? "а" : "";&#10;&#10;    sName = ''&#10;    sURL = ''&#10;    if(teProgram.Name == 'career_reserve'){&#10;       sURL = 'adaptation/'&#10;       sName = 'вашей адаптации'&#10;    }&#10;    if(teProgram.Name == 'typical_development_program'){&#10;       sURL = 'career/'&#10;       sName = 'вашего развития карьеры'&#10;    }&#10;&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt;, &lt;%=objDoc.fullname%&gt;!&#10;&#10;&lt;%=teCollaborator.fullname%&gt;, по &lt;%=sName%&gt; для &lt;%=sWhich%&gt; вы является наставником, прокомментировал&lt;%=sComment%&gt; задачу "&lt;%=objDocSec.name%&gt;" следующим образом:&#10;&#10;"&lt;%=objDocSec.person_comment.Value%&gt;"&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, sURL + teCollaborator.id)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x635018BE1D7E1F64</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_owner_became</code>
+			<name lang-ru:VALUE="##'Уведомление владельца ключевой должности о назначении преемника'##"/>
+			<subject lang-ru:VALUE="##'Уведомление о назначении преемника'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;!&#10;&#10;На вашу должность был назначен преемник. Им стал(а) &lt;%=objDocSec.person_fullname%&gt;.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=Text%&gt;.&#10;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x6311CF4C3FB92EB6</role_id>
+			<id>0x6311CF4C3FB92EBC</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_owner_change</code>
+			<name lang-ru:VALUE="##'Уведомление владельца ключевой должности об изменении преемника'##"/>
+			<subject lang-ru:VALUE="##'Уведомление о изменении преемника'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;!&#10;&#10;Преемник на вашу должность был изменен.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=Text%&gt;.&#10;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x6311CF4C3FB92EB6</role_id>
+			<id>0x6311CF4C3FB92EBF</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_successor_change_state</code>
+			<name lang-ru:VALUE="##'Уведомление преемника об изменении статуса'##"/>
+			<subject lang-ru:VALUE="##'Уведомление об изменении статуса'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;!&#10;&#10;Ваш статус преемника на ключевую должность «&lt;%=objDoc.key_position_id.person_position_name%&gt;» изменен на «&lt;%=common.key_position_status_types.GetOptChildByKey( objDoc.status ).name%&gt;».&#10;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x6311CF4C3FB92EB6</role_id>
+			<id>0x6311CF4C3FB92EB8</id>
+		</notification_template>
+		<notification_template>
+			<code>succession_owner_change_state</code>
+			<name lang-ru:VALUE="##'Уведомление владельца ключевой должности об изменении статуса преемника'##"/>
+			<subject lang-ru:VALUE="##'Уведомление об изменении статуса преемника'##"/>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;!&#10;&#10;Статус преемника (&lt;%=objDocSec.person_fullname%&gt;) на вашу должность был изменен на «&lt;%=common.key_position_status_types.GetOptChildByKey( objDocSec.status ).name%&gt;».&#10;&#10;&#10;PS: Это письмо отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<role_id>0x6311CF4C3FB92EB6</role_id>
+			<id>0x6311CF4C3FB92EBA</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_after_answer_expert_question</code>
+			<name VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<subject VALUE="##'Уведомление сотруднику об ответе эксперта на ранее заданный вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ответила" : "ответил";&#10;&#10;teCollaboratorObject = OpenDoc( UrlFromDocID( OptInt( objDocSec.person_id.Value) ) ).TopElem;&#10;sCollaboratorSex = ( teCollaboratorObject.sex.HasValue &amp;&amp; teCollaboratorObject.sex == "w" ) ? "ая" : "ый";&#10;&#10;%&gt;Уважаем&lt;%=sCollaboratorSex%&gt;, &lt;%=teCollaboratorObject.fullname%&gt;!&#10;&#10;&lt;%=objDoc.fullname %&gt; &lt;%=sExpertSex%&gt; на ваш вопрос «&lt;%=objDocSec.question%&gt;».&#10;&#10;Ответ эксперта: &lt;%=objDocSec.answer%&gt;&#10;&#10;Ответить на него можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63773FCD6CFE7AEE</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_after_create_expert_question</code>
+			<name VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<subject VALUE="##'Уведомление эксперту о создании вопроса'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;teCollaboratorObject = OpenDoc( UrlFromDocID( OptInt( objDocSec.person_id.Value) ) ).TopElem;&#10;sCollaboratorAppeal = ( teCollaboratorObject.sex.HasValue &amp;&amp; teCollaboratorObject.sex == "w" ) ? "задала" : "задал";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;&lt;%=teCollaboratorObject.fullname %&gt; &lt;%=sCollaboratorAppeal%&gt; вам вопрос «&lt;%=objDocSec.question%&gt;».&#10;&#10;Ответить на него можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x63773FCD6CFE7AEC</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_expert_before_finish</code>
+			<name VALUE="##'Уведомление экспертам о приближающемся плановом сроке ответа на вопрос'##"/>
+			<subject VALUE="##'Уведомление экспертам о приближающемся плановом сроке ответа на вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;Напоминаем, что вы должны ответить на вопрос «&lt;%=objDocSec.question%&gt;» до &lt;%=StrDate(objDocSec.normative_date, false,false)%&gt; включительно.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6396A13616611B67</id>
+		</notification_template>
+		<notification_template>
+			<code>websoft_expert_after_finish</code>
+			<name VALUE="##'Уведомление экспертам о просроченном плановом сроке ответа на вопрос'##"/>
+			<subject VALUE="##'Уведомление экспертам о просроченном плановом сроке ответа на вопрос'##"/>
+			<body>&lt;%   &#10;// objDocID - ID эксперта&#10;// objDoc - объект эксперт&#10;&#10;// objDocSecID - ID вопроса&#10;// objDocSec - объект вопроса&#10;&#10;sExpertSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;&#10;sNameAfter = '!'&#10;if(objDoc.middlename != ''){&#10;sNameAfter = objDoc.middlename + '!'&#10;}&#10;%&gt;Уважаем&lt;%=sExpertSex%&gt;, &lt;%=objDoc.lastname%&gt; &lt;%=objDoc.firstname%&gt; &lt;%=sNameAfter%&gt;&#10;&#10;Напоминаем, что вы должны были ответить на вопрос «&lt;%=objDocSec.question%&gt;» до &lt;%=StrDate(objDocSec.normative_date, false,false)%&gt;, но не сделали этого.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "_wt/" + objDocSecID)%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<id>0x6396A13616611B71</id>
+		</notification_template>
+		<notification_template>
+			<id>0x642BE5784DAB2D68</id>
+			<code>active_test_learning_delete</code>
+			<name VALUE="##'Удаление назначенного теста'##"/>
+			<subject>Тестирование "&lt;%=objDoc.assessment_name%&gt;" отменено</subject>
+			<body>Уважаемый(ая) &lt;%=objDoc.person_fullname%&gt;.&#10;&#10;Прохождение теста  "&lt;%=objDoc.assessment_id.ForeignElem.title%&gt;" отменено.&#10;&#10;PS: Это сообщение было отправлено автоматически и не требует ответа.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x644BAB5027C7248B</id>
+			<code>personnel_reserve_add_tutor_collaborator</code>
+			<name VALUE="##'Уведомление сотрудника о добавлении куратора в кадровый резерв'##"/>
+			<subject>В кадровый резерв добавлен новый куратор</subject>
+			<body>&lt;%sSex = ( objDoc.person_id.ForeignElem.sex.HasValue &amp;&amp; objDoc.person_id.ForeignElem.sex == "w" ) ? "ая" : "ый";%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;!&#10;Вам был назначен новый куратор по кадровому резерву:  &lt;%=objDocSec.fullname%&gt;.&#10;&lt;%=Text%&gt;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDoc.person_id) %&gt;.&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<changed>0</changed>
+		</notification_template>
+		<notification_template>
+			<id>0x644BAB5027C72490</id>
+			<code>personnel_reserve_add_tutor_new_tutor</code>
+			<name VALUE="##'Уведомление куратора о добавлении в кадровый резерв'##"/>
+			<subject>Вы назначены куратором для резервиста</subject>
+			<body>&lt;%sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.fullname%&gt;!&#10;Вы были назначены куратором для резервиста: &lt;%=objDocSec.person_id.ForeignElem.fullname%&gt;.&#10;&lt;%=Text%&gt;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDocSec.person_id) %&gt;.&#10;&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x644BAB5027C7249C</id>
+			<code>personnel_reserve_add_tutor_old_tutor</code>
+			<name VALUE="##'Уведомление существующего куратора о добавлении куратора в кадровый резерв'##"/>
+			<subject>В кадровый резерв добавлен новый куратор</subject>
+			<body>&lt;%sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.fullname%&gt;!&#10;Для резервиста, по которому вы были куратором, был добавлен новый куратор: &lt;%=objDocSec.fullname%&gt;.&#10;&lt;%=Text%&gt;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDocSecID) %&gt;.&#10;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x644BAB5027C724AB</id>
+			<code>personnel_reserve_change_state_collaborator</code>
+			<name VALUE="##'Уведомление резервиста о смене статуса'##"/>
+			<subject>Изменен статус кадрового резерва</subject>
+			<body>&lt;%&#10;sSex = ( objDoc.person_id.ForeignElem.sex.HasValue &amp;&amp; objDoc.person_id.ForeignElem.sex == "w" ) ? "ая" : "ый";&#10;oStatus = ArrayOptFind(common.personnel_reserve_status_types, "This.id == objDoc.status");&#10;if (oStatus != undefined)&#10;{&#10;sStatus = oStatus.name&#10;}&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.person_id.ForeignElem.fullname%&gt;!&#10;Ваш статус резервиста изменен на «&lt;%=sStatus%&gt;». &#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDoc.person_id) %&gt;.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x644BAB5027C724AC</id>
+			<code>personnel_reserve_change_state_tutor</code>
+			<name VALUE="##'Уведомление куратора о смене статуса резервиста'##"/>
+			<subject>Изменен статус резервиста</subject>
+			<body>&lt;%&#10;sSex = ( objDoc.sex.HasValue &amp;&amp; objDoc.sex == "w" ) ? "ая" : "ый";&#10;oStatus = ArrayOptFind(common.personnel_reserve_status_types, "This.id == objDocSec.status");&#10;if (oStatus != undefined)&#10;{&#10;sStatus = oStatus.name&#10;}&#10;%&gt;&#10;Уважаем&lt;%=sSex%&gt; &lt;%=objDoc.fullname%&gt;!&#10;Статус резервиста (&lt;%=objDocSec.person_id.ForeignElem.fullname%&gt;), которого вы курируете, изменен на  «&lt;%=sStatus%&gt;».&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "career/" +objDocSec.person_id) %&gt;.</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+		<notification_template>
+			<id>0x6464C2CA180C4A25</id>
+			<code>personnel_reserve_create_tutor</code>
+			<name VALUE="##'Уведомление куратора о создании кадрового резерва'##"/>
+			<subject>Уведомление о создании кадрового резерва</subject>
+			<body>&lt;%&#10;oPerson = ArrayOptFirstElem(tools.xquery("for $elem in talent_pool_func_managers where $elem/person_id = " +objDoc.id + " return $elem" ));&#10;sFullname = oPerson != undefined ? oPerson.person_fullname : "";&#10;%&gt;&#10;&#10;Уважаемый(ая) &lt;%=sFullname%&gt;!&#10;&#10;&lt;%=objDocSec.person_id.ForeignElem.fullname%&gt; был включен в кадровый резерв «&lt;%=objDocSec.career_reserve_type_id.ForeignElem.name%&gt;». Вас назначили его куратором.&#10;&#10;Узнать подробности можно, перейдя по следующей ссылке: &lt;%=UrlAppendPath( global_settings.settings.portal_base_url, "wt/" +objDocSec.id) %&gt;.&#10;&lt;%=Text%&gt;</body>
+			<body_type>plane</body_type>
+			<is_std>1</is_std>
+			<changed>0</changed>
+		</notification_template>
+		<notification_template>
+			<id>0x646624AD4C8058E1</id>
+			<code>modify_event</code>
+			<name VALUE="##'Уведомление о создании/изменении мероприятия'##"/>
+			<subject>Уведомление о создании/изменении мероприятия</subject>
+			<body>&lt;%&#10;&#10;DefCharset="utf-8"; //кодировка по умалчанию&#10;//----------------------------------&#10;// часовой пояс времени, указываемого в параметрах карточки мероприятия, &#10;// если параметр отрицательный укажите (0-X), где X - число часов [десятичная дробь]&#10;BASE_TIME_ZONE = 3; &#10;//----------------------------------&#10;PLACE_STR = "";&#10;&#10;&#10;teOrganizerObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;teEvent = objDoc; // переопределим для удобства чтения&#10;file_id=String(teEvent.id).slice(String(teEvent.id).length-6);&#10;text="";&#10;html_text = "";&#10;sSenderAddress = teOrganizerObject.email;&#10;sSubject = Text;&#10;sComment = teEvent.comment;&#10;sParticipantEmail = "";&#10;sParticipantData = "";&#10;&#10;for(participant in teEvent.participants)&#10;{&#10;&#9;teParticipantObject = OpenDoc( UrlFromDocID( OptInt( participant.person_id ) ) ).TopElem;&#10;&#9;&#10;&#9;sParticipantEmail += teParticipantObject.fullname +' &lt;'+teParticipantObject.email+'&gt;, ';&#10;&#9;sParticipantData += 'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=' + teParticipantObject.lastname + ' ' + teParticipantObject.firstname + ':mailto:' + teParticipantObject.email + '\n'; &#10;}&#10;&#10;iValarmText='BEGIN:VALARM&#10;TRIGGER:-P1D&#10;DURATION:PT15M&#10;ACTION:DISPLAY&#10;DESCRIPTION:'+teEvent.name+' '+teEvent.plan_start_date+'&#10;X-WR-ALARMUID:'+StrHexInt(Int(teEvent.id)-1)+'&#10;END:VALARM';&#10;&#10;RSVP_STR='TRUE';&#10;DT_START = DateOffset(teEvent.plan_start_date,(0-BASE_TIME_ZONE)*3600);&#10;DT_END = DateOffset(teEvent.plan_end_date,(0-BASE_TIME_ZONE)*3600);&#10;&#10;iCalendarText='BEGIN:VCALENDAR&#10;VERSION:2.0&#10;PRODID:-//WebSoft LTD//WebTutor 2//EN&#10;METHOD:REQUEST&#10;BEGIN:VEVENT&#10;DTSTART:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_START),StrXmlDate(DT_START).lastIndexOf('+')),'-',''),':','')+'Z&#10;DTEND:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_END),StrXmlDate(DT_END).lastIndexOf('+')),'-',''),':','')+'Z&#10;DTSTAMP:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(Date()),StrXmlDate(Date()).lastIndexOf('+')),'-',''),':','')+'Z&#10;TRANSP:OPAQUE&#10;SEQUENCE:0&#10;CLASS:PUBLIC&#10;SUMMARY:'+teEvent.name+'&#10;DESCRIPTION:'+sComment+'&#10;ORGANIZER;CN='+teOrganizerObject.fullname+':mailto:'+teOrganizerObject.email+'\n&#10;'+sParticipantData+'&#10;UID:'+StrHexInt(teEvent.id)+'-WebTutor_Generated&#10;LOCATION:'+PLACE_STR+'\n&#10;'+iValarmText+'&#10;END:VEVENT&#10;END:VCALENDAR'&#10;&#10;&#10;&#10;sMessageBody = 'X-Mru-BL: 0:0:2&#10;X-Mru-NR: 1&#10;X-Mru-OF: unknown (unknown)&#10;To: '+sParticipantEmail+'&#10;Subject: '+sSubject+'&#10;MIME-Version: 1.0&#10;From: '+sSenderAddress+'&#10;Content-Type: multipart/mixed; boundary="=_mixed 004128EAC32576F1_="&#10;X-Spam: Not detected&#10;X-Mras: Ok&#10;&#10;This is a multipart message in MIME format.&#10;--=_mixed 004128EAC32576F1_=&#10;Content-Type: multipart/related; boundary="=_related 004128EAC32576F1_="&#10;&#10;&#10;--=_related 004128EAC32576F1_=&#10;Content-Type: multipart/alternative; boundary="=_alternative 004128EAC32576F1_="&#10;&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/plain; charset='+DefCharset+'&#10;&#10;'+text+'&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/html; charset='+DefCharset+'&#10;Content-Disposition: inline&#10;&#10;'+html_text+'&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/calendar; method=REQUEST; charset='+DefCharset+';&#10;&#10;'+iCalendarText+'&#10;&#10;--=_alternative 004128EAC32576F1_=--&#10;--=_related 004128EAC32576F1_=&#10;&#10;--=_related 004128EAC32576F1_=--&#10;--=_mixed 004128EAC32576F1_=&#10;Content-Type: text/calendar; method=REQUEST; charset='+DefCharset+'; name="c'+file_id+'.ics"&#10;Content-Disposition: attachment; filename="c'+file_id+'.ics"&#10;&#10;'+iCalendarText+'&#10;--=_mixed 004128EAC32576F1_=--&#10;'&#10;&#10;%&gt;&lt;%=sMessageBody%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+</data>

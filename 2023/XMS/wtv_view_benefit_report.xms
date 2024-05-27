@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<LIST NAME="ViewGrid" HEIGHT="-32vpx" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1" 
+			LOOP-EXPR="
+						try
+						{
+							arrColumnsInfo = StrReplace(List.GetCurCodeSortInfo(), '\'', '').split(',');
+							sColumnName = Trim(arrColumnsInfo[0]);
+							sSortDir = Trim(arrColumnsInfo[1]);
+
+							Ps.goods.Sort(sColumnName, sSortDir)
+							return Ps.goods;
+						}
+						catch(ex){
+							return Ps.goods;
+						}
+			" 
+			ON-SEL-CHANGE="
+					if (TopElem.ChildExists('count_sel'))
+					{
+						TopElem.set_sel_action(List);
+					}
+			">
+			<ROW DELETE-ACTION="" OPEN-ACTION="ObtainDocScreen(UrlFromDocID(ListElem.id))" IMAGE-URL="ico/good.ico">
+				<COL WIDTH="50zr" COL-TITLE-EXPR="ms_tools.get_const('c_coll')" TITLE-EXPR="ListElem.collaborator_fullname" ORDER="collaborator_fullname"/>
+				<COL WIDTH="50zr" COL-TITLE-EXPR="ms_tools.get_const('vk217sj03o')" TITLE-EXPR="ListElem.name" ORDER="name"/>	
+			</ROW>
+			
+			<MENU></MENU>
+		</LIST>
+
+		<ITEM TYPE="status_panel"/>
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+		<IF EXPR="!TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.collaborator_id" catalogExpr="'collaborator'" 				
+				xqueryQualExpr="filter = tools.call_code_library_method('libGame', 'GetPersonSubordinatesApp', [undefined, [], tools.get_cur_user().id, '', 'websoft_cafeteria']); return ArrayCount(filter) > 0 ? 'MatchSome($elem/id, (' + ArrayMerge(filter, 'This', ',') + '))' : ''
+				" WIDTH="100%"/>
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.subdivision_id" catalogExpr="'subdivision'"
+				xqueryQualExpr="filter = tools.call_code_library_method('libGame', 'GetPersonSubordinatesApp', [undefined, [], tools.get_cur_user().id, 'sub', 'websoft_cafeteria']); return ArrayCount(filter) > 0 ? 'MatchSome($elem/id, (' + ArrayMerge(filter, 'This', ',') + '))' : ''
+				" WIDTH="100%"/>
+				<CHECK SOURCE="Ps.is_subdivision_hierarchy" TITLE-EXPR="ms_tools.get_const('vnizpoierarhii')" WIDTH="100%"/>
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.budget_period_id" catalogExpr="'budget_period'" WIDTH="100%"/>
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.good_id" catalogExpr="'good'" WIDTH="100%"/>
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.benefit_id" catalogExpr="'benefit'" WIDTH="100%"/>
+			</PANEL>
+		</IF>
+	</PANEL>
+</LINE>
+
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+	oConditions = [
+					{'name': 'collaborator_id', 'value': TopElem.collaborator_id.Value},
+					{'name': 'subdivision_id', 'value': TopElem.subdivision_id.Value},
+					{'name': 'is_subdivision_hierarchy', 'value': TopElem.is_subdivision_hierarchy.Value},
+					{'name': 'budget_period_id', 'value': TopElem.budget_period_id.Value},
+					{'name': 'good_id', 'value': TopElem.good_id.Value},
+					{'name': 'benefit_id', 'value': TopElem.benefit_id.Value},
+				];
+
+	if (local_settings.view.remember_last_reports_settings)
+		tools_report.save_report_settings(TopElem.report_name, oConditions);
+
+	Ps.goods.Clear();
+	oParams = new Object();
+	for (param in oConditions)
+		oParams.SetProperty(param.name, param.value);
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	curUser = tools.get_cur_user();
+
+	oResult = task.CallMethod('tools_report', 'benefit_report', [oParams]);
+
+
+	if (oResult.ok)
+	{
+		Screen.MsgBox(ms_tools.get_const('dwnmry0az6'), ms_tools.get_const('c_error'), 'error', 'ok');
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount(oResult.result);
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+		for (oGood in oResult.result)
+		{
+			_child = Ps.goods.AddChild();
+			_child.id = oGood.id;
+			_child.name = oGood.name;
+			_child.collaborator_id = oGood.collaborator_id;
+			_child.collaborator_fullname = oGood.collaborator_fullname;
+		}
+
+		if (iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows)
+		{
+			if (!Screen.MsgBox(StrReplace(StrReplace('Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет выгружен в Excel. Открыть отчет сейчас? Его можно будет выгрузить позже через экспорт в Excel.', '{PARAM1}', TopElem.count_arr), '{PARAM2}', iMaxReportVisibleRows), ms_tools.get_const('c_question'), 'question', 'yes,no'))
+			{
+				Screen.RunCommand('ExportToExcel');
+				Ps.goods.Clear();
+				TopElem.count_arr = null;
+			}
+		}
+	}
+	Ps.goods.Sort('name', '+');
+"/>
+
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl('x-local://templates/benefit_report.html');
+	_filemname = ObtainTempFile('.xls');
+
+	PutUrlText(_filemname, _str);
+	ShellExecute('open', _filemname);
+"/>
+</SPXML-SCREEN>

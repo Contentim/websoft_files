@@ -1,0 +1,1149 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<tools_report>
+
+	<model_roles PROPERTY="1" ALLOW-CALL-FROM-CLIENT="1" PARAM="curUserID" PARAM="sApplicationID" EXPR="
+		
+		sAccessType = '';
+		
+		var oRes = {
+			type: '',
+			subordinate_ids: {
+				hr: [],
+				observer: []
+			},
+			subdivision_ids: {
+				hr: [],
+				observer: []
+			},
+			group_ids: {
+				hr: [],
+				observer: []
+			},
+			expert_id: null
+		};
+		
+		try
+		{
+			if( sApplicationID != undefined || sApplicationID != null )
+			{
+				var iApplLevel = tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUserID, sApplicationID ] );
+
+				switch(iApplLevel)
+				{
+					case 10:
+						sAccessType = 'admin';
+						break;
+					case 7:
+						sAccessType = 'manager';
+						break;
+					case 5: 
+						sAccessType = 'hr';
+						break;
+					case 3: 
+						sAccessType = 'expert';
+						break;
+					case 1: 
+						sAccessType = 'observer';
+						break;
+					default:
+						sAccessType = 'reject';
+						break;
+				}
+				
+				oRes.type = sAccessType;
+
+				arrSubordinateIDs = []
+				switch( sAccessType )
+				{
+					case 'hr':
+					{
+						var iAppHRManagerTypeID = tools.call_code_library_method('libApplication', 'GetApplicationHRBossTypeID', [ sApplicationID, curUserID ]);
+						arrSubordinateIDs = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, ['func'], true, '', null, '', true, true, true, true, [iAppHRManagerTypeID], true, '' ] );
+						
+						// subordinate_ids
+						for(iSubordinateID in arrSubordinateIDs)
+						{
+							oRes.subordinate_ids.hr.push(iSubordinateID.Value);
+						}
+						
+						arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUserID ] ), '({id: This.id, name: This.name, type: This.type})');
+						for(oObject in arrObjects)
+						{
+							// subdivision_ids
+							if(oObject.type == 'subdivision')
+							{
+								oRes.subdivision_ids.hr.push(oObject.id);
+							}
+							
+							// group_ids
+							if(oObject.type == 'group')
+							{
+								oRes.group_ids.hr.push(oObject.id);
+							}
+						}
+						
+						break;
+					}
+					case 'observer':
+					{
+						arrSubordinateIDs = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, ['func'], true, '', null, '', true, true, true, true, [], true, '' ] );
+						
+						//subordinate_ids
+						for(iSubordinateID in arrSubordinateIDs)
+						{
+							oRes.subordinate_ids.observer.push(iSubordinateID.Value);
+						}
+						
+						// subdivision_ids
+						arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUserID ] ), '({id: This.id, name: This.name, type: This.type})');
+						for(oObject in arrObjects)
+						{
+							// subdivision_ids
+							if(oObject.type == 'subdivision')
+							{
+								oRes.subdivision_ids.hr.push(oObject.id);
+							}
+							
+							// group_ids
+							if(oObject.type == 'group')
+							{
+								oRes.group_ids.hr.push(oObject.id);
+							}
+						}
+
+						break;
+					}
+					case 'expert':
+					{
+						// найти пользвателя среди экспертов
+						sExpertQuery = 'for $elem in experts where $elem/person_id = ' + curUserID + ' return $elem';
+						
+						arrExperts = tools.xquery( sExpertQuery );
+						if(ArrayOptFirstElem(arrExperts) != undefined)
+						{
+							for(oExpert in arrExperts)
+							{
+								iExpertID = OptInt(oExpert.id.Value);
+							}
+						}
+						
+						oRes.expert_id = iExpertID;
+
+						break;
+					}
+				}
+			}
+
+			return oRes;
+		}
+		catch( e )
+		{
+			alert( e );
+		}
+	"/>
+	
+	<course_report PROPERTY="1" PARAM="Ps" PARAM="curUserID" PARAM="sApplicationID" ALLOW-CALL-FROM-CLIENT="1" EXPR="
+		
+		sFuncParams = OpenNewDoc( 'x-local://wtv/wtv_form_func_params.xmd' ).TopElem;
+		sFuncParams.course_report.AssignElem( Ps );
+		sFuncParams.course_report.is_web_client = System.IsWebClient;
+		
+		sParams = UrlEncode( sFuncParams.Xml );
+		
+		if ( ! LdsIsServer )
+			return CallServerMethod( 'tools_report', 'course_report', [ RValue( sParams ),  ] );
+
+		var oRes = { 'iErrorCounter' : 0, 'iCounter' : 0, 'sErrorText' : '', 'sDataUrl' : '', 'bExcel' : false, 'oFileObject' : null }
+		
+		sXQueryQual = '';
+	
+		if( sApplicationID != undefined || sApplicationID != null )
+		{
+			oModelRoles = CallServerMethod( 'tools_report', 'model_roles', [ curUserID, sApplicationID ] );
+		
+			arrSubordinateIDs = [];
+			
+			if(oModelRoles.type != '')
+			{
+				switch( oModelRoles.type )
+				{
+					case 'hr':
+					{
+						arrSubordinateIDs = oModelRoles.subordinate_ids.hr;
+						break;
+					}
+					case 'observer':
+					{
+						arrSubordinateIDs = oModelRoles.subordinate_ids.observer;
+						break;
+					}
+					case 'expert':
+					{
+						if(oModelRoles.expert_id != undefined && oModelRoles.expert_id != null )
+						{
+							iExpertID = oModelRoles.expert_id;
+							
+							sQuery = 'for $elem in roles where $elem/catalog_name = \'course\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+							arrRoles = tools.xquery(sQuery);
+							
+							arrRoleIDs = [];
+							for(oRole in arrRoles)
+							{
+								arrRoleIDs.push(oRole.id.Value);
+							}
+
+							arrObjects = [];
+							if(ArrayCount(arrRoleIDs) > 0)
+							{
+								sQuery = 'for $elem in courses where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+								arrObjects = tools.xquery(sQuery);
+
+								arrObjectIDs = [];
+								if(ArrayOptFirstElem(arrObjects) != undefined)
+								{
+									for(oObject in arrObjects)
+									{
+										arrObjectIDs.push(oObject.id.Value);
+									}
+								}
+								sXQueryQual = ' MatchSome($elem/course_id, (' + ArrayMerge(arrObjectIDs, 'This', ',') + '))'
+							} else {
+								sXQueryQual = ' $elem/course_id = 0';
+							}
+						}
+						break;
+					}
+				}
+				
+				if(ArrayCount(arrSubordinateIDs) > 0){
+					sXQueryQual = ' MatchSome($elem/person_id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))';
+				}
+			}
+		}
+
+		try
+		{
+			CheckCurThread();
+
+			var progress = new TaskProgress;
+			progress.TaskName = ms_tools.get_const( 'bb1jhx82gs' );
+
+			var oParams = OpenDocFromStr( UrlDecode( sParams ), 'form=x-local://wtv/wtv_form_func_params.xmd' ).TopElem.course_report;
+
+			function fnRunReport( sQueryString )
+			{
+				for ( sCatalog in String( oParams.disp_learning_type ).split( ',' ) )
+				{
+					fnAddLearnings( XQuery( 'for $elem in ' + sCatalog + sQueryString + ' return $elem' ), oParams, dataForm, oRes )
+				}
+			}
+
+			dataForm = OpenNewDoc( 'x-local://wtv/wtv_form_table_data.xmd' ).TopElem;
+
+			arrPersonsIDs = Array();
+
+			var arrXQueryConditions = [];
+
+			if ( oParams.disp_learning_prog == true )
+			{
+				if ( oParams.education_program_id.HasValue )
+				{
+					arrCoursesIDs = [];
+
+					arrEducationPrograms = XQuery( 'for $elem in education_program_education_methods where $elem/education_program_id = ' + oParams.education_program_id + ' return $elem' );
+					for ( catEducationProgram in arrEducationPrograms )
+					{
+						try
+						{
+							if ( catEducationProgram.type == 'course' && catEducationProgram.education_method_id.ForeignElem.course_id.HasValue )
+							{
+								arrCoursesIDs.push( catEducationProgram.education_method_id.ForeignElem.course_id );
+							}
+						}
+						catch( ex )
+						{
+						}
+					}
+
+					if ( ArrayCount( arrCoursesIDs ) > 0 )
+					{
+						arrXQueryConditions.push( 'MatchSome( $elem/course_id, ( ' + ArrayMerge( arrCoursesIDs, 'This', ',' ) + ' ) )' );
+					}
+				}
+			}
+			else
+			{
+				if ( oParams.course_id.HasValue )
+				{
+					arrXQueryConditions.push( '$elem/course_id = ' + oParams.course_id );
+				} else {
+					if(sXQueryQual != '')
+					{
+						arrXQueryConditions.push( sXQueryQual );
+					}
+				}
+			}
+
+			if ( oParams.start_date.HasValue )
+			{
+				arrXQueryConditions.push( '$elem/start_usage_date &gt;= date( \'' + oParams.start_date + '\' )' );
+			}
+
+			if ( oParams.finish_date.HasValue )
+			{
+				arrXQueryConditions.push( '$elem/start_usage_date &lt;= date( \'' + DateNewTime( oParams.finish_date, 23, 59, 59 ) + '\' )' );
+			}
+
+			if ( oParams.person_id != null )
+				arrXQueryConditions.push( '$elem/person_id = ' + oParams.person_id );
+
+			if ( oParams.group_id != null )
+			{
+				arrGroupPersonsIDs = new Array();
+
+				docGroup = tools.open_doc( oParams.group_id );
+				if ( docGroup != undefined )
+				{
+					arrGroupPersonsIDs = ArrayExtract( docGroup.TopElem.collaborators, 'collaborator_id' );
+
+					arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrGroupPersonsIDs, 'This.PrimaryKey', ',' ) + ' ) ) ' );
+				}
+			}
+
+			if ( oParams.parent_object_id != null )
+			{
+				catSub = ArrayOptFirstElem( XQuery('for $elem in subdivisions where $elem/id = ' + oParams.parent_object_id + ' return $elem') );
+
+				arrPersonsIDs = ArrayExtract( tools.xquery( 'for $elem in person_hierarchys where MatchSome( $elem/subdivision_id, ( ' + ( catSub != undefined ? catSub.id : null ) + ' ) ) return $elem/Fields( \'collaborator_id\')' ), 'This.collaborator_id' );
+
+				if ( oParams.hier_sub_select )
+				{
+					arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersonsIDs, 'This.PrimaryKey', ',' ) + ' ) ) ' );
+				}
+				else
+				{
+					arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/position_parent_id = ' + oParams.parent_object_id + ' )' );
+				}
+			}
+
+			if ( oParams.org_id != null && oParams.parent_object_id == null )
+			{
+				if ( oParams.hier_sub_select )
+				{
+					arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/org_id = ' + oParams.org_id + ' )' );
+				}
+				else
+				{
+					arrXQueryConditions.push( 'some $person in collaborators satisfies ( $elem/person_id = $person/id and $person/org_id = ' + oParams.org_id + ' and $person/position_parent_id = null() )' );
+				}
+			}
+
+
+	
+			var sXQueryConditions = ArrayCount( arrXQueryConditions ) > 0 ? ' where ' + ArrayMerge( arrXQueryConditions, 'This', ' and ' ) : '';
+
+			fnRunReport( sXQueryConditions );
+
+			//alert(dataForm.Xml)
+			//return dataForm.GetXml( { 'tabs': false } );
+		}
+		catch ( err )
+		{
+			oRes.iErrorCounter = 1;
+			oRes.sErrorText = StrReplace( 'Ошибка при построении отчета: {PARAM1}', '{PARAM1}', err );
+		}
+
+		if ( oRes.iErrorCounter == 0 )
+		{
+			if ( oRes.oFileObject != null )
+			{
+				oRes.sDataUrl = fnSaveFile( oRes.oFileObject, 'Excel' );
+				if ( oParams.is_web_client )
+				{
+					//alert( 'oRes.sDataUrl ' + oRes.sDataUrl );
+					//alert( UrlToFilePath( oRes.sDataUrl ) );
+					//alert( FilePathToUrl( UrlToFilePath( oRes.sDataUrl ) ) )
+					oRes.sDataUrl = UrlFileName( FilePathToUrl( UrlToFilePath( oRes.sDataUrl ) ) );
+				}
+				oRes.bExcel = true;
+			}
+			else
+			{
+				oRes.sDataUrl = fnSaveFile( dataForm.GetXml( { 'tabs': false } ),'Xml');
+			}
+		}
+
+		return oRes
+	"/>
+	
+	<persons_report PROPERTY="1" ALLOW-CALL-FROM-CLIENT="1" PARAM="Ps" PARAM="arrSettings" EXPR="
+
+		oResult = new Object();
+		oResult.error = 0;
+		oResult.learnings = [];
+
+		arrResult = new Array();
+		
+		oParams = new Object();
+		
+		if ( Ps == null || Ps == undefined )
+		{
+			oResult.error = 1;
+		}
+		
+		if ( arrSettings == null || arrSettings == undefined )
+		{
+			oResult.error = 1;
+		}
+		
+		for ( param in arrSettings )
+		{
+			oParams.SetProperty( param.name, param.value )
+		}
+
+		if ( Ps.type == 'collaborator' )
+		{
+			oParams.persons_ids = Ps.person_id;
+		}
+		else if ( Ps.type == 'group' )
+		{
+			docGroup = tools.open_doc( Ps.group_id );
+			if ( docGroup != undefined )
+			{
+				oParams.persons_ids = ArrayMerge( docGroup.TopElem.collaborators, 'This.PrimaryKey', ',' );
+			}
+		}
+		else if ( Ps.type == 'subdivision' )
+		{
+			curNodeID = ( Ps.parent_object_id.HasValue ? Ps.parent_object_id : Ps.org_id );
+			if ( Ps.hier_sub_select )
+			{
+				arrSubPersonsIDs = ArraySelectDistinct( tools.get_sub_person_ids_by_subdivision_id( curNodeID ) );
+
+				oParams.persons_ids = ArrayMerge( arrSubPersonsIDs, 'This', ',' );
+			}
+			else
+			{
+				arrSubs = XQuery( 'for $elem in subs where $elem/parent_id = ' + curNodeID + ' and $elem/type = &quot;position&quot; return $elem' );
+
+				oParams.persons_ids = ArrayMerge( arrSubs, 'This.basic_collaborator_id', ',' );
+			}
+		}
+
+		if ( oParams.disp_active_learning || oParams.disp_learning || oParams.disp_active_test_learning || oParams.disp_test_learning )
+		{
+			arrActiveCourses = new Array();
+			arrFinishedCourses = new Array();
+			arrActiveTests = new Array();
+			arrFinishedTests = new Array();
+
+			arrXQueryConditions = [];
+
+			arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + oParams.persons_ids + ' ) )' );
+
+			if ( oParams.start_date != null )
+				arrXQueryConditions.push( '$elem/start_usage_date &gt;= date( \'' + oParams.start_date + '\' )' );
+
+			if ( oParams.finish_date != null )
+				arrXQueryConditions.push( '$elem/start_usage_date &lt;= date( \'' + oParams.finish_date + '\' )' );
+
+			sXQueryConditions = ArrayCount( arrXQueryConditions ) > 0 ? ' where ' + ArrayMerge( arrXQueryConditions, 'This', ' and ' ) : '';
+
+			if ( oParams.disp_active_learning )
+				arrActiveCourses = XQuery( 'for $elem in active_learnings ' + sXQueryConditions + ' return $elem' );
+
+			if ( oParams.disp_learning )
+				arrFinishedCourses = XQuery( 'for $elem in learnings ' + sXQueryConditions + ' return $elem' );
+
+			if ( oParams.disp_active_test_learning )
+				arrActiveTests = XQuery( 'for $elem in active_test_learnings ' + sXQueryConditions + ' return $elem' );
+
+			if ( oParams.disp_test_learning )
+				arrFinishedTests = XQuery( 'for $elem in test_learnings ' + sXQueryConditions + ' return $elem' );
+
+			arrResult = ArrayUnion( arrActiveCourses, arrFinishedCourses, arrActiveTests, arrFinishedTests );
+		}
+
+		if ( oParams.disp_event )
+		{
+			arrXQueryConditions = [];
+
+			arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + oParams.persons_ids + ' ) )' );
+
+			if ( oParams.start_date != null )
+				arrXQueryConditions.push( '$elem/event_start_date &gt;= date( \'' + oParams.start_date + '\' )' );
+
+			if ( oParams.finish_date != null )
+				arrXQueryConditions.push( '$elem/event_start_date &lt;= date( \'' + oParams.finish_date + '\' )' );
+
+			sXQueryConditions = ArrayCount( arrXQueryConditions ) > 0 ? ' where ' + ArrayMerge( arrXQueryConditions, 'This', ' and ' ) : '';
+
+			arrEventResults = XQuery( 'for $elem in event_results ' + sXQueryConditions + ' return $elem' );
+
+			sEventsIDs = ArrayMerge( ArraySelectDistinct( ArrayExtractKeys( arrEventResults, 'event_id' ), 'This' ) , 'This', ',' );
+
+			arrEvents = XQuery( 'for $elem in events where MatchSome( $elem/id, ( ' + sEventsIDs + ' ) ) return $elem' );
+
+			arrResult = ArrayUnion( arrResult, arrEventResults );
+		}
+
+		CheckCurThread();
+
+		var progress = new TaskProgress;
+		progress.TaskName = 'Загружаем список активностей';
+
+		for ( oLearning in arrResult )
+		{
+			oTempLearning = {};
+			oTempLearning.id = oLearning.id;
+
+			switch ( oLearning.Name )
+			{
+				case 'active_learning':
+						oTempLearning.name = oLearning.course_name;
+						oTempLearning.type = ms_tools.get_const( '7ysqgbcg0z' );
+					break;
+				case 'learning':
+						oTempLearning.name = oLearning.course_name;
+						oTempLearning.type = ms_tools.get_const( '4ev2fyo518' );
+					break;
+				case 'active_test_learning':
+						oTempLearning.name = oLearning.assessment_name;
+						oTempLearning.type = ms_tools.get_const( '8fx0ngrjex' );
+					break;
+				case 'test_learning':
+						oTempLearning.name = oLearning.assessment_name;
+						oTempLearning.type = ms_tools.get_const( '9km66hzf4u' );
+					break;
+				case 'event_result':
+						oTempLearning.name = oLearning.event_name;
+						oTempLearning.type = ms_tools.get_const( 'c_event' );
+					break;
+			}
+
+			oTempLearning.status = '';
+
+			if ( oLearning.Name != 'event_result' )
+			{
+				oTempLearning.status = common.learning_states.GetChildByKey( Int( oLearning.state_id ) ).name;
+			}
+			else
+			{
+				oLearningEvent = ArrayOptFind( arrEvents, 'This.id == oLearning.event_id' );
+				if ( oLearningEvent != undefined )
+				{
+					oTempLearning.status = common.event_status_types.GetChildByKey( oLearningEvent.status_id ).name;
+				}
+			}
+
+			oTempLearning.score = oLearning.score;
+
+			try
+			{
+				oTempLearning.max_score = oLearning.max_score;
+			}
+			catch( e )
+			{
+				oTempLearning.max_score = 0;
+			}
+
+			try
+			{
+				oTempLearning.start_usage_date = ( oLearning.Name != 'event_result' ? oLearning.start_usage_date : ArrayOptFind( arrEvents, 'This.id == oLearning.event_id' ).start_date );
+			}
+			catch( e )
+			{
+				oTempLearning.start_usage_date = null;
+			}
+
+			try
+			{
+				oTempLearning.last_usage_date = ( oLearning.Name != 'event_result' ? oLearning.last_usage_date : ArrayOptFind( arrEvents, 'This.id == oLearning.event_id' ).finish_date );
+			}
+			catch( e )
+			{
+				oTempLearning.last_usage_date = null;
+			}
+
+			oTempLearning.person_id = oLearning.person_id;
+			oTempLearning.person_fullname = oLearning.person_fullname;
+
+			try
+			{
+				oTempLearning.person_code = oLearning.person_id.ForeignElem.code;
+			}
+			catch( e )
+			{
+				oTempLearning.person_code = 'ОШИБКА: ' + e;
+			}
+
+			oTempLearning.person_org_name = oLearning.person_org_name;
+			oTempLearning.person_position_name = oLearning.person_position_name;
+			oTempLearning.person_subdivision_name = oLearning.person_subdivision_name;
+
+			if ( oParams.disp_person_list_staff )
+			{
+				oTempLearning.person_list_staff = tools.person_list_staff_by_person_id( oLearning.person_id );
+			}
+
+			try
+			{
+				oTempLearning.is_assist = oLearning.is_assist;
+			}
+			catch( e )
+			{
+			}
+
+			oResult.learnings.push( oTempLearning );
+
+			//progress.CurrentItemIndex++;
+		}
+
+		return oResult;
+	"/>
+	
+	<test_report PROPERTY="1" PARAM="_param_str" PARAM="curUserID" PARAM="sApplicationID" ALLOW-CALL-FROM-CLIENT="1" EXPR="
+
+			if ( ! LdsIsServer )
+				return CallServerMethod( 'tools_report', 'test_report', [ RValue( _param_str ),  ] );
+
+			var oRes = {'iErrorCounter':0,'iCounter':0,'sErrorText':'','sDataUrl':'','bExcel':false,'oFileObject':null}
+
+			if( sApplicationID != undefined || sApplicationID != null )
+			{
+				oModelRoles = CallServerMethod( 'tools_report', 'model_roles', [ curUserID, sApplicationID ] );
+				
+				sXQueryQual = '';
+				arrSubordinateIDs = [];
+				
+				if(oModelRoles.type != '')
+				{
+					switch( oModelRoles.type )
+					{
+						case 'hr':
+						{
+							arrSubordinateIDs = oModelRoles.subordinate_ids.hr;
+							break;
+						}
+						case 'observer':
+						{
+							arrSubordinateIDs = oModelRoles.subordinate_ids.observer;
+							break;
+						}
+						case 'expert':
+						{
+							if(oModelRoles.expert_id != undefined && oModelRoles.expert_id != null )
+							{
+								iExpertID = oModelRoles.expert_id;
+								
+								sAssessmentQuery = 'for $elem in assessments return $elem';
+								sAssessmentCategoryQuery = 'for $elem in roles where $elem/catalog_name=\'assessment\' return $elem';
+								
+								sQuery = 'for $elem in roles where $elem/catalog_name = \'assessment\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+								arrRoles = tools.xquery(sQuery);
+								
+								arrRoleIDs = [];
+								for(oRole in arrRoles)
+								{
+									arrRoleIDs.push(oRole.id.Value);
+								}
+
+								arrAssessments = [];
+								if(ArrayCount(arrRoleIDs) > 0)
+								{
+									sQuery = 'for $elem in assessments where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+									arrAssessments = tools.xquery(sQuery);
+
+									arrAssessmentIDs = [];
+									if(ArrayOptFirstElem(arrAssessments) != undefined)
+									{
+										for(oAssessment in arrAssessments)
+										{
+											arrAssessmentIDs.push(oAssessment.id.Value);
+										}
+									}
+									sXQueryQual = ' MatchSome($elem/assessment_id, (' + ArrayMerge(arrAssessmentIDs, 'This', ',') + '))'
+								} else {
+									sXQueryQual = ' $elem/assessment_id = 0';
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
+		
+			try
+			{
+				CheckCurThread();
+
+				var progress = new TaskProgress;
+				progress.TaskName = ms_tools.get_const( 'bb1jhx82gs' );
+
+				var _params = OpenDocFromStr( UrlDecode(_param_str), 'form=x-local://wtv/wtv_form_func_params.xmd' ).TopElem.test_report;
+
+				function get_xquery_merge( _person_id, _where_str )
+				{
+					_where = _person_id == '' ? '' : ' $elem/person_id = ' + _person_id;
+					_where += ( _where_str != '' &amp;&amp; _where != '' ? ' and' : '' ) + _where_str;
+
+					for ( _catalog in String( _params.disp_learning_type ).split( ',' ) )
+					{
+						//add_learnings( XQuery( 'for $elem in ' + _catalog + ( _where == '' ? '' : ' where' ) + _where + ' return $elem' ) );
+						fnAddTestLearnings(XQuery( 'for $elem in ' + _catalog + ( _where == '' ? '' : ' where' ) + _where + ' return $elem' ),_params,dataForm,oRes)
+					}
+				}
+
+
+				dataForm = OpenNewDoc( 'x-local://wtv/wtv_form_table_data.xmd' ).TopElem;
+
+				_person_ids_array = Array();
+
+				_where_str ='';
+
+				if(_params.assessment_id.HasValue)
+				{
+					_where_str = ' $elem/assessment_id = ' + _params.assessment_id;
+				} else {
+					_where_str = sXQueryQual;
+				}
+
+				_where_str += _params.start_date.HasValue ? ( _where_str == '' ? ' ' : ' and ' ) + '$elem/start_usage_date &gt;= date( \'' + DateNewTime( _params.start_date ) + '\' )' : '';
+				_where_str += _params.finish_date.HasValue ? ( _where_str == '' ? ' ' : ' and ' ) + '$elem/start_usage_date &lt;= date( \'' + DateNewTime( _params.finish_date, 23, 59, 59 ) + '\' )' : '';
+
+				if ( _params.person_id.HasValue )
+				{
+					get_xquery_merge( _params.person_id, _where_str );
+				}
+				else if ( _params.org_id.HasValue || _params.parent_object_id.HasValue || _params.group_id.HasValue )
+				{
+					if ( _params.org_id.HasValue || _params.parent_object_id.HasValue )
+					{
+						curNodeID = _params.parent_object_id.HasValue ? _params.parent_object_id : _params.org_id;
+
+						if ( _params.hier_sub_select )
+							_person_ids_array = tools.get_sub_person_ids_by_subdivision_id( curNodeID );
+						else
+							_person_ids_array = ArrayExtract( XQuery( 'for $elem in subs where $elem/parent_id = ' + curNodeID + ' and $elem/type = &quot;position&quot; and $elem/basic_collaborator_id != null() return $elem' ), 'basic_collaborator_id' );
+					}
+
+					if ( _params.group_id.HasValue )
+					{
+						try
+						{
+							groupDoc = OpenDoc( UrlFromDocID( _params.group_id ) ).TopElem;
+
+							groupPersonsIDArray = ArrayExtract( groupDoc.collaborators, 'collaborator_id' );
+
+							if ( ArrayOptFirstElem( _person_ids_array ) != undefined )
+								_person_ids_array = arrayCross( _person_ids_array, groupPersonsIDArray );
+							else
+								_person_ids_array = groupPersonsIDArray;
+						}
+						catch( err )
+						{
+						}
+					}
+
+					_person_ids_array = ArraySelectDistinct( _person_ids_array );
+
+					for ( _person_id in _person_ids_array )
+						get_xquery_merge( _person_id, _where_str );
+				}
+				else
+				{
+					if(ArrayCount(arrSubordinateIDs) > 0){
+						_where_str = ' MatchSome($elem/person_id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))';
+					}
+					get_xquery_merge( '', _where_str );
+				}
+
+				//alert(dataForm.Xml)
+			}
+			catch ( err )
+			{
+				oRes.iErrorCounter=1
+				oRes.sErrorText=StrReplace( 'Ошибка при построении отчета: {PARAM1}', '{PARAM1}', err )
+			}
+
+
+			if (oRes.iErrorCounter==0)
+			{
+				if (oRes.oFileObject!=null)
+				{
+					oRes.sDataUrl=fnSaveFile(oRes.oFileObject,'Excel');
+					if (_params.is_web_client)
+					{
+						oRes.sDataUrl=UrlFileName(FilePathToUrl(UrlToFilePath(oRes.sDataUrl)))
+					}
+					oRes.bExcel=true;
+				}
+				else
+				{
+					oRes.sDataUrl=fnSaveFile(dataForm.GetXml( { 'tabs': false } ),'Xml');
+				}
+			}
+
+			return oRes;
+	"/>
+	
+	
+	<course_objectives_report PROPERTY="1" PARAM="oParams" ALLOW-CALL-FROM-CLIENT="1" EXPR="
+
+		if ( oParams == null || oParams == undefined )
+		{
+			oParams.error = 1;
+		}
+		
+		function add_learnings( _learning_array )
+		{
+			for ( _learning in _learning_array )
+			try
+			{
+				learningDoc = OpenDoc( UrlFromDocID( _learning.PrimaryKey ) ).TopElem;
+				learningPart = learningDoc.parts.GetChildByKey( oParams.part_id );
+				
+				_child = oParams.learnings.AddChild();
+				_child.AssignElem( learningDoc );
+				_child.course_start_usage_date = learningDoc.start_usage_date;
+				_child.AssignElem( learningPart );
+				
+				try
+				{
+					_child.person_code= _learning.person_id.ForeignElem.code
+				}
+				catch(ex)
+				{
+				}
+				
+				if (TopElem.disp_person_list_staff)
+					_child.person_list_staff = tools.person_list_staff_by_person_id(_child.person_id);
+				
+				_child.per_cent = _child.max_score.HasValue &amp;&amp; _child.max_score != 0 ? ( _child.score / _child.max_score ) * 100. : 0;
+				
+				if ( learningPart.objectives.ChildNum != 0 )
+				{
+					_objectives = learningPart.objectives;
+				}
+				else
+				{
+					fldAnnals = tools.annals_decrypt( learningPart );
+					_objectives = fldAnnals == null ? [] : fldAnnals.objectives.lines;
+				}
+				for ( _objective in _objectives )
+				{
+					oParams.objectives.ObtainChildByKey( _objective.PrimaryKey );
+					_int = _child.objectives.lines.AddChild();
+					_int.AssignElem( _objective );
+					if ( ! _objective.score.HasValue &amp;&amp; _objective.score.ChildNum != 0 )
+						_int.score = ArrayMerge( _objective.score, 'Value', ',' );
+				}
+			}
+			catch ( err )
+			{
+			}
+		}
+		
+		_where_str = '';
+		_where_str = _where_str + ( oParams.start_date == null ? '' : ( _where_str == '' ? '' : ' and' ) + ' $elem/start_usage_date &gt;= ' + XQueryLiteral( DateNewTime( oParams.start_date, 0, 0, 0 ) ) );
+		_where_str = _where_str + ( oParams.finish_date == null ? '' : ( _where_str == '' ? '' : ' and' ) + ' $elem/start_usage_date &lt;= ' + XQueryLiteral( DateNewTime( oParams.finish_date, 23, 59, 59 ) ) );
+		_where_str = _where_str + ( _where_str == '' ? '' : ' and' ) + ' $elem/course_id = ' + oParams.course_id;
+		
+		_person_array = Array();
+
+		if ( oParams.org_id.HasValue || oParams.parent_object_id.HasValue )
+		{
+			curNodeID = ( oParams.parent_object_id != null ? oParams.parent_object_id : oParams.org_id );
+			//_ids_array = ArraySelectDistinct( tools.get_sub_person_ids_by_subdivision_id( curNodeID )) ;
+			if ( oParams.hier_sub_select )
+			{
+				_ids_array = ArraySelectDistinct( tools.get_sub_person_ids_by_subdivision_id( curNodeID )) ;
+			}
+			else
+			{
+				subsArray = XQuery('for $elem in subs where $elem/parent_id='+ curNodeID +' and $elem/type=&quot;position&quot; return $elem');
+				_ids_array = Array();
+				count=0;
+				for ( _sub in subsArray )
+				{
+					if ( _sub.basic_collaborator_id.HasValue)
+					{
+						_ids_array[count] = _sub.basic_collaborator_id;
+						count++;
+					}
+				}
+				_ids_array = ArraySelectDistinct(_ids_array);
+			}
+			_person_array = QueryCatalogByKeys( 'collaborators', 'id', _ids_array );
+		}
+		
+		if ( oParams.group_id.HasValue)
+		{
+			try
+			{
+				groupDoc = OpenDoc( UrlFromDocID( TopElem.group_id ) ).TopElem;
+			}
+			catch(_gigi_)
+			{
+				groupDoc = undefined;
+			}
+			if (groupDoc != undefined)
+				groupPersonsIDArray = ArrayExtract( groupDoc.collaborators, 'collaborator_id' );
+				
+			if ( ArrayCount( _person_array ) > 0 )
+			{
+				_person_array = ArrayIntersect(_person_array,groupPersonsIDArray,'This.id') 
+			}
+			else
+			{		
+				_person_array = QueryCatalogByKeys( 'collaborators', 'id', groupPersonsIDArray );
+			}
+		}
+		
+		if ( oParams.person_id.HasValue)
+		{
+			if ( ArrayCount( _person_array )>0 )
+			{
+				_person_array = ArraySelect( _person_array, 'id == oParams.person_id');
+			}
+			else if ( !( oParams.org_id.HasValue || oParams.parent_object_id.HasValue || oParams.group_id.HasValue ))
+			{
+				_person_array = XQuery( 'for $elem in collaborators where $elem/id = ' + oParams.person_id + ' return $elem' );
+			}
+		}
+		
+		if  ( oParams.org_id.HasValue || oParams.parent_object_id.HasValue || oParams.group_id.HasValue || oParams.person_id.HasValue  )
+		{
+			for ( _person in _person_array )
+			{
+				if ( _person.id != null )
+				{
+					if ( oParams.disp_learning_type == '(active_learnings,learnings)' )
+					{
+						_learning_array = XQuery( 'for $elem in active_learnings where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						add_learnings( _learning_array );
+						
+						_learning_array = XQuery( 'for $elem in learnings where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						add_learnings( _learning_array );
+					}
+					else
+					{
+						_learning_array = XQuery( 'for $elem in ' + oParams.disp_learning_type + ' where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						add_learnings( _learning_array );
+					}
+				}
+			}
+		}
+		else
+		{
+			if ( oParams.disp_learning_type == '(active_learnings,learnings)' )
+			{
+				_learning_array = XQuery( 'for $elem in active_learnings where' + _where_str + ' return $elem' );
+				add_learnings( _learning_array );
+				
+				_learning_array = XQuery( 'for $elem in learnings where' + _where_str + ' return $elem' );
+				add_learnings( _learning_array );
+			}
+			else
+			{
+				_learning_array = XQuery( 'for $elem in ' + oParams.disp_learning_type + ' where' + _where_str + ' return $elem' );
+				add_learnings( _learning_array );
+			}
+		}
+
+		if ( oParams.disp_parts )
+			oParams.is_create = true;
+
+		return oParams;
+	"/>
+	
+	<course_module_report PROPERTY="1" PARAM="oParams" ALLOW-CALL-FROM-CLIENT="1" EXPR="
+		if ( oParams == null || oParams == undefined )
+		{
+			oParams.error = 1;
+		}
+		
+		function fnAddLearnings( arrLearnings )
+		{		
+			for ( catLearning in arrLearnings )
+			{
+				try
+				{
+					teLearning = OpenDoc( UrlFromDocID( catLearning.PrimaryKey ) ).TopElem;
+					learningPart = teLearning.parts.GetChildByKey( oParams.part_id );
+				
+					_child = oParams.learnings.AddChild();
+					_child.AssignElem( teLearning );
+					_child.course_start_usage_date = teLearning.start_usage_date;
+					_child.AssignElem( learningPart );
+
+					try
+					{
+						_child.person_code= catLearning.person_id.ForeignElem.code
+					}
+					catch(ex)
+					{
+					}
+					
+					try
+					{
+						_child.state_id= catLearning.state_id
+					}
+					catch(ex)
+					{
+					}
+					
+					if ( TopElem.disp_person_list_staff )
+						_child.person_list_staff = tools.person_list_staff_by_person_id( _child.person_id );
+					
+					_child.per_cent = _child.max_score.HasValue &amp;&amp; _child.max_score != 0 ? ( _child.score / _child.max_score ) * 100. : 0;
+
+					if ( learningPart.interactions.ChildNum != 0 )
+					{
+						_interactions = learningPart.interactions;
+					}
+					else
+					{
+						fldAnnals = tools.annals_decrypt( learningPart );
+						_interactions = fldAnnals == null ? [] : fldAnnals.interactions.lines;
+					}
+
+					for ( _interaction in _interactions )
+					{
+						oParams.interactions.ObtainChildByKey( _interaction.PrimaryKey );
+						_int = _child.interactions.lines.AddChild();
+						_int.AssignElem( _interaction );
+						_int.type_interaction = _int.type_interaction.HasValue ? _int.type_interaction.ForeignElem.name : '';
+						_int.latency = _int.latency.HasValue ? tools.get_period_from_iso( _int.latency ) / 1000 : '';
+					}
+				}
+				catch ( err )
+				{
+				}
+			}
+		}
+
+		oParams.learnings.Clear();
+		oParams.interactions.Clear();
+		
+		_where_str = '';
+		_where_str = _where_str + ( oParams.start_date == null ? '' : ( _where_str == '' ? '' : ' and' ) + ' $elem/start_usage_date &gt;= ' + XQueryLiteral( DateNewTime( oParams.start_date, 0, 0, 0 ) ) );
+		_where_str = _where_str + ( oParams.finish_date == null ? '' : ( _where_str == '' ? '' : ' and' ) + ' $elem/start_usage_date &lt;= ' + XQueryLiteral( DateNewTime(  oParams.finish_date, 23, 59, 59 ) ) );
+		_where_str = _where_str + ( _where_str == '' ? '' : ' and' ) + ' $elem/course_id = ' + oParams.course_id;
+		
+		_person_array = Array();
+
+		if ( oParams.org_id.HasValue || oParams.parent_object_id.HasValue )
+		{
+			curNodeID = ( oParams.parent_object_id != null ? oParams.parent_object_id : oParams.org_id );
+			//_ids_array = ArraySelectDistinct( tools.get_sub_person_ids_by_subdivision_id( curNodeID )) ;
+			if ( oParams.hier_sub_select )
+			{
+				_ids_array = ArraySelectDistinct( tools.get_sub_person_ids_by_subdivision_id( curNodeID )) ;
+			}
+			else
+			{
+				subsArray = XQuery('for $elem in subs where $elem/parent_id='+ curNodeID +' and $elem/type=&quot;position&quot; return $elem');
+				_ids_array = Array();
+				count=0;
+				for ( _sub in subsArray )
+				{
+					if ( _sub.basic_collaborator_id.HasValue)
+					{
+						_ids_array[count] = _sub.basic_collaborator_id;
+						count++;
+					}
+				}
+				_ids_array = ArraySelectDistinct(_ids_array);
+			}
+			_person_array = QueryCatalogByKeys( 'collaborators', 'id', _ids_array );
+		}
+		
+		
+		if ( oParams.group_id.HasValue)
+		{
+			try
+			{
+				groupDoc = OpenDoc( UrlFromDocID( TopElem.group_id ) ).TopElem;
+			}
+			catch(_gigi_)
+			{
+				groupDoc = undefined;
+			}
+			if (groupDoc != undefined)
+				groupPersonsIDArray = ArrayExtract( groupDoc.collaborators, 'collaborator_id' );
+				
+			if ( ArrayCount( _person_array ) > 0 )
+			{
+				_person_array = ArrayIntersect(_person_array,groupPersonsIDArray,'This.id')
+			}
+			else
+			{		
+				_person_array = QueryCatalogByKeys( 'collaborators', 'id', groupPersonsIDArray );
+			}
+		}
+		
+		if ( oParams.person_id.HasValue)
+		{
+			if ( ArrayCount( _person_array )>0 )
+			{
+				_person_array = ArraySelect( _person_array, 'id == oParams.person_id');
+			}
+			else if ( !( oParams.org_id.HasValue || oParams.parent_object_id.HasValue || oParams.group_id.HasValue ))
+			{
+				_person_array = XQuery( 'for $elem in collaborators where $elem/id = ' + oParams.person_id + ' return $elem' );
+			}
+		}
+		
+		if  ( oParams.org_id.HasValue || oParams.parent_object_id.HasValue || oParams.group_id.HasValue || oParams.person_id.HasValue  )
+		{
+			for ( _person in _person_array )
+			{
+				if ( _person.id != null )
+				{
+					if ( oParams.disp_learning_type == '(active_learnings,learnings)' )
+					{
+						arrLearnings = XQuery( 'for $elem in active_learnings where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						fnAddLearnings( arrLearnings );
+						
+						arrLearnings = XQuery( 'for $elem in learnings where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						fnAddLearnings( arrLearnings );
+					}
+					else
+					{
+						arrLearnings = XQuery( 'for $elem in ' + oParams.disp_learning_type + ' where $elem/person_id = ' + _person.id + ( _where_str == '' ? '' : ' and' ) + _where_str + ' return $elem' );
+						fnAddLearnings( arrLearnings );
+					}
+				}
+			}
+		}
+		else
+		{
+			if ( oParams.disp_learning_type == '(active_learnings,learnings)' )
+			{
+				arrLearnings = XQuery( 'for $elem in active_learnings where' + _where_str + ' return $elem' );
+				fnAddLearnings( arrLearnings );
+				
+				arrLearnings = XQuery( 'for $elem in learnings where' + _where_str + ' return $elem' );
+				fnAddLearnings( arrLearnings );
+			}
+			else
+			{
+				arrLearnings = XQuery( 'for $elem in ' + oParams.disp_learning_type + ' where' + _where_str + ' return $elem' );
+				fnAddLearnings( arrLearnings );
+			}
+		}
+
+		oParams.learnings.Sort( oParams.sort_type_id, '+' );
+	
+		if ( oParams.disp_parts )
+			oParams.is_create = true;
+
+		return oParams;		
+	"/>
+	
+</tools_report>
+
+</SPXML-INLINE-FORM>

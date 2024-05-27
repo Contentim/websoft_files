@@ -1,0 +1,92 @@
+﻿<HTML>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+		<table border="1" cellpadding="2" cellspacing="0">
+		  <tr valign="middle">
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('wrm4ebg7c9')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_code')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_org')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_subd')%></td>
+			<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_position')%></td>
+			<td width="110px" bgcolor="#FFCC99"><%=ms_tools.get_const('9zrvsdt5a5')%></td>
+			<td width="110px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_dismiss_date')%></td>	
+			<td width="110px" bgcolor="#FFCC99"><%=ms_tools.get_const('mak5wn2e6o')%></td>	
+			<td width="100px" bgcolor="#FFCC99"><%=ms_tools.get_const('3rr6dy1wal')%></td>
+			<td width="100px" bgcolor="#FFCC99"><%=ms_tools.get_const('vlpb_finish_date')%></td>
+			<td width="50px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_score')%></td>
+			<td width="80px" bgcolor="#FFCC99"><%=ms_tools.get_const('vppb_state')%></td>
+		  </tr>
+		<%
+
+		arrResults = Ps.learnings
+		
+		for (var i = 0; i < ArrayCount(arrResults); i++) {
+		
+			_learning = arrResults[i]
+		%>
+		
+		<%if (i % 2 === 0) { %>
+			<tr valign="middle">
+		<% } else { %>
+			<tr valign="middle" bgcolor="#CCCCCC">
+		<% } %>
+
+			<td><%=_learning.person_fullname%></td>
+			<td><%=_learning.person_code%></td>
+			
+			<%
+				org_name = '';
+				hire_date = '';
+				dismiss_date = '';
+				
+				if ( _learning.person_id.HasValue )
+				{
+					org_name = _learning.person_id.ForeignElem.org_name;
+					hire_date = StrDate( ParseDate(_learning.person_id.ForeignElem.hire_date), false, false );
+					dismiss_date = StrDate( ParseDate(_learning.person_id.ForeignElem.dismiss_date), false, false );
+				}
+			%>
+			<td><%=org_name%></td>
+			<td><%=_learning.person_subdivision_name%></td>
+			<td><%=_learning.person_position_name%></td>
+			<td align="center"><%=hire_date%></td>
+			<td align="center"><%=dismiss_date%></td>
+
+			<td><%=_learning.course_name%></td>
+			<td align="center"><%=StrDate( _learning.start_usage_date, true, false )%></td>
+			<td align="center"><%=StrDate( _learning.max_end_date, true, false )%></td>
+			<td align="center"><%=_learning.score%></td>
+			
+			<%
+				_learning_score = '';
+				if ( _learning.person_id.HasValue && _learning.max_score.HasValue)
+				{
+					_learning_score = _learning.score;
+					
+					if(_learning.max_score > 0)
+					{
+						_learning_score = _learning.score + ' (' + ( ( 100 * _learning.score ) / _learning.max_score ) + '%)'
+					}
+				}
+			%>
+			
+			<%
+				if(_learning.state_id == 3) // не пройден
+				{
+			%>
+			<td bgcolor="#ff5349" align="center"><%=_learning.state_id.ForeignElem.name%></td>
+			<%	} %>
+			
+			<%
+				if(_learning.state_id == 4) // пройден
+				{
+			%>
+			<td bgcolor="#42ff9e" align="center"><%=_learning.state_id.ForeignElem.name%></td>
+			<%	} %>
+		  </tr>
+		<%
+		}
+		%>
+		</table>
+	</body>
+</HTML>

@@ -1,0 +1,177 @@
+﻿function getParam(_arrFormFields, _sName)
+{
+	result = "";
+	try
+	{
+		_tmpFld = ArrayOptFind(_arrFormFields, "This.name=='" + _sName + "'");
+		result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+	}
+	catch (_err)
+	{
+		result = "";
+		return result;
+	}
+	return result;
+}
+
+function getObjectIDs(_arrFormFields, _sName)
+{
+	var sObjectIDs = "";
+	if (getParam(_arrFormFields, _sName) == undefined || getParam(_arrFormFields, _sName) == "")
+	{
+		try
+		{
+			sObjectIDs = SELECTED_OBJECT_IDS + "";
+		}
+		catch (_err)
+		{
+			sObjectIDs = "";
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = OBJECT_ID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = curObjectID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+	}
+	else
+		sObjectIDs = getParam(_arrFormFields, _sName) + "";
+	
+	return sObjectIDs;
+}
+
+function getFormCreate(_arrFormFields, sName, sCode, sTitle)
+{
+	var oForm;
+	
+	oForm =
+	{
+		command: "display_form",
+		title: sTitle,
+		height: 310,
+		form_fields:
+			[
+				{
+					name: "selected_objects_ids",
+					type: "hidden",
+					value: getObjectIDs(arrFormFields, 'selected_objects_ids') + ""
+				},
+				{
+					name: "name",
+					type: "string",
+					label: "Название",
+					mandatory: true ,
+					value: sName
+				},
+				{
+					name: "code",
+					type: "string",
+					label: "Код",
+					value: sCode
+				}
+			],
+		buttons:
+			[
+				{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-submit-custom" },
+				{ name: "submit", label: "Выполнить", type: "submit", css_class: "btn-cancel-custom" }
+			],
+		no_buttons: false
+	};
+
+	return oForm;
+}
+
+//MAIN
+
+ERROR = "";
+MESSAGE = "";
+RESULT = {};
+
+try
+{
+	arrFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch (_err)
+{
+	arrFormFields = [];
+}
+
+switch (command)
+{
+	case "eval":
+		sObjectIDs = getObjectIDs(arrFormFields, 'selected_objects_ids');
+		if (sObjectIDs == "")
+			RESULT = getFormCreate(arrFormFields, "", "", "Создание фактора риска");
+		else
+		{
+			iObjectID = ArrayOptFirstElem(sObjectIDs.split(";"))
+			docObject = tools.open_doc(iObjectID);
+			if (docObject != undefined)
+			{
+				teObject = docObject.TopElem;
+				RESULT = getFormCreate(arrFormFields, teObject.name, teObject.code, "Изменение фактора риска");
+			}
+				
+		}
+		break;
+	case "submit_form":
+		sNameValue = getParam(arrFormFields, 'name');
+		sCodeValue = getParam(arrFormFields, 'code');
+		bEdit = getParam(arrFormFields, 'bEdit');
+		
+		sObjectIDs = getParam(arrFormFields, 'selected_objects_ids');
+		
+		if (sObjectIDs == "")
+		{
+			newDoc = tools.new_doc_by_name('risk_level', false);
+			newDoc.BindToDb();
+			newDoc.TopElem.code = sCodeValue;
+			newDoc.TopElem.name = sNameValue;
+			newDoc.Save();
+			
+			RESULT = {
+					command: "close_form",
+					msg: "Фактор риска успешно создан",
+					confirm_result: {
+						command: "reload_page"
+					}
+				};
+		}
+		else
+		{
+			iObjectID = ArrayOptFirstElem(sObjectIDs.split(";"))
+			docObject = tools.open_doc(iObjectID);
+			if (docObject != undefined)
+			{
+				teObject = docObject.TopElem;
+				teObject.name = sNameValue;
+				teObject.code = sCodeValue;
+				docObject.Save();
+				
+				RESULT = {
+					command: "close_form",
+					msg: "Фактор риска успешно отредактирован",
+					confirm_result: {
+						command: "reload_page"
+					}
+				};
+			}
+		}
+		break;
+}

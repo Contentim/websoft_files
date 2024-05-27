@@ -1,0 +1,513 @@
+﻿function form_fields_to_object(sFormFields)
+{
+	function parse_form_fields(sFormFields)
+	{
+		var arrFormFields = undefined;
+		try
+		{
+			arrFormFields = ParseJson( sFormFields );
+		}
+		catch(e)
+		{
+			arrFormFields = [];
+		}
+		
+		return arrFormFields;
+	}
+	
+	var oFormField = {};
+	for(ffItem in parse_form_fields(sFormFields))
+	{
+		if(ffItem.type == "file")
+			oFormField.SetProperty(ffItem.name, ({value:ffItem.value, url: (ffItem.HasProperty("url") ? ffItem.url : "")}));
+		else
+			oFormField.SetProperty(ffItem.name, ffItem.value);
+	}
+	
+	return oFormField;
+}
+
+function close_form(sMsg, bDoReload)
+{
+	var oRet = {command: "close_form", msg: sMsg};
+	if(tools_web.is_true(bDoReload))
+			oRet.confirm_result = {command: "reload_page"};
+		
+	return sMsg != "" ? oRet : {};
+}
+
+
+var arrFormFields = [];
+var libParam = tools.get_params_code_library('libSuccession');
+
+
+var arrObjectIDs = [];
+
+try
+{
+	arrObjectIDs = tools_web.parse_multiple_parameter( SELECTED_OBJECT_IDS );
+}
+catch ( e )
+{}
+
+if ( ArrayOptFirstElem( arrObjectIDs ) != undefined ) 
+{
+	docObject = tools.open_doc( ArrayOptFirstElem( arrObjectIDs ) );
+	if ( docObject != undefined )
+	{
+		if ( docObject.TopElem.Name == "key_position" )
+		{
+			iCurKeyPositionID = OptInt(ArrayOptFirstElem( arrObjectIDs ));
+		}
+		else if ( docObject.TopElem.Name == "successor" )
+		{
+			iSuccessorID = OptInt(ArrayOptFirstElem( arrObjectIDs ));
+		}
+	}
+}
+else
+{
+	iCurKeyPositionID = OptInt( iCurKeyPositionID, OptInt( sCurKeyPositionID ) );
+	iSuccessorID = OptInt( iSuccessorID, OptInt( sSuccessorID ) );
+}
+
+if ( iSuccessorID == undefined && tools_web.check_object( curObject, "successor" ) )
+{
+	iSuccessorID = curObjectID;
+}
+else if ( iCurKeyPositionID == undefined && tools_web.check_object( curObject, "key_position" ) )
+{
+	iCurKeyPositionID = curObjectID;
+}
+
+bEnableOutOfContext = tools_web.is_true( bEnableOutOfContext );
+
+iAppLevel = null;
+iManagerTypeID = OptInt( ArrayOptFirstElem( tools.xquery( "for $elem in boss_types where $elem/code = 'education_manager' return $elem" ) ).id.Value, null );
+
+var iApplicationID = SCOPE_WVARS.GetOptProperty( "sAPPLICATION", null );
+teApplication = tools_app.get_cur_application( iApplicationID );
+
+if ( teApplication != null && teApplication != undefined )
+{
+	iAppLevel = OptInt( tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, teApplication.id ] ), null );
+	if ( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ) != undefined )
+	{
+		iManagerTypeID = OptInt( teApplication.wvars.GetOptChildByKey( 'manager_type_id' ).value, null );
+	}
+	var bPortalBehavior = false;
+}
+else
+	var bPortalBehavior = true;
+	
+
+sXQueryConds = '';
+
+if ( iAppLevel != null )
+{
+	switch ( iAppLevel )
+	{
+		case 10:
+		case 7:
+		case 3:
+				sXQueryConds = '';
+			break;
+
+		case 5:
+				if ( iManagerTypeID != null )
+				{
+					arrPersons = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, [ 'func' ], true, '', [ 'id' ], '', true, true, true, true, [ iManagerTypeID ], true ] )
+
+					if ( ArrayCount( arrPersons ) > 0 )
+						sXQueryConds = ( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersons, 'This.id', ',' ) + ' ) )' );
+					else
+						sXQueryConds = ( '$elem/id = 0' );
+				}
+			break;
+
+		default:
+				sXQueryConds = '$elem/id = 0';
+			break;
+	}
+}
+
+
+//var oArgs = tools_web.get_remote_action_param(["object_id","person_id","form_fields"], TopElem)
+
+if ( command == "eval" && iSuccessorID == undefined && bEnableOutOfContext )
+{
+	var arr_form_fields = [
+		{
+			name: "step_next",
+			type: "hidden",
+			value: "form"
+		},
+		{
+			name: "cur_successor_id",
+			title: "Выберите преемника",
+			label: "Преемник",
+			type: "foreign_elem",
+			catalog: "successor",
+			query_qual: sXQueryConds,
+			mandatory: true,
+			multiple: false,
+		}
+	];
+	
+	RESULT = {
+		command: "display_form",
+		title: "Указать обрабатываемый объект",
+		form_fields: arr_form_fields,
+		buttons: [{ name: "submit", label: "Выбрать", type: "submit" }]
+
+	}
+	
+	return true;
+}
+
+if ( command == "eval" && ( iSuccessorID != undefined || iCurKeyPositionID != undefined ) )
+{
+	try
+	{
+		form_fields = ParseJson( PARAMETERS.GetOptProperty( "form_fields", [ ] ) );
+	}
+	catch ( ex )
+	{
+		try
+		{
+			form_fields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+		}
+		catch ( ex )
+		{
+			form_fields = [];
+		}
+	}
+}
+
+
+//var oRes = tools.call_code_library_method( "libSuccession", "AddChangeSuccessor", [command, form_fields, iSuccessorID, bSendPersonNotificationOnCreate, bSendHRNotificationOnChange, curUserID, iCurKeyPositionID, bSendOwnerNotificationOnChangeCreate, iPersonNotificationID, iHRNotificationID, iOwnerNotificationIDOnCreate, iOwnerNotificationIDOnChange, bCheckEfficiencyCollaboratorParam, bCheckEfficiencyCanChangeParam, bCheckPotentialCollaboratorParam, bCheckPotentialCanChangeParam, iAppLevel, iManagerTypeID ])
+
+try
+{
+	bSendOwnerNotificationOnChangeCreate = tools_web.is_true( bSendOwnerNotificationOnChangeCreate );
+}
+catch( ex )
+{
+	bSendOwnerNotificationOnChangeCreate = false;
+}
+
+try
+{
+	iPersonNotificationID = Int( iPersonNotificationID );
+}
+catch( ex )
+{
+	iPersonNotificationID = null;
+}
+
+try
+{
+	iHRNotificationID = Int( iHRNotificationID );
+}
+catch( ex )
+{
+	iHRNotificationID = null;
+}
+
+try
+{
+	iOwnerNotificationIDOnCreate = Int( iOwnerNotificationIDOnCreate );
+}
+catch( ex )
+{
+	iOwnerNotificationIDOnCreate = null;
+}
+
+try
+{
+	iOwnerNotificationIDOnChange = Int( iOwnerNotificationIDOnChange );
+}
+catch( ex )
+{
+	iOwnerNotificationIDOnChange = null;
+}
+
+try
+{	
+	var oFormField = form_fields_to_object(form_fields);
+	
+	if(iSuccessorID == undefined )
+	{
+		
+		iSuccessorID = OptInt(oFormField.GetOptProperty("cur_successor_id"));
+		
+		if(iSuccessorID != undefined )
+		{
+			arrFormFields.push({
+						name: "cur_successor_id",
+						type: "hidden",
+						value: iSuccessorID
+					});
+		}
+	}
+
+	var docSuccessor = null;
+	var teSuccessor = null;
+
+	if ( !IsEmptyValue(iSuccessorID) )
+	{
+		docSuccessor = tools.open_doc(iSuccessorID);
+
+		if ( docSuccessor == undefined )
+			throw StrReplace( "Не найден объект с ID: [{PARAM1}]", "{PARAM1}", iSuccessorID );
+
+		teSuccessor = docSuccessor.TopElem;
+		if ( teSuccessor.Name != 'successor' )
+			throw StrReplace( "Объект с ID: [{PARAM1}] не является преемником", "{PARAM1}", iSuccessorID );
+	}
+	
+	var bExistEfficiencyCollaborator = tools.get_process_param('libSuccession', 'efficiency_collaborator');
+	var bGetEfficiencyFromCollaborator = bExistEfficiencyCollaborator && teSuccessor == null
+	var bEfficiencyCanChange = tools.get_process_param('libSuccession', 'efficiency_can_change') && teSuccessor != null;
+	
+	var bExistPotentialCollaborator = tools.get_process_param('libSuccession', 'potential_collaborator');
+	var bGetPotentialFromCollaborator = bExistPotentialCollaborator && teSuccessor == null
+	var bPotentialCanChange = tools.get_process_param('libSuccession', 'potential_can_change') && teSuccessor != null;
+
+	if(iAppLevel < 3)
+	{
+		if ( ArrayOptFirstElem( XQuery( "for $elem in func_managers where $elem/person_id = " + curUserID + " return $elem/Fields( 'id' )" ) ) == undefined)
+		{
+			throw "Не руководителю возможность изменения/добавления преемников недоступна.";
+		}
+		
+		var bCreateSuccessor = libParam.GetOptProperty( "BossRights.bCreateSuccessor", true );
+		if ( ! bCreateSuccessor && teSuccessor == null )
+		{
+			throw "Возможность создания преемников отключена в настройках.";
+		}
+	}
+
+	var sDevelopmentPotentialName = "";
+	var sEfficiencyEstimationName = "";
+	var sReadinessLevelName = "";
+
+	if ( teSuccessor != null )
+	{
+		var DevelopmentPotential = teSuccessor.development_potential_id.OptForeignElem
+		sDevelopmentPotentialName = DevelopmentPotential == undefined ? "" : DevelopmentPotential.name.Value;
+
+		var EfficiencyEstimation = teSuccessor.efficiency_estimation_id.OptForeignElem
+		sEfficiencyEstimationName = EfficiencyEstimation == undefined ? "" : EfficiencyEstimation.name.Value;
+
+		var ReadinessLevel = teSuccessor.readiness_level_id.OptForeignElem
+		sReadinessLevelName = ReadinessLevel == undefined ? "" : ReadinessLevel.name.Value;
+	}
+
+	var bChangeSuccessor = libParam.GetOptProperty( "BossRights.bChangeSuccessor", true );
+	var bIsReadOnly = ( ! bChangeSuccessor && teSuccessor != null );
+
+	var bChangeStatusSuccessor = libParam.GetOptProperty( "BossRights.bChangeStatusSuccessor", true );
+
+	var sNextStep = oFormField.GetOptProperty( "step_next", "form" );
+
+	if ( command == "eval" || ( command == "submit_form" && sNextStep == "form" ) )
+	{
+		arrFormFields.push( {name: "step_next", type: "hidden", value: "do"} );
+
+		if ( teSuccessor == null && iCurKeyPositionID == undefined )
+		{
+			sXQueryConds = '$elem/id = 0';
+
+			if ( iAppLevel == null || iAppLevel == undefined )
+			{
+				arrPersons = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, [ 'func', 'fact' ], true, '', [ 'id' ], '', true, true, true, true, [ ], true ] )
+
+				if ( ArrayCount( arrPersons ) > 0 )
+					sXQueryConds = ( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersons, 'This', ',' ) + ' ) )' );
+
+				arrFormFields.push({name: "key_position_id", label: "Ключевая должность", title: "Выберите элемент", type: "foreign_elem", mandatory: true, query_qual: sXQueryConds, multiple: false, catalog: "key_position"});
+			}
+			else
+			{
+				if ( iAppLevel == 10 || iAppLevel == 7 )
+				{
+					sXQueryConds = '';
+				}
+
+				if ( iAppLevel == 5 )
+				{
+					if ( iManagerTypeID != null )
+					{
+						arrPersons = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, [ 'func' ], true, '', [ 'id' ], '', true, true, true, true, [ iManagerTypeID ], true ] )
+
+						if ( ArrayCount( arrPersons ) > 0 )
+							sXQueryConds = ( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersons, 'This', ',' ) + ' ) )' );
+					}
+				}
+
+				arrFormFields.push({name: "key_position_id", label: "Ключевая должность", title: "Выберите элемент", type: "foreign_elem", mandatory: true, query_qual: sXQueryConds, multiple: false, catalog: "key_position"});
+			}
+		}
+		else if ( iCurKeyPositionID != null )
+		{
+			arrFormFields.push({name: "key_position_id", type: "hidden", value: iCurKeyPositionID});
+			var sKeyPositionName = RValue(ArrayOptFirstElem( tools.xquery( "for $elem in key_positions where $elem/id=" + iCurKeyPositionID + " return $elem/Fields('name')" ), { name: "" } ).name);
+			arrFormFields.push({name: "paragraph_key_position_id", type: "paragraph", value: "<b>Ключевая должность:</b>&nbsp;" + sKeyPositionName }); 
+		}
+		else
+		{
+			arrFormFields.push({name: "paragraph_key_position_id", type: "paragraph", value: "<b>Ключевая должность:</b>&nbsp;" + teSuccessor.key_position_id.person_position_name.Value +" (" + teSuccessor.key_position_id.person_fullname.Value + ")"}); 
+		}
+
+		if ( teSuccessor == null )
+		{
+			sXQueryConds = '$elem/id = 0';
+
+			if ( iAppLevel == null || iAppLevel == undefined )
+			{
+				arrPersons = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, [ 'func', 'fact' ], true, '', [ 'id' ], '', true, true, true, true, [ ], true ] )
+
+				if ( ArrayCount( arrPersons ) > 0 )
+					sXQueryConds = ( 'MatchSome( $elem/id, ( ' + ArrayMerge( arrPersons, 'This', ',' ) + ' ) )' );
+
+				arrFormFields.push({name: "person_id", label: "Сотрудник", title: "Выберите элемент", type: "foreign_elem", mandatory: true, query_qual: sXQueryConds, multiple: false, catalog: "collaborator"});
+			}
+			else
+			{
+				if ( iAppLevel == 10 || iAppLevel == 7 || iAppLevel == 3 )
+				{
+					sXQueryConds = '';
+				}
+
+				if ( iAppLevel == 5 )
+				{
+					if ( iManagerTypeID != null )
+					{
+						arrPersons = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUserID, [ 'func' ], true, '', [ 'id' ], '', true, true, true, true, [ iManagerTypeID ], true ] )
+
+						if ( ArrayCount( arrPersons ) > 0 )
+							sXQueryConds = ( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersons, 'This', ',' ) + ' ) )' );
+					}
+				}
+
+				arrFormFields.push({name: "person_id", label: "Сотрудник", title: "Выберите элемент", type: "foreign_elem", mandatory: true, query_qual: sXQueryConds, multiple: false, catalog: "collaborator"});
+			}
+		}
+		else
+		{
+			arrFormFields.push({name: "paragraph_person_id", type: "paragraph", value: "<b>Сотрудник:</b>&nbsp;" + teSuccessor.person_fullname.Value}); 
+		}
+
+		if ( teSuccessor == null || bChangeStatusSuccessor )
+		{
+			var oStatusField = { name: "status", label: "Статус", type: "select", value: (teSuccessor != null ? teSuccessor.status.Value: null), mandatory: false, entries: [] };
+			for ( _status in common.successor_status_types )
+			{
+				oStatusField.entries.push( { name: _status.name.Value, value: _status.id.Value } );
+			}
+			arrFormFields.push( oStatusField );
+		}
+		else if ( teSuccessor != null )
+		{
+			var fldSuccessorStatus = teSuccessor.status.OptForeignElem;
+			var sFormattedStatus = fldSuccessorStatus.bk_color.Value != "" ? '<span style="padding: 2px 5px; background-color: rgb(' + fldSuccessorStatus.bk_color.Value + ')">' + fldSuccessorStatus.name.Value + "</span>" : fldSuccessorStatus.name.Value;
+			arrFormFields.push({name: "paragraph_status", type: "paragraph", value: "<b>Статус:</b>&nbsp;" + sFormattedStatus }); 
+		}
+		
+		if ( ! bIsReadOnly )
+		{
+			if ( !bGetPotentialFromCollaborator )
+			{
+				if ( !bPortalBehavior || bPotentialCanChange || teSuccessor == null )
+				{
+					var arrDevelopmentPotentialEntrys = ArrayExtract(XQuery("for $elem in development_potentials order by $elem/name return $elem/Fields('id','name')"), "({name:This.name.Value,value:This.id.Value})");
+
+					arrFormFields.push({name: "development_potential_id", label: "Потенциал развития", type: "select", entries: arrDevelopmentPotentialEntrys, value: (teSuccessor != null ? teSuccessor.development_potential_id.Value : null)}); 
+				}
+				else if( teSuccessor != null )
+				{
+					arrFormFields.push({name: "paragraph_development_potential_id", type: "paragraph", value: "<b>Потенциал развития:</b>&nbsp;" + sDevelopmentPotentialName}); 
+				}
+			}
+
+
+			if ( !bGetEfficiencyFromCollaborator )
+			{
+				if ( !bPortalBehavior || bEfficiencyCanChange || teSuccessor == null )
+				{
+					var arrEfficiencyEstimationEntrys = ArrayExtract( XQuery( "for $elem in efficiency_estimations order by $elem/name return $elem/Fields('id','name')"), "({name:This.name.Value,value:This.id.Value})" );
+					
+					arrFormFields.push({name: "efficiency_estimation_id", label: "Оценка эффективности", type: "select", entries: arrEfficiencyEstimationEntrys, value: (teSuccessor != null ? teSuccessor.efficiency_estimation_id.Value : null)});
+				}
+				else if( teSuccessor != null )
+				{
+					arrFormFields.push({name: "paragraph_efficiency_estimation_id", type: "paragraph", value: "<b>Оценка эффективности:</b>&nbsp;" + sEfficiencyEstimationName}); 
+				}
+			}
+
+			var arrReadinessLevelEntrys = ArrayExtract(XQuery("for $elem in readiness_levels order by $elem/name return $elem/Fields('id','name')"), "({name:This.name.Value,value:This.id.Value})");
+			arrFormFields.push({name: "readiness_level_id", label: "Уровень готовности", type: "select", entries: arrReadinessLevelEntrys, value: (teSuccessor != null ? teSuccessor.readiness_level_id.Value : null)}); 
+		}
+		else
+		{
+			arrFormFields.push({name: "paragraph_development_potential_id", type: "paragraph", value: "<b>Потенциал развития:</b>&nbsp;" + sDevelopmentPotentialName }); 
+
+			arrFormFields.push({name: "paragraph_efficiency_estimation_id", type: "paragraph", value: "<b>Оценка эффективности:</b>&nbsp;" + sEfficiencyEstimationName }); 
+
+			arrFormFields.push({name: "paragraph_readiness_level_id", type: "paragraph", value: "<b>Уровень готовности:</b>&nbsp;" + sReadinessLevelName }); 
+		}
+		
+		
+		if(!bIsReadOnly)
+		{
+			arrFormFields.push({name: "paragraph_file_names", type: "paragraph", value: (teSuccessor != null ? "<b>Файлы:</b><br>" + ArrayMerge(teSuccessor.files, "'<a href=\"/download_file.html?file_id=' + This.file_id.Value + '\">' + This.file_id.ForeignElem.name.Value + '</a>'", "<br>") : "") }); 
+			
+			arrFormFields.push({name: "file", label: "Добавить файл", title: "Добавить файл", type: "file" }); 
+		}
+
+		var sTitle = teSuccessor != null ? "Изменение преемника" : "Добавление преемника";
+		var arrButtons = [];
+		var oForm = {
+			command: "display_form",
+			title: sTitle,
+			height: 650,
+			form_fields: arrFormFields,
+			buttons: [{ name: "submit", label: "Сохранить", type: "submit" },{ name: "cancel", label: "Отменить", type: "cancel"}]
+		};
+		
+		RESULT = oForm;
+	}
+	else if ( command == "submit_form" && sNextStep == "do" )
+	{
+		var oParam = {
+			send_on_create: tools_web.is_true(bSendPersonNotificationOnCreate),
+			person_notification_id: iPersonNotificationID,
+			send_on_change: tools_web.is_true(bSendHRNotificationOnChange),
+			hr_notification_id: iHRNotificationID,
+			send_owner: bSendOwnerNotificationOnChangeCreate,
+			owner_notification_id_on_create: iOwnerNotificationIDOnCreate,
+			owner_notification_id_on_change: iOwnerNotificationIDOnChange,
+			efficiency_collaborator: bGetEfficiencyFromCollaborator,
+			potential_collaborator: bGetPotentialFromCollaborator,
+			cur_user_id: curUserID
+		}
+
+		var oRes = tools.call_code_library_method( "libSuccession", "SetSuccessor", [ iSuccessorID, oFormField, oParam ] );
+		RESULT = oRes.result;
+		ERROR = oRes.error;
+		MESSAGE = oRes.errorText;
+		
+		if(ERROR != 0)
+			RESULT = close_form(MESSAGE);
+	}
+}
+catch(err)
+{
+	ERROR = 1;
+	MESSAGE = "Ошибка вызова удаленного действия \"AddChangeSuccessor\"\r\n" + err;
+	RESULT = close_form(MESSAGE);
+}
+// ==================================
+
+if ( ERROR != 0 ) tools.call_code_library_method( "libSuccession", "toLog", [ MESSAGE ] );

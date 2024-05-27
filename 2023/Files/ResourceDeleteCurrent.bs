@@ -1,0 +1,98 @@
+﻿try
+{
+	var oRes = tools.get_code_library_result_object();
+	oRes.action_result = '';
+	
+	iFileID = OptInt( iFileID, OptInt( sFileID ) );
+	
+	if( iFileID == undefined && curObject != null && curObject != undefined && curObject.Name == "resource" ){
+		iFileID = curObjectID;
+	}
+	
+	iFileID = undefined
+	//iFileID = 7080311464168208403
+	
+	var sStep = "";
+	var arrFormFields = [];
+
+	var sFormFields = PARAMETERS.GetOptProperty("form_fields");
+
+	try
+	{
+		arrFormFields = ParseJson(sFormFields);
+	}
+	catch (e){}
+
+	oFFItem = ArrayOptFindByKey(arrFormFields, "step", "name");
+	if(oFFItem != undefined) sStep = oFFItem.value;
+	
+	for(oFld in arrFormFields){
+		if(oFld.name == "selected_object_ids"){
+			iFileID = oFld.value
+		}
+		if(oFld.name == "resourceID"){
+			iFileID = oFld.value
+		}
+	}
+
+	if(iFileID == undefined)
+	{
+		RESULT = {
+			command: "select_object",
+			title: "Выбор удаляемого файла",
+			catalog_name: "resource",
+			xquery_qual: "",
+			multi_select: false,
+			field_name: "resourceID",
+			form_fields: [
+				{name: "step", type: "hidden", value: "confirm"}
+			],
+			buttons:
+			[
+				{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-cancel-custom" },
+				{ name: "submit", label: "Выбрать", type: "submit", css_class: "btn-submit-custom" }
+			],
+			no_buttons: false
+		};
+	} else {
+		if(command == "eval" || (command == "submit_form" && sStep == "confirm")){
+			RESULT = {
+				command: "display_form",
+				title: "Удаление файла",
+				form_fields: [
+					{ name: "step", type: "hidden", value: 'end' },
+					{ name: "resourceID", type: "hidden", value: iFileID }
+				],
+				buttons: [
+					{ name: "submit", label: "OK", type: "submit"},
+					{ name: "cancel", label: "Cancel", type: "cancel"},
+				]
+			};
+		}
+		
+		if(command == "eval" || (command == "submit_form" && sStep == "end")){
+			
+			oRes = tools.call_code_library_method("libLorem", "ResourceDeleteCurrent", [ curUserID, iFileID ]);
+			
+			RESULT = {
+				command: "close_form",
+				msg: oRes.action_result,
+				confirm_result: {
+					command: "refresh",
+					source_widget: true
+				}
+			}
+		}
+	}
+	
+	ERROR = oRes.error;
+	MESSAGE = oRes.errorText;
+
+} catch(err){
+	alert(err)
+	RESULT = {
+		command: "alert",
+		msg: err
+	}
+}
+

@@ -1,0 +1,102 @@
+﻿		<remote_collection>
+			<id>0x64E4E8AA64036FFC</id>
+			<code>GetGameTeamsAll</code>
+			<name lang-ru:VALUE="##'Геймификация. Рейтинг всех команд'##"/>
+			<exec_code>
+				<code_url>library/GetGameTeamsAll.bs</code_url>
+			</exec_code>
+			<url>library/GetGameTeamsAll.bs</url>
+			<wvars>
+				<wvar>
+					<name>sCurrencyTypeID</name>
+					<value>websoft_all_awards</value>
+					<type>string</type>
+					<description>Валюта, по которой строится рейтинг</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>bRange</name>
+					<type>bool</type>
+					<description>Включить пейджинг</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>iPageIndex</name>
+					<parent_wvar_name>bRange</parent_wvar_name>
+					<type>integer</type>
+					<description>Номер страницы</description>
+					<silent>0</silent>
+					<position>1</position>
+				</wvar>
+				<wvar>
+					<name>iPageSize</name>
+					<parent_wvar_name>bRange</parent_wvar_name>
+					<type>string</type>
+					<description>Размер страницы</description>
+					<silent>0</silent>
+					<position>2</position>
+				</wvar>
+				<wvar>
+					<name>bSamePlace</name>
+					<value>1</value>
+					<type>bool</type>
+					<description>Присваивать командам одно и тоже место при одинаковом количестве баллов</description>
+					<silent>0</silent>
+					<position>3</position>
+				</wvar>
+			</wvars>
+			<result_fields>
+				<result_field>
+					<id>xvhtnm</id>
+					<name>command_id</name>
+					<type>integer</type>
+					<title>ID команды</title>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>vqln1k</id>
+					<name>name</name>
+					<type>string</type>
+					<title>Название команды</title>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>d9o4e2</id>
+					<name>score</name>
+					<type>real</type>
+					<title>Кол-во баллов</title>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+				<result_field>
+					<id>dxeart</id>
+					<name>num</name>
+					<type>integer</type>
+					<title>Номер в рейтинге</title>
+					<for_analytics>0</for_analytics>
+					<for_analytics_aggregation>0</for_analytics_aggregation>
+					<prohibit_sort>0</prohibit_sort>
+				</result_field>
+			</result_fields>
+			<api_ver>0</api_ver>
+			<api_search>
+				<has_fulltext>1</has_fulltext>
+			</api_search>
+			<ready_to_analytics>0</ready_to_analytics>
+			<comment>sCurrencyTypeID: websoft_all_awards, websoft_all_badges</comment>
+			<constructor>
+				<use>0</use>
+			</constructor>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_collection>
+

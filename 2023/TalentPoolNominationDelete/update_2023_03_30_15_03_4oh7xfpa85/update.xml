@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>4oh7xfpa85</id>
+		<create_date>2023-03-30T15:03:05+00:00</create_date>
+		<server_version>2023.1.595 (2023-02-16)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x6396A13616611BE3</id>
+			<code>TalentPoolNominationDelete</code>
+			<name VALUE="##'Кадровый резерв / Удалить способ выдвижения в резерв'##"/>
+			<type>eval</type>
+			<catalog_name>talent_pool_nomination</catalog_name>
+			<link_name>talent_pool_nomination</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/TalentPoolNominationDelete.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/TalentPoolNominationDelete.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

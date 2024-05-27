@@ -1,0 +1,77 @@
+﻿try
+{ 
+	iFileID = OptInt( iFileID, OptInt( sFileID ) );
+	
+	if( iFileID == undefined && curObject != null && curObject != undefined && curObject.Name == "resource" ){
+		iFileID = curObjectID;
+	}
+	
+	if(iFileID == undefined)
+		throw "Не указан ID файла"
+	
+	xarrFile = tools.xquery("for $elem in resources where MatchSome($elem/id, (" + XQueryLiteral(iFileID) + ")) return $elem/Field('person_id, person_fullname')");
+	oFileResource = ArrayOptFirstElem(xarrFile);
+	
+	if(oFileResource == undefined)
+		throw "Возникла ошибка при получении данных о файле в каталоге системы"
+	
+	iFilePersonID = oFileResource.person_id.Value
+	iFilePersonFullname = oFileResource.person_fullname.Value
+
+	switch (command)
+	{
+		case "eval":
+			RESULT = {
+				command: "display_form", // select_object
+				title: "Изменение владельца файла",
+				form_fields: [
+					{ name: "fld0", type: "hidden", value: "1" },
+					// select при выборе репозитория
+					{ name: "fld_person", label: "Пользователь с правами на текущий файл", type: "foreign_elem", catalog: "collaborator", query_qual: "", value: iFilePersonID, display_value: iFilePersonFullname, title: "Выберите элемент" }
+				],
+				buttons: [
+					{ name: "submit", label: "Назначить", type: "submit"},
+					{ name: "cancel", label: "Отменить", type: "cancel"},
+				]
+			};
+			break;
+		case "submit_form":
+			
+			var aFlds = []
+			
+			if(form_fields != undefined){
+				aFlds = ParseJson(form_fields) // парсинг полей
+			}
+
+			for(oFld in aFlds){
+				if(oFld.name == "fld_person"){
+					if(oFld.value == '')
+						throw "Не выбран пользователь, которому будут назначены права на файл"
+					
+					alert(oFld.value)
+					
+					oRes = tools.call_code_library_method( "libLorem", "ResourceChangeAuthor", [ oFld.value, iFileID ] );
+				}
+			} 
+
+			RESULT = {
+				command: "close_form", 
+				msg: oRes.action_result,
+				confirm_result: {
+					command: "refresh",
+					source_widget: true
+				}
+			}
+			
+			ERROR = oRes.error;
+			MESSAGE = oRes.errorText;
+			
+			break;
+	}
+} catch(err){
+	alert(err)
+	RESULT = {
+		command: "alert",
+		msg: err
+	}
+}

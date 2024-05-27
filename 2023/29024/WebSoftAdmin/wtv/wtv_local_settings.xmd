@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<SPXML-FORM AUTO-SAVE="1">
+
+<USE FORM="wtv_general.xmd"/>
+
+<local_settings>
+	<settings>
+		<INHERIT TYPE="local_settings_base"/>
+	</settings>
+	<news_auth>
+		<login TYPE="string"/>
+		<password TYPE="string"/>
+	</news_auth>
+
+	<blocks>
+		<block MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="string"/>
+			<is_custom TYPE="bool" DEFAULT="false"/>
+			<informers>
+				<informer MULTIPLE="1" PRIMARY-KEY="id">
+					<id TYPE="integer" FOREIGN-ARRAY="statistic_recs"/>
+				</informer>
+			</informers>
+		</block>
+	</blocks>
+
+	<certificate_template_exists TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<ui_lng_id TYPE="string" FOREIGN-ARRAY="FetchDoc( 'x-local://wtv/wtv_lngs.xml' ).TopElem"/>
+
+	<view>
+		<sel_date TYPE="date" TIME="0"/>
+		<is_work_month TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+
+		<view_section TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<display_roles>
+			<display_role MULTIPLE="1" PRIMARY-KEY="catalog_name">
+				<catalog_name TYPE="string"/>
+				<disp TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+			</display_role>
+		</display_roles>
+		<display_empty_roles TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<view_sub_type TYPE="string" NOT-NULL="1" DEFAULT="tree"/><!-- tree, grid -->
+
+		<view_expanded_type TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+		<text_selector TYPE="string" NOT-NULL="1" DEFAULT="hyper"/>
+
+		<list_hier_view_selector TYPE="string" NOT-NULL="1" DEFAULT="list"/>
+
+		<hier_view_disp_type TYPE="string" NOT-NULL="1" DEFAULT="hier"/>
+
+		<disp_calendar_event_preview TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+		<disp_calendar_event_phase TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+		<preview_width_index TYPE="integer" DEFAULT="4"/>
+		<preview_location TYPE="string" DEFAULT="right"/>
+
+		<remember_last_reports_settings TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	</view>
+
+	<temp TEMP="1">
+		<connect_state TEMP="1" DEFAULT="" TYPE="string"/>
+		<connect_error TEMP="1" DEFAULT="" TYPE="string"/>
+		<http_request TEMP="1" DEFAULT="" TYPE="string"/>
+		<items TEMP="1">
+			<item MULTIPLE="1" PRIMARY-KEY="id" TEMP="1">
+				<id TYPE="integer" FOREIGN-ARRAY="items" TEMP="1"/>
+			</item>
+		</items>
+		<items2 TEMP="1">
+			<item MULTIPLE="1" PRIMARY-KEY="id" TEMP="1">
+				<id TYPE="integer" FOREIGN-ARRAY="items" TEMP="1"/>
+			</item>
+		</items2>
+
+		<access_blocks>
+			<access_block MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="string"/>
+				<name TYPE="string"/>
+				<icon_url TYPE="string"/>
+				<items>
+					<item MULTIPLE="1" PRIMARY-KEY="id">
+						<id TYPE="string"/>
+						<title TYPE="string"/>
+						<icon TYPE="string"/>
+						<person_link_field TYPE="string"/>
+						<person_link_catalog_name TYPE="string"/>
+					</item>
+				</items>
+			</access_block>
+		</access_blocks>
+
+		<disp_access_block_info TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+		<custom_templates_list TYPE="variant"/>
+
+		<import_excel_persont_action_report_id TYPE="integer" TEMP="1"/>
+
+		<cur_screen_frame_name TYPE="string" TEMP="1"/>
+
+		<disp_progress TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+		<tasks>
+			<task MULTIPLE="1" PRIMARY-KEY="id">
+				<progress_title TYPE="string"/>
+				<result_num TYPE="integer"/>
+
+				<INHERIT TYPE="task_info_base"/>
+			</task>
+		</tasks>
+		<callback_tasks>
+			<callback_task MULTIPLE="1" PRIMARY-KEY="id">
+				<INHERIT TYPE="task_info_base"/>
+			</callback_task>
+		</callback_tasks>
+
+		<access_block_items TYPE="variant" TEMP="1"/>
+	</temp>
+	<get_access_block_items PROPERTY="1" EXPR="
+			TopElem = Child(0).Parent;
+			if ( ! TopElem.temp.access_block_items.HasValue )
+			{
+				TopElem.temp.access_block_items = ms_tools.get_access_block_items();
+			}
+			return TopElem.temp.access_block_items.Object;
+	"/>
+
+	<view_filters>
+		<view_filter MULTIPLE="1" PRIMARY-KEY="catalog">
+			<catalog TYPE="string"/>
+			<scheme_id TYPE="string" FOREIGN-ARRAY="lists.view_conditions_schemes"/>
+		</view_filter>
+	</view_filters>
+
+
+	<is_demo TYPE="bool" NOT-NULL="1" DEFAULT="true" TEMP="1"/>
+
+	<package_id TYPE="string" FOREIGN-ARRAY="package_objects"/>
+
+	<first_catalog_url TYPE="string"/>
+	<last_catalog_url TYPE="string"/>
+	<tabs>
+		<tab MULTIPLE="1" PRIMARY-KEY="url">
+			<url TYPE="string"/>
+			<title TYPE="string"/>
+			<image_url TYPE="string"/>
+			<access_block TYPE="string"/>
+			<catalog_name TYPE="string"/>
+		</tab>
+	</tabs>
+	<first_list_url TYPE="string"/>
+
+	<view_types>
+		<view_type MULTIPLE="1" PRIMARY-KEY="catalog">
+			<catalog TYPE="string"/>
+			<columns>
+				<column MULTIPLE="1" PRIMARY-KEY="name">
+					<name TYPE="string"/>
+				</column>
+			</columns>
+			<link_selector TYPE="string"/>
+		</view_type>
+	</view_types>
+
+	<small_access_blocks>
+		<small_access_block MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="string" FOREIGN-ARRAY="access_blocks"/>
+		</small_access_block>
+	</small_access_blocks>
+	<first_disp_small_access_blocks TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+	<access_block_view_type TYPE="string" NOT-NULL="1" DEFAULT="block"/>
+
+	<home>
+		<last_action_date TYPE="date" EXPR-INIT="DateOffset( Date(), 0-864000 )"/>
+		<last_forum_date TYPE="date" EXPR-INIT="DateOffset( Date(), 0-864000 )"/>
+		<last_stat_date TYPE="date" EXPR-INIT="DateOffset( Date(), 0-864000 )"/>
+	</home>
+
+	<view_course_integral_efficiency_report>
+		<response_type_id TYPE="integer"/>
+		<response_type_fields>
+			<response_type_field MULTIPLE="1" PRIMARY-KEY="id">
+				<id TYPE="string"/>
+				<name TYPE="string"/>
+				<type TYPE="string"/>
+			</response_type_field>
+		</response_type_fields>
+		<formula_column_value TYPE="string"/>
+		<formula_column_title TYPE="string"/>
+	</view_course_integral_efficiency_report>
+
+	<view_questions_analytics_report>
+		<percent_difficult TYPE="real"/>
+		<percent_simple TYPE="real"/>
+		<elapsed_percent TYPE="real"/>
+		<correlation_coefficient TYPE="real"/>
+		<variance TYPE="real"/>
+	</view_questions_analytics_report>
+
+	<cur_user_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<tab_block_id TYPE="string" FOREIGN-ARRAY="access_blocks"/>
+	<last_block_id TYPE="string" FOREIGN-ARRAY="access_blocks"/>
+	<tab_block_type TYPE="string" EXPR-INIT="'access_block'"/>
+
+	<task_progress_delay TYPE="integer" NOT-NULL="1" DEFAULT="60"/>
+
+	<admin_configuration>
+		<func_block_id TYPE="string"/>
+		<disp_desc TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	</admin_configuration>
+
+	<resource_settings>
+		<resource_setting MULTIPLE="1" PRIMARY-KEY="object_type">
+			<object_type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types"/>
+			<role_id TYPE="integer" FOREIGN-ARRAY="roles"/>
+		</resource_setting>
+	</resource_settings>
+
+	<custom_datas>
+		<custom_data MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="string"/>
+			<value TYPE="string"/>
+		</custom_data>
+	</custom_datas>
+</local_settings>
+
+
+</SPXML-FORM>

@@ -1,0 +1,29 @@
+<notification>
+	<id>0x646624D91C6E0804</id>
+	<code>modify_event</code>
+	<name VALUE="##'Уведомление о создании/изменении мероприятия'##"/>
+	<recipients>
+		<recipient>
+			<recipient_type>eval_person_ids</recipient_type>
+			<eval_ids_str>objDoc.participants</eval_ids_str>
+			<notification_template_id>7234510178148702433</notification_template_id>
+		</recipient>
+		<recipient>
+			<recipient_type>add</recipient_type>
+			<eval_str>objDoc.participants</eval_str>
+			<notification_template_id>7234510178148702433</notification_template_id>
+		</recipient>
+	</recipients>
+	<field_recipient_type>auto</field_recipient_type>
+	<notification_systems>
+		<notification_system>
+			<notification_system_id>6035867320053143919</notification_system_id>
+		</notification_system>
+	</notification_systems>
+	<active>1</active>
+	<is_std>1</is_std>
+	<changed>0</changed>
+	<date_shift_selector>0</date_shift_selector>
+	<date_shift>0</date_shift>
+	<sender_selector>0</sender_selector>			
+</notification>

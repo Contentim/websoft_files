@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_learning_dynamics_report>
+
+	<report_name TYPE="string" DEFAULT="learning_dynamics_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+	<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<block_name TYPE="string"/>
+	<course_id TYPE="integer" FOREIGN-ARRAY="courses"/>
+	<assessment_id TYPE="integer" FOREIGN-ARRAY="assessments"/>
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	<time_period_type TYPE="string" NOT-NULL="1" DEFAULT="month"/>
+	<disp_learning_prog TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<education_program_id TYPE="integer" FOREIGN-ARRAY="education_program"/>
+
+	
+	<show_alert TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<graph_type TYPE="string" NOT-NULL="1" DEFAULT="Line"/>
+	<is_web_client TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	
+	<report_categorys>
+		<report_category PRIMARY-KEY="id" MULTIPLE="1">
+			<id TYPE="string" FOREIGN-ARRAY="common.learning_dynamics_category_types"/>
+		</report_category>
+	</report_categorys>
+	
+	<INHERIT TYPE="view_columns_base"/>
+
+	<data>
+		<INHERIT TYPE="table_data_base"/>
+	</data>
+	
+	<tab_selector_type TYPE="string" NOT-NULL="1" DEFAULT="general" TEMP="1"/>
+	<data_learning_dynamics>
+		<data_learning_dynamic MULTIPLE="1" PRIMARY-KEY="period">
+			<period TYPE="string"/>		
+			<finished TYPE="string"/>		
+			<finished_in_time TYPE="string"/>		
+			<assigned TYPE="string"/>		
+			<not_finished_in_time TYPE="string"/>		
+			<passed TYPE="string"/>		
+			<passed_percent TYPE="string"/>		
+			<average_score TYPE="string"/>		
+		</data_learning_dynamic>
+	</data_learning_dynamics>
+	
+	<graph TYPE="string"/>	
+
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = QueryCatalogByKeys( 'collaborators', 'id', ArraySelectDistinct( ArrayExtract( Screen.FindItem( 'ViewGrid' ).SelRows, 'Int(Env.ListElem.cs.GetChildByKey(\'id\').t)' ) ) );
+			_num = ArrayCount( rows.Object );
+
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+
+			row_list_field.Clear();
+			return _num;
+	"/>
+</view_learning_dynamics_report>
+
+
+<OnInit PROPERTY="1" EXPR="
+
+	curUser = tools.get_cur_user();
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		if ( oProperty.name == 'report_categorys' )
+		{
+			sChildName = StrLeftRange( oProperty.name, StrCharCount( oProperty.name ) - 1 );
+
+			for ( elem in oProperty.value.GetOptProperty( sChildName ) )
+			{
+				_child = TopElem.Child( oProperty.name ).Add();
+				for ( i = 0; i < _child.ChildNum; i++ )
+				{
+					_child[ i ].Value = elem.GetOptProperty( _child[ i ].Name );
+				}
+			}
+		}
+		else
+		{
+			try
+			{
+				TopElem.Child( oProperty.name ).Value = oProperty.value;
+			}
+			catch( e )
+			{
+				//alert( 'err ' + e );
+			}
+		}
+	}
+
+	oUrlQuery = UrlQuery( TopElem.Doc.Url );
+
+	arrUrlFields = [ 'block_name' ];
+	for ( sFielnElem in arrUrlFields )
+	{
+		if (TopElem.ChildExists( sFielnElem ))
+		{
+			TopElem.Child( sFielnElem ).Value = oUrlQuery.GetOptProperty( sFielnElem, '' );
+		}
+	}
+"/>
+
+</SPXML-INLINE-FORM>

@@ -1,0 +1,26 @@
+﻿iPersonID = OptInt( iPersonID, OptInt( sPersonID ) );
+if( iPersonID == undefined )
+{
+	if( tools_web.check_object(curObject, "collaborator") )
+	{
+		iPersonID = curObjectID;
+	}
+}
+
+if( iPersonID != null )
+{
+	try
+	{
+		var oRes = tools.call_code_library_method( "libMain", "lp_person_feedback", [ command, form_fields, iPersonID, i_amnt_points, s_competence, s_comment, s_currency, i_competence_profile, curUserID, bScoresWithoutDebiting ]);
+		RESULT = oRes.result;
+	}
+	catch(err)
+	{
+		ERROR = 502;
+		MESSAGE = err;
+		RESULT = {command: "alert", msg: err};
+		alert( "ERROR: lp_congrats_birthday:\r\n" + err );
+	}
+}
+
+//alert("RESULT:\r\n" + EncodeJson(RESULT))

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<download_packages SPXML-FORM="x-local://wtv/wtv_form_download_packages.xmd">
+	<download_package>
+		<id>c2aput06ge</id>
+		<type>objects</type>
+		<url>update_2023_05_19_17_44_c2aput06ge.zip</url>
+		<package_date>2023-05-19T17:44:07+00:00</package_date>
+	</download_package>
+</download_packages>

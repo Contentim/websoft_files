@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>c2aput06ge</id>
+		<create_date>2023-05-19T17:44:07+00:00</create_date>
+		<server_version>2023.1.645 (2023-05-06)</server_version>
+	</basic>
+	<notification_templates>
+		<notification_template>
+			<id>0x646624AD4C8058E1</id>
+			<code>modify_event</code>
+			<name>Уведомление о создании/изменении мероприятия</name>
+			<subject>Уведомление о создании/изменении мероприятия</subject>
+			<body>&lt;%&#10;&#10;DefCharset="utf-8"; //кодировка по умалчанию&#10;//----------------------------------&#10;// часовой пояс времени, указываемого в параметрах карточки мероприятия, &#10;// если параметр отрицательный укажите (0-X), где X - число часов [десятичная дробь]&#10;BASE_TIME_ZONE = 3; &#10;//----------------------------------&#10;PLACE_STR = "";&#10;&#10;&#10;teOrganizerObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;&#10;teEvent = objDoc; // переопределим для удобства чтения&#10;file_id=String(teEvent.id).slice(String(teEvent.id).length-6);&#10;text="";&#10;html_text = "";&#10;sSenderAddress = teOrganizerObject.email;&#10;sSubject = Text;&#10;sComment = teEvent.comment;&#10;sParticipantEmail = "";&#10;sParticipantData = "";&#10;&#10;for(participant in teEvent.participants)&#10;{&#10;&#9;teParticipantObject = OpenDoc( UrlFromDocID( OptInt( participant.person_id ) ) ).TopElem;&#10;&#9;&#10;&#9;sParticipantEmail += teParticipantObject.fullname +' &lt;'+teParticipantObject.email+'&gt;, ';&#10;&#9;sParticipantData += 'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=' + teParticipantObject.lastname + ' ' + teParticipantObject.firstname + ':mailto:' + teParticipantObject.email + '\n'; &#10;}&#10;&#10;iValarmText='BEGIN:VALARM&#10;TRIGGER:-P1D&#10;DURATION:PT15M&#10;ACTION:DISPLAY&#10;DESCRIPTION:'+teEvent.name+' '+teEvent.plan_start_date+'&#10;X-WR-ALARMUID:'+StrHexInt(Int(teEvent.id)-1)+'&#10;END:VALARM';&#10;&#10;RSVP_STR='TRUE';&#10;DT_START = DateOffset(teEvent.plan_start_date,(0-BASE_TIME_ZONE)*3600);&#10;DT_END = DateOffset(teEvent.plan_end_date,(0-BASE_TIME_ZONE)*3600);&#10;&#10;iCalendarText='BEGIN:VCALENDAR&#10;VERSION:2.0&#10;PRODID:-//WebSoft LTD//WebTutor 2//EN&#10;METHOD:REQUEST&#10;BEGIN:VEVENT&#10;DTSTART:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_START),StrXmlDate(DT_START).lastIndexOf('+')),'-',''),':','')+'Z&#10;DTEND:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_END),StrXmlDate(DT_END).lastIndexOf('+')),'-',''),':','')+'Z&#10;DTSTAMP:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(Date()),StrXmlDate(Date()).lastIndexOf('+')),'-',''),':','')+'Z&#10;TRANSP:OPAQUE&#10;SEQUENCE:0&#10;CLASS:PUBLIC&#10;SUMMARY:'+teEvent.name+'&#10;DESCRIPTION:'+sComment+'&#10;ORGANIZER;CN='+teOrganizerObject.fullname+':mailto:'+teOrganizerObject.email+'\n&#10;'+sParticipantData+'&#10;UID:'+StrHexInt(teEvent.id)+'-WebTutor_Generated&#10;LOCATION:'+PLACE_STR+'\n&#10;'+iValarmText+'&#10;END:VEVENT&#10;END:VCALENDAR'&#10;&#10;&#10;&#10;sMessageBody = 'X-Mru-BL: 0:0:2&#10;X-Mru-NR: 1&#10;X-Mru-OF: unknown (unknown)&#10;To: '+sParticipantEmail+'&#10;Subject: '+sSubject+'&#10;MIME-Version: 1.0&#10;From: '+sSenderAddress+'&#10;Content-Type: multipart/mixed; boundary="=_mixed 004128EAC32576F1_="&#10;X-Spam: Not detected&#10;X-Mras: Ok&#10;&#10;This is a multipart message in MIME format.&#10;--=_mixed 004128EAC32576F1_=&#10;Content-Type: multipart/related; boundary="=_related 004128EAC32576F1_="&#10;&#10;&#10;--=_related 004128EAC32576F1_=&#10;Content-Type: multipart/alternative; boundary="=_alternative 004128EAC32576F1_="&#10;&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/plain; charset='+DefCharset+'&#10;&#10;'+text+'&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/html; charset='+DefCharset+'&#10;Content-Disposition: inline&#10;&#10;'+html_text+'&#10;&#10;--=_alternative 004128EAC32576F1_=&#10;Content-Type: text/calendar; method=REQUEST; charset='+DefCharset+';&#10;&#10;'+iCalendarText+'&#10;&#10;--=_alternative 004128EAC32576F1_=--&#10;--=_related 004128EAC32576F1_=&#10;&#10;--=_related 004128EAC32576F1_=--&#10;--=_mixed 004128EAC32576F1_=&#10;Content-Type: text/calendar; method=REQUEST; charset='+DefCharset+'; name="c'+file_id+'.ics"&#10;Content-Disposition: attachment; filename="c'+file_id+'.ics"&#10;&#10;'+iCalendarText+'&#10;--=_mixed 004128EAC32576F1_=--&#10;'&#10;&#10;%&gt;&lt;%=sMessageBody%&gt;</body>
+			<body_type>html</body_type>
+			<is_std>1</is_std>
+		</notification_template>
+	</notification_templates>
+	<notifications>
+		<notification>
+			<id>0x646624D91C6E0804</id>
+			<code>modify_event</code>
+			<name>Уведомление о создании/изменении мероприятия</name>
+			<recipients>
+				<recipient>
+					<recipient_type>eval_person_ids</recipient_type>
+					<eval_ids_str>objDoc.participants</eval_ids_str>
+					<notification_template_id>7234510178148702433</notification_template_id>
+				</recipient>
+			</recipients>
+			<field_recipient_type>auto</field_recipient_type>
+			<notification_systems>
+				<notification_system>
+					<notification_system_id>6035867320053143919</notification_system_id>
+				</notification_system>
+			</notification_systems>
+			<active>1</active>
+			<is_std>1</is_std>
+			<changed>0</changed>
+			<date_shift_selector>0</date_shift_selector>
+			<date_shift>0</date_shift>
+			<sender_selector>0</sender_selector>
+		</notification>
+	</notifications>
+</data>

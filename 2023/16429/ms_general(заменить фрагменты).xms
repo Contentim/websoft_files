@@ -1,0 +1,27 @@
+<PANEL NAME="ms_object_selector" INNER-ALIAS="ms_object_selector" SAMPLE="1" STD-MARGINS="0" WIDTH="316vpx" VERT-SPACING="4vpx"
+PARAM-requireExpr="optional=1;subtype=code;default=false">
+
+	<TitleLabel TITLE-EXPR="
+		sTitle = EvalSampleParam( 'titleExpr' );
+		bRequire = EvalSampleParam( 'requireExpr' );
+		if ( sTitle == '' )
+			return '';
+
+		if ( sTitle == null )
+		{
+			if ( _cur_common_catalog == undefined )
+				return '';
+			else
+				if(bRequire == true)
+				{
+					return _cur_common_catalog.title + '*';
+				} else {
+					return _cur_common_catalog.title;
+				}
+		}
+		else
+		{
+			return sTitle;
+		}
+	">
+</PANEL>

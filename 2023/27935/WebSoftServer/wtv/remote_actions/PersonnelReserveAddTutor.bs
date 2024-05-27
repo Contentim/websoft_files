@@ -1,0 +1,387 @@
+﻿function getParam(_oFormFields, _sName)
+{
+	result = "";
+	try
+	{
+		_tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+		result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+	}
+	catch (_err)
+	{
+		result = "";
+		return result;
+	}
+	return result;
+}
+
+function getObjectIDs(_arrFormFields, _sName)
+{
+	var sObjectIDs = "";
+	if (getParam(_arrFormFields, _sName) == undefined || getParam(_arrFormFields, _sName) == "")
+	{
+		try
+		{
+			sObjectIDs = SELECTED_OBJECT_IDS + "";
+		}
+		catch (_err)
+		{
+			sObjectIDs = "";
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = OBJECT_ID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+		if (sObjectIDs == "")
+		{
+			try
+			{
+				sObjectIDs = curObjectID + "";
+			}
+			catch (_err)
+			{
+				sObjectIDs = "";
+			}
+		}
+	}
+	else
+		sObjectIDs = getParam(_arrFormFields, _sName) + "";
+	
+	return sObjectIDs;
+}
+
+function getParagraphName(_sObjects)
+{
+	_arrObjects = tools.xquery("for $elem in personnel_reserves where MatchSome($elem/id, (" + StrReplace(_sObjects, ';', ',') + ")) return $elem/Fields('id','person_fullname')");
+
+	arrCollaboratorsNames = [];
+	for (_elem in _arrObjects)
+	{
+		arrCollaboratorsNames.push(_elem.person_fullname)
+	}
+
+	if (ArrayCount(arrCollaboratorsNames) > 2)
+	{
+		_aObjects = [];
+		for (i=0; i < 2; i++)
+		{
+			_aObjects.push(String(arrCollaboratorsNames[i]))
+		}
+		_sObjectsName = "Резервисты: " + ArrayMerge(_aObjects, 'This', ', ') + " и еще " + (ArrayCount(_arrObjects)-2);
+	}
+	else if (ArrayCount(_arrObjects) == 1)
+		_sObjectsName = "Резервист: " + ArrayMerge(arrCollaboratorsNames, 'This', ',');
+	else
+		_sObjectsName = "Резервисты: " + ArrayMerge(arrCollaboratorsNames, 'This', ', ');
+	
+	return _sObjectsName;
+}
+
+function GetPersonnelReserveSelectForm(sXqueryQual)
+{
+	var oForm = {
+		command: "select_object",
+		title: "Выберите кадровый резерв",
+		catalog_name: "personnel_reserve",
+		xquery_qual: sXqueryQual,
+		field_name: "selected_objects_ids",
+		multi_select: true,
+		form_fields: [{name: "step", type: "hidden", value: "1"}]
+	};
+	
+	return oForm;
+}
+
+function GetCollaboratorSelectForm( _arrFormFields, sXqueryQual)
+{
+	var oForm = {
+		command: "select_object",
+		title: "Выберите сотрудника",
+		catalog_name: "collaborator",
+		xquery_qual: sXqueryQual,
+		field_name: "selected_coll_ids",
+		multi_select: false,
+		disp_hier_view: false,
+		disp_tree_selector: false,
+		form_fields: [
+			{
+				name: "step", 
+				type: "hidden", 
+				value: "2"
+			},
+			{
+				name: "selected_objects_ids",
+				type: "hidden",
+				value: getObjectIDs(_arrFormFields, "selected_objects_ids") + ""
+			}
+		]
+	};
+	
+	return oForm;
+}
+
+function GetSendOptionsForm(_arrFormFields)
+{
+	var sObjectsIDs = getObjectIDs(_arrFormFields, "selected_objects_ids");
+	var oForm = {
+		command: "display_form",
+		title: "Добавление куратора",
+		height: 350,
+		form_fields: [
+			{
+				name: "step",
+				type: "hidden",
+				value: "3"
+			},
+			{
+				name: "title",
+				type: "paragraph",
+				value: getParagraphName(sObjectsIDs)
+			},
+			{
+				name: "selected_objects_ids",
+				type: "hidden",
+				value: sObjectsIDs
+			},
+			{
+				name: "selected_coll_ids",
+				type: "hidden",
+				value: getParam(_arrFormFields, "selected_coll_ids") + ""
+			},
+			{
+				name: "sSendNotificationType",
+				type: "select",
+				label: "Отправлять уведомления",
+				entries: [{ name: "Отправлять", value: "send" }, { name: "Не отправлять", value: "not_send" }],
+				value: "send"
+			},
+			{
+				name: "sSendType",
+				type: "list",
+				label: "Адресаты",
+				entries: [{ name: "Резервист", value: "reserv" }, { name: "Новый куратор", value: "new_curator" }, { name: "Существующие кураторы", value: "exist_curator" }],
+				value: getParam(_arrFormFields, "sSendType")
+			}
+		],
+		buttons:[{ name: "cancel", label: "Отменить", type: "cancel", css_class: "btn-cancel-custom" },{ name: "submit", label: "Далее", type: "submit", css_class: "btn-submit-custom" }]
+	};
+	
+	return oForm;
+}
+
+function GetMailForm(_arrFormFields)
+{
+	var sObjectsIDs = getObjectIDs(_arrFormFields, "selected_objects_ids");
+	var oForm = {
+		command: "display_form",
+		title: "Добавление куратора",
+		height: 350,
+		form_fields: [
+			{
+				name: "step",
+				type: "hidden",
+				value: "4"
+			},
+			{
+				name: "title",
+				type: "paragraph",
+				value: getParagraphName(sObjectsIDs)
+			},
+			{
+				name: "selected_objects_ids",
+				type: "hidden",
+				value: sObjectsIDs
+			},
+			{
+				name: "selected_coll_ids",
+				type: "hidden",
+				value: getParam(_arrFormFields, "selected_coll_ids") + ""
+			},
+			{
+				name: "sSendNotificationType",
+				type: "hidden",
+				value: getParam(_arrFormFields, "sSendNotificationType") + ""
+			},
+			{
+				name: "sSendType",
+				type: "hidden",
+				value: getParam(_arrFormFields, "sSendType") + ""
+			}
+		],
+		buttons:[{ name: "cancel", label: "Отменить", type: "cancel", css_class: "btn-cancel-custom" },{ name: "submit", label: "Выполнить", type: "submit", css_class: "btn-submit-custom" }]
+	};
+
+	if (sBasicNotificationType == "template" && sCustomOption == "text")
+	{
+		oForm.form_fields.push({name: "text_notification", label:"Дополнительный текст, который будет добавлен к сообщению", type: "text", value: ""})
+	}
+	else
+	{
+		oForm.height += 70;
+		oForm.form_fields.push({name: "subject", label:"Тема уведомления", type: "string", value: ""},{name: "typeBodyNotification", label:"Формат", type: "select", entries: [{ name: "HTML", value: "html" }, { name: "Текст", value: "plane" }], value: "html"}, {name: "bodyNotification", type: "text", label: "Текст уведомления"})
+	}
+	
+	return oForm;
+}
+
+// main
+try
+{
+	arrFormFields = ParseJson(PARAMETERS.GetOptProperty("form_fields", []));
+}
+catch ( _err )
+{
+	try
+	{
+		arrFormFields = ParseJson( SCOPE_WVARS.GetOptProperty( "form_fields", "[]" ) );
+	}
+	catch ( _err )
+	{
+		arrFormFields = [];
+	}
+}
+
+var oResult = new Object();
+var sApplication = SCOPE_WVARS.GetOptProperty( "sAPPLICATION", "" );
+var sPRXqueryQual = "";
+var sCollXqueryQual = "";
+
+sSendNotificationType = getParam(arrFormFields, "sSendNotificationType");
+sBasicNotificationType = getParam(arrFormFields, "sBasicNotificationType");
+sCustomOption = getParam(arrFormFields, "sCustomOption");
+	
+if(sApplication != "")
+{
+	var sAccessType = "";
+	oApplication = ArrayOptFirstElem(tools.xquery("for $elem in applications where $elem/code = " + XQueryLiteral(sApplication) + "return $elem/Fields('id')"));
+	var iApplicationID = oApplication == undefined ? null : oApplication.id;
+	var iApplLevel = tools.call_code_library_method( "libApplication", "GetPersonApplicationAccessLevel", [ curUserID, iApplicationID ] );
+	
+	if(iApplLevel >= 7)
+	{
+		sAccessType = "admin";
+	}
+	else if(iApplLevel >= 5)
+	{
+		sAccessType = "hr";
+	}
+	else if(iApplLevel >= 3)
+	{
+		sAccessType = "curator";
+	}
+	else if(iApplLevel >= 1)
+	{
+		sAccessType = "observer";
+	}
+	switch(sAccessType)
+	{
+		case "hr":
+			var iAppHRManagerTypeID = tools.call_code_library_method("libApplication", "GetApplicationHRBossTypeID", [ iApplicationID, curUserID ]);
+			arrSubordinates = tools.call_code_library_method( "libMain", "get_subordinate_records", [ curUserID, ['func'], true, '', null, '', true, true, true, true, [iAppHRManagerTypeID], true ] );
+			sPRXqueryQual = "MatchSome( $elem/person_id, ( " + ArrayMerge( arrSubordinates, 'This.Value', ',' ) + " ) )";
+			sCollXqueryQual = "MatchSome( $elem/id, ( " + ArrayMerge( arrSubordinates, 'This.Value', ',' ) + " ) )";
+			break;
+		case "curator":
+		case "observer":
+			sPRXqueryQual = "$elem/id = 0";
+			break;
+	}
+}
+
+sStep = "";
+oStep = ArrayOptFind(arrFormFields, "This.name == 'step'");
+if (oStep != undefined)
+	sStep = oStep.value;
+
+if( ArrayOptFirstElem(arrFormFields) == undefined )
+{
+	sObjectIDs = getObjectIDs(arrFormFields, "selected_objects_ids");
+	if (sObjectIDs == "")
+		oResult = GetPersonnelReserveSelectForm(sPRXqueryQual);
+	else
+	{
+		sStep = "1"
+	}
+}
+
+if (sStep != "")
+{
+	if (sStep == "1")
+	{
+		oResult = GetCollaboratorSelectForm(arrFormFields, sCollXqueryQual)
+	}
+	if (sStep == "2")
+	{
+		if (sSendNotificationType == "admin")
+			oResult = GetSendOptionsForm(arrFormFields)
+		else
+			sStep = "3";
+	}
+	if (sStep == "3")
+	{ 
+		if (sSendNotificationType == "send")
+			oResult = GetMailForm(arrFormFields)
+		else
+			sStep = "4";
+	}
+	if (sStep == "4")
+	{
+		sObjectIDs = getObjectIDs(arrFormFields, "selected_objects_ids");
+		arrPersonelReserves = sObjectIDs.split(';');
+		iTutorID = OptInt(getParam(arrFormFields, "selected_coll_ids"), null);
+		sSendType = getParam(arrFormFields, "sSendType");
+		iTutorType = getParam(arrFormFields, "iTutorType");
+		bSendMessage = false;
+		var oSendParam = new Object();
+		
+		if (sSendNotificationType == "send" && sSendType != "")
+		{
+			bSendMessage = true;
+			oSendParam.recipients = sSendType;
+			if (sBasicNotificationType == 'template')
+			{
+				oSendParam.send_type = 'template';
+				oSendParam.iCollaboratorNotificationID = OptInt(getParam(arrFormFields, "iCollaboratorNotificationID"), 0);
+				oSendParam.iNewTutorNotificationID = OptInt(getParam(arrFormFields, "iNewTutorNotificationID"), 0);
+				oSendParam.iOldTutorNotificationID = OptInt(getParam(arrFormFields, "iOldTutorNotificationID"), 0);
+				oSendParam.custom_text = sCustomOption == 'text' ? getParam(arrFormFields, "text_notification") : '';
+			}
+			else
+			{
+				oSendParam.send_type = 'custom_message';
+				oSendParam.subject = getParam(arrFormFields, "subject");
+				oSendParam.body_type = getParam(arrFormFields, "typeBodyNotification");
+				oSendParam.body = getParam(arrFormFields, "bodyNotification");
+			}
+			
+		}
+		
+		oRes = tools.call_code_library_method("libTalentPool", "PersonnelReserveAddTutor", [ arrPersonelReserves, iTutorID, iTutorType, bSendMessage, oSendParam ]);
+		
+		if( oRes.error > 0 )
+		{
+			oResult = {
+				command: "alert",
+				msg: "ERROR: " + oRes.errorText
+			}
+		}
+		else
+		{
+			
+			oResult = {
+				command: "close_form",
+				msg: "Куратор добавлен. Обработано резервистов: " + oRes.count
+			}
+		}
+		
+		
+	}
+}
+
+RESULT = oResult;

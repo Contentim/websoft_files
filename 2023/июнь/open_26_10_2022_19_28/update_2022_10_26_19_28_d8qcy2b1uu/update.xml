@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>d8qcy2b1uu</id>
+		<create_date>2022-10-26T19:28:41+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x630F21C54DD83D7B</id>
+			<code>SalaryPaymentTypeOpenFull</code>
+			<name VALUE="##'Открыть карточку типа графика выплат заработной платы (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>salary_payment_type</catalog_name>
+			<link_name>salary_payment_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/SalaryPaymentTypeOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/SalaryPaymentTypeOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D7C</id>
+			<code>WorkScheduleTypeOpenFull</code>
+			<name VALUE="##'Открыть карточку типа графика работы (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>work_schedule_type</catalog_name>
+			<link_name>work_schedule_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/WorkScheduleTypeOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/WorkScheduleTypeOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D7D</id>
+			<code>WorkFormOpenFull</code>
+			<name VALUE="##'Открыть карточку формы работы (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>work_form</catalog_name>
+			<link_name>work_form</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/WorkFormOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/WorkFormOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D7E</id>
+			<code>WorkingConditionOpenFull</code>
+			<name VALUE="##'Открыть карточку условий работы (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>working_condition</catalog_name>
+			<link_name>working_condition</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/WorkingConditionOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/WorkingConditionOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D7F</id>
+			<code>WorkingConditionTypeOpenFull</code>
+			<name VALUE="##'Открыть карточку типа условий труда (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>working_condition_type</catalog_name>
+			<link_name>working_condition_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/WorkingConditionTypeOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/WorkingConditionTypeOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

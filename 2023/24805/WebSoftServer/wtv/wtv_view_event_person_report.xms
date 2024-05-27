@@ -1,0 +1,340 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+
+			<LINE VERT-ALIGN="center">
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'vcrb_build_report')" IMAGE-URL="//wtv/svg/elem_right.svg" CMD="RunReport"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'sgsvrm6x6u' )" IMAGE-URL="//wtv/svg/export.svg">
+					<MENU>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('w99bevhc3i') )" ACTION="
+
+								TopElem.export_type = 'xlsx';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('8ul6b3phsx') )" ACTION="
+
+								TopElem.export_type = 'docx';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('5wffbv7y7x') )" ACTION="
+
+								TopElem.export_type = 'html';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('vpdf') )" _CMD="ExportToPDF" ACTION="
+
+								TopElem.export_type = 'pdf';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+					</MENU>
+				</ButtonToolbar>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE="##ms_tools.get_const('8vv5xp8843')##">
+					<MENU>
+						<LOOP EXPR="TopElem.view_type_env.Object.columns" VAR="ListElem">
+							<MENU-ENTRY TITLE-EXPR="ms_tools.eval_column_const( ListElem.const )" CHECKED-EXPR="TopElem.columns.ChildByKeyExists( ListElem.PrimaryKey )" ACTION="
+										fldColumnChild = TopElem.columns.ObtainChildByKey( ListElem.PrimaryKey );
+										if ( fldColumnChild.const.HasValue )
+										{
+											if ( TopElem.columns.ChildNum == 1 )
+												Cancel();
+											fldColumnChild.Delete();
+										}
+										else
+										{
+											fldColumnChild.AssignElem( ListElem );
+										}
+										local_settings.view_types.ObtainChildByKey( TopElem.catalog_name ).AssignElem( TopElem );
+										local_settings.Doc.SetChanged( true );
+							"/>
+						</LOOP>
+						<MENU-ENTRY SEPARATOR="1"/>
+						<MENU-ENTRY TITLE="##ms_tools.get_const('upravleniestol') + '...'##" ACTION="Screen.RunCommand( 'EditColumns' )" PASSIVE="1"/>
+					</MENU>
+				</ButtonToolbar>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="'Параметры отчёта'" IMAGE-URL="//wtv/svg/filter.svg" CHECKED-EXPR="!TopElem.is_minimized" ACTION="
+				
+					if ( TopElem.is_minimized )
+					{
+						TopElem.is_minimized = false;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : false } ] );
+					}
+					else
+					{
+						TopElem.is_minimized = true;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : true } ] );
+					}
+
+				"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+			</LINE>
+
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<PANEL HEIGHT="-32vpx">
+			<INHERIT TYPE="data_report_base"/>
+		</PANEL>
+
+		<ITEM TYPE="status_panel"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" SOURCE="Ps.parent_object_id"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue">
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				</IF>
+
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="Ps.event_id" catalogExpr="'event'"/>
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="Ps.education_method_id" catalogExpr="'education_method'"/>
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="Ps.education_org_id" catalogExpr="'education_org'" foreignTitleExpr="disp_name"/>
+				<ITEM TYPE="ms_object_selector" WIDTH="100%" SOURCE="Ps.lector_id" catalogExpr="'lector'"/>
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('dzchcxrigp')##">
+					<COMBO WIDTH="100%" SOURCE="Ps.disp_type_id">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="all"/>
+						<LOOP EXPR="common.event_types" VAR="_event_type">
+							<COMBO-ENTRY TITLE-EXPR="_event_type.name" VALUE-EXPR="_event_type.id"/>
+						</LOOP>
+					</COMBO>
+				</TitleLabel>
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('7j1zul1bjg')##">
+					<COMBO WIDTH="100%" SOURCE="Ps.disp_status_id">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="all"/>
+						<LOOP EXPR="common.event_status_types" VAR="_event_status_type">
+							<COMBO-ENTRY TITLE-EXPR="_event_status_type.name" VALUE-EXPR="_event_status_type.id"/>
+						</LOOP>
+					</COMBO>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="RunReport" ACTION="
+
+	arrSettings = [
+					{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+					{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+					{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+					{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value },
+					{ 'name' : 'event_id', 'value' : TopElem.event_id.Value },
+					{ 'name' : 'education_method_id', 'value' : TopElem.education_method_id.Value },
+					{ 'name' : 'education_org_id', 'value' : TopElem.education_org_id.Value },
+					{ 'name' : 'lector_id', 'value' : TopElem.lector_id.Value },
+					{ 'name' : 'disp_type_id', 'value' : TopElem.disp_type_id.Value },
+					{ 'name' : 'disp_status_id', 'value' : TopElem.disp_status_id.Value },
+					{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+					{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value }
+				];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	_params = OpenNewDoc( 'x-local://wtv/wtv_form_func_params.xmd' ).TopElem;
+	_params.event_person_report.AssignElem( Ps );
+	_params.event_person_report.is_web_client=System.IsWebClient
+
+	strRowImageUrl=''
+	strViewTypeName='event_person_report'
+	strRowImageUrl=view_types.GetChildByKey( strViewTypeName ).row_image_url
+	TopElem.catalog_name=strViewTypeName
+	TopElem.view_type=strViewTypeName
+	TopElem.AssignElem( view_types.GetChildByKey( TopElem.view_type ) );
+
+	ms_tools.init_view( TopElem );
+	TopElem.row_image_url=strRowImageUrl
+
+	TopElem.disp_excel_file_open=false;
+	TopElem.data.Clear();
+	var oRes = null;
+	var iErrors = 0;
+	var sErrors = '';
+
+	function set_error( sErr )
+	{
+		iErrors++;
+		if ( iErrors &lt; 10 )
+			sErrors += sErr;
+		else if ( iErrors == 10 )
+			sErrors += '\n...';
+	}
+
+	curUser = tools.get_cur_user();
+
+	
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	oRes = task.CallMethod( 'tools_report', 'event_person_report', [ UrlEncode( _params.Xml ), curUser ] );
+
+	if ( oRes != null )
+	{
+		TopElem.count_arr = oRes.iCounter;
+
+		if ( oRes.iErrorCounter != 0 )
+		{
+			iErrors = iErrors+oRes.iErrorCounter;
+			sErrors = oRes.sErrorText + ( iErrors > 2 ? '\n' : '' ) + sErrors;
+		}
+		else
+		{
+			iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+			if ( oRes.bExcel && iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+			{
+				TopElem.disp_excel_file_open = true;
+				if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Отчет будет экспортирован.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_info'), 'info', 'ok' ) )
+				{
+					if ( System.IsWebClient )
+					{
+						if ( oRes.sDataUrl.HasValue )
+						{
+							sFileName = ObtainSessionTempFile() + '.xlsx';
+							sTempFileUrl = FilePathToUrl( UrlToFilePath( sFileName ) );
+							oRes.sDataUrl = FilePathToUrl( UrlToFilePath( 'x-local://trash/temp/general_reports/' + oRes.sDataUrl ) );
+							tools.copy_url( sTempFileUrl, oRes.sDataUrl );
+							ShellExecute( 'open', sTempFileUrl );
+						}
+						else
+						{
+							Screen.RunCommand( 'Export' );
+							TopElem.data.Clear();
+							TopElem.count_arr = null;
+						}
+					}
+					else
+					{
+						sFileName = ObtainSessionTempFile() + '.xlsx';
+						sTempFileUrl = FilePathToUrl( UrlToFilePath( sFileName ) );
+						tools.copy_url( sTempFileUrl, oRes.sDataUrl );
+						TopElem.excel_file_url = sTempFileUrl;
+						Screen.RunCommand( 'OpenLink' );
+					}
+				}
+			}
+			else
+			{
+				if ( System.IsWebClient )
+				{
+					try
+					{
+						TopElem.data.LoadData( tools_report.get_report_data( UrlEncode( oRes.sDataUrl ) ) );
+					}
+					catch(ex)
+					{
+					}
+				}
+				else
+				{
+					TopElem.data.LoadDataFromUrl( oRes.sDataUrl );
+				}
+			}
+		}
+	}
+	else
+	{
+		set_error( 'Не удалось построить отчет' )
+	}
+	
+	if ( iErrors != 0 )
+	{
+		ActiveScreen.MsgBox( sErrors, ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+
+"/>
+
+<COMMAND-HANDLER CMD="OpenLink" HREF-EXPR="
+	if (System.IsWebClient)
+	{
+		if ( ! global_settings.settings.portal_base_url.HasValue )
+		{
+			Screen.MsgBox( ms_tools.get_const('8b8jk0o0tn'), ms_tools.get_const('gg3xa1rv2u'), 'warning', 'ok' );
+			Cancel();
+		}
+		
+		strUrlPath='download_report.html?file_url='+UrlEncode(TopElem.excel_file_url)
+		try
+		{
+			strUrlPath=UrlAppendPath( global_settings.settings.portal_base_url.Value, strUrlPath );
+		}
+		catch(ex)
+		{
+			strUrlPath=global_settings.settings.portal_base_url+(StrEnds(global_settings.settings.portal_base_url,'/')?'':'/')+strUrlPath
+		}
+		return strUrlPath
+	}
+	else
+	{
+		ShellExecute( 'open', TopElem.excel_file_url )
+		return null
+	}
+" TARGET="_web" PASSIVE="1"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/data_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+	
+"/>
+
+</SPXML-SCREEN>

@@ -1,0 +1,208 @@
+﻿<%
+// const_start
+var sConst_PanelTitle = "Топ обучения";
+var sConst_TopCourses = "Популярные курсы";
+var sConst_TopTests = "Популярные тесты";
+var sConst_Closed = "Завершено";
+var sConst_Open = "В процессе";
+var sConst_Total = "Всего";
+// const_end
+%>
+<SPXMLScreen>
+<%
+
+var iQty = Int(tools_web.get_web_param( curParams, "top_learnings_block.elements_num", 3, true ));
+var sType = tools_web.get_web_param( curParams, "top_learnings_block.learning_type", "courses", true );
+var sTimeUnit = tools_web.get_web_param( curParams, "top_learnings_block.time_unit", "day", true );
+var iRetrospect = Int(tools_web.get_web_param( curParams, "top_learnings_block.retrospect", 7, true ));
+var sCustomClass = tools_web.get_web_param( curParams, "top_learnings_block.custom_class", "", true );
+var bDisplayInPanel = tools_web.is_true(tools_web.get_web_param( curParams, "top_learnings_block.show_in_panel", false, false ));
+var bLegendVertical = tools_web.is_true(tools_web.get_web_param( curParams, "top_learnings_block.legend_vertical", false, false ));
+var sPanelTitle = tools_web.get_web_param( curParams, "top_learnings_block.panel_title", "", true );
+if(bDisplayInPanel && sPanelTitle != "")
+{
+	sConst_PanelTitle = sPanelTitle;
+}
+
+//var arrPersons = XQuery("for $elem in collaborators where $elem/is_dismiss = false() return $elem");
+var arrCourses = XQuery("for $elem in courses where $elem/status != 'secret' return $elem");
+var arrTests = XQuery("for $elem in assessments return $elem");
+//var arrEvents = XQuery("for $elem in events return $elem");
+if(sTimeUnit == "all")
+{
+	var arrActiveCourseSessions = XQuery("for $elem in active_learnings return $elem");
+	var arrClosedCourseSessions = XQuery("for $elem in learnings return $elem");
+	var arrActiveTestSessions = XQuery("for $elem in active_test_learnings return $elem");
+	var arrClosedTestSessions = XQuery("for $elem in test_learnings return $elem");
+}
+else{
+
+	iPeriod = 86400 * iRetrospect;
+	switch(sTimeUnit)
+	{
+		case "week":
+			iPeriod = iPeriod * 7;
+			break;
+		case "month":
+			iPeriod = iPeriod * 31;
+			break;
+		case "year":
+			iPeriod = iPeriod * 365;
+			break;
+	}
+	dEndDate = CurDate;
+	dStartDate = DateOffset(dEndDate, (0-1) * iPeriod);
+	
+	var arrActiveCourseSessions = XQuery("for $elem in active_learnings where $elem/last_usage_date > date('" + dStartDate + "') and $elem/last_usage_date < date('" + dEndDate + "') return $elem");
+	var arrClosedCourseSessions = XQuery("for $elem in learnings where $elem/last_usage_date > date('" + dStartDate + "') and $elem/last_usage_date < date('" + dEndDate + "') return $elem");
+	var arrActiveTestSessions = XQuery("for $elem in active_test_learnings where $elem/last_usage_date > date('" + dStartDate + "') and $elem/last_usage_date < date('" + dEndDate + "') return $elem");
+	var arrClosedTestSessions = XQuery("for $elem in test_learnings where $elem/last_usage_date > date('" + dStartDate + "') and $elem/last_usage_date < date('" + dEndDate + "') return $elem");
+}
+
+var sUnit = "month"; // year, month, week, day
+var iRetroQty = 10;
+var dToday = new Date();
+dToday = DateNewTime(dToday);
+var iYear = Year(dToday);
+var iMonth = Month(dToday);
+var iDay = Day(dToday);
+var aActivities = [];
+var iTests = 0;
+var iCourses = 0;
+var iMaxCourses = 0;
+var iMaxTests = 0;
+var dDate1;
+var dDate2 = dToday;
+var aDaysByMonth = [ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ];
+var sActivityTitle = "";
+var sStartPoint = "";
+
+var arrOpenSessions;
+var arrClosedSessions;
+var aSessionsByCourse = [];
+var aSessionsByTest = [];
+var aSessionsByCourseSorted;
+var aSessionsByTestSorted;
+var sTopItems = ""; 
+if(sType == "courses")
+{
+	sTopItems = sConst_TopCourses;
+	//arrActiveCourses = QueryCatalogByKeys("courses","id", ArrayExtract(ArraySelectDistinct(arrActiveCourseSessions, "This.course_id"), "This.course_id"));
+	for(oCourse in arrCourses)
+	{
+		arrOpenSessions = ArraySelect(arrActiveCourseSessions, "This.course_id==oCourse.id");
+		arrClosedSessions = ArraySelect(arrClosedCourseSessions, "This.course_id==oCourse.id");
+		aSessionsByCourse.push({ id: oCourse.id, name: tools_web.get_cur_lng_name( oCourse.name, curLng.short_id  ), iClosed: ArrayCount(arrClosedSessions), iActive: ArrayCount(arrOpenSessions), iTotal: (ArrayCount(arrClosedSessions)+ArrayCount(arrOpenSessions)) });
+	}
+	aSessionsByCourseSorted = ArraySort(aSessionsByCourse, "iTotal", "-");
+}
+else if(sType == "tests")
+{
+	sTopItems = sConst_TopTests;
+	//arrTests = QueryCatalogByKeys("courses","id", ArrayExtract(ArraySelectDistinct(arrActiveCourseSessions, "This.course_id"), "This.course_id"));
+	for(oTest in arrTests)
+	{
+		arrOpenSessions = ArraySelect(arrActiveTestSessions, "This.assessment_id==oTest.id");
+		arrClosedSessions = ArraySelect(arrClosedTestSessions, "This.assessment_id==oTest.id");
+		aSessionsByTest.push({ id: oTest.id, name: tools_web.get_cur_lng_name( oTest.title, curLng.short_id  ), iClosed: ArrayCount(arrClosedSessions), iActive: ArrayCount(arrOpenSessions), iTotal: (ArrayCount(arrClosedSessions)+ArrayCount(arrOpenSessions)) });
+	}
+	aSessionsByTestSorted = ArraySort(aSessionsByTest, "iTotal", "-");
+}
+if(bDisplayInPanel)
+{
+%>
+<Panel Title="<%=sConst_PanelTitle%>">
+<%
+}
+else
+{
+%>
+<Label Class="XAML-label-block-header"><![CDATA[<%=sTopItems%>]]></Label>
+<%
+}
+%>
+<StackPanel Orientation="Vertical" Class="wtx-informer wtx-informer-top-items <%=sCustomClass%>">
+<%
+	var iLocalTotal = 0;
+	var iLocalActive = 0;
+	var iLocalClosed = 0;
+	var sLocalName = "";
+	var sMode = "";
+	var sLocalId = "";
+	for(i=0; i < iQty; i++)
+	{
+		if(sType=="courses")
+		{
+			sLocalName = aSessionsByCourseSorted[i].name;
+			iLocalActive = aSessionsByCourseSorted[i].iActive;
+			iLocalClosed = aSessionsByCourseSorted[i].iClosed;
+			iLocalTotal = aSessionsByCourseSorted[i].iTotal;
+			sLocalId = aSessionsByCourseSorted[i].id;
+			sMode = "course";
+		}
+		else if(sType=="tests")
+		{
+			sLocalName = aSessionsByTestSorted[i].name;
+			iLocalActive = aSessionsByTestSorted[i].iActive;
+			iLocalClosed = aSessionsByTestSorted[i].iClosed;
+			iLocalTotal = aSessionsByTestSorted[i].iTotal;
+			sLocalId = aSessionsByTestSorted[i].id;
+			sMode = "assessment";
+		}
+%>
+		<StackPanel Orientation="Vertical" Class="wtx-top-item">
+			<Link Click="OPENURL=<%=tools_web.get_mode_clean_url(sMode, sLocalId, ({"doc_id": curDocID}))%>" Class="wtx-informer-header-inner"><![CDATA[<%=sLocalName%>]]></Link>
+<%
+if (bLegendVertical)
+{
+%>			
+			<StackPanel Orientation="Vertical" Class="wtx-top-item-body panel-vertical">
+<%
+}
+else
+{
+%>			
+			<StackPanel Orientation="Horizontal" Class="wtx-top-item-body panel-horizontal">
+<%
+}
+%>
+				<StackPanel Orientation="Vertical" Class="wt-info-circular-scale-container">
+					<ContScale Name="Scale1" Type="circular" Class="wt-info-item-score-scale" FullScale="<%=iLocalTotal%>" DiagramPart="0.4" DisplayValue="true" DisplayFirstValueAnyway="true" DisplayPercent="true">
+						<Val Value="<%=iLocalClosed%>" Title="<%=sConst_Closed%>" DisplayTip="true"/>
+					</ContScale>
+				</StackPanel>
+				<StackPanel Orientation="Vertical" Class="wt-top-item-params">
+					<Grid>
+						<GridColumns>
+							<GridColumn/>
+							<GridColumn/>
+						</GridColumns>
+						<GridRow>
+							<Label Class="wt-top-item-param"><![CDATA[<%=sConst_Closed%>]]></Label>
+							<Label Class="wt-top-item-value"><%=iLocalClosed%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="wt-top-item-param"><![CDATA[<%=sConst_Open%>]]></Label>
+							<Label Class="wt-top-item-value"><%=iLocalActive%></Label>
+						</GridRow>
+						<GridRow>
+							<Label Class="wt-top-item-param"><![CDATA[<%=sConst_Total%>]]></Label>
+							<Label Class="wt-top-item-value"><%=iLocalTotal%></Label>
+						</GridRow>
+					</Grid>
+				</StackPanel>
+			</StackPanel>
+		</StackPanel>
+<%
+	}
+%>
+</StackPanel>
+<%
+if(bDisplayInPanel)
+{
+%>
+</Panel>
+<%
+}
+%>
+</SPXMLScreen>

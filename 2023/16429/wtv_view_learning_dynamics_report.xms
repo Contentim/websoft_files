@@ -1,0 +1,504 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/reports_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<INHERIT TYPE="extended_report_data" GridType="'grid'"/>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="
+										fam_num = ArrayCount( Ps.report_categorys );
+										return ms_tools.get_const('3l2bo94bpm') + '*' + ( fam_num == 0 ? '' : ' (' + fam_num + ')' );
+						"/>
+
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const('c_choose') + '...'" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+								dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+								dlgDoc.TopElem.variant=common.learning_dynamics_category_types;
+
+								dlgDoc.TopElem.multi_select = true;
+								dlgDoc.TopElem.value_array = Ps.report_categorys ;
+								Screen.ModalDlg( dlgDoc );
+
+								Ps.report_categorys.Clear()//DeleteChilds( '! dlgDoc.TopElem.values.ChildByKeyExists( \'\' + key_str )' );
+								for ( _value in dlgDoc.TopElem.values )
+								{
+									Ps.report_categorys.ObtainChildByKey( _value.key_str );
+								}
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="ReportCategoryGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.report_categorys, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW OPEN-ACTION="" DELETE-ACTION="ListElem.Delete()">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.name"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+				</PANEL>
+				
+				<IF EXPR="Ps.block_name == 'dist'">
+						<LINE>
+							<RADIO-BUTTON TITLE-EXPR="ms_tools.get_const('c_course')" SWITCH-VALUE="false" SOURCE="Ps.disp_learning_prog"/>
+							<RADIO-BUTTON TITLE-EXPR="ms_tools.get_const('c_edu_prog')" SWITCH-VALUE="true" SOURCE="Ps.disp_learning_prog"/>
+						</LINE>
+						<IF EXPR="(Ps.disp_learning_prog==true)">
+							<ITEM titleExpr="''" TYPE="ms_object_selector" catalogExpr="'education_program'" WIDTH="100%" SOURCE="Ps.education_program_id" afterSelectAction="
+									if (TopElem.education_program_id.HasValue)
+									{
+										try
+										{
+											has_course=false;
+											ArrEducationProgram=XQuery('for $elem in education_program_education_methods where $elem/education_program_id='+TopElem.education_program_id+' return $elem')
+											for (iEducationProgramElem in ArrEducationProgram)
+											{
+												try
+												{
+													if (iEducationProgramElem.type=='course')
+													{
+														has_course=true;
+													}
+												}
+												catch(ex)
+												{
+
+												}
+											}
+											if (has_course==false)
+											{
+												Screen.MsgBox( ms_tools.get_const('vvybrannomnabo'), ms_tools.get_const('7ey6j94yku'), 'info', 'ok' );
+											}
+										}
+										catch(ex)
+										{
+
+										}
+									}
+							"/>
+						</IF>
+						<ELSE>
+							<ITEM TYPE="ms_object_selector" catalogExpr="'course'" WIDTH="100%" SOURCE="Ps.course_id" xqueryQualExpr="
+								curUser = tools.get_cur_user();
+								var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+								if( sApplicationID != '' )
+								{
+									task = new BackgroundTask;
+									task.RunOnServer = true;
+									task.ShowProgress = true;
+
+									oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+									if(oModelRoles.type != '')
+									{
+										switch( oModelRoles.type )
+										{
+											case 'admin':
+											case 'manager':
+											case 'hr': // менеджер обучения
+											case 'observer': // наблюдатель
+											{
+												return '';
+											}
+											case 'expert': // методист
+											{
+												if(oModelRoles.expert_id != undefined && oModelRoles.expert_id != null )
+												{
+													iExpertID = oModelRoles.expert_id;
+
+													sQuery = 'for $elem in roles where $elem/catalog_name = \'course\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+													arrRoles = tools.xquery(sQuery);
+													
+													arrRoleIDs = [];
+													for(oRole in arrRoles)
+													{
+														arrRoleIDs.push(oRole.id.Value);
+													}
+
+													arrObjects = [];
+													if(ArrayCount(arrRoleIDs) > 0)
+													{
+														sQuery = 'for $elem in courses where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+														arrObjects = tools.xquery(sQuery);
+
+														arrObjectIDs = [];
+														if(ArrayOptFirstElem(arrObjects) != undefined)
+														{
+															for(oObject in arrObjects)
+															{
+																arrObjectIDs.push(oObject.id.Value);
+															}
+														}
+														return 'MatchSome($elem/id, (' + ArrayMerge(arrObjectIDs, 'This', ',') + '))'
+													} else {
+														return '$elem/id = 0';
+													}
+												}
+												break;
+											}
+											case 'reject':
+											{
+												return '$elem/id = 0';
+											}
+											default:
+											{
+												return '$elem/id = 0';
+											}
+										}
+									}
+								} else {
+									return '';
+								}
+							"/>
+						</ELSE>
+				</IF>
+				<ELSE>
+					<PANEL VERT-ALIGN="top">
+						<ITEM TYPE="ms_object_selector" SOURCE="Ps.assessment_id"  WIDTH="100%" catalogExpr="'assessment'" doFillingExpr="true" xqueryQualExpr="
+							curUser = tools.get_cur_user();
+							var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+							if( sApplicationID != '' )
+							{
+								task = new BackgroundTask;
+								task.RunOnServer = true;
+								task.ShowProgress = true;
+
+								oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+								if(oModelRoles.type != '')
+								{
+									switch( oModelRoles.type )
+									{
+										case 'admin':
+										case 'manager':
+										case 'hr':
+										case 'observer':
+										{
+											return '';
+										}
+										case 'expert': // методист
+										{
+											if(oModelRoles.expert_id != undefined && oModelRoles.expert_id != null )
+											{
+												iExpertID = oModelRoles.expert_id;
+												
+												sAssessmentQuery = 'for $elem in assessments return $elem';
+												sAssessmentCategoryQuery = 'for $elem in roles where $elem/catalog_name=\'assessment\' return $elem';
+												
+												sQuery = 'for $elem in roles where $elem/catalog_name = \'assessment\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+												arrRoles = tools.xquery(sQuery);
+												
+												arrRoleIDs = [];
+												for(oRole in arrRoles)
+												{
+													arrRoleIDs.push(oRole.id.Value);
+												}
+
+												arrAssessments = [];
+												if(ArrayCount(arrRoleIDs) > 0)
+												{
+													sQuery = 'for $elem in assessments where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+													arrAssessments = tools.xquery(sQuery);
+
+													arrAssessmentIDs = [];
+													if(ArrayOptFirstElem(arrAssessments) != undefined)
+													{
+														for(oAssessment in arrAssessments)
+														{
+															arrAssessmentIDs.push(oAssessment.id.Value);
+														}
+													}
+													return 'MatchSome($elem/id, (' + ArrayMerge(arrAssessmentIDs, 'This', ',') + '))'
+												} else {
+													return '$elem/id = 0';
+												}
+											} else {
+												return '$elem/id = 0';
+											}
+										}
+										case 'reject':
+										{
+											return '$elem/id = 0';
+										}
+										default:
+										{
+											return '$elem/id = 0';
+										}
+									}
+								}
+							} else {
+								return '';
+							}
+						"/>
+					</PANEL>
+				</ELSE>
+
+				<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id" xqueryQualExpr="
+					curUser = tools.get_cur_user();
+					var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+					if( sApplicationID != '' )
+					{
+						task = new BackgroundTask;
+						task.RunOnServer = true;
+						task.ShowProgress = true;
+
+						oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+						if(oModelRoles.type != '')
+						{
+							switch( oModelRoles.type )
+							{
+								case 'admin':
+								case 'manager':
+								case 'expert': // методист
+								{
+									return '';
+								}
+								case 'hr': // менеджер обучения
+								{
+									arrSubordinateIDs = oModelRoles.subordinate_ids.hr;
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+								}
+								case 'observer': // наблюдатель
+								{
+									arrSubordinateIDs = oModelRoles.subordinate_ids.observer;
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+								}
+								case 'reject':
+								{
+									return '$elem/id = 0';
+								}
+								default:
+								{
+									return '$elem/id = 0';
+								}
+							}
+						}
+					} else {
+						return '';
+					}
+				"/>
+
+				<IF EXPR="! Ps.person_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}
+									case 'hr':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')"/>
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'group'" SOURCE="Ps.group_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}										
+									case 'hr':
+									{
+										arrGroupIDs = oModelRoles.group_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrGroupIDs = oModelRoles.group_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+				</IF>
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('c_periodity')##" WIDTH="100%">
+					<COMBO SOURCE="Ps.time_period_type" WIDTH="100%">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('tm5jxtl2m3')" VALUE="month"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('kvartal')" VALUE="quarter"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('god')" VALUE="year"/>
+					</COMBO>
+				</TitleLabel>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('p3uguyf4u3')##">
+					<COMBO SOURCE="Ps.graph_type" WIDTH="100%">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('lineynyy')" VALUE="Line"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('gistogramma_1')" VALUE="Column"/>
+					</COMBO>
+				</TitleLabel>
+
+			</PANEL>
+
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+
+<COMMAND-HANDLER CMD="RunReport" ACTION="
+
+	bBuildReport = true;
+
+	if ( ArrayOptFirstElem( Ps.report_categorys ) == undefined )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'neukazanykateg' ), ms_tools.get_const('7ey6j94yku'), 'warning', 'ok' );
+		bBuildReport = false;
+	}
+	else if ( Ps.start_date.HasValue && Ps.finish_date.HasValue && Ps.start_date >= Ps.finish_date )
+	{
+		Screen.MsgBox(  ms_tools.get_const('a8cz38vdwa'), ms_tools.get_const('7ey6j94yku'), 'warning', 'ok' );
+		bBuildReport = false;
+	}
+
+	if ( bBuildReport )
+	{
+
+		arrSettings = [
+						{ 'name' : 'disp_learning_prog', 'value' : TopElem.disp_learning_prog.Value },
+						{ 'name' : 'education_program_id', 'value' : TopElem.education_program_id.Value },
+						{ 'name' : 'course_id', 'value' : TopElem.course_id.Value },
+						{ 'name' : 'assessment_id', 'value' : TopElem.assessment_id.Value },
+						{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+						{ 'name' : 'group_id', 'value' : TopElem.group_id.Value },
+						{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+						{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+						{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value },
+						{ 'name' : 'time_period_type', 'value' : TopElem.time_period_type.Value },
+						{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+						{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value },
+						{ 'name' : 'graph_type', 'value' : TopElem.graph_type.Value },
+						{ 'name' : 'report_categorys', 'value' : TopElem.report_categorys }
+				];
+
+		if ( local_settings.view.remember_last_reports_settings )
+		{
+			tools_report.save_report_settings( TopElem.report_name, arrSettings );
+		}
+
+		TopElem.columns.Clear()
+
+		oColumn = TopElem.columns.AddChild();
+		oColumn.name='0'
+		oColumn.const = 'c_period';
+		oColumn.width='20zr'
+
+		for (fldCategory in Ps.report_categorys)
+		{
+			oColumn = TopElem.columns.AddChild();
+			oColumn.name=fldCategory.id
+			oColumn.const = CodeLiteral( fldCategory.PrimaryKey.ForeignElem.name );
+			oColumn.width='20zr'
+		}
+
+
+		_params = OpenNewDoc( 'x-local://wtv/wtv_form_func_params.xmd' ).TopElem;
+		_params.learning_dynamics_report.AssignElem( Ps );
+		_params.learning_dynamics_report.is_web_client=System.IsWebClient
+
+		TopElem.data.Clear();
+		res = tools_report.learning_dynamics_report(UrlEncode(_params.Xml));
+		if (res!=undefined)
+		{
+			try
+			{
+				TopElem.data.LoadData( res );
+			}
+			catch(ex)
+			{
+			}
+
+			Ps.tab_selector_type = 'general'
+		}
+
+	}
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+
+
+
+</SPXML-SCREEN>

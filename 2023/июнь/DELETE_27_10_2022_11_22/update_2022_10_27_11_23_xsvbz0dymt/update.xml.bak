@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>xsvbz0dymt</id>
+		<create_date>2022-10-27T11:23:10+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x630F21C54DD83D82</id>
+			<code>DeleteWorkingCondition</code>
+			<name VALUE="##'Удалить условия работы'##"/>
+			<type>eval</type>
+			<catalog_name>working_condition</catalog_name>
+			<link_name>working_condition</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteWorkingCondition.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteWorkingCondition.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D83</id>
+			<code>DeleteWorkingConditionType</code>
+			<name VALUE="##'Удалить тип условий труда'##"/>
+			<type>eval</type>
+			<catalog_name>working_condition_type</catalog_name>
+			<link_name>working_condition_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteWorkingConditionType.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteWorkingConditionType.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D84</id>
+			<code>DeleteSalaryPaymentType</code>
+			<name VALUE="##'Удалить тип графика выплаты заработной платы'##"/>
+			<type>eval</type>
+			<catalog_name>salary_payment_type</catalog_name>
+			<link_name>salary_payment_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteSalaryPaymentType.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteSalaryPaymentType.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D85</id>
+			<code>DeleteWorkForm</code>
+			<name VALUE="##'Удалить форму работ'##"/>
+			<type>eval</type>
+			<catalog_name>work_form</catalog_name>
+			<link_name>work_form</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteWorkForm.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteWorkForm.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D86</id>
+			<code>DeleteWorkScheduleType</code>
+			<name>Удалить тип графика работы</name>
+			<name VALUE="##'фывфывфывфыв'##"/>
+			<type>eval</type>
+			<catalog_name>work_schedule_type</catalog_name>
+			<link_name>work_schedule_type</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteWorkScheduleType.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteWorkScheduleType.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

@@ -1,0 +1,37 @@
+try
+{
+    sObjectIDs = SELECTED_OBJECT_IDS + "";
+}
+catch (_err)
+{
+    sObjectIDs = "";
+}
+if (sObjectIDs == "")
+{
+    try
+    {
+        sObjectIDs = OBJECT_ID + "";
+    }
+    catch (_err)
+    {
+        sObjectIDs = "";
+    }
+}
+if (sObjectIDs == "")
+{
+    try
+    {
+        sObjectIDs = curObjectID + "";
+    }
+    catch (_err)
+    {
+        sObjectIDs = "";
+    }
+}
+
+
+oRes = tools.call_code_library_method("libLorem", "deletePosition", [ sObjectIDs, command ]);
+
+RESULT = oRes.action_result;
+ERROR = oRes.error;
+MESSAGE = oRes.errorText;

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+<view_educ_plan_report>
+
+	<report_name TYPE="string" DEFAULT="educ_plan_report"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+
+	<group_type TYPE="string" NOT-NULL="1" DEFAULT="education_plan"/>
+	<reason_type TYPE="string" NOT-NULL="1" DEFAULT="education_plan"/>
+	<plan_start_date TYPE="date"/>
+	<plan_finish_date TYPE="date"/>
+	<fact_start_date TYPE="date"/>
+	<fact_finish_date TYPE="date"/>
+
+	<type TYPE="string" NOT-NULL="1" DEFAULT="subdivision"/>
+
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<budget_period_id TYPE="integer" FOREIGN-ARRAY="budget_periods"/>
+
+	<expanded_all TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+
+	<request_type_id TYPE="integer" FOREIGN-ARRAY="request_types"/>
+	<educ_plans>
+		<educ_plan MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			<name TYPE="string"/>
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+			<person_fullname TYPE="string"/>
+			<person_code TYPE="string"/>
+			<person_position_name TYPE="string"/>
+			<person_subdivision_name TYPE="string"/>
+
+			<plan_count TYPE="integer" DEFAULT="0"/>
+			<fact_count TYPE="integer" DEFAULT="0"/>
+
+			<flag_expanded TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+			<programs>
+				<program MULTIPLE="1" PRIMARY-KEY="id">
+					<id TYPE="integer"/>
+					<name TYPE="string"/>
+					<education_method_id TYPE="integer" FOREIGN-ARRAY="education_methods"/>
+					<type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="course"/>
+
+					<object_id TYPE="integer" FOREIGN-ARRAY="DefaultDb.GetOptCatalog( type + 's' )" TITLE="const=c_object"/>
+					<result_object_id TYPE="integer" FOREIGN-ARRAY="DefaultDb.GetOptCatalog( result_type + 's' )" TITLE="const=c_object"/>
+					<result_type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="active_learning" TITLE="const=xpbpsanwaw"/>
+					<event_result_id TYPE="integer" FOREIGN-ARRAY="event_results"/>
+
+					<active_learning_id TYPE="integer" FOREIGN-ARRAY="active_learnings"/>
+					<learning_id TYPE="integer" FOREIGN-ARRAY="learnings"/>
+
+					<plan TYPE="bool" DEFAULT="false"/>
+					<fact TYPE="bool" DEFAULT="false"/>
+
+					<plan_start_date TYPE="date"/>
+					<plan_finish_date TYPE="date"/>
+					<fact_start_date TYPE="date"/>
+					<fact_finish_date TYPE="date"/>
+
+					<state_id TYPE="integer" NOT-NULL="1" DEFAULT="0" FOREIGN-ARRAY="common.learning_states"/>
+					<score TYPE="real"/>
+					<cost TYPE="real"/>
+					<currency TYPE="string" FOREIGN-ARRAY="lists.currency_types"/>
+				</program>
+			</programs>
+
+		</educ_plan>
+	</educ_plans>
+
+
+	<education_methods>
+		<education_method MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+			<name TYPE="string"/>
+			<type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="course"/>
+			<object_id TYPE="integer" FOREIGN-ARRAY="DefaultDb.GetOptCatalog( type + 's' )" TITLE="const=c_object"/>
+			<cost TYPE="real"/>
+			<currency TYPE="string" FOREIGN-ARRAY="lists.currency_types"/>
+			<flag_expanded TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+			<persons>
+				<person MULTIPLE="1" PRIMARY-KEY="person_id">
+					<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+					<person_fullname TYPE="string"/>
+					<person_code TYPE="string"/>
+					<person_position_name TYPE="string"/>
+					<person_subdivision_name TYPE="string"/>
+					<flag_expanded TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+					<reasons>
+						<reason MULTIPLE="1" PRIMARY-KEY="id">
+							<id TYPE="integer"/>
+							<name TYPE="string"/>
+
+							<reason_object_type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="education_plan"/>
+							<reason_object_id TYPE="integer" FOREIGN-ARRAY="DefaultDb.GetOptCatalog( reason_object_type + 's' )"/>
+
+							<education_method_id TYPE="integer" FOREIGN-ARRAY="education_methods"/>
+							<type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="course"/>
+
+							<object_id TYPE="integer" FOREIGN-ARRAY="events"/>
+							<result_object_id TYPE="integer" FOREIGN-ARRAY="DefaultDb.GetOptCatalog( result_type + 's' )" TITLE="const=c_object"/>
+							<result_type TYPE="string" FOREIGN-ARRAY="common.exchange_object_types" DEFAULT="active_learning" TITLE="const=xpbpsanwaw"/>
+							<event_result_id TYPE="integer" FOREIGN-ARRAY="event_results"/>
+
+							<active_learning_id TYPE="integer" FOREIGN-ARRAY="active_learnings"/>
+							<learning_id TYPE="integer" FOREIGN-ARRAY="learnings"/>
+
+							<plan TYPE="bool" DEFAULT="false"/>
+							<fact TYPE="bool" DEFAULT="false"/>
+
+							<plan_start_date TYPE="date"/>
+							<plan_finish_date TYPE="date"/>
+							<fact_start_date TYPE="date"/>
+							<fact_finish_date TYPE="date"/>
+
+							<state_id TYPE="integer" NOT-NULL="1" DEFAULT="0" FOREIGN-ARRAY="common.learning_states"/>
+							<score TYPE="real"/>
+
+						</reason>
+					</reasons>
+				</person>
+			</persons>
+
+		</education_method>
+	</education_methods>
+
+
+
+	<disp_unplanned_elem TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<calc_with_unplanned_elem TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+
+	<!--
+	<fnActivateCourseTest PROPERTY="1" EXPR="
+		TopElem = Child(0).Parent;
+		try
+		{
+			List = Screen.FindItem( 'ViewGrid' );
+		}
+		catch ( ex )
+		{
+			return false;
+		}
+
+		arrSelRows=List.SelRows
+		SelRowCount=ArrayCount(arrSelRows)
+
+		if ( SelRowCount &gt; 10 )
+			StartModalTask();
+
+		counter_act = 0;
+
+		for (iSelRowElem in arrSelRows)
+		{
+			oSelRowEnv=null
+
+			try
+			{
+				oSelRowEnv=iSelRowElem.Env._program
+			}
+			catch(ex)
+			{
+				oSelRowEnv=iSelRowElem.Env._reason
+			}
+			if (oSelRowEnv==null)
+			{
+				continue;
+			}
+
+			if (oSelRowEnv.object_id.HasValue)
+			{
+				ObjectId=oSelRowEnv.object_id
+				ObjectType=oSelRowEnv.type
+			}
+			else
+			{
+				continue;
+			}
+
+			program_id=OptInt((oSelRowEnv.education_method_id.HasValue?oSelRowEnv.education_method_id:oSelRowEnv.object_id),null)
+			ModalTaskMsg((ObjectType=='course'?'Course ':'Test ') + ( counter_act + 1 ) + ' of ' + SelRowCount );
+			if  (TopElem.group_type=='education_plan')
+			{//------------education_plan
+				person_id=oSelRowEnv.Parent.Parent.person_id;
+				plan_id=oSelRowEnv.Parent.Parent.id;
+
+
+				try
+				{
+					curPlan=ArrayOptFind(TopElem.educ_plans,'id=='+plan_id);
+					if (curPlan!=undefined)
+					{
+						curPlanProg=ArrayOptFind(curPlan.programs,'education_method_id=='+program_id);
+						if (curPlanProg==undefined)
+						{
+							curPlanProg=ArrayOptFind(curPlan.programs,'object_id=='+program_id);
+						}
+						if (curPlanProg!=undefined)
+						{
+							if (ObjectType=='course')
+							{
+								activeLearning=tools.activate_course_to_person( person_id,ObjectId, null );
+							}
+							else
+							{
+								activeLearning=tools.activate_test_to_person( person_id,ObjectId, null );
+							}
+
+							try
+							{
+								curPlanProg.active_learning_id =activeLearning.DocID;
+							}
+							catch(ex)
+							{
+								curPlanProg.active_learning_id =activeLearning;
+							}
+							curPlanProg.plan=true;
+							curPlan.plan_count++;
+							counter_act++;
+
+							if (curPlanProg.learning_id.HasValue)
+							{
+								curPlanProg.learning_id.Clear();
+								curPlanProg.fact_finish_date.Clear();
+								curPlanProg.fact=false;
+								curPlan.fact_count--;
+							}
+
+							docEduPlan = OpenDoc( UrlFromDocID(plan_id ) )
+							curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+program_id);
+							if (curProgram==undefined)
+							{
+								curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+program_id);
+							}
+							if (curProgram!=undefined)
+							{
+								curProgram.result_object_id = curPlanProg.active_learning_id
+								docEduPlan.Save();
+								try
+								{
+									learningDoc = OpenDoc( UrlFromDocID(curProgram.active_learning_id ) ).TopElem;
+									if ( learningDoc.max_end_date.HasValue )
+										curPlanProg.plan_finish_date = learningDoc.max_end_date;
+									if ( learningDoc.last_usage_date.HasValue )
+										curPlanProg.fact_start_date = learningDoc.last_usage_date;
+									curPlanProg.plan_start_date = learningDoc.start_usage_date;
+									curPlanProg.score = learningDoc.score;
+								}
+								catch (err)
+								{
+									//alert(err)
+								}
+							}
+						}
+					}
+				}
+				catch(ex)
+				{
+					//alert(ex)
+				}
+			}//------------education_plan end
+			else if (TopElem.group_type=='education_method')
+			{//------------education_method
+
+				person_id=oSelRowEnv.Parent.Parent.person_id;
+				plan_id=oSelRowEnv.reason_object_id;
+
+
+				try
+				{
+					curEduMethod=ArrayOptFind(TopElem.education_methods,'id=='+program_id);
+					if (curEduMethod!=undefined)
+					{
+						curPerson=ArrayOptFind(curEduMethod.persons,'This.person_id=='+person_id);
+						if (curPerson!=undefined)
+						{
+							curReason=ArrayOptFind(curPerson.reasons,'reason_object_id=='+plan_id);
+							if (curReason!=undefined)
+							{
+
+								if (ObjectType=='course')
+								{
+									activeLearning=tools.activate_course_to_person( person_id,ObjectId, null );
+								}
+								else
+								{
+									activeLearning=tools.activate_test_to_person( person_id,ObjectId, null );
+								}
+								try
+								{
+									curReason.active_learning_id =activeLearning.DocID;
+								}
+								catch(ex)
+								{
+									curReason.active_learning_id =activeLearning;
+								}
+								curReason.plan=true;
+								curReason.fact=false;
+								curReason.plan_start_date.Clear();
+								curReason.plan_finish_date.Clear();
+								curReason.fact_start_date.Clear();
+								curReason.fact_finish_date.Clear();
+								counter_act++;
+
+
+								try
+								{
+									learningDoc = OpenDoc( UrlFromDocID(curReason.active_learning_id ) ).TopElem;
+									if ( learningDoc.max_end_date.HasValue )
+										curReason.plan_finish_date = learningDoc.max_end_date;
+									if ( learningDoc.last_usage_date.HasValue )
+										curReason.fact_start_date = learningDoc.last_usage_date;
+									curReason.plan_start_date = learningDoc.start_usage_date;
+									curReason.score = learningDoc.score;
+								}
+								catch (err)
+								{
+									//alert(err)
+								}
+
+								if (curReason.reason_object_type=='education_plan')
+								{
+									docEduPlan = OpenDoc( UrlFromDocID(plan_id ) )
+									curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+program_id);
+									if (curProgram==undefined)
+									{
+										curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+program_id);
+									}
+									if (curProgram!=undefined)
+									{
+										curProgram.result_object_id = curReason.active_learning_id
+										docEduPlan.Save();
+									}
+								}
+							}
+						}
+					}
+				}
+				catch(ex)
+				{
+					alert(ex)
+				}
+			}//------------education_method end
+
+		}
+		if (ObjectType=='course')
+		{
+			Screen.MsgBox( StrReplace( StrReplace( ms_tools.get_const('kursaktivirova'), '{PARAM1}', counter_act ), '{PARAM2}', SelRowCount ), 'info', 'ok' );
+		}
+		else
+		{
+			Screen.MsgBox( StrReplace( StrReplace( ms_tools.get_const('testyaktivirov'), '{PARAM1}', counter_act ), '{PARAM2}', SelRowCount ), 'info', 'ok' );
+		}
+		Screen.Update();
+	"/>
+	-->
+
+</view_educ_plan_report>
+
+</SPXML-INLINE-FORM>

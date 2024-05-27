@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>9dc88izylw</id>
+		<create_date>2022-10-26T15:01:54+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x630F21C54DD83D77</id>
+			<code>PersonnelMemberOpenFull</code>
+			<name VALUE="##'Открыть карточку участника кадрового комитета (полная)'##"/>
+			<type>eval</type>
+			<catalog_name>committee_member</catalog_name>
+			<link_name>committee_member</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/PersonnelMemberOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/PersonnelMemberOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+		<remote_action>
+			<id>0x630F21C54DD83D79</id>
+			<code>PersonnelCommitteeOpenFull</code>
+			<name>Открыть карточку кадрового комитета (полная)</name>
+			<type>eval</type>
+			<catalog_name>personnel_committee</catalog_name>
+			<link_name>personnel_committee</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/PersonnelCommitteeOpenFull.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/PersonnelCommitteeOpenFull.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

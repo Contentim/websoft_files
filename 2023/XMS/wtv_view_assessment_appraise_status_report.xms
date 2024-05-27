@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_assessment_appraise_status_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/wtv_general_ass.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<PANEL SUNKEN="1" STD-MARGINS="1" PADDING="16vpx 16vpx 16vpx 16vpx">
+	
+	<LINE HORIZ-SPACING="16vpx">
+		<ITEM TYPE="ms_object_selector" catalogExpr="'collaborator'" SOURCE="Ps.person_id" titleExpr="ms_tools.get_const('r6anhjmtal')" doFillingExpr="true"/>
+
+		<ITEM TYPE="select_assessment_appraise_base"/>
+	</LINE>
+	<LINE HORIZ-SPACING="16vpx">
+		<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('xvgwmop0bf')##" >
+			<COMBO SOURCE="Ps.is_done" WIDTH="150vpx">
+				<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('et6c613ln0')" VALUE-EXPR="false"/>
+				<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('c_is_completed')" VALUE-EXPR="true"/>
+			</COMBO>
+		</TitleLabel>
+
+		<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('c_type')##" >
+			<COMBO SOURCE="Ps.assessment_appraise_type" ELEM="ListElem.name" WIDTH="150vpx"/>
+		</TitleLabel>
+
+	</LINE>
+</PANEL>
+<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+
+
+<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+	<ITEM TYPE="standard_report_actions_panel" />
+</PANEL>
+
+
+<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+	<COLUMNS>
+		<COL WIDTH="30%"/>		
+		<COL WIDTH="20%"/>
+		<COL WIDTH="20%"/>
+		<COL WIDTH="16zr"/>
+	</COLUMNS>
+	<ROW HEADER="1">
+		<LABEL TITLE-EXPR="ms_tools.get_const('vppb_procedure')" ALIGN="center"/>
+		<LABEL TITLE-EXPR="ms_tools.get_const('c_type')" ALIGN="center"/>	
+		<LABEL TITLE-EXPR="ms_tools.get_const('c_status')" ALIGN="center"/>	
+		<LABEL TITLE-EXPR="ms_tools.get_const('c_num')" ALIGN="center"/>
+	</ROW>
+	
+	<LOOP EXPR="Ps.pa_datas" VAR="_pa_data">
+		<ROW>
+			<LABEL TITLE-EXPR="_pa_data.assessment_appraise_name" FLAT="1"/>
+			<LABEL TITLE-EXPR="_pa_data.assessment_appraise_type_name" FLAT="1"/>		
+			<LABEL TITLE-EXPR="_pa_data.status_name" FLAT="1"/>		
+			<LABEL TITLE-EXPR="_pa_data.count" FLAT="1"/>		
+		</ROW>
+	</LOOP>	
+</GRID>
+
+
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+	function pa_data( _pa_data_array)
+	{		
+		for ( _pa_data in _pa_data_array )
+		{
+			_cur_pa = _pa_data.id.ForeignElem;
+						
+			flag_bayan = 0;
+			
+			_temp_data = ArrayOptFind(Ps.pa_datas, 'assessment_appraise_id == _pa_data.assessment_appraise_id &amp;&amp; status == _pa_data.status &amp;&amp; assessment_appraise_type == _pa_data.assessment_appraise_type');
+			
+			if (_temp_data != undefined)
+			{
+				_temp_data.count = _temp_data.count + 1;
+			}
+			else
+			{
+						
+				_child = Ps.pa_datas.AddChild();
+				_child.AssignElem( _pa_data );
+										
+				
+				_child.assessment_appraise_id = _pa_data.assessment_appraise_id;
+				try
+				{
+					_child.assessment_appraise_name = _pa_data.assessment_appraise_id.ForeignElem.name
+				}
+				catch(_bugoga_)
+				{}
+								
+				if (_pa_data.status.HasValue)
+				{
+					_child.status = _pa_data.status;
+					_child.status_name = _cur_pa.status.ForeignElem.name;
+				}
+					
+				if (_cur_pa.assessment_appraise_type.HasValue)
+				{
+					_child.assessment_appraise_type = _cur_pa.assessment_appraise_type;
+					_child.assessment_appraise_type_name = _cur_pa.assessment_appraise_type.ForeignElem.name;
+				}
+				
+				_child.count = 1;
+				
+			}	
+		}
+	}
+
+	Ps.pa_datas.Clear();
+	
+	_xquery = 'for $pa in pas';
+	
+	_where_str = ( Ps.person_id == null ? '' : ' $pa/person_id = ' + Ps.person_id );
+	_where_str = _where_str +( Ps.assessment_appraise_id == null ? '' : ( _where_str == '' ? ' ' : ' and ' ) + ' $pa/assessment_appraise_id = ' + Ps.assessment_appraise_id );
+	_where_str=_where_str + ( Ps.assessment_appraise_type == null ? '' : ( _where_str == '' ? ' ' : ' and ' ) + ' $pa/assessment_appraise_type = ' + '\'' + Ps.assessment_appraise_type + '\'' );
+	_where_str=_where_str + ( !Ps.is_done.HasValue ? '' : ( _where_str == '' ? ' ' : ' and ' ) + ' $pa/is_done = ' + Ps.is_done + '()' );		
+							
+	_pa_array = XQuery( _xquery + ( _where_str == '' ? '' : ' where ' ) + _where_str + ' return $pa' );
+
+	pa_data( _pa_array );
+
+	Ps.pa_datas.Sort( Ps.sort_type_id, '+' );
+	
+
+	
+"/>
+
+
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl( 'x-local://templates/assessment_appraise_status_report.html' );
+	_filemname = ObtainTempFile( '.xls' );		
+
+	PutUrlText( _filemname, _str );
+	ShellExecute( 'open', _filemname );
+"/>
+
+
+
+</SPXML-SCREEN>

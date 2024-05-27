@@ -1,0 +1,281 @@
+<html>
+	<meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8"/>
+	<body>
+
+		<% if( Ps.group_type == 'education_plan' ){ %>
+		<table border="1" cellpadding="2" cellspacing="0">
+			<tr valign="middle">
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_edu_method')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_type')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vcpb_plan')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vkb_fact')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('twazd2xpgg')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('erpg3hrusa')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('v9tvo47ndz')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('myf358awjr')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_status')%></td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_score')%></td>
+				<td width="300px" bgcolor="#FFCC99">%</td>
+				<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_cost')%></td>
+			</tr>
+
+			<%
+
+			arrEducPlans = Ps.educ_plans
+
+			for (oEducPlan in arrEducPlans)
+			{ %>
+				<tr valign="middle" bgcolor="#28c800">
+					<td><%=oEducPlan.person_fullname%></td>
+					<td><%=oEducPlan.person_code%></td>
+					<td></td>
+					<td></td>
+					<td><%=oEducPlan.person_position_name%></td>
+					<td><%=oEducPlan.person_subdivision_name%></td>
+					<td><%=oEducPlan.name%></td>
+					<td></td>
+					<td></td>
+					<td></td>
+
+					<%
+						percentage_plan_completion = Ps.calc_with_unplanned_elem ? ( ArrayCount( oEducPlan.programs ) !=0 ?  StrReal(100*(Real(oEducPlan.fact_count))/(Real(ArrayCount( oEducPlan.programs ))),0) : '0' ) : ( oEducPlan.plan_count!=0 ? StrReal(100*(Real(oEducPlan.fact_count))/(Real(oEducPlan.plan_count)),0) : '0' )
+					%>
+
+					<td><%=percentage_plan_completion%></td>
+					<td></td>
+				</tr>
+			<%
+				for( oPrograms in oEducPlan.programs)
+				{
+					%>
+						<tr valign="middle">
+							<td><%=oPrograms.name%></td>
+
+							<%
+								sType = 'не определен'
+								switch( oPrograms.type )
+								{
+									case "folder":
+										sType = ms_tools.get_const( 'c_phase' );
+										break;
+									case "course":
+										sType = ms_tools.get_const( '21rwflhgsh' );
+										break;
+									case "assessment":
+										sType =  ms_tools.get_const( 'c_test' );
+										break;
+									case "learning_task":
+										sType =  ms_tools.get_const( 'zzzv3sxxx47yyy' );
+										break;
+									case "education_program":
+										sType =  ms_tools.get_const( 'c_edu_prog' );
+										break;
+									case "education_method":
+										sType = ms_tools.get_const( 'nsyhg8lnvg' );
+										break;
+									case "notification_template":
+										sType =  ms_tools.get_const( 'rassylkainform' );
+										break;
+									case "material":
+										sType =  ms_tools.get_const( 'material' );
+										break;
+								}
+							%>
+							<td><%=sType%></td>
+
+							<%
+								sPlan = oPrograms.plan == true ? '+' : '-';
+							%>
+							<td><%=sPlan%></td>
+
+							<%
+								sFact = oPrograms.fact == true ? '+' : '-';
+							%>
+							<td><%=sFact%></td>
+
+							<td><%=StrDate(oPrograms.plan_start_date, false,false)%></td>
+							<td><%=StrDate(oPrograms.plan_finish_date, false,false)%></td>
+							<td><%=StrDate(oPrograms.fact_start_date, false,false)%></td>
+							<td><%=StrDate(oPrograms.fact_finish_date, false,false)%></td>
+
+							<%
+								sResultType = ''
+								if(oPrograms.state_id != null)
+								{
+									oResultType = common.learning_states.GetChildByKey( oPrograms.state_id )
+									sResultType = oResultType.name.Value;
+								}
+							%>
+
+							<td><%=sResultType%></td>
+
+							<td><%=oPrograms.score%></td>
+							<td></td>
+
+							<%
+								sCurrencyName = ''
+								if(oPrograms.currency.HasValue)
+								{
+									oCurrency = lists.currency_types.GetOptChildByKey( oPrograms.currency )
+									sCurrencyName = oCurrency.name.Value;
+								}
+							%>
+
+							<td>
+								<%=oPrograms.cost%>
+								<% if(sCurrencyName != '')
+								{ %>
+								(<%=sCurrencyName%>)
+								<% } %>
+							</td>
+						</tr>
+					<%
+				}
+			} %>
+
+		</table>
+		<% } %>
+
+		<% if( Ps.group_type == 'education_method' ){ %>
+			<table border="1" cellpadding="2" cellspacing="0">
+				<tr valign="middle">
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_edu_method')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vtmb_coll_num')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_type')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vcpb_plan')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('vkb_fact')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('twazd2xpgg')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('erpg3hrusa')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('v9tvo47ndz')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('myf358awjr')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_status')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_score')%></td>
+					<td width="300px" bgcolor="#FFCC99"><%=ms_tools.get_const('c_cost')%></td>
+				</tr>
+				<%
+					arrEducMethods = Ps.education_methods
+					for (oEducMethod in arrEducMethods){
+				%>
+					<tr valign="middle" bgcolor="#28c800">
+						<td><%=oEducMethod.name%></td>
+						<td><%=ArrayCount(oEducMethod.persons)%></td>
+
+						<%
+							sType = 'не определен'
+							switch( oEducMethod.type )
+							{
+								case "folder":
+									sType = ms_tools.get_const( 'c_phase' );
+									break;
+								case "course":
+									sType = ms_tools.get_const( '21rwflhgsh' );
+									break;
+								case "assessment":
+									sType = ms_tools.get_const( 'c_test' );
+									break;
+								case "education_method":
+									sType = ms_tools.get_const( 'nsyhg8lnvg' );
+									break;
+								default:
+									sType = ms_tools.get_const('neopredeleno');
+									break;
+							}
+						%>
+						<td><%=sType%></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+
+						<%
+							sCost = '';
+							sCurrency = '';
+							if ( oEducMethod.cost != null )
+							{
+
+								try
+								{
+									sCurrency = ' ('+oEducMethod.currency.ForeignElem.name+')'
+								}
+								catch(ex)
+								{
+								}
+								sCost = oEducMethod.cost + currency;
+							}
+						%>
+
+						<td><%=sCost%></td>
+					</tr>
+
+					<%
+						arrPersons = oEducMethod.persons
+						for (oPerson in arrPersons){
+					%>
+						<tr valign="middle" bgcolor="#c0ff3e	">
+							<td><%=oPerson.person_fullname%></td>
+							<td><%=oPerson.person_code%></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td><%=oPerson.person_position_name%></td>
+							<td><%=oPerson.person_subdivision_name%></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+
+						<%
+							arrReasons = oPerson.reasons
+							for (oReason in arrReasons){
+						%>
+							<tr valign="middle" bgcolor="#fff">
+								<td><%=oReason.name%></td>
+								<td></td>
+								<td></td>
+
+								<%
+									bReasonPlan = oReason.plan ? '+' : '-';
+								%>
+								<td><%=bReasonPlan%></td>
+
+								<%
+									bReasonfact = oReason.fact ? '+' : '-';
+								%>
+								<td><%=bReasonfact%></td>
+
+								<td><%=oReason.plan_start_date%></td>
+								<td><%=oReason.plan_finish_date%></td>
+
+								<td><%=oReason.fact_start_date%></td>
+								<td><%=oReason.fact_finish_date%></td>
+
+								<%
+									sStatus = common.learning_states.GetChildByKey( oReason.state_id ).name;
+								%>
+
+								<td><%=sStatus%></td>
+								<td><%=oReason.score%></td>
+								<td></td>
+							</tr>
+						<%
+							}
+						%>
+
+					<%
+						}
+					%>
+
+				<%
+					}
+				%>
+
+			</table>
+		<% } %>
+	</body>
+</html>

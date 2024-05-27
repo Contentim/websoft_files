@@ -1,0 +1,156 @@
+﻿try
+{
+	var oRes = tools.get_code_library_result_object();
+	oRes.result = '';
+	
+	iRepositoriumID = OptInt( iRepositoriumID, OptInt( sRepositoriumID ) );
+	
+	if( iRepositoriumID == undefined && curObject != null && curObject != undefined && curObject.Name == "repositorium" ){
+		iRepositoriumID = curObjectID;
+	}
+	
+	var sStep = "";
+	var arrFormFields = [];
+
+	var sFormFields = PARAMETERS.GetOptProperty("form_fields");
+	
+	var sSubmitType = "";
+
+	try
+	{
+		arrFormFields = ParseJson(sFormFields);
+	}
+	catch (e){}
+
+	oFFItem = ArrayOptFindByKey(arrFormFields, "step", "name");
+	if(oFFItem != undefined) sStep = oFFItem.value;
+	
+	for(oFld in arrFormFields){
+		if(oFld.name == "selected_object_ids"){
+			iRepositoriumID = oFld.value
+		}
+		if(oFld.name == "repositoriumID"){
+			iRepositoriumID = oFld.value
+		}
+		if(oFld.name == "__submit_type__"){
+			sSubmitType = oFld.value
+		}
+	}
+
+	if(iRepositoriumID == undefined)
+	{
+		RESULT = {
+			command: "select_object",
+			title: "Выбор удаляемого репозитория",
+			catalog_name: "repositorium",
+			xquery_qual: "",
+			multi_select: false,
+			field_name: "repositoriumID",
+			form_fields: [
+				{name: "step", type: "hidden", value: "confirm"}
+			],
+			buttons:
+			[
+				{ name: "cancel", label: ms_tools.get_const('c_cancel'), type: "cancel", css_class: "btn-cancel-custom" },
+				{ name: "submit", label: "Выбрать", type: "submit", css_class: "btn-submit-custom" }
+			],
+			no_buttons: false
+		};
+	} else {
+		
+		docRepositorium = tools.open_doc(iRepositoriumID)
+		if(docRepositorium == undefined)
+			throw "Не найден репозиторий по указанному ID";
+		
+		oDocRepositoriumTE = docRepositorium.TopElem
+		iFilesCount = ArrayCount(oDocRepositoriumTE.files)
+		
+		if(iFilesCount == 0){
+			sMsg = "Репозиторий не содержит файлов"
+		} else if(iFilesCount == 1) {
+			sMsg = "Репозиторий содержит 1 файл"
+		} else {
+			sMsg = "Репозиторий содержит файлов: " + iFilesCount + " шт."
+		}
+	
+		if(command == "eval" || (command == "submit_form" && sStep == "confirm"))
+		{
+			RESULT = {
+				command: "display_form",
+				title: "Удаление репозитория",
+				message: "Вы уверены?",
+				form_fields: [
+					{ name: "step", type: "hidden", value: 'next' },
+					{ name: "repositoriumID", type: "hidden", value: iRepositoriumID }
+				],
+				buttons: [
+					{ name: "submit", label: "OK",  type: "submit", submit_type: "m1_1" }, 
+					{ name: "cancel", label: "Cancel", type: "cancel"}, 
+				]
+			};
+		}
+		
+		if(command == "submit_form" && sStep == "next" && iFilesCount == 0)
+		{
+			oRes = tools.call_code_library_method("libLorem", "RepositoriumDeleteCurrent", [ curUserID, iRepositoriumID ]);
+			
+			RESULT = {
+				command: "close_form",
+				msg: oRes.result,
+				confirm_result: {
+					command: "refresh",
+					source_widget: true
+				}
+			}
+		}
+
+		if(command == "submit_form" && sStep == "next" && iFilesCount > 0){ 
+			
+			if(sStep == "next" && sSubmitType == "m1_1"){ // + удалить файлы?
+
+				RESULT = {
+					command: "display_form",
+					title: "Удалить все файлы ("+iFilesCount+" шт.) в этом репозитории?",
+					message: sMsg,
+					form_fields: [
+						{ name: "step", type: "hidden", value: 'end' },
+						{ name: "repositoriumID", type: "hidden", value: iRepositoriumID }
+					],
+					buttons: [
+						{ name: "submit", label: "OK",  type: "submit", submit_type: "repo_files" }, // реп + файлы
+						{ name: "submit", label: "Нет", type: "submit", submit_type: "repo" } //  реп
+					]
+				};
+			}
+		}
+		
+		if(command == "submit_form" && sStep == "end" && (sSubmitType == "repo_files" || sSubmitType == "repo")){
+			
+			oRes = tools.call_code_library_method("libLorem", "RepositoriumDeleteCurrent", [ curUserID, iRepositoriumID, sSubmitType ]);
+			
+			RESULT = {
+				command: "close_form",
+				msg: oRes.result,
+				confirm_result: {
+					command: "refresh",
+					source_widget: true
+				}
+			}
+		}
+	}
+	
+	ERROR = oRes.error;
+	MESSAGE = oRes.errorText;
+
+} catch(err){
+	alert(err)
+	RESULT = {
+		command: "close_form",
+		msg: err,
+		confirm_result: {
+			command: "refresh",
+			source_widget: true
+		}
+	}
+}
+

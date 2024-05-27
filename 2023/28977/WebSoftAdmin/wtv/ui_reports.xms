@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN>
+
+<USE FORM="//wtv/ui_general.xms"/>
+
+<PANEL NAME="standard_report_actions_panel" STD-MARGINS="0" HEIGHT="48px" WIDTH="100%" SAMPLE="1">
+
+    <LINE VERT-ALIGN="center">
+        <ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'vcrb_build_report')" IMAGE-URL="//wtv/svg/elem_right.svg" CMD="Run"/>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        <ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'sgsvrm6x6u' )" IMAGE-URL="//wtv/svg/export.svg">
+            <MENU>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('w99bevhc3i') )" ACTION="
+
+                        TopElem.export_type = 'xlsx';
+                        Screen.RunCommand( 'Export' );
+
+                "/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('8ul6b3phsx') )" ACTION="
+
+                        TopElem.export_type = 'docx';
+                        Screen.RunCommand( 'Export' );
+
+                "/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('5wffbv7y7x') )" ACTION="
+
+                        TopElem.export_type = 'html';
+                        Screen.RunCommand( 'Export' );
+
+                "/>
+                <MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('vpdf') )" _CMD="ExportToPDF" ACTION="
+
+                        TopElem.export_type = 'pdf';
+                        Screen.RunCommand( 'Export' );
+
+                "/>
+            </MENU>
+        </ButtonToolbar>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+        <ButtonToolbar TITLE-EXPR="'Параметры отчёта'" IMAGE-URL="//wtv/svg/filter.svg" CHECKED-EXPR="!TopElem.is_minimized" ACTION="
+        
+            if ( TopElem.is_minimized )
+            {
+                TopElem.is_minimized = false;
+                tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : false } ] );
+            }
+            else
+            {
+                TopElem.is_minimized = true;
+                tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : true } ] );
+            }
+
+        "/>
+        <SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+    </LINE>
+
+</PANEL>
+
+</SPXML-SCREEN>

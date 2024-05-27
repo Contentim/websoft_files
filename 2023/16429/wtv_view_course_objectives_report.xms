@@ -1,0 +1,258 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+		
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+			
+		<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT__="1" VERT-SCROLL="1">
+			<COLUMNS>
+				<COL WIDTH="30zr"/>
+				<COL WIDTH="10zr"/>	
+				<COL WIDTH="25zr"/>
+				<COL WIDTH="25zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="20zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="16zr"/>
+				<COL WIDTH="18zr"/>
+				<LOOP EXPR="Ps.objectives" VAR="ListElem">
+					<COL WIDTH="20zr"/>
+					<COL WIDTH="20zr"/>
+					<COL WIDTH="20zr"/>
+					<COL WIDTH="20zr"/>
+				</LOOP>
+			</COLUMNS>
+			<IF EXPR="ArrayCount(Ps.objectives) != 0">
+				<ROW HEADER="1">
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LABEL TITLE="" ALIGN="center"/>
+					<LOOP EXPR="Ps.objectives" VAR="ListElem">
+						<LABEL TITLE-EXPR="ListElem.PrimaryKey" ALIGN="center" HSPAN="4"/>
+					</LOOP>
+				</ROW>
+			</IF>
+			<ROW HEADER="1">
+				<LABEL TITLE-EXPR="ms_tools.get_const('wrm4ebg7c9')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_org')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_subd')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_position')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="'Дата активации курса'" ALIGN="center"/>
+				<LABEL TITLE-EXPR="'Дата активации модуля'" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_status')" ALIGN="center"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('y02j7bpbmq')" ALIGN="center"/>
+				<LOOP EXPR="Ps.objectives" VAR="ListElem">
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_score')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('bfuibkfp1w')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_status')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_desc')" ALIGN="center"/>
+				</LOOP>
+			</ROW>
+			
+			<LOOP EXPR="Ps.learnings" VAR="ListElem">
+				<ROW>
+					<LABEL TITLE-EXPR="ListElem.person_fullname" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_code" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.person_id.ForeignElem.org_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="TopElem.disp_person_list_staff ? ListElem.person_list_staff : ListElem.person_subdivision_name" FLAT="1"/>	
+					<LABEL TITLE-EXPR="ListElem.person_position_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="StrDate( ListElem.course_start_usage_date, true, false )" FLAT="1"/>
+					<LABEL TITLE-EXPR="StrDate( ListElem.start_usage_date, true, false )" FLAT="1"/>
+					<LABEL TITLE-EXPR="
+							fldState = ListElem.state_id.OptForeignElem;
+							return fldState == undefined ? ListElem.state_id : fldState.name;
+					" FLAT="1"/>
+					<LABEL TITLE-EXPR="ListElem.score + ( ListElem.max_score.HasValue ? ' / ' + ListElem.max_score + ( ListElem.max_score != '' ? ' (' + StrReal( ListElem.per_cent, 1 ) + ')' : '' ) : '' )" FLAT="1"/>
+					<LOOP EXPR="Ps.objectives" VAR="_objective">
+						<WITH VAR="_cur_objective" EXPR="ListElem.objectives.lines.GetOptChildByKey( _objective.PrimaryKey )">
+							<IF EXPR="_cur_objective == undefined">
+								<LABEL TITLE="" HSPAN="4" FLAT="1"/>
+							</IF>
+							<ELSE>
+								<LABEL TITLE-EXPR="_cur_objective.score" FLAT="1"/>
+								<LABEL TITLE-EXPR="(_cur_objective.ChildExists('completion_status')&& Trim(_cur_objective.completion_status)!='' )? _cur_objective.completion_status.ForeignElem.name : ''" FLAT="1"/>
+								<LABEL TITLE-EXPR="
+								strStatusName=global_settings.object_deleted_str;
+								if (_cur_objective.ChildExists('success_status')&& Trim(_cur_objective.success_status)!='' )
+								{
+									fldStatus = _cur_objective.success_status.OptForeignElem;
+									_learning_status = common.objective_success_status_types.GetOptChildByKey( StrLowerCase( StrLeftRange( _cur_objective.success_status, 1 ) ), 'short_descriptor' );
+									strStatusName=(_learning_status == undefined ? (fldStatus!=undefined?fldStatus.name:_cur_objective.success_status) : _learning_status.name);
+								}
+								return strStatusName
+								" BK-COLOR-EXPR="_cur_objective.success_status == 'passed' ? '230,255,230' : '255,230,230'" FLAT="1"/>
+								<LABEL TITLE-EXPR="_cur_objective.description" FLAT="1"/>
+							</ELSE>
+						</WITH>
+					</LOOP>
+				</ROW>
+			</LOOP>
+			<MENU>
+				<INHERIT TYPE="activate_course_test_base"/>
+				<MENU-ENTRY SEPARATOR="1"/>
+				<INHERIT TYPE="actions_groups_collaborators_base"/>
+			</MENU>	
+		</GRID>
+	</PANEL>
+	
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+		<IF EXPR="! TopElem.is_minimized">
+
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.course_id" catalogExpr="'course'" afterSelectAction="
+					if (Ps.HasValue)
+					{
+						TopElem.course_obj = OpenDoc( UrlFromDocID( Ps ) ).TopElem;
+						if ( ArrayCount( TopElem.course_obj.Object.parts ) != 0 )
+							TopElem.part_id = ArrayFirstElem( TopElem.course_obj.Object.parts ).PrimaryKey;
+					}
+				"/>
+		
+				<!-- fields -->
+				<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id"/>
+				<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')"/>
+
+				<ITEM WIDTH="100%" VERT-ALIGN="top" TYPE="ms_object_selector" catalogExpr="'collaborator'" SOURCE="Ps.person_id"/>
+
+				<ITEM WIDTH="100%" TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				<ITEM WIDTH="100%" TITLE-EXPR="ms_tools.get_const('ipyij2uvm3')" TITLE="##'Дата активации курса с'##" TYPE="ms_object_selector" SOURCE="Ps.course_id" catalogExpr="'course'" afterSelectAction="
+					if (Ps.HasValue)
+					{
+						TopElem.course_obj = OpenDoc( UrlFromDocID( Ps ) ).TopElem;
+						if ( ArrayCount( TopElem.course_obj.Object.parts ) != 0 )
+							TopElem.part_id = ArrayFirstElem( TopElem.course_obj.Object.parts ).PrimaryKey;
+					}
+				"/>	
+
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('awbyj8ntwg')##" >
+					<COMBO WIDTH="100%" SOURCE="Ps.disp_learning_type">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('ipyij2uvm3')" VALUE="learnings"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('yperlnbc1i')" VALUE="active_learnings"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="(active_learnings,learnings)"/>
+					</COMBO>
+				</TitleLabel>
+				
+				<TitleLabel ALIGN="left" TITLE="##ms_tools.get_const('c_module')##" >
+					<COMBO WIDTH="316vpx" SOURCE="Ps.part_id" ELEM="ListElem.name" FOREIGN-ARRAY="TopElem.course_obj.HasValue ? TopElem.course_obj.Object.parts : Array()"/>
+				</TitleLabel>
+				
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE="##'Дата активации курса с'##" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE="##ms_tools.get_const('mkly6lmeds')##" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+				
+				<CHECK SOURCE="Ps.disp_person_list_staff" TITLE-EXPR="ms_tools.get_const('ef2trjd7i5')"/>
+				
+			</PANEL>
+		</IF>
+		
+	</PANEL>
+	
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+	if ( ! Ps.course_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const('9ucwv2ar6u'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+	if ( ! Ps.part_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const('ejee71jrjt'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	TopElem.learnings.Clear();
+
+	oReport = task.CallMethod( 'tools_report', 'course_objectives_report', [ Ps ] );
+
+	if ( oReport.error == 1 )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'dwnmry0az6' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+	}
+	else
+	{
+		TopElem.count_arr = ArrayCount( oReport.learnings );
+		
+		iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+		
+		Ps.learnings.Clear();
+		for ( oLearning in oReport.learnings )
+		{
+			oItem = Ps.learnings.AddChild();
+			oItem.id = oLearning.id;
+			oItem.course_start_usage_date = oLearning.course_start_usage_date;
+			oItem.score = oLearning.score;
+			oItem.state_id = oLearning.state_id;
+			oItem.max_score = oLearning.max_score;
+			oItem.per_cent = oLearning.per_cent;
+			oItem.person_id = oLearning.person_id;
+			oItem.person_fullname = oLearning.person_fullname;
+			oItem.person_code = oLearning.person_code;
+			oItem.person_position_name = oLearning.person_position_name;
+			oItem.person_subdivision_name = oLearning.person_subdivision_name;
+			oItem.person_list_staff = oLearning.person_list_staff;
+
+			if(ArrayCount( oLearning.objectives.lines ) > 0)
+			{
+				for ( oLine in oLearning.objectives.lines )
+				{
+					/*oItem.objectives = Ps.objectives.lines.AddChild();*/
+					oItem.objectives.objective_id = oLine.objective_id;
+					oItem.objectives.score = oLine.score;
+					oItem.objectives.completion_status = oLine.completion_status;
+					oItem.objectives.success_status = oLine.success_status;
+					oItem.objectives.description = oLine.description;
+				}
+			}
+			
+		}
+	}
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/course_objectives_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

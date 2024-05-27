@@ -1,0 +1,721 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="test_extend_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+
+			<LINE VERT-ALIGN="center">
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'vcrb_build_report')" IMAGE-URL="//wtv/svg/elem_right.svg" CMD="Run"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="ms_tools.get_const( 'sgsvrm6x6u' )" IMAGE-URL="//wtv/svg/export.svg">
+					<MENU>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('w99bevhc3i') )" ACTION="
+
+								TopElem.export_type = 'xlsx';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('8ul6b3phsx') )" ACTION="
+
+								TopElem.export_type = 'docx';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('5wffbv7y7x') )" ACTION="
+
+								TopElem.export_type = 'html';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+						<MENU-ENTRY TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('vpdf') )" _CMD="ExportToPDF" ACTION="
+
+								TopElem.export_type = 'pdf';
+								Screen.RunCommand( 'Export' );
+
+						"/>
+					</MENU>
+				</ButtonToolbar>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+				<ButtonToolbar TITLE-EXPR="'Параметры отчёта'" IMAGE-URL="//wtv/svg/filter.svg" CHECKED-EXPR="!TopElem.is_minimized" ACTION="
+				
+					if ( TopElem.is_minimized )
+					{
+						TopElem.is_minimized = false;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : false } ] );
+					}
+					else
+					{
+						TopElem.is_minimized = true;
+						tools_report.save_report_settings( TopElem.report_name, [ { 'name' : 'is_minimized', 'value' : true } ] );
+					}
+
+				"/>
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+			</LINE>
+
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<GRID NAME="ViewGrid" HEIGHT="100%" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+			<COLUMNS>
+				<COL WIDTH="40zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="40zr"/>
+				<COL WIDTH="40zr"/>
+				<COL WIDTH="40zr"/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+				</LOOP>
+
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="10zr"/>
+				<COL WIDTH="5zr"/>
+						
+			</COLUMNS>
+			<ROW HEADER="1">
+				<LABEL/>
+				<LABEL/>
+				<LABEL/>
+				<LABEL/>
+				<LABEL/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<LABEL TITLE-EXPR="_assessment.PrimaryKey.ForeignElem.title" HSPAN="2" TIP-TEXT-EXPR="_assessment.PrimaryKey.ForeignElem.title"/>
+				</LOOP>
+
+				<LABEL HSPAN="2" TITLE-EXPR="ms_tools.get_const('vagb_summary')"/>
+				<LABEL/>
+			</ROW>
+			
+			
+			<ROW>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<LABEL TITLE-EXPR="_assessment.max_score" FLAT="1" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('7emcugauz4') + _assessment.PrimaryKey.ForeignElem.title"/>
+					<LABEL TITLE-EXPR="(_assessment.max_score.HasValue ? _assessment.max_score * _assessment.total_count : '')" FLAT="1" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('57tqcwxzrm')"/>
+				</LOOP>
+
+				<LABEL TITLE-EXPR="Ps.total_max_score" FLAT="1" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('s7mvbz6ilv')"/>
+				<LABEL TITLE-EXPR="Ps.total_max_score_pack" FLAT="1" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('aogc98lhwd')"/>	
+				<LABEL FLAT="1"/>	
+			</ROW>
+			
+			
+			<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<LABEL TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('c_score') )" FLAT="1" HSPAN="2" ALIGN="center"/>
+				</LOOP>
+
+				<LABEL TITLE-EXPR="StrNonTitleCase( ms_tools.get_const('c_score') )" FLAT="1" HSPAN="2" ALIGN="center"/>
+				<LABEL FLAT="1"/>
+			</ROW>	
+			
+
+			<ROW BK-COLOR-EXPR="AppUi.themeColors.bg_light_color">
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_fio')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_org')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_subd')" FLAT="1" BOLD="1"/>
+				<LABEL TITLE-EXPR="ms_tools.get_const('c_position')" FLAT="1" BOLD="1"/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<LABEL TITLE-EXPR="ms_tools.get_const('kap670sd4x')" FLAT="1" ALIGN="center"/>
+					<LABEL TITLE="%" FLAT="1" ALIGN="center"/>
+				</LOOP>
+
+				<LABEL TITLE-EXPR="ms_tools.get_const('kap670sd4x')" FLAT="1" ALIGN="center"/>
+				<LABEL TITLE="%" FLAT="1" ALIGN="center"/>
+				<LABEL FLAT="1"/>
+			</ROW>
+
+			<LOOP EXPR="Ps.persons" VAR="_person">
+				<ROW>
+					<LABEL TITLE-EXPR="_person.person_fullname" FLAT="1"/>
+					<LABEL TITLE-EXPR="_person.person_code" FLAT="1"/>
+					<LABEL TITLE-EXPR="_person.person_id.ForeignElem.org_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="TopElem.disp_person_list_staff ? _person.person_list_staff : _person.person_subdivision_name" FLAT="1"/>
+					<LABEL TITLE-EXPR="_person.person_position_name" FLAT="1"/>
+					<LOOP EXPR="Ps.assessments" VAR="_assessment">
+						<WITH VAR="_ass_person" EXPR="_assessment.persons.ObtainChildByKey(_person.PrimaryKey)">
+							<LABEL TITLE-EXPR="(_ass_person.count &gt; 0 ? StrReal(_ass_person.value / _ass_person.count, 2) : '')" FLAT="1" BK-COLOR-EXPR="AppUi.themeColors.bg_light_color" ALIGN="right"/>
+							<LABEL TITLE-EXPR="(_ass_person.max_score.HasValue &amp;&amp; _ass_person.max_score &gt; 0 &amp;&amp; _ass_person.count &gt; 0 ? StrReal(((_ass_person.value / _ass_person.count) / _ass_person.max_score) * 100 , 2) + '%' : '')" FLAT="1" ALIGN="right"/>
+						</WITH>
+					</LOOP>
+					<LABEL TITLE-EXPR="(_person.total_count &gt; 0 ? StrReal(_person.total , 2) : '')" FLAT="1" ALIGN="right" TIP-TEXT-EXPR="ms_tools.get_const('h13wjqbtso') + _person.PrimaryKey.ForeignElem.fullname"/>
+					<LABEL TITLE-EXPR="(_person.total_count &gt; 0 &amp;&amp; Ps.total_max_score &gt; 0 ? StrReal((_person.total / Ps.total_max_score) * 100, 2) + '%' : '')" FLAT="1" ALIGN="right" TIP-TEXT-EXPR="ms_tools.get_const('iz5e79p51r')"/>
+					<LABEL FLAT="1"/>
+				</ROW>
+			</LOOP>
+			
+			<ROW>
+				<LABEL TITLE-EXPR="ms_tools.get_const('vagb_summary')" FLAT="1" BOLD="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LABEL FLAT="1"/>
+				<LOOP EXPR="Ps.assessments" VAR="_assessment">
+					<LABEL TITLE-EXPR="StrReal(_assessment.total, 2)" FLAT="1" ALIGN="right" TIP-TEXT-EXPR="ms_tools.get_const('pv1st7r9te') + _assessment.PrimaryKey.ForeignElem.title"/>
+					<LABEL TITLE-EXPR="
+						if (_assessment.max_score.HasValue)
+							_t = _assessment.max_score * _assessment.total_count;
+						else
+							_t = 0;
+							
+						if (_t &gt; 0)
+							return StrReal((_assessment.total / _t) * 100 , 2) + '%';
+						else
+							return '';
+					" FLAT="1" ALIGN="right" TIP-TEXT-EXPR="ms_tools.get_const('blfhyl1cgn')"/>
+				</LOOP>
+
+				<LABEL TITLE-EXPR="StrReal(Ps.total, 2)" FLAT="1" ALIGN="right" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('o6rcobalye')"/>
+				<LABEL TITLE-EXPR="
+						_t = Ps.total_max_score_pack;
+						if (_t &gt; 0)
+							return (StrReal((Ps.total / _t)*100 , 2) + '%');
+						else
+							return '';
+					" FLAT="1" ALIGN="right" BOLD="1" TIP-TEXT-EXPR="ms_tools.get_const('jlyl9v46cr')"/>
+				<LABEL FLAT="1"/>	
+			</ROW>
+			
+			<MENU></MENU>			
+		</GRID>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" catalogExpr="'collaborator'" SOURCE="Ps.person_id" xqueryQualExpr="
+					curUser = tools.get_cur_user();
+					var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+					if( sApplicationID != '' )
+					{
+						var iApplLevel = tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUser.id.Value, sApplicationID ] );
+						
+						switch(iApplLevel)
+						{
+							case 10:
+								sAccessType = 'admin'; // админ
+								break;
+							case 7:
+								sAccessType = 'manager'; // админ
+								break;
+							case 5: 
+								sAccessType = 'hr'; // менеджер обучения
+								break;
+							case 3: 
+								sAccessType = 'expert'; // методист
+								break;
+							case 1: 
+								sAccessType = 'observer'; // наблюдатель
+								break;
+							default:
+								sAccessType = 'reject';
+								break;
+						}
+						
+						switch( sAccessType )
+						{
+							case 'admin':
+							case 'manager':
+							case 'expert':
+							{
+								return '';
+							}
+							case 'hr':
+							{
+								var iAppHRManagerTypeID = tools.call_code_library_method('libApplication', 'GetApplicationHRBossTypeID', [ sApplicationID, curUser.id.Value ])
+								arrSubordinateIDs = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUser.id.Value, ['func'], true, '', null, '', true, true, true, true, [iAppHRManagerTypeID], true, '' ] );
+								return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+								break;
+							}
+							case 'observer':
+							{
+								//var iAppHRManagerTypeID = tools.call_code_library_method('libApplication', 'GetApplicationHRBossTypeID', [ sApplicationID, curUser.id.Value ])
+								arrSubordinateIDs = tools.call_code_library_method( 'libMain', 'get_subordinate_records', [ curUser.id.Value, ['func'], true, '', null, '', true, true, true, true, [], true, '' ] );
+								return 'MatchSome($elem/id, (' + ArrayMerge(arrSubordinateIDs, 'This', ',') + '))'
+								break;
+							}
+							case 'reject':
+							{
+								return '$elem/id = 0';
+								break;
+							}
+							default:
+							{
+								return '$elem/id = 0';
+							}
+						}
+					} else {
+						return '';
+					}
+				"/>
+
+				<IF EXPR="! Ps.person_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+
+						if( sApplicationID != '' )
+						{
+							var iApplLevel = tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUser.id.Value, sApplicationID ] );
+							switch(iApplLevel)
+							{
+								case 10:
+									sAccessType = 'admin';
+									break;
+								case 7:
+									sAccessType = 'manager';
+									break;
+								case 5: 
+									sAccessType = 'hr';
+									break;
+								case 3: 
+									sAccessType = 'expert';
+									break;
+								case 1: 
+									sAccessType = 'observer';
+									break;
+								default:
+									sAccessType = 'reject';
+									break;
+							}
+
+							switch( sAccessType )
+							{
+								case 'admin':
+								case 'manager':
+								case 'expert':
+								{
+									return '';
+								}
+								case 'hr':
+								case 'observer':
+								{
+									arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUser.id.Value ] ), '({id: This.id, name: This.name, type: This.type})');
+									var arrSubdivisionIDs = [];
+									for(oObject in arrObjects)
+									{
+										if(oObject.type == 'subdivision')
+										{
+											arrSubdivisionIDs.push(oObject.id)
+										}
+									}
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))'
+									break;
+								}
+								case 'reject':
+								{
+									return '$elem/id = 0';
+									break;
+								}
+								default:
+								{
+									return '$elem/id = 0';
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')"/>
+					<ITEM TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							var iApplLevel = tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUser.id, sApplicationID ] );
+							
+							switch(iApplLevel)
+							{
+								case 10:
+									sAccessType = 'admin';
+									break;
+								case 7:
+									sAccessType = 'manager';
+									break;
+								case 5: 
+									sAccessType = 'hr';
+									break;
+								case 3: 
+									sAccessType = 'expert';
+									break;
+								case 1: 
+									sAccessType = 'observer';
+									break;
+								default:
+									sAccessType = 'reject';
+									break;
+							}
+							
+							switch( sAccessType )
+							{
+								case 'admin':
+								case 'manager':
+								case 'expert':
+								{
+									return '';
+								}
+								case 'hr':
+								case 'observer':
+								{
+									arrObjects = ArrayExtract(tools.call_code_library_method('libMain', 'get_boss_management_objects', [ curUser.id.Value ] ), '({id: This.id, name: This.name, type: This.type})');
+									var arrGroupIDs = [];
+									for(oObject in arrObjects)
+									{
+										if(oObject.type == 'group')
+										{
+											arrGroupIDs.push(oObject.id)
+										}
+									}
+									return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))'
+									break;
+								}
+								case 'reject':
+								{
+									return '$elem/id = 0';
+									break;
+								}
+								default:
+								{
+									return '$elem/id = 0';
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+				</IF>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+				<PANEL VERT-ALIGN="top" VERT-SPACING="4vpx">
+					<LINE WIDTH="100%">
+						<TitleLabel ALIGN="left" TITLE-EXPR="
+								fam_num = ArrayCount( Ps.temp_assessments );
+								return ms_tools.get_const('c_tests') + ( fam_num == 0 ? '' : ' (' + fam_num + ')' ) + ':';
+						" />
+						<BUTTON ALIGN="right" TITLE-EXPR="ms_tools.get_const( 'c_choose' ) + '...'" IMAGE-URL="//wtv/svg/add.svg" STD-MARGINS="0" ACTION="
+
+							dlgDoc = OpenDoc( '//wtv/ms_dlg_object_select.xml' );
+							dlgDoc.TopElem.catalog_name = 'assessment';
+							
+							var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+							if( sApplicationID != '' )
+							{
+								curUser = tools.get_cur_user();
+								var iApplLevel = tools.call_code_library_method( 'libApplication', 'GetPersonApplicationAccessLevel', [ curUser.id, sApplicationID ] );
+
+								switch(iApplLevel)
+								{
+									case 10:
+										sAccessType = 'admin';
+										break;
+									case 7:
+										sAccessType = 'manager';
+										break;
+									case 5: 
+										sAccessType = 'hr';
+										break;
+									case 3: 
+										sAccessType = 'expert';
+										break;
+									case 1: 
+										sAccessType = 'observer';
+										break;
+									default:
+										sAccessType = 'reject';
+										break;
+								}
+								
+								dlgDoc.TopElem.xquery_qual = '';
+								switch( sAccessType )
+								{
+									case 'expert': // методист
+									{
+										// найти пользвателя среди экспертов
+										sExpertQuery = 'for $elem in experts where $elem/person_id = ' + curUser.id.Value + ' return $elem';
+										
+										arrExperts = tools.xquery( sExpertQuery );
+										if(ArrayOptFirstElem(arrExperts) == undefined)
+										{
+											dlgDoc.TopElem.xquery_qual = '$elem/id = 0';
+										}
+										
+										for(oExpert in arrExperts)
+										{
+											iExpertID = OptInt(oExpert.id.Value);
+										}
+
+										sAssessmentQuery = 'for $elem in assessments return $elem';
+										sAssessmentCategoryQuery = 'for $elem in roles where $elem/catalog_name=\'assessment\' return $elem';
+										
+										sQuery = 'for $elem in roles where $elem/catalog_name = \'assessment\' and contains($elem/experts,' + OptInt(iExpertID, 0) + ') return $elem/Fields(\'id\')';
+										arrRoles = tools.xquery(sQuery);
+										
+										arrRoleIDs = [];
+										for(oRole in arrRoles)
+										{
+											arrRoleIDs.push(oRole.id.Value);
+										}
+
+										arrAssessments = [];
+										if(ArrayCount(arrRoleIDs) > 0)
+										{
+											sQuery = 'for $elem in assessments where MatchSome($elem/role_id, (' + ArrayMerge(arrRoleIDs, 'This', ',') + ')) return $elem/Fields(\'id\')';
+											arrAssessments = tools.xquery(sQuery);
+
+											arrAssessmentIDs = [];
+											if(ArrayOptFirstElem(arrAssessments) != undefined)
+											{
+												for(oAssessment in arrAssessments)
+												{
+													arrAssessmentIDs.push(oAssessment.id.Value);
+												}
+											}
+											
+											if(ArrayCount(arrAssessmentIDs) > 0){
+												dlgDoc.TopElem.xquery_qual = 'MatchSome($elem/id, (' + ArrayMerge(arrAssessmentIDs, 'This', ',') + '))';
+											}
+										}
+
+										break;
+									}
+								}
+							}
+
+							dlgDoc.TopElem.multi_select = true;
+							dlgDoc.TopElem.value_array = Ps.temp_assessments;
+							Screen.ModalDlg( dlgDoc );
+							
+							Ps.temp_assessments.Clear();
+							for ( _value in dlgDoc.TopElem.values )
+							{
+								_child = Ps.temp_assessments.ObtainChildByKey( _value.key );
+							}
+
+							Ps.Doc.SetChanged( true );
+
+						"/>
+					</LINE>
+					<LIST WIDTH="100%" NAME="ProfFamGrid" HEIGHT-EXPR="'5gr'" VERT-SCROLL="1" LOOP-EXPR="return SafeEval( 'ArraySort( TopElem.temp_assessments, ' + List.GetCurCodeSortInfo() + ' )', [ { 'TopElem': TopElem } ] );">
+						<ROW IMAGE-URL-EXPR="'ico/assessment.ico'" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.PrimaryKey ) );" DELETE-ACTION="ListElem.Delete()">
+							<COL WIDTH="100%" COL-TITLE-EXPR="ms_tools.get_const('c_name')" TITLE-EXPR="ListElem.PrimaryKey.ForeignElem.title"  ERROR-TEXT-EXPR="ms_tools.get_const('jmkcjvkz8n')"/>
+						</ROW>
+					</LIST>
+				</PANEL>
+
+				<CHECK HSPAN="2" SOURCE="Ps.disp_person_list_staff" TITLE-EXPR="ms_tools.get_const('ef2trjd7i5')"/>
+
+			</PANEL>
+		</IF>
+	
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( ArrayOptFirstElem( Ps.temp_assessments ) == undefined )
+	{
+		Screen.MsgBox( ms_tools.get_const( 'nuzhnovybrathot' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	arrSettings = [
+					{ 'name' : 'person_id', 'value' : TopElem.person_id.Value },
+					{ 'name' : 'group_id', 'value' : TopElem.group_id.Value },
+					{ 'name' : 'parent_object_id', 'value' : TopElem.parent_object_id.Value },
+					{ 'name' : 'org_id', 'value' : TopElem.org_id.Value },
+					{ 'name' : 'hier_sub_select', 'value' : TopElem.hier_sub_select.Value },
+					{ 'name' : 'disp_person_list_staff', 'value' : TopElem.disp_person_list_staff.Value },
+					{ 'name' : 'start_date', 'value' : TopElem.start_date.Value },
+					{ 'name' : 'finish_date', 'value' : TopElem.finish_date.Value },
+					{ 'name' : 'temp_assessments', 'value' : TopElem.temp_assessments }
+				];
+
+	if ( local_settings.view.remember_last_reports_settings )
+	{
+		tools_report.save_report_settings( TopElem.report_name, arrSettings );
+	}
+
+	Ps.assessments.Clear();
+	Ps.persons.Clear();
+	Ps.total.Clear();
+	Ps.total_count.Clear();
+	Ps.total_max_score.Clear();
+	Ps.total_max_score_pack.Clear();
+	
+	function fnAddLearnings( arrFinishedTests )
+	{
+		for ( catFinishedTest in arrFinishedTests )
+		{
+			_childAssessment = Ps.assessments.ObtainChildByKey( catFinishedTest.assessment_id );
+
+			_childPerson = _childAssessment.persons.ObtainChildByKey( catFinishedTest.person_id );
+			_childPerson.AssignElem( catFinishedTest );
+			
+			if ( TopElem.disp_person_list_staff )
+				_childPerson.person_list_staff = tools.person_list_staff_by_person_id( catFinishedTest.person_id );
+			
+			if ( catFinishedTest.score.HasValue )
+			{
+				_childPerson.value = _childPerson.value + catFinishedTest.score;
+				_childPerson.count = _childPerson.count + 1;
+
+				if ( catFinishedTest.max_score.HasValue )
+				{
+					_childAssessment.max_score = catFinishedTest.max_score > _childAssessment.max_score ? catFinishedTest.max_score : _childAssessment.max_score;
+
+					_childPerson.max_score = catFinishedTest.max_score;
+				}
+			}
+		}
+	}
+
+	var arrXQueryConditions = new Array();
+
+	arrXQueryConditions.push( 'MatchSome( $elem/assessment_id, ( ' + ArrayMerge( Ps.temp_assessments, 'PrimaryKey', ',' ) + ' ) )' );
+	
+	if ( Ps.start_date.HasValue )
+		arrXQueryConditions.push( '$elem/start_usage_date &gt;= date( \'' + DateNewTime( Ps.start_date ) + '\' )' );
+	
+	if ( Ps.finish_date.HasValue )
+		arrXQueryConditions.push( '$elem/start_usage_date &lt;= date( \'' + DateNewTime( Ps.finish_date, 23, 59, 59 ) + '\' )' );
+
+	if ( Ps.person_id.HasValue )
+	{
+		arrXQueryConditions.push( '$elem/person_id = ' + Ps.person_id );
+	}
+	else if ( Ps.org_id.HasValue || Ps.parent_object_id.HasValue || Ps.group_id.HasValue )
+	{
+		arrPersonsIDs = Array();
+
+		if ( Ps.org_id.HasValue || Ps.parent_object_id.HasValue )
+		{
+			curNodeID = Ps.parent_object_id.HasValue ? Ps.parent_object_id : Ps.org_id;
+
+			if ( Ps.hier_sub_select )
+				arrPersonsIDs = tools.get_sub_person_ids_by_subdivision_id( curNodeID );
+			else
+				arrPersonsIDs = ArrayExtract( XQuery( 'for $elem in subs where $elem/parent_id = ' + curNodeID + ' and $elem/type = &quot;position&quot; and $elem/basic_collaborator_id != null() return $elem' ), 'basic_collaborator_id' );
+		}
+
+		if ( Ps.group_id.HasValue )
+		{
+			try
+			{
+				teGroup = OpenDoc( UrlFromDocID( Ps.group_id ) ).TopElem;
+
+				arrGroupPersonsIDs = ArrayExtract( teGroup.collaborators, 'collaborator_id' );
+
+				if ( ArrayOptFirstElem( arrPersonsIDs ) != undefined )
+					arrPersonsIDs = tools_report.arrayCross( arrPersonsIDs, arrGroupPersonsIDs );
+				else
+					arrPersonsIDs = arrGroupPersonsIDs;
+			}
+			catch( ex )
+			{
+				alert( ex )
+			}
+		}
+
+		arrPersonsIDs = ArraySelectDistinct( arrPersonsIDs );
+
+		arrXQueryConditions.push( 'MatchSome( $elem/person_id, ( ' + ArrayMerge( arrPersonsIDs, 'This', ',' ) + ' ) )' );
+	}
+
+	var sXQueryConditions = ArrayCount( arrXQueryConditions ) > 0 ? ' where ' + ArrayMerge( arrXQueryConditions, 'This', ' and ' ) : '';
+
+	fnAddLearnings( XQuery( 'for $elem in test_learnings ' + sXQueryConditions + ' return $elem' ) )
+
+	for ( oAssessment in Ps.assessments )
+	{
+		for ( oPerson in oAssessment.persons )
+		{
+			if ( oPerson.count &gt; 0 )
+			{
+				oAssessment.total = oAssessment.total + ( oPerson.value / oPerson.count );
+				oAssessment.total_count = oAssessment.total_count + 1;
+
+				_childPerson = Ps.persons.ObtainChildByKey( oPerson.PrimaryKey );
+				_childPerson.AssignElem( oPerson );
+				_childPerson.total = _childPerson.total + ( oPerson.value / oPerson.count );
+				_childPerson.total_count = _childPerson.total_count + 1;
+
+				try
+				{
+					_childPerson.person_code = oPerson.PrimaryKey.ForeignElem.code;
+				}
+				catch( ex )
+				{
+				}
+			}
+		}
+
+		if ( oAssessment.max_score.HasValue )
+		{
+			Ps.total_max_score = Ps.total_max_score + oAssessment.max_score;
+			Ps.total_max_score_pack = Ps.total_max_score_pack + ( oAssessment.max_score * oAssessment.total_count );
+		}
+	}
+
+	for ( oPerson in Ps.persons )
+	{
+		if ( oPerson.total_count &gt; 0 )
+		{
+			Ps.total = Ps.total + ( oPerson.total );
+			Ps.total_count = Ps.total_count + 1;
+		}
+	}
+
+	//SetClipboard(Ps.Xml);
+
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/test_extend_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+
+"/>
+
+
+</SPXML-SCREEN>

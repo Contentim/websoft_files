@@ -1,0 +1,2072 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+<tools_library>
+
+	<string_is_null_or_empty PROPERTY="1" PARAM="sString" EXPR="
+		return (sString == null || sString == undefined || Trim(sString) == '');
+	"/>
+
+	<get_source_types PROPERTY="1" PARAM="sFileUrlPARAM" PARAM="sCommonFileType" EXPR="
+		try
+		{
+			sCommonFileType;
+		}
+		catch(_x_)
+		{
+			sCommonFileType = null;
+		}
+		var sFileName = UrlFileName(sFileUrlPARAM);
+		var catTypeElem, sPattern, aPattern, aMatch = Array();
+
+		for (catTypeElem in XQuery('for $elem in library_material_source_types where $elem/is_active = true()' +(sCommonFileType != null ? ' and $elem/type = ' + XQueryLiteral(sCommonFileType) : '')+ ' and $elem/filenamemask != \'\' return $elem/Fields(\'id\',\'name\',\'filenamemask\',\'library_player_id\')'))
+		{
+			aPattern = catTypeElem.filenamemask.Value.split(';');
+			for (sPattern in aPattern)
+				if (StrMatchesPattern(sFileName, sPattern))
+				{
+					aMatch.push(catTypeElem);
+					break;
+				}
+		}
+		return aMatch;
+	"/>
+
+	<import_resource_by_source_type ALLOW-CALL-FROM-CLIENT="1" PROPERTY="1" PARAM="iSourceTypeID" PARAM="iResourceID" PARAM="iLibraryMaterialIDPARAM" PARAM="sAuxName" EXPR="
+			var docResFile = OpenDoc(UrlFromDocID(Int(iResourceID)));
+
+			var sFileUrl = ObtainTempFile(iResourceID + UrlPathSuffix(docResFile.TopElem.name));
+			docResFile.TopElem.get_data(sFileUrl);
+
+			return tools_library.import_file_by_source_type(iSourceTypeID, sFileUrl, iLibraryMaterialIDPARAM, sAuxName);
+	"/>
+
+	<import_file_by_source_type ALLOW-CALL-FROM-CLIENT="1" PROPERTY="1" PARAM="iSourceTypeID" PARAM="sFileUrlPARAM" PARAM="iLibraryMaterialIDPARAM" PARAM="sAuxName" EXPR="
+		var teSourceType, aArticles = null;
+		try
+		{
+			sFileUrlPARAM; iLibraryMaterialIDPARAM = Int(iLibraryMaterialIDPARAM);
+			teSourceType = OpenDoc(UrlFromDocID(Int(iSourceTypeID))).TopElem;
+		}
+		catch(_x_)
+		{
+			alert('import_file_by_source_type error: ' + _x_);
+			teSourceType = null;
+		}
+
+		if (teSourceType != null)
+		{
+			try
+			{
+				sAuxName = sAuxName + '';
+			}
+			catch(_x_)
+			{
+				sAuxName = null;
+			}
+
+			aArticles = teSourceType.evaluate(sFileUrlPARAM, ({'LIBMATERIALID': iLibraryMaterialIDPARAM, 'AUXNAME': sAuxName}));
+		}
+
+		return aArticles;
+	"/>
+
+
+
+
+	<word_to_html PROPERTY="1" PARAM="sFileUrlPARAM" PARAM="bUseCutterPARAM" PARAM="bSetTags" EXPR="
+		try
+		{
+			bUseCutterPARAM = (bUseCutterPARAM == true);
+		}
+		catch(_x_)
+		{
+			bUseCutterPARAM = false;
+		}
+		
+		try
+		{
+			bSetTags = (bSetTags == true);
+		}
+		catch(_x_)
+		{
+			bSetTags = true;
+		}
+		var sFilePath = UrlToFilePath(sFileUrlPARAM);
+		var sTempDir = ObtainTempFile();
+		CreateDirectory(sTempDir);
+		var sTempFile = UrlToFilePath(UrlAppendPath(sTempDir, 'doc' + Random(1,10000000) + '.html'));
+		var oWordDoc, oWordApp = null;
+
+
+
+
+		// ** Word.Application **
+		/*
+		try
+		{
+			oWordApp = new ActiveXObject('Word.Application');
+		}
+		catch(_x_)
+		{
+			oWordApp = null;
+		}
+		if (oWordApp != null)
+		{
+			oWordDoc = oWordApp.Documents.Open(sFilePath);
+			try
+			{
+				oWordDoc.SaveAs(sTempFile, 10);
+			}
+			catch(_x_)
+			{
+				alert('word_to_html error:' + _x_);
+			}
+			oWordDoc.Close();
+			oWordApp.Quit();
+		}
+		*/
+		// ** Word.Application END **
+
+
+		// ** SPOUSE **
+		if (oWordApp == null)
+		{
+			oWordDoc = tools.get_object_assembly( 'Word' );
+			oWordDoc.Open(sFilePath);
+			oWordDoc.SaveAs(sTempFile);
+		}
+		// ** SPOUSE END **
+
+
+		var sResourceFolder = sTempFile.slice(0, sTempFile.lastIndexOf('.'));
+		var vHTML = tools_library.convert_to_simple_html(null, sTempFile, bUseCutterPARAM, bSetTags);
+		
+		if (bUseCutterPARAM)
+		{
+			var i =0;
+			var sHtml, aResult = [];
+			for (sHtml in vHTML)
+			{
+				aResult.push(({'html': sHtml, 'datadir': (sResourceFolder + '_' + i)}));
+				i++;
+			}
+			return aResult;
+		}
+		else
+		{
+			return ({'html': vHTML, 'datadir': sResourceFolder});
+		}
+	"/>
+
+	<pdf_to_html PROPERTY="1" PARAM="sFileUrlPARAM" PARAM="bUseCutterPARAM" PARAM="bSetTags" EXPR="
+		try
+		{
+			bUseCutterPARAM = (bUseCutterPARAM == true);
+		}
+		catch(_x_)
+		{
+			bUseCutterPARAM = false;
+		}
+
+		var sFilePath = UrlToFilePath(sFileUrlPARAM);
+		var sTempDir = ObtainTempFile();
+		CreateDirectory(sTempDir);
+		var sTempFile = UrlToFilePath(UrlAppendPath(sTempDir, 'doc' + Random(1,10000000) + '.html'));
+		var oPDFDoc;
+
+		// ** SPOUSE **
+		oPDFDoc = tools.get_object_assembly( 'Pdf' );
+		oPDFDoc.Open(sFilePath);
+		oPDFDoc.SaveAsHtml(sTempFile, false, false);
+		// ** SPOUSE END**
+
+		var sResourceFolder = sTempFile.slice(0, sTempFile.lastIndexOf('.'));
+		var vHTML = tools_library.convert_to_simple_html(null, sTempFile, bUseCutterPARAM, bSetTags);
+
+		if (bUseCutterPARAM)
+		{
+			var i =0;
+			var sHtml, aResult = [];
+			for (sHtml in vHTML)
+			{
+				aResult.push(({'html': sHtml, 'datadir': (sResourceFolder + '_' + i)}));
+				i++;
+			}
+			return aResult;
+		}
+		else
+			return ({'html': vHTML, 'datadir': sResourceFolder});
+	"/>
+
+	<convert_to_simple_html PROPERTY="1" PARAM="sHtmlText" PARAM="sSourceFilePARAM" PARAM="bApplyGlobalCutterPARAM" PARAM="bSetTags" EXPR="
+			/*
+			 *	sHtmlText - HTML string
+			 *	sSourceFilePARAM - File path to sHtmlText source file. Resources are supposed to be in adjacent folder with the name as the source file has.
+			 *	bApplyGlobalCutterPARAM - use tag slicer from global_settings-library section. IMPORTANT: function will return array of HTMLs instead of HTML! Folders gain suffixes '_N', where N starts from 0.
+			 *	bSetTags - set [[ and ]] around resource names for further processing
+			 */
+			try
+			{
+				if (sSourceFilePARAM == null || sSourceFilePARAM == undefined || Trim(sSourceFilePARAM) == '')
+					throw 'empty';
+			}
+			catch(_x_)
+			{
+				//alert(_x_);
+				sSourceFilePARAM = '';
+			}
+			try
+			{
+				bApplyGlobalCutterPARAM = (bApplyGlobalCutterPARAM == true);
+			}
+			catch(_x_)
+			{
+				bApplyGlobalCutterPARAM = false;
+			}
+			try
+			{
+				bSetTags = (bSetTags == true);
+			}
+			catch(_x_)
+			{
+				bSetTags = true;
+			}
+
+			if (tools_library.string_is_null_or_empty(sHtmlText))
+			{
+				if (sSourceFilePARAM != null)
+				{
+					
+					oFileUtil = tools.get_object_assembly('FileUtils');
+					
+					if (oFileUtil == null || StrBegins(oFileUtil.GetEncoding(sSourceFilePARAM), 'Utf'))
+						sHtmlText = LoadFileData(sSourceFilePARAM);
+					else
+						sHtmlText = LoadFileText(sSourceFilePARAM);
+				}
+				else
+					return '';
+			}
+
+			var azImager = null;
+
+			if (sSourceFilePARAM != '')
+			{
+				try
+				{
+					azImager = tools.get_object_assembly( 'Image' );
+				}
+				catch ( err )
+				{
+				}
+			}
+
+
+			var axHtmlConverter = null;
+			function convertHTML2Image(sHTML, sTargetPath)
+			{
+				if (axHtmlConverter == null)
+				{
+					if ( tools.dotnet_host.HasValue &amp;&amp; tools.dotnet_host != null &amp;&amp; tools.dotnet_host.Object != null )
+					{
+						axHtmlConverter = tools.dotnet_host.Object.GetAssembly( 'WebSoft.HTML.dll' );
+						axHtmlConverter = axHtmlConverter.CreateClassObject( 'Websoft.HTML.HTML' );
+					}
+					else
+					{
+						axHtmlConverter = new ActiveXObject('Websoft.LibraryTools.Process');
+					}
+				}
+				
+				try
+				{
+					if (!axHtmlConverter.HtmlToPic(sHTML, sTargetPath))
+					{
+						alert('Error during converting table: ' + axHtmlConverter.GetError());
+						return false;
+					}
+					else
+						return true;
+				}
+				catch(_x_)
+				{
+					alert('convert_to_simple_html -> convertHTML2Image error: ' + _x_ + '\n Skipping.');
+				}
+				
+				return false;
+			}
+
+			function _GetStyleStr(oTagReaderPAR)
+			{
+				var _sClass = oTagReaderPAR.GetAttr('class');
+				var _sStyle;
+				if (tools_library.string_is_null_or_empty(_sClass))
+					_sStyle = '';
+				else
+				{
+					_sStyle = tools_library.unravel_class(_sClass, oTagReaderPAR.TagName, sStyles);
+					if (tools_library.string_is_null_or_empty(_sStyle))
+						_sStyle = '';
+					else
+						_sStyle = ' style=&quot;' +_sStyle+ '&quot;'
+				}
+				return _sStyle;
+			}
+
+			var sTempStr, sTempFileName, sResourceFolder, sResourceFolderBase, sResourcePath, oTagReader, oDestStream, bAutoRead;
+			var sHtmlPart, aHtmlParts, aResult = new Array();
+			if (tools.os_type != 'linux')
+			{
+				sResourcePath = sSourceFilePARAM.slice(0, sSourceFilePARAM.lastIndexOf('\\'));
+			}
+			else
+			{
+				sResourcePath = sSourceFilePARAM.slice(0, sSourceFilePARAM.lastIndexOf('/'));
+			}
+			sResourceFolderBase = sSourceFilePARAM.slice(0, sSourceFilePARAM.lastIndexOf('.'));
+			sResourceFolder = sResourceFolderBase;
+
+			var sStyles = tools_library.get_styles(sHtmlText, sResourcePath);
+
+			if (bApplyGlobalCutterPARAM)
+			{
+				aHtmlParts = tools_library.slice_by_global_cutter(sHtmlText);
+				aHtmlParts = tools_library.preprocess_html(aHtmlParts);
+			}
+			else
+			{
+				aHtmlParts = ([(sHtmlText)]);
+			}
+
+			for (sHtmlPart in aHtmlParts)
+			{
+				if (sSourceFilePARAM != '')
+				{
+					if (bApplyGlobalCutterPARAM)
+						sResourceFolder = sResourceFolderBase + '_' + aResult.length;
+					ObtainDirectory(sResourceFolder);
+				}
+
+				arrAttrs = [ 'src', 'href' ];
+				//arrTags = [ 'body', 'html', 'title', 'head', 'a', 'img', 'br' ];
+				arrTags = [ 'a', 'img', 'br', 'p', 'span' ];
+				sClassPreffix = 's-h-';
+
+				oTagReader = new TagReader( sHtmlPart );
+				oDestStream = new BufStream;
+
+				oTagReader.ReadNext();
+
+				while ( ! oTagReader.EOF )
+				{
+					bAutoRead = true;
+
+				//alert(oTagReader.TagName + '(' + oTagReader.IsGroupTag + ')');
+				//alert(oTagReader.Comment)
+
+					switch ( oTagReader.TagName )
+					{
+						case 'title':
+						case 'script':
+							if ( oTagReader.IsGroupTag )
+							{
+								try
+								{
+									oTagReader.ReadHtmlGroup();
+								}
+								catch ( err )
+								{
+									alert('convert_to_simple_html ERROR ('+oTagReader.TagName + '): ' + err);
+								}
+							}
+							else
+							{
+								oTagReader.ExportTag( oDestStream );
+							}
+							break;
+
+						case 'b':
+						case 'strong':
+							oDestStream.WriteStr( '&lt;span class=&quot;' + sClassPreffix + 'b&quot;' + ( oTagReader.IsGroupTag ? '' : '/' ) + '&gt;' );
+							break;
+
+						case 'i':
+						case 'em':
+							oDestStream.WriteStr( '&lt;span class=&quot;' + sClassPreffix + 'i&quot;' + ( oTagReader.IsGroupTag ? '' : '/' ) + '&gt;' );
+							break;
+
+						case '/b':
+						case '/strong':
+						case '/i':
+						case '/em':
+							oDestStream.WriteStr( '&lt;/span&gt;' );
+							break;
+
+						case '/td':
+						case '/div':
+							oDestStream.WriteStr( '&lt;/p&gt;' );
+							break;
+
+						case 'td':
+						case 'div':
+							if ( oTagReader.IsGroupTag )
+								oDestStream.WriteStr( '&lt;p class=&quot;' + sClassPreffix + oTagReader.TagName + '&quot;&gt;' );
+							break;
+						case 'li':
+							if ( oTagReader.IsGroupTag )
+								oDestStream.WriteStr( '&lt;li class=&quot;' + sClassPreffix + oTagReader.TagName + '&quot;&gt;' );
+							break;
+						case '/li':
+							oDestStream.WriteStr( '&lt;/li&gt;' );
+							break;
+						case 'a':
+							sTag = '&lt;a class=&quot;' + sClassPreffix + 'a&quot;';
+							for ( sAttrElem in arrAttrs )
+							{
+								sAttr = Trim( oTagReader.GetAttr( sAttrElem ) );
+								if ( sAttr != '' )
+									sTag += ' ' + sAttrElem + '=&quot;' + XmlAttrEncode( sAttr ) + '&quot;';
+							}
+							oDestStream.WriteStr( sTag + ( oTagReader.IsGroupTag ? '' : '/' ) + '&gt;' );
+							break;
+						case '/a':
+							oDestStream.WriteStr( '&lt;/a&gt;' );
+							break;
+						case 'img':
+							sTag = '&lt;img class=&quot;' + sClassPreffix + 'img&quot;';
+							for ( sAttrElem in [ 'width', 'height' ] )
+							{
+								iAttr = OptInt( oTagReader.GetAttr( sAttrElem ) );
+								if ( iAttr != undefined &amp;&amp; iAttr &lt;= 10 )
+								{
+									sTag = '';
+									break;
+								}
+							}
+
+							if ( sTag != '' )
+							{
+								if (sSourceFilePARAM != '')
+								{
+									for ( sAttrElem in arrAttrs )
+									if (sAttrElem != 'width' && sAttrElem != 'height')
+									{
+										sAttr = Trim( oTagReader.GetAttr( sAttrElem ) );
+										if (sAttrElem == 'src')
+										{
+											sTempFileName = tools.random_string(20) + UrlPathSuffix(sAttr);
+											try
+											{
+												sTempStr = tools_library.append_path(sResourceFolder, sTempFileName);
+												tools.copy_url(FilePathToUrl(sTempStr), FilePathToUrl(tools_library.append_path(sResourcePath, sAttr)));
+												if (bSetTags)
+													sAttr = '[[' + sTempFileName + ']]';
+												else
+													sAttr = sTempFileName;
+											}
+											catch(_x_)
+											{
+												alert('convert_to_simple_html img error: ' + _x_);
+												sAttr = '';
+												sTempStr = null;
+											}
+
+											if (azImager != null && sTempStr != null)
+											{
+												try
+												{
+													azImager.Open(sTempStr);
+													sTag += ' width=&quot;' + azImager.Width + '&quot; height=&quot;' + azImager.Height + '&quot;';
+													azImager.Close();
+												}
+												catch(_x_)
+												{
+												}
+											}
+										}
+
+										if ( sAttr != '' )
+											sTag += ' ' + sAttrElem + '=&quot;' + XmlAttrEncode( sAttr ) + '&quot;';
+									}
+								}
+								else
+								{
+									for ( sAttrElem in arrAttrs )
+									{
+										sAttr = Trim( oTagReader.GetAttr( sAttrElem ) );
+										if ( sAttr != '' )
+											sTag += ' ' + sAttrElem + '=&quot;' + XmlAttrEncode( sAttr ) + '&quot;';
+									}
+								}
+								oDestStream.WriteStr( sTag + ( oTagReader.IsGroupTag ? '' : '/' ) + '&gt;' );
+							}
+							break;
+						case 'spxmlreadermetatag':
+							sAttr = Trim(oTagReader.GetAttr('type'));
+							sAttrElem = String(oTagReader.ReadHtmlGroup());
+							bAutoRead = false;
+							sAttrValue = sAttrElem.slice(sAttrElem.indexOf('&gt;') + 1, sAttrElem.lastIndexOf('&lt;/spxmlreadermetatag&gt;'))
+							oDestStream.WriteStr('&lt;' + sAttr + '&gt;' + sAttrValue + '&lt;/' + sAttr + '&gt;');
+
+							break;
+						case 'table':
+							if (sSourceFilePARAM != '')
+							{
+								sAttrElem = oTagReader.ReadHtmlGroup();
+								bAutoRead = false;
+								sTempFileName = tools.random_string(20) + '.png';
+								sTempStr = tools_library.append_path(sResourceFolder, sTempFileName);
+								
+								if (convertHTML2Image(sAttrElem, sTempStr))
+								{
+									sTag = '&lt;img class=&quot;' + sClassPreffix + 'img&quot; src=&quot;' + (bSetTags ? '[[' : '') + sTempFileName + (bSetTags ? ']]' : '') + '&quot;';
+									if (azImager != null)
+									{
+										try
+										{
+											azImager.Open(sTempStr);
+											sTag += ' width=&quot;' + azImager.Width + '&quot; height=&quot;' + azImager.Height + '&quot;';
+											azImager.Close();
+										}
+										catch(_x_)
+										{
+										}
+									}
+									oDestStream.WriteStr( sTag + '/&gt;');
+								}
+								break;
+							}
+
+						default:
+				//alert('oTagReader.TagName = '+oTagReader.TagName)
+				//alert('oTagReader.TagStr = '+oTagReader.GetTagStr())
+
+							if ( ( oTagReader.Comment != '' && oTagReader.Comment != undefined ) || StrBegins( oTagReader.GetTagStr(), '&lt;!DOCTYPE ' ) )
+								break;
+
+							sRawText = oTagReader.RawText;
+							if ( sRawText == undefined )
+							{
+								bCloseTag = StrBegins( oTagReader.TagName, '/' );
+								if ( ArrayOptFind( arrTags, 'This==\'' + ( bCloseTag ? StrRightRangePos( oTagReader.TagName, 1 ) : oTagReader.TagName ) + '\'' ) == undefined )
+									break;
+
+								sRawText = '&lt;' + oTagReader.TagName + ( bCloseTag ? '' : _GetStyleStr(oTagReader) + ' class=&quot;' + sClassPreffix + oTagReader.TagName + '&quot;' + ( oTagReader.IsGroupTag ? '' : '/' ) ) + '&gt;';
+							}
+							else
+							{
+								if ( Trim( sRawText ) == '' )
+									break;
+							}
+
+							oDestStream.WriteStr( sRawText );
+							break;
+					}
+					if (bAutoRead)
+						oTagReader.ReadNext();
+				}
+
+				sText = oDestStream.DetachStr();
+
+				/*
+				arrWords = [ '&lt;p class=&quot;' + sClassPreffix + 'p&quot;&gt;&amp;nbsp;&lt;/p&gt;', '&lt;p class=&quot;' + sClassPreffix + 'p&quot;&gt;&lt;p class=&quot;' + sClassPreffix + 'p&quot;&gt;', '&lt;/p&gt;&lt;/p&gt;' ];
+
+				for ( sWordElem in arrWords )
+					sText = StrReplace( sText, sWordElem, '' );
+				*/
+
+				aResult.push(sText);
+			}
+
+			return bApplyGlobalCutterPARAM ? aResult : ArrayMerge(aResult, 'This', '');
+	"/>
+
+	<get_article_html PROPERTY="1" PARAM="iArticleIDPARAM" PARAM="teArticlePARAM" PARAM="bFlushPARAM" EXPR="
+		var teArticle, iArticleID = OptInt(iArticleIDPARAM);
+		var sHtml = '';
+		try
+		{
+			if (teArticlePARAM.Name != 'article')
+				throw 'fraud';
+			teArticle = teArticlePARAM;
+		}
+		catch(_x_)
+		{
+			try
+			{
+				teArticle = OpenDoc(UrlFromDocID(iArticleID)).TopElem;
+				if (teArticle.Name != 'article')
+					throw 'fraud';
+			}
+			catch(_o_)
+			{
+				teArticle = null;
+				sHtml = 'Invalid article. ID=' + iArticleIDPARAM;
+			}
+		}
+
+		if (teArticle != null)
+		{
+			try
+			{
+				bFlushPARAM = tools_web.is_true(bFlushPARAM);
+			}
+			catch(_x_)
+			{
+				bFlushPARAM = false;
+			}
+
+			if (bFlushPARAM || tools_library.string_is_null_or_empty((sHtml = tools_web.get_user_data('library_article_' + iArticleID))))
+			{
+				var objRegExp = tools.get_object_assembly( 'RegExp' );
+				if (objRegExp != null)
+				{
+					objRegExp.Global = true;
+					objRegExp.IgnoreCase = true;
+					objRegExp.MultiLine = true;
+
+					var sSourceResource, fldFile;
+					var sDestResourceUrl = 'x-local://trash/temp/library/' + iArticleIDPARAM; //ObtainTempFile();
+					var sZipUrl = sDestResourceUrl + '.zip';
+					var docResource;
+
+					for (fldFile in teArticle.files)
+					{
+						try
+						{
+							docResource = OpenDoc(UrlFromDocID(fldFile.PrimaryKey));
+							docResource.TopElem.get_data(sZipUrl);
+							tools.zip_extract(sZipUrl, sDestResourceUrl);
+							DeleteUrl(sZipUrl);
+						}
+						catch(_o_)
+						{
+							if (LdsIsServer)
+							{
+								alert('get_article_html error: ' + _o_);
+							}
+						}
+					}
+
+					//sDestResourceUrl = UrlEncode(sDestResourceUrl + '/');
+
+					//var sTempRelative = UrlEncode(sDestResourceUrl.slice(sDestResourceUrl.lastIndexOf('/')) + '/');
+					var sTempRelative = UrlEncode('/library/' + iArticleID + '/');
+
+					objRegExp.Pattern = UrlDecode('%5C%5B%5C%5B%28%5B%5Cw%5C.%5D+%29%5C%5D%5C%5D');
+					sHtml = objRegExp.Replace(teArticle.desc, '/file_proxy.html?path=' + sTempRelative + '$1&amp;trashurl=1');
+					tools_web.set_user_data('library_article_' + iArticleID, sHtml, 86400);
+				}
+				else
+				{
+					sHtml = 'Error. Cannot initialize reg_exp_init';
+				}
+			}
+		}
+
+		return sHtml;
+	"/>
+
+
+	<heal_html PROPERTY="1" PARAM="sPartProcess" PARAM="objRegExpRef" EXPR="
+
+			try
+			{
+				objRegExpRef.Global = true;
+				objRegExpRef.IgnoreCase = true;
+				objRegExpRef.MultiLine = true;
+			}
+			catch(_x_)
+			{
+				objRegExpRef = tools.get_object_assembly( 'RegExp' );
+				if (objRegExpRef == null)
+				{
+					throw 'HEAL_HTML error: cannot create regExp instance (RegExp)';
+				}
+				objRegExpRef.Global = true;
+				objRegExpRef.IgnoreCase = true;
+				objRegExpRef.MultiLine = true;
+			}
+			var j;
+			var sTestString = null;
+			var sPrimeString = sPartProcess;
+
+			objRegExpRef.Pattern = '<br>'; //F### WORD must die!!!
+			sPrimeString = objRegExpRef.Replace(sPrimeString, '');
+
+			objRegExpRef.Pattern = UrlDecode16('%28%3F%3A%3C%28%5Cw+%29%5B%5E%5C%3C%5C%3E%5D*%3E%28%5B%5E%5C%3C%5C%3E%5D*%29%3C%5C/%5C1%3E%29%7C%28%3F%3A%3C%5Cw+%5B%5E%5C%3C%5C%3E%5D*%5C/%3E%29');
+			while(sTestString != sPrimeString)
+			{
+				sTestString = sPrimeString;
+				//sPrimeString = objRegExpRef.Replace(sTestString, '$2');
+				sPrimeString = objRegExpRef.Replace(sTestString, '');
+			}
+
+			// Add deficient tags to front and back of sPartProcess
+			objRegExpRef.Pattern = UrlDecode16('%3C%28%5C/%3F%5Cw+%29%3E');
+
+			var aMissedParts = objRegExpRef.Execute(sPrimeString);
+			var sLonelyTag, aLonelyTags = new Array();
+			for (j = 0; j &lt; aMissedParts.Count; j++)
+			{
+				aLonelyTags.push( aMissedParts.Item(j).SubMatches.Item(0) );
+			}
+
+			sTestString = '';
+			sPrimeString = ['',''];
+			for (j = ArrayCount(aLonelyTags) - 1; j &gt;= 0; j--)
+			{
+				sLonelyTag = aLonelyTags[j];
+				if (StrBegins(sLonelyTag, '/'))
+				{
+					sPrimeString[1] = '&lt;' + sLonelyTag + '&gt;' + sPrimeString[1];
+					sTestString += '&lt;' + sLonelyTag.slice(1) + '&gt;';
+				}
+				else
+				{
+					sPrimeString[0] += '&lt;' + sLonelyTag + '&gt;';
+					sPartProcess = '&lt;/' + sLonelyTag + '&gt;' + sPartProcess;
+				}
+			}
+
+			return ({'html': sTestString + sPartProcess, 'pairs': sPrimeString});
+
+	"/>
+
+	<slice_pages PROPERTY="1" PARAM="iSymbolLength" PARAM="sFatText" EXPR="
+
+		if (StrLen(sFatText) &lt;= iSymbolLength)
+			return ([sFatText]);
+
+		var objRegExp = tools.get_object_assembly( 'RegExp' );
+		if (objRegExp != null)
+		{
+			objRegExp.Global = true;
+			objRegExp.IgnoreCase = true;
+			objRegExp.MultiLine = true;
+		}
+		else
+		{
+			alert('slicePages error: Cannot initialize objRegExp. Cancelling operation.')
+			return sFatText;
+		}
+
+		var sTextLeft = sFatText;
+		var iNext, iNext2, sPart, aParts = new Array();
+
+		while (sTextLeft != '')
+		{
+			iNext = sTextLeft.indexOf(' ', iSymbolLength);
+			iNext2 = sTextLeft.indexOf('&lt;', iSymbolLength);
+
+			if (iNext &gt; 0)
+			{
+				if (iNext &gt; iNext2)
+				{
+					if (sTextLeft.charAt(iNext2 + 1) == '/')
+						iNext = sTextLeft.indexOf('&gt;', iNext2) + 1;
+					else
+						iNext = iNext2;
+				}
+				else
+				{
+					i = sTextLeft.indexOf('/&gt;', iNext);
+					if(i &gt; 0 &amp;&amp; i &lt; iNext2)
+						iNext = iNext2;
+				}
+				sPart = sTextLeft.slice(0, iNext);
+				sTextLeft = sTextLeft.slice(iNext);
+
+			}
+			else if (iNext2 &gt; 0)
+			{
+				sPart = sTextLeft.slice(0, iNext2);
+				sTextLeft = sTextLeft.slice(iNext2);
+			}
+			else
+			{
+				sPart = sTextLeft;
+				sTextLeft = '';
+			}
+
+
+			sPart = tools_library.heal_html(sPart, objRegExp).html;
+
+
+			aParts.push(sPart);
+		}
+
+		return aParts;
+	"/>
+
+	<slice_by_global_cutter PROPERTY="1" PARAM="sFatHtml" EXPR="
+			function patternTag(sSource)
+			{
+				function lockNonAlphaNumeric(sStr)
+				{
+					var sRes;
+					if (StrIsAlphaNum(sStr))
+						sRes = sStr;
+					else
+					{
+						var s, i, iLen = StrLen(sStr);
+						sRes = '';
+						for (i = 0; i &lt; iLen; i++)
+						{
+							s = sStr.charAt(i);
+							if (StrIsAlphaNum(s))
+								sRes += s;
+							else if (s == ' ')
+								sRes += '\\s*';
+							else
+								sRes += '\\s*\\' + s + '\\s*';
+						}
+					}
+					return sRes;
+				}
+				function scanner4AttrValue(sAttrValue)
+				{
+					function buildOrClause(sSubAttr)
+					{
+						var _j, aOrs = sSubAttr.split('|');
+						for (_j = 0; _j &lt; aOrs.length; _j++)
+							aOrs[_j] = '(?:' + lockNonAlphaNumeric(aOrs[_j]) + ')';
+						return ArrayMerge(aOrs, 'This', '|');
+					}
+
+					var sRgPattern = '[^&quot;]*';
+
+					var _i, aAndSplit = sAttrValue.split('&');
+					if (aAndSplit.length)
+					{
+						for (_i = 0; _i &lt; aAndSplit.length; _i++)
+						{
+							aAndSplit[_i] = '(?=[^&quot;]*\\b' + buildOrClause(aAndSplit[_i]) + '\\W)';
+						}
+						sRgPattern += ArrayMerge(aAndSplit, 'This', '');
+					}
+					else
+						sRgPattern += buildOrClause(aAndSplit[0])
+
+					sRgPattern += '[^&quot;]*';
+
+
+					return sRgPattern;
+				}
+
+
+				if (tools_library.string_is_null_or_empty(sSource))
+					return '';
+
+				sSource = Trim(sSource);
+
+				var iEqPos = sSource.indexOf('=');
+				var sAttr, sValue, iClosurePos, sChar, iPad, aRgPatterns = [];
+
+				while(iEqPos &gt; 0)
+				{
+					sAttr = lockNonAlphaNumeric(sSource.slice(0, iEqPos));
+					sSource = Trim(sSource.slice(iEqPos + 1));
+
+					sChar = sSource.slice(0,1);
+
+					if (sChar == '&quot;' || sChar == '\'')
+						iPad = 1;
+					else if (sChar == '[')
+					{
+						iPad = 1;
+						sChar = ']';
+					}
+					else
+					{
+						sChar = ' ';
+						iPad = 0;
+					}
+
+					iClosurePos = sSource.indexOf(sChar, iPad);
+					if (iClosurePos &gt; 0)
+					{
+						if (sChar == ']')
+						{
+							sValue = scanner4AttrValue(sSource.slice(iPad, iClosurePos));
+
+						}
+						else
+							sValue = lockNonAlphaNumeric(sSource.slice(iPad, iClosurePos));
+
+						sSource = Trim(sSource.slice(iClosurePos + iPad));
+
+
+					}
+					else
+					{
+						sValue = lockNonAlphaNumeric(iPad &gt; 0 ? sSource.slice(iPad) : sSource);
+						sSource = null;
+					}
+
+					aRgPatterns.push('(?=[^&gt;]*\\s' + sAttr + '=&quot;' + sValue + '&quot;)');
+
+					if (sSource != null)
+						iEqPos = sSource.indexOf('=');
+					else
+						iEqPos = -1;
+				}
+				return ArrayMerge(aRgPatterns, 'This', '');
+			}
+
+			var objRegExp = tools.get_object_assembly( 'RegExp' );
+			if (objRegExp == null)
+			{
+				alert('slice_by_global_cutter error: Cannot initialize reg_exp_init');
+				return ([(sFatHtml)]);
+			}
+
+			var aTags = ArraySelect(global_settings.settings.library.cut_markers, 'This.tag.HasValue && This.enabled.Value && StrIsAlphaNum(This.tag)');
+			if (ArrayOptFirstElem(aTags) == undefined)
+				return ([(sFatHtml)]);
+
+			var sMandatoryOpener = '';
+			var sMandatoryClosure = '';
+
+			var iIdx = 0;
+			iIdx = sFatHtml.indexOf('&lt;body&gt;');
+			if (iIdx &lt; 0)
+			{
+				iIdx = sFatHtml.indexOf('&lt;body ');
+				if (iIdx &gt;= 0)
+					iIdx = sFatHtml.indexOf('&gt;', iIdx) + 1;
+			}
+			else
+				iIdx += 6;
+
+			if (iIdx &gt;= 0)
+			{
+				sMandatoryOpener = sFatHtml.slice(0, iIdx);
+				sFatHtml = sFatHtml.slice(iIdx);
+				iIdx = sFatHtml.indexOf('&lt;/body&gt;');
+				sMandatoryClosure = sFatHtml.slice(iIdx);
+				sFatHtml = sFatHtml.slice(0, iIdx);
+			}
+
+
+			objRegExp.Global = true;
+			objRegExp.IgnoreCase = true;
+			objRegExp.MultiLine = true;
+
+			var fldTagAnchor, sPattern, aPatterns = [];
+			for (fldTagAnchor in ArraySelectByKey(aTags, 0, 'type'))
+			{
+				if (fldTagAnchor.attr.HasValue)
+					sPattern = '(?:&lt;' +fldTagAnchor.tag+ '[^&gt;]*' + patternTag(fldTagAnchor.attr) + '[^&gt;]*&gt;)';
+				else
+					sPattern = '(?:&lt;' +fldTagAnchor.tag+ '\\s?[^&gt;]*&gt;)';
+
+				aPatterns.push(sPattern);
+			}
+
+			var sLineBreaker = '[@-cut-line-break-@]';
+
+			if (ArrayOptFirstElem(aPatterns) != undefined)
+			{
+				objRegExp.Pattern = ArrayMerge(aPatterns, 'This', '|');
+				sFatHtml = objRegExp.Replace(sFatHtml, sLineBreaker + '$&');
+			}
+//PutFileData('C:\\Users\\serg.OFFICE\\AppData\\Local\\Temp\\DatexTemp\\0linebreak.html', sFatHtml);
+			for (fldTagAnchor in ArraySelect(aTags, 'This.type.Value &gt; 0'))
+			{
+				if (fldTagAnchor.attr.HasValue)
+					sPattern = '&lt;(' +fldTagAnchor.tag+ ')[^&gt;]*' + patternTag(fldTagAnchor.attr) + '[^&gt;]*&gt;';
+				else
+					sPattern = '&lt;(' +fldTagAnchor.tag + ')\\s?[^&gt;]*&gt;';
+
+				sPattern += '(.+?)&lt;/\\1&gt;';
+
+				objRegExp.Pattern = sPattern;
+
+				sFatHtml = objRegExp.Replace(sFatHtml, '&lt;spxmlreadermetatag type=&quot;h' + fldTagAnchor.type.Value + '&quot;&gt;$2&lt;/spxmlreadermetatag&gt;');
+			}
+//PutFileData('C:\\Users\\serg.OFFICE\\AppData\\Local\\Temp\\DatexTemp\\1replaced.html', sFatHtml);
+
+			var aChoppedHtml = sFatHtml.split(sLineBreaker);
+			if (global_settings.settings.library.options.ignore_before_first.Value)
+				aChoppedHtml.splice(0, 1);
+
+			aResult = ArrayExtract(aChoppedHtml, CodeLiteral(sMandatoryOpener) + ' + tools_library.heal_html(This, objRegExp).html + ' + CodeLiteral(sMandatoryClosure));
+			return aResult;
+	"/>
+
+	<get_styles PROPERTY="1" PARAM="sHtmlPARAM" PARAM="sPath" EXPR="
+			var objRegExp = tools.get_object_assembly( 'RegExp' );
+			if (objRegExp == null)
+			{
+				alert('get_styles error: Cannot initialize reg_exp_init');
+				return null;
+			}
+			objRegExp.Global = true;
+			objRegExp.IgnoreCase = true;
+			objRegExp.MultiLine = true;
+
+			objRegExp.Pattern = UrlDecode16('%3Clink%5B%5E%3E%5D+href%5C%3D%5B%5C%27%22%5D%3F%28%5B%5E%3E%5C%27%22%5D+%29%5B%5C%27%22%5D%3F%5B%5E%3E%5D*/%3E');
+
+			var j, aMatchesParts = objRegExp.Execute(sHtmlPARAM);
+			var aStyleUrls = new Array();
+			for (j = 0; j &lt; aMatchesParts.Count; j++)
+			{
+				aStyleUrls.push(aMatchesParts.Item(j).SubMatches.Item(0));
+			}
+
+			var sUrl, sProcessedUrl, sStyles = '';
+
+			for (sUrl in aStyleUrls)
+			{
+				if (IsAbsoluteUrlStr(sUrl))
+					sProcessedUrl = sUrl;
+				else
+					sProcessedUrl = tools_library.string_is_null_or_empty(sPath) ? sUrl : (sPath + (StrEnds(sPath, '\\') ? '' : '\\') + StrReplace(sUrl, '/', '\\'));
+				try
+				{
+					sStyles += LoadFileData(sProcessedUrl);
+				}
+				catch(_x_)
+				{
+				}
+			}
+
+			return sStyles;
+
+	"/>
+	<unravel_class PROPERTY="1" PARAM="sClassNamePARAM" PARAM="sTagNamePARAM" PARAM="sClasses" EXPR="
+		var sStyles = '';
+
+		// sTagNamePARAM // - foreboding reserve
+
+		var iClassStart = sClasses.indexOf('.' + sClassNamePARAM);
+		if (iClassStart &gt;= 0)
+		{
+			iClassStart = sClasses.indexOf('{', iClassStart + StrLen(sClassNamePARAM) + 1) + 1;
+			if (iClassStart &gt; 0)
+			{
+				var iClassEnd = sClasses.indexOf('}', iClassStart);
+				if (iClassEnd &gt; iClassStart)
+				{
+					var sStyle, aStyles = ArrayExtract(sClasses.slice(iClassStart, iClassEnd).split(';'), 'Trim(This)');
+					var sAllowed, aAllowed = (['font-size', 'font-weight']);
+					for (sStyle in aStyles)
+					for (sAllowed in aAllowed)
+					{
+						if (StrBegins(sStyle, sAllowed))
+							sStyles += sStyle + ';';
+					}
+				}
+			}
+		}
+
+		return sStyles;
+	"/>
+
+	<preprocess_html PROPERTY="1" PARAM="aHtmlParts" EXPR="
+		var objRegExp = tools.get_object_assembly( 'RegExp' );
+		if (objRegExp == null)
+		{
+			alert('preprocess_html: Cannot initialize reg_exp_init');
+			return aHtmlParts;
+		}
+
+		objRegExp.Global = true;
+		objRegExp.IgnoreCase = true;
+		objRegExp.MultiLine = true;
+
+
+		function _preprocess(sHTML)
+		{
+
+			//*** Word.Document ****
+			/*
+			objRegExp.Pattern = UrlDecode16('%28%3C%21--.*%3F--%3E%29'); //remove html comments
+			sHTML = objRegExp.Replace(sHTML, '');
+
+			objRegExp.Pattern = UrlDecode16('%28%3Co%3Ap%3E.*%3F%3C/o%3Ap%3E%29'); //remove iffy o:p tag
+			sHTML = objRegExp.Replace(sHTML, '');
+
+			objRegExp.Pattern = UrlDecode16('%28%3C%21%5C%5Bif%28%3F%3A.%7C%5Cn%29*%3F%3C%21%5C%5Bendif%5C%5D%3E%29'); //microsoft [if] tags
+			sHTML = objRegExp.Replace(sHTML, '');
+			*/
+			//*** Word.Document end ****
+
+			objRegExp.Pattern = UrlDecode16('%28%28%3F%3A%3C%28%5Cw+%29%5B%5E%3E%5D*%3E%29%3F%3C%28%5Cw+%29%5B%5E%3E%5D*%3E%28%3F%3A%26%23xa0%3B%7C%26%23xad%3B%7C%26nbsp%3B%7C%29%3C%5C/%5C3%3E%28%3F%3A%3C%5C/%5C2%3E%29%3F%29'); //remove empty tags
+
+			sHTML = objRegExp.Replace(sHTML, '');
+
+			objRegExp.Pattern = UrlDecode16('%3Ca%5Cs%5B%5E%3E%5D*href%3D%5B%27%22%5D%23%5Cw+%5B%27%22%5D%5B%5E%3E%5D*%3E%28%28%3F%3A.%7C%5Cn%29*%3F%29%3C/a%3E'); //remove anchor 'a' tags
+
+			sHTML = objRegExp.Replace(sHTML, '$1');
+
+
+
+
+
+			return sHTML;
+		}
+
+		var i, iLen = ArrayCount(aHtmlParts);
+		for (i = 0; i &lt; iLen; i++)
+			aHtmlParts[i] = _preprocess(aHtmlParts[i]);
+
+		return aHtmlParts;
+	"/>
+
+	<ui_pack_import PROPERTY="1" CALLER-ENV="1" EXPR="
+
+		var sPath = Screen.AskDirectoryPath();
+		var aPathPacks = new Array();
+
+		function getFiles(sDirPath)
+		{
+			var sPartPath;
+			for (sPartPath in ReadDirectoryByPath(sDirPath))
+			{
+				if (IsDirectory(sPartPath))
+					getFiles(sPartPath);
+				else
+					aPathPacks.push(sPartPath);
+			}
+		}
+
+		getFiles(sPath);
+		var catTypeElem, sUrl, docLibraryMaterial, docResource;
+		var aImportedList = new Array();
+		for (sPath in aPathPacks)
+		{
+			sUrl = FilePathToUrl(sPath);
+			catTypeElem = ArrayOptFirstElem(tools_library.get_source_types(sUrl));
+			if (catTypeElem != undefined)
+			{
+				docLibraryMaterial = OpenNewDoc('x-local://wtv/wtv_library_material.xmd');
+				docLibraryMaterial.TopElem.name = UrlFileName(sUrl);
+				docLibraryMaterial.TopElem.use_old_format = false;
+
+				docLibraryMaterial.BindToDb(DefaultDb);
+
+				docResource = OpenNewDoc('x-local://wtv/wtv_resource.xmd');
+				docResource.BindToDb(DefaultDb);
+				docResource.TopElem.put_data(sUrl, docLibraryMaterial.TopElem);
+				docResource.Save();
+
+				docLibraryMaterial.TopElem.file_name = docResource.DocID;
+
+				docLibraryMaterial.Save();
+				//tools_library.import_file_by_source_type(catTypeElem.PrimaryKey, sUrl, docLibraryMaterial.DocID);
+
+				CallServerMethod('tools_library', 'import_resource_by_source_type', ([(catTypeElem.PrimaryKey + ''), (docResource.DocID + ''), (docLibraryMaterial.DocID + ''), RValue(docLibraryMaterial.TopElem.name.Value)]));
+
+				aImportedList.push(docLibraryMaterial.TopElem.name.Value);
+			}
+		}
+
+		Screen.MsgBox(StrReplace(ms_tools.get_const('importirovanoz'),'{PARAM1}', ArrayCount(aImportedList)) + '\n' + ArrayMerge(aImportedList, 'This', '\n'), ms_tools.get_const('c_info'), 'info', 'ok');
+
+		return;
+	"/>
+
+
+	<old_import_book_from_word PROPERTY="1" ALLOW-CALL-FROM-CLIENT="1" PARAM="iBookID" PARAM="fileUrl" EXPR="
+		function getHIndex(_HTML, _H)
+		{
+			var _lHtml = StrLowerCase(_HTML)
+			var H1 = _lHtml.indexOf('&lt;h' + _H +'&gt;');
+			var H2 = _lHtml.indexOf('&lt;h' + _H +' ');
+			if (H1 &lt; 0)
+				var H = H2;
+			else if (H2 &lt; 0)
+				var H = H1;
+			else if (H1 &lt; H2)
+				var H = H1;
+			else var H = H2;
+			return H;
+		}
+		try
+		{
+			objRegExp = tools_web.reg_exp_init();
+		}
+		catch(_no_regexp_)
+		{
+			alert('old_import_book_from_word: **CANNOT CREATE VBScript.RegExp!**');
+			Cancel();
+		}
+
+		axApp = tools.get_object_assembly( 'Word' );;
+		_stempDir = ObtainSessionTempFile();
+		CreateDirectory( _stempDir );
+		_sDestUrl = UrlAppendPath( _stempDir, '1.htm' );
+		try
+		{
+			axApp.Documents.Open(UrlToFilePath(fileUrl));
+			axDoc.SaveAs(UrlToFilePath(_sDestUrl));
+		}
+		catch(_O_)
+		{
+			alert('old_import_book_from_word error:' + _O_);
+			return;
+		}
+		axApp.Quit();
+
+		var book_id = iBookID;
+		_sHtml = StrReplaceCharCode(DecodeCharset(LoadUrlData(_sDestUrl), 'windows-1251'), 0, 32);
+		//_sHtml = String(LoadUrlText(_sDestUrl));
+		iH_Next = _sHtml.indexOf('&lt;body');
+		if (iH_Next &gt; 0)
+		{
+			_sHtml = _sHtml.slice(iH_Next);
+			_sHtml = _sHtml.slice(_sHtml.indexOf('&gt;') + 1);
+		}
+		_sHtml = _sHtml.slice(0, _sHtml.indexOf('&lt;/body&gt;'));
+		_html = String(_sHtml);
+
+		for (iLevel = 1; iLevel &lt; 5; iLevel++)
+		{
+			iH = getHIndex(_html, iLevel);
+			if (iH &gt;=0)
+				break;
+		}
+		iParentArticle = null;
+
+		var iIndex = 0;
+		while (iH &gt;= 0)
+		{
+			_html = _html.slice(iH);
+			iH_title_end = _html.indexOf('&lt;/h' + iLevel +'&gt;')
+
+			_docNewArticle = OpenNewDoc( 'x-local://wtv/wtv_article.xmd' );
+			_docNewArticle.BindToDb(DefaultDb);
+			_docNewArticle.TopElem.book_id = book_id;
+			if (iParentArticle != null)
+				_docNewArticle.TopElem.parent_object_id = iParentArticle;
+
+			_docNewArticle.TopElem.name = _html.slice(_html.indexOf('&gt;') + 1, iH_title_end);
+			_html = _html.slice(iH_title_end + StrLen('&lt;/h' + iLevel +'&gt;'));
+
+			_docNewArticle.TopElem.name = StrReplace(_docNewArticle.TopElem.name, '\n', ' ');
+
+			objRegExp.Pattern = '(\\&lt;[^&lt;&gt;]+\\&gt;|\\&amp;nbsp\\;|[\\x00-\\x1F])';
+			_docNewArticle.TopElem.name = objRegExp.Replace(_docNewArticle.TopElem.name, '');
+
+			iH_Next =  getHIndex(_html, iLevel);
+			iSub_Next =  getHIndex(_html, iLevel+1);
+			iSub_Prev = null;
+			iZlevel = 1;
+			if (iLevel &gt; 1)
+			{
+				iZlevel = iLevel-1
+				z = iZlevel;
+				while (z &gt;= 1)
+				{
+					iTest_Prev =  getHIndex(_html, (z));
+					if (iTest_Prev &gt;= 0)
+					if (iSub_Prev == null || iTest_Prev &lt; iSub_Prev)
+					{
+						iSub_Prev = iTest_Prev;
+						iZlevel = z;
+					}
+					z = z -1;
+				}
+			}
+			else
+				iSub_Prev = 0-1;
+
+			_sComment = '';
+			iLead=null;
+			if (iH_Next &gt;= 0) iLead = iH_Next;
+			if (iSub_Next &gt;= 0) if (iLead == null) iLead = iSub_Next; else if (iSub_Next &lt; iLead) iLead = iSub_Next;
+			if (iSub_Prev &gt;= 0) if (iLead == null) iLead = iSub_Prev; else if (iSub_Prev &lt; iLead) iLead = iSub_Prev;
+
+			if (iLead == null)
+			{
+				_sComment = _html;
+				_html = '';
+			}
+			else if (iLead == iH_Next)
+			{
+				_sComment = _html.slice(0, iH_Next);
+				_html = _html.slice(iH_Next);
+			}
+			else if (iLead == iSub_Next)
+			{
+				_sComment = _html.slice(0, iSub_Next);
+				_html = _html.slice(iSub_Next);
+				iParentArticle = _docNewArticle.DocID;
+				iLevel=iLevel+1;
+			}
+			else if (iLead == iSub_Prev)
+			{
+				_sComment = _html.slice(0, iSub_Prev);
+				_html = _html.slice(iSub_Prev);
+				try
+				{
+					iParentArticle = _docNewArticle.TopElem.parent_object_id;
+					for (z = 0; z &lt; iLevel - iZlevel; z++)
+						iParentArticle = iParentArticle.ForeignElem.parent_object_id;
+				}
+				catch(_wtf_)
+				{
+					iParentArticle = null;
+				}
+				iLevel=iZlevel;
+			}
+			else
+			{
+				_sComment = _html;
+				_html = '';
+			}
+			_sComment = Trim(_sComment);
+			objRegExp.Pattern = '&lt;img[^&gt;]+src\\=[^&gt;]+&gt;';
+			_arrImageTagz = objRegExp.Execute(_sComment);
+			_bAffected = false;
+			objRegExp.Pattern = UrlDecode('%3C%5B%5E%3C%3E%5D+src%3D%5B%5C%27%5C%22%5D%3F%28%5B%u0410-%u042F%u0430-%u044F%25%3A/%5C%5C%5Cw%5C.%5D*%3F%28%5C.%28jpg%7Cjpeg%7Cgif%7Cpng%7Cbmp%29%29+%29%5B%5C%5C%27%5C%22%5D%3F%5B%5E%5C%3E%5D*%5C%3E');
+			for (_z = 0; _z &lt; _arrImageTagz.Count; _z++)
+			{
+				_sImgTag = _arrImageTagz.Item(_z);
+				_sImgSrc = objRegExp.Replace(_sImgTag, '$1');
+				if (IsAbsoluteUrlStr(_sImgSrc))
+					continue;
+				else if (IsAbsoluteFilePath(_sImgSrc))
+					_sImgFP = _sImgSrc;
+				else
+				{
+					_sImgFP = ParentDirectory(UrlToFilePath(_sDestUrl));
+					_sImgFP += '\\'+StrReplace(_sImgSrc, '/', '\\')
+				}
+
+				_bAffected = true;
+				_sComment = StrReplace(_sComment, _sImgSrc, FilePathToUrl(_sImgFP));
+			}
+
+			if (_bAffected)
+				_sComment = AdjustHtml( _sComment, 'remove-scripts=0;remove-small-images=1;bind-ext-data=1' );
+
+			_docNewArticle.TopElem.desc.Value = _sComment;
+			_docNewArticle.TopElem.weight = iIndex;
+			_docNewArticle.Save();
+			iH = getHIndex(_html, iLevel);
+			iIndex++;
+		}
+	"/>
+	
+	
+	<GetLibraryObjectsList PROPERTY="1" PARAM="iRootIDParam" PARAM="iPersonIDParam" PARAM="SessionParam" PARAM="sSectionSortFieldParam" PARAM="sCurLngId" PARAM="add_all" PARAM="extrafields" EXPR="
+		RESULT = [];
+		try
+		{
+			try
+			{
+				add_all = add_all == true;
+			}
+			catch(_x_)
+			{
+				add_all = false;
+			}
+			
+			try
+			{
+				extrafields = extrafields == true;
+				if (extrafields)
+					link = tools_web.get_mode_clean_url( 'library', null, ({'section_id': '{substsectionid}'}));
+				else
+					link = null;
+			}
+			catch(_x_)
+			{
+				extrafields = false;
+				link = null;
+			}
+			try
+			{
+
+				sSectionSortField = Trim(sSectionSortFieldParam);
+				if (sSectionSortField == '' || !StrIsAlphaNum(sSectionSortField))
+					throw '';
+				
+				var sortColmns = (['code', 'name','position']);
+				
+				if (ArrayOptFind( sortColmns, 'This == ' + XQueryLiteral(sSectionSortField) ) == undefined )
+					throw '';
+			}
+			catch(ex)
+			{
+				sSectionSortField = 'code';
+			}
+			function fnBuildChildren(fldElemParam, teElemParam)
+			{
+				if ( global_settings.settings.check_access_on_lists )
+				{
+					try
+					{
+						if (teElemParam == null)
+							teElemParam = OpenDoc( UrlFromDocID ( fldElemParam.id ), 'form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1' ).TopElem;
+						if ( tools_web.check_access(  teElemParam , iPersonIDParam, null, SessionParam ) == false )
+							return null
+					}
+					catch( err )
+					{
+						return null
+					}
+				}
+
+				arrLibrarySubSections=XQuery('for $elem in library_sections where $elem/parent_object_id=' + fldElemParam.PrimaryKey.Value + ' order by $elem/' + sSectionSortField + ' return $elem');
+				for (fldLibrarySubSection in arrLibrarySubSections)
+				{
+					if (extrafields)
+						vLibSubSection = OpenDoc(UrlFromDocID(fldElemParam.PrimaryKey.Value)).TopElem;
+					else
+						vLibSubSection = null;
+					fldNewElem = fnBuildChildren(fldLibrarySubSection, vLibSubSection);
+					if (fldNewElem != null)
+						RESULT.push(fldNewElem)
+				}
+				oNewElem=({
+					'id':fldElemParam.PrimaryKey.Value,
+					'name':tools_web.get_cur_lng_name( fldElemParam.name.Value, sCurLngId ),
+					'parent_id':fldElemParam.parent_object_id.Value,
+					'hasChildren': fldElemParam.__hcc.HasValue,
+					'icon':('/icons/16png/'+fldLibrarySection.Name+'.png')
+				});
+				if (extrafields)
+				{
+					oNewElem.link = StrReplace(link, '{substsectionid}', fldElemParam.PrimaryKey.Value);
+					oNewElem.desc = tools_web.get_web_desc( teElemParam.desc, UrlFromDocID( fldElemParam.PrimaryKey.Value), 'library_section.desc' ) + '';
+				}
+				return oNewElem;
+			}
+			try
+			{
+				iPersonIDParam = Int(iPersonIDParam);
+			}
+			catch(ex)
+			{
+				throw 'No user id';
+			}
+
+			try
+			{
+				iRootID = Int(iRootIDParam);
+			}
+			catch(ex)
+			{
+				iRootID = 0;
+			}
+
+			if (iRootID != 0)
+			{
+				if (extrafields)
+					vLibSection = OpenDoc(UrlFromDocID(iRootID)).TopElem;
+				else
+					vLibSection = ArrayOptFirstElem(XQuery('for $elem in library_sections where $elem/id = ' + XQueryLiteral(iRootID) + ' return $elem/Fields(\'id\',\'name\')' ));
+				lBlockElem = ({
+					'id':iRootID,
+					'name': vLibSection.name.Value,
+					'parent_id': '',
+					'hasChildren': false,
+					'icon':('/icons/16png/library_section.png')
+				});
+				if (extrafields)
+				{
+					lBlockElem.link = StrReplace(link, '{substsectionid}', iRootID);
+					lBlockElem.desc = tools_web.get_web_desc( vLibSection.desc, UrlFromDocID( iRootID), 'library_section.desc' ) + '';
+				}
+				
+				RESULT.push(lBlockElem);
+				
+				arrLibrarySections = XQuery('for $elem in library_sections where $elem/parent_object_id='+iRootID+' order by $elem/'+sSectionSortField+' return $elem');
+			}
+			else
+			{
+				if (add_all)
+				{
+					lBlockElem = ({
+						'id':'all',
+						'name': 'Все разделы',
+						'parent_id': '',
+						'hasChildren': false,
+						'icon':('/icons/16png/library_section.png')
+					});
+					if (extrafields)
+					{
+						lBlockElem.link = StrReplace(link, '{substsectionid}', 'all');
+						lBlockElem.desc = '';
+					}
+					RESULT.push(lBlockElem);
+					
+				}
+				arrLibrarySections = XQuery('for $elem in library_sections where $elem/parent_object_id = null() order by $elem/' + sSectionSortField + ' return $elem');
+			}
+
+
+
+			for (fldLibrarySection in arrLibrarySections)
+			{
+				if (extrafields)
+					vLibSection = OpenDoc(UrlFromDocID(fldLibrarySection.PrimaryKey.Value)).TopElem;
+				else
+					vLibSection = null;
+				fldNewElem = fnBuildChildren(fldLibrarySection, vLibSection);
+				if (fldNewElem != null)
+					RESULT.push(fldNewElem);
+			}
+		}
+		catch(ex)
+		{
+			alert('GetLibraryObjectsList: '+ex)
+		}
+		return RESULT;
+	"/>
+	
+	<convert_pdf_libratry_material PARAM="iMaterialId" ALLOW-CALL-FROM-CLIENT="1" PROPERTY="1" EXPR="
+		docBook = OpenDoc(UrlFromDocID(iMaterialId));
+		unfolded = docBook.TopElem.unfolded_document;
+		file_id = docBook.TopElem.file_name;
+		if((ArrayOptFirstElem(unfolded.pages) == undefined) && (file_id.HasValue && file_id != '') && file_id.ForeignElem.type == 'pdf')
+		{
+			docResource = OpenDoc(UrlFromDocID(Int(file_id)));
+			if (docResource.TopElem.type != 'pdf')
+			{
+				return null;
+			}
+			outFolderUrl = ObtainTempFile();
+			ObtainDirectory(outFolderUrl);
+			outFolder = UrlToFilePath(outFolderUrl);
+			localFile = ObtainTempFile(file_id + '.pdf') ;
+			docResource.TopElem.get_data( localFile );
+			inFile = UrlToFilePath(localFile);
+
+			try
+			{
+				var oPdf = tools.get_object_assembly( 'Pdf' );
+				oPdf.Open(inFile);
+				sBookInfo = oPdf.GetContents();
+				oPdf = null;
+
+				if(sBookInfo != '')
+				{
+					teBookInfo = OpenDocFromStr(sBookInfo).TopElem;
+					if(teBookInfo.error == '')
+					{
+						if(docBook.TopElem.unfolded_document.contents != null)
+						{
+							docBook.TopElem.unfolded_document.contents.Clear();
+							docBook.TopElem.unfolded_document.contents.AssignElem(teBookInfo.contents);
+							if(ArrayOptFirstElem(docBook.TopElem.unfolded_document.contents) != undefined)
+							{
+								docBook.TopElem.unfolded_document.show_contents = true;
+							}
+						}
+						if(teBookInfo.title.HasValue)
+							docBook.TopElem.name = teBookInfo.title;
+						if(teBookInfo.author.HasValue)
+							docBook.TopElem.author = teBookInfo.author;
+					}
+					else
+					{
+						alert(ms_tools.get_const('oshibkapriizvle') + ': ' + teBookInfo.error);
+					}
+				}
+			}
+			catch(errr)
+			{
+				alert(errr);
+			}
+			outFile1 = UrlToFilePath(UrlAppendPath(outFolderUrl, '00%.swf'));
+			outFile2 = UrlToFilePath(UrlAppendPath(outFolderUrl, '0%.swf'));
+			outFile3 = UrlToFilePath(UrlAppendPath(outFolderUrl, '%.swf'));
+			convParams1 = '-p1-9 -o &quot;' + outFile1 + '&quot; &quot;' + inFile+'&quot;';
+			convParams2 = '-p10-99 -o &quot;' + outFile2 + '&quot; &quot;' + inFile+'&quot;';
+			convParams3 = '-p100- -o &quot;' + outFile3 + '&quot; &quot;' + inFile+'&quot;';
+
+			ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams1, 'wait=1;hidden=1' );
+			ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams2, 'wait=1;hidden=1' );
+			ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams3, 'wait=1;hidden=1' );
+
+			filesArray = ReadDirectoryByPath( outFolder );
+			// Если конвертация не удалась, запускаем ее с другим флагом
+			if(ArrayOptFirstElem(filesArray) == undefined)
+			{
+				ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams1 + ' --flatten', 'wait=1;hidden=1' );
+				ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams2 + ' --flatten', 'wait=1;hidden=1' );
+				ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\pdf2swf.exe' ), convParams3 + ' --flatten', 'wait=1;hidden=1' );
+			}
+			filesArray = ReadDirectoryByPath( outFolder );
+			i = 0;
+			docBook.TopElem.unfolded_document.base_url = String(iMaterialId);
+			docBook.TopElem.unfolded_document.pages.Clear();
+			for ( _file in filesArray )
+			{
+				if ( !IsDirectory( _file ) )
+				{
+					i++;
+					sFileName = FileName(_file);
+					pageDoc = docBook.TopElem.unfolded_document.pages.AddChild();
+					pageDoc.url = '/' + sFileName;
+					pageDoc.name = '' + i;
+					tools.copy_url('x-local://wt/web/library/' + iMaterialId + '/' + sFileName, FilePathToUrl(_file));
+				}
+			}
+			docBook.TopElem.allow_download = false;
+			docBook.Save();
+			try
+			{
+				DeleteFile(inFile);
+			}
+			catch(errr)
+			{
+				alert(errr)
+			}
+		}
+		return docBook;
+	"/>
+		
+	<check_cmi5_support PROPERTY="1" PARAM="iObjectID" EXPR="
+
+		if (!global_settings.disp_library.Value)
+			return false;
+		
+		//only Resource now
+		
+		var docPlayer, bUseCMI5 = false;
+		var currentRes = tools.open_doc(iObjectID);
+		
+		if (currentRes != undefined)
+		{
+			currentRes = currentRes.TopElem;
+			if (currentRes.library_player_id.HasValue)
+			{
+				docPlayer = currentRes.library_player_id.OptForeignElem;//tools.open_doc(currentRes.library_player_id); 
+				if (docPlayer != undefined)
+				{
+					//if (docPlayer.TopElem.learning_storage_id.HasValue && docPlayer.TopElem.activity_id.HasValue)
+					if (docPlayer.cmi5.Value)
+						bUseCMI5 = true;
+				}
+			}
+			else
+			{
+				var sUrl, catOpenType = ArrayOptFirstElem(tools_library.get_source_types(currentRes.file_name.Value, currentRes.type.Value));
+				if (catOpenType != undefined && catOpenType.library_player_id.HasValue)
+				{
+					//docPlayer = tools.open_doc(catOpenType.library_player_id);
+					docPlayer = catOpenType.library_player_id.OptForeignElem;
+					if (docPlayer != undefined)
+					{
+						//if (docPlayer.TopElem.learning_storage_id.HasValue && docPlayer.TopElem.activity_id.HasValue)
+						if (docPlayer.cmi5.Value)
+							bUseCMI5 = true;
+					}
+				}
+			}
+		}
+		
+		return bUseCMI5;
+	"/>
+
+	<append_path PROPERTY="1" PARAM="sFolder" PARAM="sPath" EXPR="
+	
+		var path = UrlAppendPath(sFolder, sPath);
+		if (StrBegins(path, 'x-local://wtv'))
+			path = StrRangePos(path, 13, -1);
+		return path;
+	"/>
+
+	<convert_mp4_to_m3u PROPERTY="1" ALLOW-CALL-FROM-CLIENT="1" PARAM="srcResID" EXPR="
+		
+		function getFFMPEGHLSParams(MPEGInfo, objRegExp)
+		{
+			
+			function buildLevelParamPart(_lvl, _i)
+			{
+				var _id = _lvl.GetOptProperty('id', '');
+				if (!tools.ValidateName(_id, false))
+					_lvl.id = _id = 'Stream' + _i;
+				var _appendum = (_i >= 0 ? ':' + _i : '');
+				var _rp = ([('-metadata:s:s' +_appendum+' title=&quot;' +_id+ '&quot;')]);
+				var _media = _lvl.GetOptProperty('video', null);
+				var _fltrs = null;
+				if (_media != null)
+				{
+					var _w = OptInt(_media.GetOptProperty('width'), null);
+					var _h = OptInt(_media.GetOptProperty('height'), null);
+					if (_w > 0 && _h > 0)
+					{
+						if (_fltrs == null) _fltrs = ([]);
+						_fltrs.push('scale=w=' + _w + ':h=' + _h);
+					}
+					
+					var _br = OptInt(_media.GetOptProperty('bitrate'), null);
+					if (_br > 0)
+					{
+						
+						_rp.push('-maxrate:v' +_appendum+ ' ' + (_br > 1024 ? (_br / 1024) + 'k' : _br));
+					}
+					
+					var _fps = OptInt(_media.GetOptProperty('fps'), null);
+					if (_fps > 0)
+					{
+						if (_fltrs == null) _fltrs = ([]);
+						_fltrs.push('fps=' + _fps);
+					}
+					
+					if (_fltrs != null)
+					{
+						_rp.push('-filter:v' + _appendum+' ' + ArrayMerge(_fltrs, 'This', ','));
+						_fltrs = null;
+					}
+				}
+				
+				_media = _lvl.GetOptProperty('audio', null);
+				if (_media != null)
+				{
+					//TODO!
+				}
+				
+				var _params = Trim(_lvl.GetOptProperty('parameters', ''));
+				if (_params != '')
+				{
+					if (_appendum != '')
+					{
+						initRgx();
+						objRegExp.Global = true;
+						objRegExp.Pattern = '(\\-[^\\s$]+)(\\s|$)';
+						_params = objRegExp.Replace(_params, '$1' + _appendum + '$2');
+					}
+					
+					_rp.push(_params);
+				}
+				
+				return ArrayMerge(_rp, 'This', ' ');
+				
+				
+			}
+			
+			function cullLevels(_lvls)
+			{
+				if (MPEGInfo != null && ArrayCount(MPEGInfo) > 0)
+				{
+					var _si = MPEGInfo[0]; //Only first stream info taken
+					var _vi = _si.Video;
+					var _lvl, _media, _w, _h, _br;
+					// Only video yet
+					if (_vi != null && ArrayCount(_vi) > 0)
+					{
+						_vi = _vi[0]; //Only first video
+						for (_lvl in _lvls)
+						{
+							_media = _lvl.GetOptProperty('video', null);
+							if (_media != null)
+							{
+								_w = OptInt(_media.GetOptProperty('width'), null);
+								_h = OptInt(_media.GetOptProperty('height'), null);
+								
+								if (_w > 0 && _h > 0 && _vi.Width > 0 && _vi.Height > 0 && _w > _vi.Width && _h > _vi.Height)
+								{
+									_lvl.__d = true;
+								}
+								else
+								{
+									_br = OptInt(_media.GetOptProperty('bitrate'), null);
+									if (_br > 0 && _vi.Bitrate_BpS > 0 && _br > _vi.Bitrate_BpS)
+										_media.bitrate = _vi.Bitrate_BpS;
+									_br = OptInt(_media.GetOptProperty('fps'), null);
+									if (_br > 0 && _vi.FPS > 0 && _br > _vi.FPS)
+										_media.bitrate = _vi.FPS;
+								}
+							}
+						}
+					}
+					
+					_lvls = ArraySelect(_lvls, 'This.GetOptProperty(\'__d\')!==true');
+				}
+				return _lvls;
+			}
+			
+			function initRgx()
+			{
+				if (objRegExp == null || objRegExp == undefined)
+					objRegExp = tools.get_object_assembly( 'RegExp' );
+			}
+
+			var gparams = null;
+			var sError = null;
+			try
+			{
+				var param;
+				try
+				{
+					var iassembly = tools.dotnet_host.Object.GetAssembly('Websoft.Inventa.Client.dll');
+					param = iassembly.CallClassStaticMethod('Websoft.Inventa.Core.Client','GetMappedConfigFile', (['library_config.json']));
+
+					if (param == undefined || param == null || param == '')
+						throw 'default';
+				}
+				catch(_o_)
+				{
+					param = AppDirectoryPath() + '/library_config.json';
+				}
+				var json;
+				try
+				{
+					json = Trim(LoadFileText(param));
+				}
+				catch(_x_)
+				{
+					json = '';
+				}
+				
+				
+				if (json != '')
+				{
+					var o = ParseJson(json);
+					if (ObjectType(o) != 'JsObject')
+						throw 'Invalid JSON object';
+
+					o = o.GetOptProperty('convert', null);
+					if (o != null)
+					{
+						o = o.GetOptProperty('ffmpeg_hls_params', null);
+						if (o != null)
+						{
+							gparams = String(o.GetOptProperty('parameters', null));
+							var levels = o.GetOptProperty('levels', null);
+							if (levels != null)
+							{
+								levels = cullLevels(levels);
+								var c = ArrayCount(levels);
+								var lparam;
+								switch(c)
+								{
+									case 0: break;
+									case 1: lparam = buildLevelParamPart(levels[0], null); gparams = gparams + ' ' + lparam; break;
+									default:
+										if (StrContains(gparams, '-master_pl_name'))
+										{
+											initRgx();
+											objRegExp.Global = true;
+											objRegExp.Pattern = '\\-master_pl_name\\s+\\&quot;?[^\\s\\$]+';
+											objRegExp.Replace(gparams, '');
+										}
+										var streammap = ([]);
+										
+										var l, i = 0;
+										lparam = new Array();
+										for (l in levels)
+										{
+											lparam.push(buildLevelParamPart(l, i));
+											streammap.push('v:' + i + ',a:' + i + ',name:' + l.id);
+											gparams = gparams + ' -map 0:v:0 -map 0:a:0';
+											i++;
+										}
+										lparam = ArrayMerge(lparam, 'This', ' ');
+										
+										gparams = gparams + ' ' + lparam + ' -var_stream_map &quot;' +ArrayMerge(streammap, 'This', ' ')+ '&quot; -master_pl_name &quot;Master.m3u8&quot;'
+										
+										
+										break;
+								}
+								
+								
+							}
+							
+						}
+					}
+					
+					
+					
+					
+				}
+			}
+			catch(_o_)
+			{
+				sError = _o_;
+			}
+			
+			if (gparams != null)
+				gparams = Trim(gparams);
+			
+			return ({'error': (sError == null ? 0 : 1), 'errorText': sError, 'parameters': gparams});
+		}
+
+		var sError = null;
+		var docRes = tools.open_doc(srcResID);
+
+		if (docRes != undefined && docRes.TopElem.Name == 'resource')
+		{
+			var fldAux, suffix = UrlPathSuffix(docRes.TopElem.file_url);
+			if (docRes.TopElem.type == 'video' && suffix == '.mp4')
+			{
+				if (ArrayCount(docRes.TopElem.file_urls) > 0)
+				{
+					for (fldAux in docRes.TopElem.file_urls)
+						docRes.TopElem.del_data_add(fldAux.PrimaryKey.Value);
+				
+					docRes.TopElem.file_urls.Clear();
+				
+					docRes.Save();
+				}
+			
+				var sTempDir = ObtainTempFile();
+				CreateDirectory(sTempDir);
+				
+				var srcFileUrl = ObtainTempFile(suffix);
+				docRes.TopElem.get_data(srcFileUrl);
+				
+				var fn = UrlFileName(docRes.TopElem.file_url);
+				fn = StrRangePos(fn, 0, StrLen(fn) - 4);
+				
+				/*
+				var convParams1 = '-i ' +CodeLiteral(UrlToFilePath(srcFileUrl), '&quot;')+ ' -y -hls_list_size 0 -hls_time 10 -force_key_frames expr:gte(t,n_forced*10) -hls_flags independent_segments -hls_playlist_type event -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -filter:v:0 scale=w=480:h=360  -maxrate:v:0 600k -b:a:0 500k -filter:v:1 scale=w=640:h=480  -maxrate:v:1 1500k -b:a:1 1000k -filter:v:2 scale=w=1280:h=720 -maxrate:v:2 3000k -b:a:2 2000k -var_stream_map &quot;v:0,a:0,name:Looser360 v:1,a:1,name:Looser480p v:2,a:2,name:CheapHD720p&quot;  -master_pl_name &quot;' +fn+ 'Master.m3u8&quot; '  + CodeLiteral( UrlToFilePath(UrlAppendPath(sTempDir, fn)),'&quot;')  + '%v.m3u8';
+				
+				sError = convParams1;
+				
+				var i = ProcessExecute(  FilePath( AppDirectoryPath(), 'utils\\ffmpeg.exe' ), convParams1, 'wait=1;hidden=1');
+				*/
+				
+				var MediaPostStreamHandler = tools.get_object_assembly('MediaPostStreamHandler');
+				var mi = MediaPostStreamHandler.GetMPEGInfo(UrlToFilePath(srcFileUrl), 10000);
+				
+				var ffmpegArgsSet = getFFMPEGHLSParams(mi, null);
+				ffmpegArgsSet = (ffmpegArgsSet.error == 0 ? ffmpegArgsSet.parameters : null);
+					
+				var bPlaylist = StrContains(ffmpegArgsSet, '-master_pl_name');
+				
+				media_item = new Object();
+				media_item.Id = srcResID + '';
+				media_item.Name = (bPlaylist ? 'Part-%v' : 'Master');
+				media_item.Format = 'mp4';
+				media_item.RecordType = 0; //FileSystem
+				media_item.RecordPath = UrlToFilePath(sTempDir);
+				media_item.AsyncProcess = false;
+				media_item.SourceFile = UrlToFilePath(srcFileUrl);
+				//media_item.RemoteRecordPath = UrlToFilePath(srcFileUrl);
+				//media_item.RecordBaseUrl = '/records';
+				//media_item.SignalQueue = 'media_handler_queue';
+				//media_item.NeuralSignalQueue = 'neural_handler_queue';
+				media_item.RecordKind = 1;//StrContains(media_item.Id,'video') ? 1 : 0;
+				//media_item.FFMPEG_ARGS = '-filter:v fps=5';
+				
+				alert('ffmpegCommandlineparameters: ' + '-i ' +CodeLiteral(UrlToFilePath(srcFileUrl), '&quot;') + ' ' + ffmpegArgsSet + ' ' + CodeLiteral( media_item.Name + '.m3u8','&quot;'));
+				
+				
+				/*
+				try
+				{
+					if (DataType(ffmpegArgs) == 'string')
+					{
+						ffmpegArgs = Trim(ffmpegArgs);
+						if (ffmpegArgs != '')
+							ffmpegArgsSet = ffmpegArgs;
+					}
+				}
+				catch(_o_)
+				{}
+				
+				if (bPlaylist)
+				{
+					ffmpegArgsSet = (ffmpegArgsSet != null ? (ffmpegArgsSet + ' ') : '') + '-master_pl_name &quot;' +fn+ 'Master.m3u8&quot;';
+				}
+				
+				*/
+				
+				if (ffmpegArgsSet != null)
+					media_item.FFMPEG_ARGS = ffmpegArgsSet;
+				
+				
+				//media_item.SaveStream = true;
+				media_item.ConvertToM3U8 = true;
+				media_item.MaxWaitInterval = 1800000; // Max Wait Interval for webm stream, next m3u8 segment , response, etc default 30000ms
+				try
+				{
+					MediaPostStreamHandler.Process(EncodeJson(media_item));
+				}
+				catch(_x_)
+				{
+					sError = 'Error occured while processing resouce ' + srcResID;
+				}
+	//Sleep(10000);
+				if (sError == null)
+				{
+					var sPartPath, s, objRegExp = null;
+					
+					for (sPartPath in ReadDirectoryByPath(UrlToFilePath(sTempDir)))
+					{
+						fn = FilePathToUrl(sPartPath);
+						/*
+						if (bPlaylist)
+						{
+							if (StrEnds(fn, '.m3u8') && !StrEnds(fn, 'Master.m3u8'))
+							{
+								if (objRegExp == null)
+								{
+									objRegExp = tools.get_object_assembly('RegExp');
+									objRegExp.Global = true;
+									objRegExp.IgnoreCase = true;
+									objRegExp.MultiLine = true;
+								}
+								if (objRegExp != null)
+								{
+									s = LoadFileData(sPartPath);
+									
+									objRegExp.Pattern = '^(\\#EXTINF\\:[\\d\\.]+,)';
+									s = objRegExp.Replace(s, '$1mytitle');
+									
+									s = StrReplace(s, '#EXTM3U', '#EXTM3U\n#EXT-X-MEDIA:NAME=&quot;' +'TestName' + Random(0, 111111)+ '&quot;,GROUP-ID=&quot;video&quot;');
+									
+									PutFileData(sPartPath, s);
+								}
+							}
+						}
+						*/
+						docRes.TopElem.put_data_add(fn, UrlFileName(fn));
+						DeleteUrl(fn);
+					}
+					
+				}
+				docRes.Save();
+				try
+				{
+					DeleteDirectory(sTempDir);
+				}
+				catch(_x_)
+				{}
+				try
+				{
+					DeleteUrl(srcFileUrl);
+				}
+				catch(_x_)
+				{}
+			}
+			else
+				sError = 'Invalid resource ' + srcResID + ' file type.';
+		}
+		else
+			sError = 'Invalid resource ID ' + srcResID;
+
+		if (sError != null)
+		{
+			throw sError;
+		}	
+			
+			
+		return true;
+	"/>
+
+
+
+
+
+
+
+
+
+
+	<KurentoClient TYPE="variant" TEMP="1"/>
+	<!-- <kms_ws_address PROPERTY="1" EXPR="return 'ws://192.168.0.105:8888/kurento'"/> -->
+	
+
+
+</tools_library>
+</SPXML-INLINE-FORM>

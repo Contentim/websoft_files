@@ -1,0 +1,149 @@
+<%
+
+//----------------------------------
+// часовой пояс времени, указываемого в параметрах карточки мероприятия, 
+// если параметр отрицательный укажите (0-X), где X - число часов [десятичная дробь]
+BASE_TIME_ZONE = 3; 
+//----------------------------------
+
+teOrganizerObject = OpenDoc( UrlFromDocID( OptInt( objDocID ) ) ).TopElem;
+teEvent = objDoc; // переопределим для удобства чтения
+file_id=String(teEvent.id).slice(String(teEvent.id).length-6);
+
+sOrganizerFullname = teOrganizerObject.fullname;
+sOrganizerEmail = teOrganizerObject.email;
+sSubject = Text;
+sComment = teEvent.comment;
+sParticipantEmail = "";
+sParticipantData = "";
+
+sSender = sOrganizerFullname + " <" + sOrganizerEmail + ">"
+
+html_text = "";
+text="";
+
+if(sComment != "")
+{	
+	html_text += "<p style=\"font-size:18.0pt;font-family:&quot;Segoe UI&quot;,sans-serif;color:#252424\">Описание к событию</p>";
+	html_text += "<p style=\"padding:0;margin: 0 0 10px;line-height:20px;font-size:18px;\">" + sComment +"</p>";
+}
+
+html_text += "<p style=\"color:#5F5F5F\">________________________________________________________________________________</p>";
+html_text += "<p style=\"font-size:18.0pt;font-family:&quot;Segoe UI&quot;,sans-serif;color:#252424\">Звонок в WebSoft WorkSpace</p>";
+html_text += "<p><b style=\"font-size:12pt;font-family:&quot;Segoe UI&quot;,sans-serif;color:#252424\">Присоединиться на компьютере</b></p>";
+html_text += "<p style=\"text-autospace:none\"><span style=\"font-size:14.0pt;font-family:Wingdings;color:#0066CC\">à</span><a href=\""+ global_settings.settings.portal_base_url + "/vchat/conversation/"+ teEvent.conversation_id + "/call/" + teEvent.id +"\" target=\"_blank\" rel=\" noopener noreferrer\"  style=\"font-size:16.0pt;font-family:C?l?b?i;color:#0066CC\">Присоединиться к звонку </a></p>";
+
+html_text += "<p style=\"color:#5F5F5F\">________________________________________________________________________________</p>"
+
+for(participant in teEvent.participants)
+{
+	teParticipantObject = OpenDoc( UrlFromDocID( OptInt( participant.person_id ) ) ).TopElem;
+	
+	sParticipantEmail += teParticipantObject.fullname +' <'+teParticipantObject.email+'>,';
+	sParticipantData += 'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=' + teParticipantObject.lastname + ' ' + teParticipantObject.firstname + ';RSVP=FALSE:mailto:' + teParticipantObject.email + '\n';
+}
+
+RSVP_STR='FALSE';
+DT_START = DateOffset(teEvent.plan_start_date,(0-BASE_TIME_ZONE)*3600);
+DT_END = DateOffset(teEvent.plan_end_date,(0-BASE_TIME_ZONE)*3600);
+
+UID = StrHexInt(teEvent.id)+"-WebSoft_Generated"
+
+message_body = '
+To: '+sParticipantEmail+' 
+Subject: '+sSubject+'
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=_mixed 004128EAC32576F1_="
+X-Spam: Not detected
+X-Mras: Ok
+X-Mailru-Src: mxpdd
+X-Mras: Ok
+X-Mailru-Intl-Transport: d,ed4f05e
+
+This is a multipart message in MIME format.
+--=_mixed 004128EAC32576F1_=
+Content-Type: multipart/related; boundary="=_related 004128EAC32576F1_="
+
+
+--=_related 004128EAC32576F1_=
+Content-Type: multipart/alternative; boundary="=_alternative 004128EAC32576F1_="
+
+
+--=_alternative 004128EAC32576F1_=
+Content-Type: text/plain; charset=utf-8
+
+'+text+'
+
+--=_alternative 004128EAC32576F1_=
+Content-Type: text/html; charset=utf-8
+Content-Disposition: inline
+
+'+html_text+'
+
+--=_alternative 004128EAC32576F1_=
+Content-Type: text/calendar; method=REQUEST; charset=utf-8;
+
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//WebSoft LTD//WebSoft 2//EN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_START),StrXmlDate(DT_START).lastIndexOf('+')),'-',''),':','')+'Z
+DTEND:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_END),StrXmlDate(DT_END).lastIndexOf('+')),'-',''),':','')+'Z
+DTSTAMP:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(Date()),StrXmlDate(Date()).lastIndexOf('+')),'-',''),':','')+'Z
+TRANSP:OPAQUE
+SEQUENCE:0
+CLASS:PUBLIC
+SUMMARY:'+teEvent.name+'
+DESCRIPTION:'+sComment+'
+ORGANIZER;CN='+teOrganizerObject.fullname+':mailto:'+teOrganizerObject.email+'\n
+UID:'+UID+'
+LOCATION:
+
+BEGIN:VALARM
+TRIGGER:-P1D
+DURATION:PT15M
+ACTION:DISPLAY
+DESCRIPTION:'+sComment+'
+X-WR-ALARMUID:646DBD0737BC5B52
+END:VALARM
+END:VEVENT
+END:VCALENDAR
+
+--=_alternative 004128EAC32576F1_=--
+--=_related 004128EAC32576F1_=
+
+--=_related 004128EAC32576F1_=--
+--=_mixed 004128EAC32576F1_=
+Content-Type: text/calendar; method=REQUEST; charset=utf-8; name="c766867.ics"
+Content-Disposition: attachment; filename="c766867.ics"
+
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//WebSoft LTD//WebSoft 2//EN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_START),StrXmlDate(DT_START).lastIndexOf('+')),'-',''),':','')+'Z
+DTEND:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(DT_END),StrXmlDate(DT_END).lastIndexOf('+')),'-',''),':','')+'Z
+DTSTAMP:'+StrReplace(StrReplace(StrLeftRange(StrXmlDate(Date()),StrXmlDate(Date()).lastIndexOf('+')),'-',''),':','')+'Z
+TRANSP:OPAQUE
+SEQUENCE:0
+CLASS:PUBLIC
+SUMMARY:'+teEvent.name+'
+DESCRIPTION:'+sComment+'
+ORGANIZER;CN='+teOrganizerObject.fullname+':mailto:'+teOrganizerObject.email+'\n
+UID:'+UID+'
+LOCATION:
+
+BEGIN:VALARM
+TRIGGER:-P1D
+DURATION:PT15M
+ACTION:DISPLAY
+DESCRIPTION:'+sComment+'
+X-WR-ALARMUID:646DBD0737BC5B52
+END:VALARM
+END:VEVENT
+END:VCALENDAR
+--=_mixed 004128EAC32576F1_=--
+'
+%><%=message_body%>

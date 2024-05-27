@@ -1,0 +1,309 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="TopElem" BEFORE-INIT-ACTION="" STD-MARGINS="0" PADDING="0vpx 5vpx 24vpx 0vpx" INIT-ACTION="
+	if ( Screen.AuxData.GetOptProperty('websoft_succession_plan_init_form', '') == '' )
+	{
+		Screen.SetCurrentPageByTitle('Информация'); 
+		Screen.AuxData.SetProperty('websoft_succession_plan_init_form', '1');
+	}
+	Cancel();
+	">
+
+<USE FORM="//wtv/app_general.xms"/>
+
+<WITH VAR="oRemoteAction" EXPR="ms_tools.get_remote_actions_by_cur_application( 'key_position' )">
+
+
+<WITH VAR="oStatistic" EXPR="
+		try
+		{
+			oRes = CallServerMethod( 'tools', 'call_code_library_method', ['libSuccession', 'GetKeyPositionContext', [TopElem.id.Value]]);
+			if(oRes.HasProperty('error') &amp;&amp; oRes.error != 0)
+				LogEvent('', 'ERROR: StatRec: GetKeyPositionContext: [' + oRes.error + ']: ' + oRes.errorText);
+		}
+		catch(err)
+		{
+			oRes = {
+				context: {}
+			}
+			LogEvent('', 'StatRec: GetKeyPositionContext ' + err);
+		}
+		return oRes;
+">
+
+<WindowCustomTitleBar titleExpr="Ps.name" fullBtnExpr="false" arrBtnsExpr="
+
+	iUserAccessLevel = tools_app.get_cur_user_application_access_level();
+	
+	if(iUserAccessLevel > 1) // все кнопки и пункты недоступны для роли Наблюдатель (1)
+	{
+		arrBtns = [];
+
+		// Изменить ключ.должность
+		_ls = [];
+		_listall = [];
+		_ls = ['h24p15'];
+		_listall = ArrayUnion( _listall, _ls );
+		_list = ArrayIntersect( oRemoteAction, _ls, 'This.id', 'This' );
+
+		if ( ArrayOptFirstElem ( _list ) != undefined )
+		{
+			arrBtns.push( { type: 'img', style: 'edit', title: 'Изменить', actions: ArraySelectAll( _list ), reload: true } );
+		}
+
+		// Добавить ключ.должность
+		_listall = [];
+		_ls = ['8hb2wo'];
+		_listall = ArrayUnion( _listall, _ls );
+		_list = ArrayIntersect( oRemoteAction, _ls, 'This.id', 'This' );
+		if ( ArrayOptFirstElem ( _list ) != undefined )
+		{
+			arrBtns.push( { type: 'img', style: 'add', title: 'Добавить', actions: ArraySelectAll( _list ), reload: true } );
+		}
+
+		// Статус ключ.должности
+		
+			// owt1me - отправить в архив KeyPositionChangeState
+			// ryeh7p - Восстановить из архива KeyPositionChangeState
+	
+		var arrMenu = [];
+
+		switch(Ps.status)
+		{
+			case 'archive':
+				arrMenu.push({title: 'Восстановить из архива', menu_id: ['ryeh7p']});
+				break;
+			case 'plan':
+				arrMenu.push({title: 'Перенести в архив', menu_id: ['owt1me']});
+				break;
+			case 'active':
+				arrMenu.push({title: 'Перенести в архив', menu_id: ['owt1me']});
+				break;
+		}
+
+		// Удалить
+		arrMenu.push({title: 'Удалить', menu_id: ['x2722c']}); 
+
+		var arrListAll = [];
+
+		for(itemMenu in arrMenu)
+		{
+			arrItemList = ArrayIntersect( oRemoteAction, itemMenu.menu_id, 'This.id', 'This' );
+			arrListAll = ArrayUnion( arrListAll, arrItemList );
+		}
+
+		arrBtns.push( { type: 'img', style: 'all', title: 'Действия', actions: arrListAll } );
+
+		return arrBtns;
+	}
+
+"/>
+
+<LINE STD-MARGINS="0">
+
+	<ui2_minimizable_tree SWITCH-TYPE="selector" TARGET="main_selector" NO-IMAGES="0" NO-TOP-LEVEL-IMAGES="0" OPEN-MINIMIZED="1"/>
+
+	<SELECTOR NAME="main_selector">
+		
+		<PAGE TITLE="##'Информация'##" IMAGE-URL="//wtv/app_pict/icon16_info.svg">
+			<PANEL WIDTH="100%" PADDING="24vpx" VERT-SPACING="16vpx" STD-MARGINS="1" HEIGHT="100%" VERT-SCROLL="1" MIN-WIDTH="1075px">
+				<LINE ADAPTIVE="0" WIDTH="100%" STD-MARGINS="0" CHILD-VERT-ALIGN="top">
+					<PANEL VERT-SPACING="4vpx" PADDING="0vpx 0vpx 0vpx 0vpx" WIDTH="100%">
+						<LINE WIDTH="100%" CHILD-VERT-ALIGN="top">
+							<PANEL HEIGHT="100vpx" WIDTH="100vpx" SIZE-LIMIT="1" BK-IMAGE-URL-EXPR="
+								if ( !System.IsWebClient )
+								{
+									return '';
+								}
+								var _sUrl = '';
+								if ( Ps.person_id.HasValue )
+								{
+									var _person = Ps.person_id.OptForeignElem;
+									if ( _person != undefined )
+									{
+										_sUrl = _person.pict_url;
+									}
+								}
+								if ( _sUrl != '' &amp;&amp; !StrContains( _sUrl, '://' ) &amp;&amp; StrContains( _sUrl, 'download_file.html' ) &amp;&amp; StrContains( _sUrl, 'file_id' ) )
+								{
+									var _oQuery = UrlQuery( _sUrl );
+									if ( _oQuery != undefined )
+									{
+										var _iFileId =  OptInt( _oQuery.GetOptProperty( 'file_id' ) );
+										if ( _iFileId != undefined )
+										{
+											var _docResource = tools.open_doc( _iFileId );
+											if ( _docResource != undefined &amp;&amp; _docResource.TopElem.file_url.HasValue )
+											{
+												_sUrl = _docResource.TopElem.file_url;
+											}
+										}
+									}
+								}
+								if ( _sUrl == '' )
+								{
+									_sUrl = 'x-local://wt/web/pics/nophoto.png';
+								}
+								if ( !StrContains( _sUrl, '://' ) )
+								{
+									_sUrl = UrlAppendPath( tools_web.set_url_protocol( tools.lds_address ), _sUrl );
+								}
+								return _sUrl;
+							">
+								<IF EXPR="!System.IsWebClient">
+									<IMAGE URL-EXPR="
+										var _sUrl = '';
+										if ( Ps.person_id.HasValue )
+										{
+											var _person = Ps.person_id.OptForeignElem;
+											if ( _person != undefined )
+											{
+												_sUrl = _person.pict_url;
+											}
+										}
+										if ( _sUrl != '' &amp;&amp; !StrContains( _sUrl, '://' ) &amp;&amp; StrContains( _sUrl, 'download_file.html' ) &amp;&amp; StrContains( _sUrl, 'file_id' ) )
+										{
+											var _oQuery = UrlQuery( _sUrl );
+											if ( _oQuery != undefined )
+											{
+												var _iFileId =  OptInt( _oQuery.GetOptProperty( 'file_id' ) );
+												if ( _iFileId != undefined )
+												{
+													var _docResource = tools.open_doc( _iFileId );
+													if ( _docResource != undefined &amp;&amp; _docResource.TopElem.file_url.HasValue )
+													{
+														_sUrl = _docResource.TopElem.file_url;
+													}
+												}
+											}
+										}
+										if ( _sUrl == '' )
+										{
+											_sUrl = 'x-local://wt/web/pics/nophoto.png';
+										}
+										if ( !StrContains( _sUrl, '://' ) )
+										{
+											_sUrl = UrlAppendPath( tools_web.set_url_protocol( tools.lds_address ), _sUrl );
+										}
+										return _sUrl;
+									" HEIGHT="100vpx" ALIGN="center" VERT-ALIGN="center" STD-MARGINS="0" PADDING="0vpx 0vpx 0vpx 0vpx"/>
+								</IF>
+							</PANEL>
+							<PANEL VERT-SPACING="4vpx" PADDING="0vpx 24vpx 0vpx 24vpx">
+								<LABEL TITLE-EXPR="Ps.name" MULTILINE="1" FONT-SIZE="16vpx" FONT-WEIGHT="800"/>
+								<LABEL TITLE-EXPR="'Подразделение: ' + Ps.person_subdivision_name" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="'Дата вступления в должность: ' + ( Ps.person_id.OptForeignElem != undefined ? Ps.person_id.OptForeignElem.position_date: '' )" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									sText = 'Горизонт риска: ';
+									if ( Ps.risk_perspective_id.HasValue &amp;&amp; Ps.risk_perspective_id.OptForeignElem != undefined )
+										sText += Ps.risk_perspective_id.OptForeignElem.name;
+									return sText;
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+								<LABEL TITLE-EXPR="
+									sText = 'Факторы риска: ';
+									if (ArrayOptFirstElem(Ps.risk_levels) != undefined)
+										sText += ArrayMerge(Ps.risk_levels, 'This.risk_level_id.OptForeignElem != undefined ? This.risk_level_id.OptForeignElem.name: \'\'', ', ');
+									return sText;
+								" MULTILINE="1" FONT-SIZE="12px" FONT-WEIGHT="200" TEXT-COLOR="130,130,130"/>
+							</PANEL>
+							<PANEL STD-MARGINS="0" WIDTH="100vpx" ALIGN="right" CHILD-VERT-ALIGN="center" PADDING="4vpx 4vpx 4vpx 4vpx" BK-COLOR-EXPR="
+								if ( Ps.key_position_threat_id.HasValue &amp;&amp; Ps.key_position_threat_id.OptForeignElem != undefined )
+									return Ps.key_position_threat_id.OptForeignElem.color
+							">
+								<LABEL TITLE-EXPR="
+									if ( Ps.key_position_threat_id.HasValue &amp;&amp; Ps.key_position_threat_id.OptForeignElem != undefined )
+										return Ps.key_position_threat_id.OptForeignElem.name;
+								" MULTILINE="1" FONT-SIZE="10vpx" ALIGN="center" STD-MARGINS="1" VERT-ALIGN="center"  FONT-WEIGHT="200" TEXT-COLOR="255,255,255" />
+							</PANEL>
+						</LINE>
+					</PANEL>
+				</LINE>
+				
+				<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>	
+
+				<PANEL WIDTH="100%" STD-MARGINS="1">
+					<LINE WIDTH="100%" HEIGHT="auto" ADAPTIVE="1" CHILD-VERT-ALIGN="center">
+						<PANEL WIDTH="336vpx" PADDING="0 0 0 0">
+							<LOOP EXPR="
+								_aInfo = [
+									{ id: 'successors_count', name: 'Преемников' },
+									{ id: 'active_successor_count', name: 'Преемников на согласовании' }
+								];
+								return _aInfo;
+							" VAR="_oInformer">
+								<LINE WIDTH="100%" STD-MARGINS="1" ADAPTIVE="1">
+									<LABEL TITLE-EXPR="_oInformer.name" FONT-SIZE="12vpx" FONT-WEIGHT="800" STD-MARGINS="1" ALIGN="left" PADDING="0 12px 0 0"/>
+									<LABEL TITLE-EXPR="
+										result = '—';
+										if ( _oInformer.id == '' )
+										{
+											result = oStatistic.context.GetOptProperty( _oInformer.percent, '-' )
+											if ( result != '-' )
+											{
+												result += '%';
+											}
+										}
+										else if ( oStatistic.context.GetOptProperty( _oInformer.id, '' ) != '' )
+										{
+											result = oStatistic.context.GetOptProperty( _oInformer.id, '-' );
+											if ( _oInformer.HasProperty('percent') &amp;&amp; oStatistic.context.GetOptProperty( _oInformer.percent, '' ) != '' )
+											{
+												result += ' (' + oStatistic.context.GetOptProperty( _oInformer.percent, '-' ) + '%)';
+											}
+										}
+										return result;
+									" FONT-SIZE="12vpx" FONT-WEIGHT="800" STD-MARGINS="1" ALIGN="right" TEXT-COLOR-EXPR="_oInformer.GetOptProperty( 'color', '' )"/>
+								</LINE>
+							</LOOP>
+						</PANEL>
+						<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator" HEIGHT="90vpx"/>
+						<PANEL WIDTH="336vpx" PADDING="0 0 0 0">
+							<LOOP EXPR="
+								_aInfo = [
+									{ id: 'approved_successor_count', name: 'Согласовано преемников' },
+									{ id: 'risk_levels_count', name: 'Факторов риска' }
+								];
+								return _aInfo;
+							" VAR="_oInformer">
+								<LINE WIDTH="100%" STD-MARGINS="1" ADAPTIVE="1">
+									<LABEL TITLE-EXPR="_oInformer.name" FONT-SIZE="12vpx" FONT-WEIGHT="800" STD-MARGINS="1" ALIGN="left" PADDING="0 12px 0 0"/>
+									<LABEL TITLE-EXPR="
+										result = '—';
+										if ( oStatistic.context.GetOptProperty( _oInformer.id, '' ) != '' )
+										{
+											result = oStatistic.context.GetOptProperty( _oInformer.id, '-' );
+											if ( _oInformer.HasProperty('percent') &amp;&amp; oStatistic.context.GetOptProperty( _oInformer.percent, '' ) != '' )
+											{
+												result += ' (' + oStatistic.context.GetOptProperty( _oInformer.percent, '-' ) + '%)';
+											}
+										}
+										return result;
+									" FONT-SIZE="12vpx" FONT-WEIGHT="800" STD-MARGINS="1" ALIGN="right" TEXT-COLOR-EXPR="_oInformer.GetOptProperty( 'color', '' )"/>
+								</LINE>
+							</LOOP>
+						</PANEL>
+					</LINE>
+
+					<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator" />
+					
+					<ITEM TYPE="app_list_catalog_base" WIDTH="100%" HEIGHT="400vpx" PADDING="0 0 0 0" catalogExpr="'successor'" titleExpr="'Преемники'" appCodeExpr="tools_app.cur_application.Object.code" ftFilterExpr="Screen.AuxData.GetOptProperty('fulltext', '')" collectionExpr="'GetSuccessorsToKeyPosition'" docIDExpr="Ps.Doc.DocID" wvarsExpr="
+							var wvars = {};
+							wvars.iKeyPositionID = Ps.Doc.DocID;
+							return wvars;
+						" columnsExpr="
+							var _cols = [];
+							_cols.push({name: 'ListElem.person_fullname', order: 'person_fullname', title: 'ФИО', width: '250vpx'});
+							_cols.push({name: 'ListElem.status', order: 'status', title: 'Статус', width: '150vpx'});
+							_cols.push({name: 'ListElem.person_position_name', order: 'person_position_name', title: 'Должность', width: '150vpx'});
+							_cols.push({name: 'ListElem.person_subdivision_name', order: 'person_subdivision_name', title: 'Подразделение', width: '200vpx'});
+							return _cols;
+						" searchButtonExpr="true" />
+				</PANEL>	
+				
+			</PANEL>
+		</PAGE>
+			
+	</SELECTOR>
+</LINE>
+</WITH>
+</WITH>
+</SPXML-SCREEN>

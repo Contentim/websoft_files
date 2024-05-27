@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="utf-8"?>
+<inst_packs>
+	<inst_pack>
+		<id>inst_user1</id>
+		<name>Пользователь по умолчанию</name>
+		<comment>Пользователь, создаваемый после инсталяции системы для первоначального входа в администратор.</comment>
+		<url>inst_pack_user1.xml</url>
+		<package_date>2006-07-10</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_coding</id>
+		<name>Нумераторы</name>
+		<comment>Нумераторы</comment>
+		<url>inst_pack_coding.xml</url>
+		<package_date>2015-02-26</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_notification</id>
+		<name>Встроенные уведомления</name>
+		<comment>Уведомления, отправляемые при стандартных событиях.</comment>
+		<url>inst_pack_notification.xml</url>
+		<package_date>2022-08-05T11:32:09+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_notification_template</id>
+		<name>Встроенные шаблоны уведомлений</name>
+		<comment>Шаблоны уведомлений, отправляемых при стандартных событиях.</comment>
+		<url>inst_pack_notification_template.xml</url>
+		<package_date>2022-08-05T11:31:26+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_request_type</id>
+		<name>Типы заявок для основных типов объектов</name>
+		<comment>Типы заявок для основных типов объектов, на которые возможна подача заявок.</comment>
+		<url>inst_pack_request_type.xml</url>
+		<package_date>2021-12-23T02:13:49+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_response_type</id>
+		<name>Типы отзывов для основных типов объектов</name>
+		<comment>Типы отзывов для основных типов объектов, на которые возможно оставлять отзыв.</comment>
+		<url>inst_pack_response_type.xml</url>
+		<package_date>2006-07-10</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_boss_type_default</id>
+		<name>Встроенные типы руководителей</name>
+		<comment>Типы функциональных руководителей, дающие права непосредственного руководителя и текущего пользователя.</comment>
+		<url>inst_pack_boss_type_default.xml</url>
+		<package_date>2022-09-14T13:54:57+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_access_role</id>
+		<name>Встроенные роли доступа</name>
+		<comment>Роли доступа, встроенные в Систему.</comment>
+		<url>inst_pack_access_role.xml</url>
+		<package_date>2022-08-30</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_lists</id>
+		<name>Встроенные справочники</name>
+		<comment>Значения некоторых справочников.</comment>
+		<url>inst_pack_lists.xml</url>
+		<package_date>2022-03-03</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_operation</id>
+		<name>Операции</name>
+		<comment>Операции, на которые возможно назначать действия.</comment>
+		<url>inst_pack_operation.xml</url>
+		<package_date>2022-08-16T11:20:21+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_custom_web_template</id>
+		<name>Шаблоны документов</name>
+		<comment>Шаблоны документов, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_custom_web_template.xml</url>
+		<package_date>2022-10-04T21:13:45+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_override_web_template</id>
+		<name>Элементы шаблонов</name>
+		<comment>Элементы шаблонов, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_override_web_template.xml</url>
+		<package_date>2022-08-30T12:12:25+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_remote_action</id>
+		<name>Удаленные действия</name>
+		<comment>Действия, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_remote_action.xml</url>
+		<package_date>2022-12-16T10:23:14+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_remote_collection</id>
+		<name>Выборки</name>
+		<comment>Выборки, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_remote_collection.xml</url>
+		<package_date>2022-10-05T21:32:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_remote_collection_uni</id>
+		<name>Выборки универсальные</name>
+		<comment>Выборки универсальные, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_remote_collection_uni.xml</url>
+		<package_date>2022-06-23T19:44:34+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_custom_web_template_group</id>
+		<name>Группы шаблонов</name>
+		<comment>Группы шаблонов, реализующие основные режимы работы портала.</comment>
+		<url>inst_pack_custom_web_template_group.xml</url>
+		<package_date>2018-05-24</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_system_event</id>
+		<name>Системные события</name>
+		<comment>Системные события, возникающие в процессе работы Системы.</comment>
+		<url>inst_pack_system_event.xml</url>
+		<package_date>2022-06-29T00:58:35+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_skill</id>
+		<name>Навыки</name>
+		<comment>Базовый список навыков (иностранные языки)</comment>
+		<url>inst_pack_skill.xml</url>
+		<package_date>2011-10-26</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_region</id>
+		<name>Регионы</name>
+		<comment>Справочник регионов</comment>
+		<url>inst_pack_region.xml</url>
+		<package_date>2019-12-10</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_statistic_rec</id>
+		<name>Показатели</name>
+		<comment>Набор показателей</comment>
+		<url>inst_pack_statistic_rec.xml</url>
+		<package_date>2022-08-24T21:25:42+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_site</id>
+		<name>Объекты портала</name>
+		<comment>Объекты (хост, сайт, дизайн), необходимые для входа на портал.</comment>
+		<url>inst_pack_site.xml</url>
+		<package_date>2022-05-25</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_server_agent</id>
+		<name>Агенты сервера</name>
+		<comment>Агенты сервера, необходимые для функционирования системы.</comment>
+		<url>inst_pack_server_agent.xml</url>
+		<package_date>2022-08-24T12:05:06+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_event_type</id>
+		<name>Типы мероприятий</name>
+		<comment>Типы мероприятий</comment>
+		<url>inst_pack_event_type.xml</url>
+		<package_date>2022-07-08</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_file_source</id>
+		<name>Источники файлов</name>
+		<comment>Базовый набор источников файлов</comment>
+		<url>inst_pack_file_source.xml</url>
+		<package_date>2013-10-07</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_lrs</id>
+		<name>Встроенное LRS</name>
+		<comment>Объекты для встроенного LRS</comment>
+		<url>inst_pack_lrs.xml</url>
+		<package_date>2014-06-02</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_testing_system</id>
+		<name>Системы тестирования</name>
+		<comment>Системы тестирования</comment>
+		<url>inst_pack_testing_system.xml</url>
+		<package_date>2014-07-02</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_webinar_system</id>
+		<name>Системы вебинаров</name>
+		<comment>Системы вебинаров</comment>
+		<url>inst_pack_webinar_system.xml</url>
+		<package_date>2021-12-21</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_notification_system</id>
+		<name>Системы уведомлений</name>
+		<comment>Системы уведомлений</comment>
+		<url>inst_pack_notification_system.xml</url>
+		<package_date>2021-02-02</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_library_material_source_type</id>
+		<name>Типы входных данных</name>
+		<comment>Типы входных данных</comment>
+		<url>inst_pack_library_material_source_type.xml</url>
+		<package_date>2019-02-12</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_library_player</id>
+		<name>Проигрыватели файлов</name>
+		<comment>Проигрыватели файлов</comment>
+		<url>inst_pack_library_player.xml</url>
+		<package_date>2019-02-12</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_workflow</id>
+		<name>Документообороты</name>
+		<comment>Документообороты</comment>
+		<url>inst_pack_workflow.xml</url>
+		<package_date>2021-10-17</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_contact_types</id>
+		<name>Типы контактов</name>
+		<comment>Типы контактов</comment>
+		<url>inst_pack_contact_types.xml</url>
+		<package_date>2015-10-22</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_contact_results</id>
+		<name>Результаты контактов</name>
+		<comment>Результаты контактов</comment>
+		<url>inst_pack_contact_results.xml</url>
+		<package_date>2015-10-22</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_demo_full_2_rus</id>
+		<name>Демонстрационные данные, полный пакет (2022)</name>
+		<comment>Пакет объектов основных блоков каталогов.</comment>
+		<url>inst_pack_demo_full_2_rus.xml</url>
+		<package_date>2022-07-22</package_date>
+		<type>list</type>
+		<is_std>0</is_std>
+		<is_demo>1</is_demo>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_estaff_event_type</id>
+		<name>Типы событий E-Staff</name>
+		<comment>Типы событий, необходимые для реализации интеграции WT и E-Staff</comment>
+		<url>inst_pack_estaff_event_type.xml</url>
+		<package_date>2022-08-08</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_roles</id>
+		<name>Категории</name>
+		<comment>Категории поставляемых объектов</comment>
+		<url>inst_pack_role.xml</url>
+		<package_date>2022-09-13T11:25:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_chatbot_types</id>
+		<name>Категории</name>
+		<comment>Категории поставляемых объектов</comment>
+		<url>inst_chatbot_type.xml</url>
+		<package_date>2018-10-09</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_library_system</id>
+		<name>Системы библиотек</name>
+		<comment>Системы библиотек</comment>
+		<url>inst_pack_library_system.xml</url>
+		<package_date>2018-02-16</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_proctoring_system</id>
+		<name>Системы прокторинга</name>
+		<comment>Системы прокторинга</comment>
+		<url>inst_pack_proctoring_system.xml</url>
+		<package_date>2021-10-11T13:11:45+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_verb</id>
+		<name>Действия</name>
+		<comment>Действия xApi</comment>
+		<url>inst_pack_verb.xml</url>
+		<package_date>2019-07-17</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_resource_type</id>
+		<name>Типы ресурсов базы</name>
+		<comment>Типы ресурсов базы</comment>
+		<url>inst_pack_resource_type.xml</url>
+		<package_date>2019-10-28</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_cl_module</id>
+		<name>Шаблоны модулей</name>
+		<comment>Шаблоны модулей CourseLab Online</comment>
+		<url>inst_pack_cl_module.xml</url>
+		<package_date>2019-09-21</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_cl_object</id>
+		<name>Объекты</name>
+		<comment>Объекты CourseLab Online</comment>
+		<url>inst_pack_cl_object.xml</url>
+		<package_date>7022-08-11</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_resource</id>
+		<name>Ресурсы</name>
+		<comment>Ресурсы</comment>
+		<url>inst_pack_resource.xml</url>
+		<package_date>2022-04-14T12:08:00+03:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_education_org</id>
+		<name>Провайдеры</name>
+		<comment>Провайдеры курсов</comment>
+		<url>inst_pack_education_org.xml</url>
+		<package_date>2020-01-31</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_provider_course_type</id>
+		<name>Типы провайдеров</name>
+		<comment>Типы провайдеров курсов</comment>
+		<url>inst_pack_provider_course_type.xml</url>
+		<package_date>2021-05-19</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_object_data_type</id>
+		<name>Типы данных объекта</name>
+		<comment>Типы данных объекта</comment>
+		<url>inst_pack_object_data_type.xml</url>
+		<package_date>2022-08-05</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_object_data</id>
+		<name>Данные объектов</name>
+		<comment>Данные объектов</comment>
+		<url>inst_pack_object_data.xml</url>
+		<package_date>2022-09-13</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_education_type</id>
+		<name>Типы образования</name>
+		<comment>Справочник типов образования</comment>
+		<url>inst_pack_education_type.xml</url>
+		<package_date>2020-04-28</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_appointment_type</id>
+		<name>Типы назначений</name>
+		<comment>Справочник типов назначений</comment>
+		<url>inst_pack_appointment_type.xml</url>
+		<package_date>2020-04-28</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_code_library</id>
+		<name>Библиотеки программного кода</name>
+		<comment>Справочник библиотек программного кода</comment>
+		<url>inst_pack_code_library.xml</url>
+		<package_date>2022-08-10T17:55:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_remote_security_profile</id>
+		<name>remote_security_profile</name>
+		<comment>remote_security_profile</comment>
+		<url>inst_pack_remote_security_profile.xml</url>
+		<package_date>2022-08-16T10:32:05+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_contract_state</id>
+		<name>Статусы договоров</name>
+		<comment>Справочник статусов договоров</comment>
+		<url>inst_pack_contract_state.xml</url>
+		<package_date>2020-06-29</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_messenger_service</id>
+		<name>Курьерские службы</name>
+		<comment>Справочник курьерских служб</comment>
+		<url>inst_pack_messenger_service.xml</url>
+		<package_date>2020-06-29</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_web_rule</id>
+		<name>Правила</name>
+		<comment>Правила переадресации для стандартных страниц</comment>
+		<url>inst_pack_web_rule.xml</url>
+		<package_date>2022-08-25T16:56:52+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_web_mode</id>
+		<name>Типы страниц</name>
+		<comment>Типы страниц по умолчанию</comment>
+		<url>inst_pack_web_mode.xml</url>
+		<package_date>2020-12-30T11:27:01+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_sale_contract_type</id>
+		<name>Типы договоров</name>
+		<comment>Справочник типов договоров</comment>
+		<url>inst_pack_sale_contract_type.xml</url>
+		<package_date>2020-10-01</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_web_ui</id>
+		<name>Интерфейс</name>
+		<comment>Пакет со стандартным интерфейсом WebSoft HCM</comment>
+		<url>inst_pack_web_ui.xml</url>
+		<package_date>2022-09-14</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_mobile_config</id>
+		<name>Конфигурация мобильного приложения</name>
+		<comment>Типовая конфигурация мобильного приложения.</comment>
+		<url>inst_pack_mobile_config.xml</url>
+		<package_date>2022-02-20</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_task_type</id>
+		<name>Типы задач</name>
+		<comment>Типы задач</comment>
+		<url>inst_pack_task_type.xml</url>
+		<package_date>2020-12-09</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_system_event_handler</id>
+		<name>Обработчик системных событий</name>
+		<comment>Обработчик системных событий</comment>
+		<url>inst_pack_system_event_handler.xml</url>
+		<package_date>2022-07-29T22:17:59+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_conversation_type</id>
+		<name>Типы разговоров</name>
+		<comment>Типы разговоров</comment>
+		<url>inst_pack_conversation_type.xml</url>
+		<package_date>2021-03-12</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_chatbot</id>
+		<name>Типы разговоров</name>
+		<comment>Типы разговоров</comment>
+		<url>inst_pack_chatbot.xml</url>
+		<package_date>2021-03-12</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_channel_provider</id>
+		<name>Провайдеры каналов</name>
+		<comment>Провайдеры каналов</comment>
+		<url>inst_pack_channel_provider.xml</url>
+		<package_date>2021-03-12</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_recommender_algorithm</id>
+		<name>Рекомендательные алгоритмы</name>
+		<comment>Рекомендательные алгоритмы</comment>
+		<url>inst_pack_recommender_algorithm.xml</url>
+		<package_date>2022-01-26</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_presence_state</id>
+		<name>Типы присутствия/отсутствия</name>
+		<comment>Типы присутствия/отсутствия</comment>
+		<url>inst_pack_presence_state.xml</url>
+		<package_date>2022-05-05</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_working_condition_type</id>
+		<name>Типы условия труда</name>
+		<comment>Типы условия труда</comment>
+		<url>inst_pack_working_condition_type.xml</url>
+		<package_date>2021-06-23</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_salary_payment_type</id>
+		<name>График выплаты заработной платы</name>
+		<comment>График выплаты заработной платы</comment>
+		<url>inst_pack_salary_payment_type.xml</url>
+		<package_date>2021-06-23</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_work_form</id>
+		<name>Форма работы</name>
+		<comment>Форма работы</comment>
+		<url>inst_pack_work_form.xml</url>
+		<package_date>2021-06-23</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_work_schedule_type</id>
+		<name>Типы графика работы</name>
+		<comment>Типы графика работы</comment>
+		<url>inst_pack_work_schedule_type.xml</url>
+		<package_date>2021-06-5</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_admin_config_sdo</id>
+		<name>Конфигурация администратора СДО</name>
+		<comment>Конфигурация администратора СДО</comment>
+		<url>inst_pack_admin_config_sdo.xml</url>
+		<package_date>2022-04-06T19:09:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_admin_conf_remote_action</id>
+		<name>Универсальные удаленные действия</name>
+		<comment>Для конфигураций и редактора страниц</comment>
+		<url>inst_pack_admin_conf_remote_action.xml</url>
+		<package_date>2022-09-06T13:53:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_custom_admin_template</id>
+		<name>Шаблоны интерфейсов администратора</name>
+		<comment>Для конфигураций и приложений</comment>
+		<url>inst_pack_custom_admin_template.xml</url>
+		<package_date>2022-07-22T18:22:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_knowledge_part_level</id>
+		<name>Категории значения карты знаний</name>
+		<comment>Категории значения карты знаний</comment>
+		<url>inst_pack_knowledge_part_level.xml</url>
+		<package_date>2021-12-06T16:00:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_application</id>
+		<name>Приложения доступа</name>
+		<comment>Приложения доступа</comment>
+		<url>inst_pack_application.xml</url>
+		<package_date>2022-07-26T21:05:15+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_credential</id>
+		<name>Учетные данные</name>
+		<comment>Учетные данные</comment>
+		<url>inst_pack_credential.xml</url>
+		<package_date>2022-01-06</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_remote_application</id>
+		<name>Удаленные приложения</name>
+		<comment>Удаленные приложения</comment>
+		<url>inst_pack_remote_application.xml</url>
+		<package_date>2022-01-06</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_ppm_matrix</id>
+		<name>Матрица 9Grid</name>
+		<comment>Матрица 9Grid</comment>
+		<url>inst_pack_ppm_matrix.xml</url>
+		<package_date>2022-01-06</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_event_cabinet</id>
+		<name>Приложение Кабинет тренера</name>
+		<comment>Приложение Кабинет тренера</comment>
+		<url>inst_pack_app_websoft_event_cabinet.xml</url>
+		<package_date>2022-05-11T16:01:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_course_catalog</id>
+		<name>Приложение Каталог курсов</name>
+		<comment>Приложение Каталог курсов</comment>
+		<url>inst_pack_app_websoft_course_catalog.xml</url>
+		<package_date>2022-05-11T10:41:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_sdo_cabinet</id>
+		<name>Приложение Управление дистанционным обучением</name>
+		<comment>Приложение Управление дистанционным обучением</comment>
+		<url>inst_pack_app_websoft_sdo_cabinet.xml</url>
+		<package_date>2022-08-03T16:32:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_test_cabinet</id>
+		<name>Приложение Управление тестированием</name>
+		<comment>Приложение Управление тестированием</comment>
+		<url>inst_pack_app_websoft_test_cabinet.xml</url>
+		<package_date>2022-09-09T18:03:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_edo</id>
+		<name>Приложение Управление КЭДО</name>
+		<comment>Приложение Управление КЭДО</comment>
+		<url>inst_pack_app_websoft_edo.xml</url>
+		<package_date>2022-07-04T14:03:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_adaptation</id>
+		<name>Приложение Управление адаптацией</name>
+		<comment>Приложение Управление адаптацией</comment>
+		<url>inst_pack_app_websoft_adaptation.xml</url>
+		<package_date>2022-08-16T12:03:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_app_websoft_typical_dev_programs</id>
+		<name>Приложение Создание типовых программ</name>
+		<comment>Приложение Создание типовых программ</comment>
+		<url>inst_pack_app_websoft_typical_dev_programs.xml</url>
+		<package_date>2022-09-07T16:33:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_admin_config_hcm</id>
+		<name>Конфигурация WebSoft HCM</name>
+		<comment>Конфигурация WebSoft HCM</comment>
+		<url>inst_pack_admin_config_hcm.xml</url>
+		<package_date>2022-09-02T05:30:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_admin_config_lms</id>
+		<name>Конфигурация WebSoft LMS</name>
+		<comment>Конфигурация WebSoft LMS</comment>
+		<url>inst_pack_admin_config_lms.xml</url>
+		<package_date>2022-06-01T19:09:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_admin_config_access_role</id>
+		<name>Роли доступа с конфигурациями</name>
+		<comment>Роли доступа с конфигурациями</comment>
+		<url>inst_pack_admin_config_access_role.xml</url>
+		<package_date>2022-06-01T16:24:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_pack_demo_app_store</id>
+		<name>Демо-данные приложений</name>
+		<comment>Демо-приложения и демо-данные для них</comment>
+		<url>Apps/inst_pack_app_store_demo.xml</url>
+		<package_date>2022-05-24</package_date>
+		<type>objects</type>
+		<is_std>0</is_std>
+		<is_demo>1</is_demo>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoft_pdp_ext</id>
+		<name>Приложение ИПР</name>
+		<comment>Приложение ИПР</comment>
+		<url>Apps/websoft_pdp_ext.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftmbo</id>
+		<name>Приложение MBO</name>
+		<comment>Приложение MBO</comment>
+		<url>Apps/websoftmbo.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftkbc</id>
+		<name>Приложение КВС</name>
+		<comment>Приложение КВС</comment>
+		<url>Apps/websoftkbc.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftcontinuouslearning</id>
+		<name>Приложение Марафон обучения</name>
+		<comment>Приложение Марафон обучения</comment>
+		<url>Apps/websoftcontinuouslearning.zip</url>
+		<package_date>2022-08-29</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftcompetenceassessment</id>
+		<name>Приложение Оценка компетенций</name>
+		<comment>Приложение Оценка компетенций</comment>
+		<url>Apps/websoftcompetenceassessment.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftadaptation</id>
+		<name>Приложение Управление адаптацией</name>
+		<comment>Приложение Управление адаптацией</comment>
+		<url>Apps/websoftadaptation.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoft360</id>
+		<name>Приложение Обратная связь 360</name>
+		<comment>Приложение Обратная связь 360</comment>
+		<url>Apps/websoft360.zip</url>
+		<package_date>2022-09-30</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_app_websoftokr</id>
+		<name>Приложение OKR</name>
+		<comment>Приложение OKR</comment>
+		<url>Apps/websoftokr.zip</url>
+		<package_date>2022-05-24</package_date>
+		<type>list</type>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_recruitment_system</id>
+		<name>Системы подбора персонала</name>
+		<comment>Системы подбора персонала</comment>
+		<url>inst_pack_recruitment_system.xml</url>
+		<package_date>2022-07-21</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+	<inst_pack>
+		<id>inst_object_claim</id>
+		<name>Разрешения для объектов</name>
+		<comment>Разрешения для объектов</comment>
+		<url>inst_pack_object_claim.xml</url>
+		<package_date>2022-08-19T19:11:00+00:00</package_date>
+		<is_std>1</is_std>
+	</inst_pack>
+</inst_packs>

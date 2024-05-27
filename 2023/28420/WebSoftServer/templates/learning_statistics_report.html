@@ -1,0 +1,127 @@
+﻿<html>
+	<head>
+		<title>Статистика тестирования</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	</head>
+	<body>
+		<table border="1" cellpadding="2" cellspacing="0">
+			<tr valign="middle">
+				<td width="200" bgcolor="#FFCC99"><%=ms_tools.get_const('c_test')%></td>
+
+				<% for(CategoryItem in Ps.report_categorys){ %>
+
+					<% if(CategoryItem.id == 'duration_days'){ %>
+						<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('bpe5nh62rx')%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'duration_hours'){ %>
+						<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('im8225wmup')%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'finished'){ %>
+						<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('5k81hevno6')%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'finished_in_time'){ %>
+						<td width="100" bgcolor="#FFCC99">Количество завершенных в срок</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'course_requests'){ %>
+						<td width="100" bgcolor="#FFCC99">Количество заявок на курс</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'assigned'){ %>
+						<td width="100" bgcolor="#FFCC99"><%=ms_tools.get_const('bjq31bl8ew')%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'passed'){ %>
+						<td width="100" bgcolor="#FFCC99">Количество успешно пройденных</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'score'){ %>
+						<td width="100" bgcolor="#FFCC99">Набранный балл</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'popularity'){ %>
+						<td width="100" bgcolor="#FFCC99">Популярность</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'complexity'){ %>
+						<td width="100" bgcolor="#FFCC99">Сложность</td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'training_success'){ %>
+						<td width="100" bgcolor="#FFCC99">Успешность изучения</td>
+					<% } %>
+
+				<% } %>
+			</tr>
+			<%
+		
+			arrResults = Ps.data_learning_statistics
+			
+			for (var i = 0; i < ArrayCount(arrResults); i++)
+			{
+				_data_learning_statistic = arrResults[i]
+			%>
+			
+			<%if (i % 2 === 0) { %>
+				<tr valign="middle">
+			<% } else { %>
+				<tr valign="middle" bgcolor="#CCCCCC">
+			<% } %>
+				<td width="150"><%=_data_learning_statistic.test_name%></td>
+
+				<% for(CategoryItem in Ps.report_categorys){ %>
+					<% if(CategoryItem.id == 'duration_days'){ %>
+						<td width="150"><%=_data_learning_statistic.duration_days%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'duration_hours'){ %>
+						<td width="150"><%=_data_learning_statistic.duration_hours%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'finished'){ %>
+						<td width="150"><%=_data_learning_statistic.finished%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'finished_in_time'){ %>
+						<td width="150"><%=_data_learning_statistic.finished_in_time%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'course_requests'){ %>
+						<td width="150"><%=_data_learning_statistic.course_requests%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'assigned'){ %>
+						<td width="150"><%=_data_learning_statistic.assigned%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'passed'){ %>
+						<td width="150"><%=_data_learning_statistic.passed%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'score'){ %>
+						<td width="150"><%=_data_learning_statistic.score%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'popularity'){ %>
+						<td width="150"><%=_data_learning_statistic.popularity%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'complexity'){ %>
+						<td width="150"><%=_data_learning_statistic.complexity%></td>
+					<% } %>
+
+					<% if(CategoryItem.id == 'training_success'){ %>
+						<td width="150"><%=_data_learning_statistic.training_success%></td>
+					<% } %>
+				<% } %>
+			<%
+			}
+			%>
+			</tr>
+		</table>
+
+	</body>
+</html>

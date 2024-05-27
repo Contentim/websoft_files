@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>6c8qn83zmi</id>
+		<create_date>2023-08-15T16:25:15+00:00</create_date>
+		<server_version>2023.2.714 (2023-08-10)</server_version>
+	</basic>
+	<statistic_recs>
+		<statistic_rec>
+			<id>0x649446320F56726A</id>
+			<code>ContextAccount</code>
+			<name VALUE="##'Геймификация. Контекст счета'##"/>
+			<url>x-local://wtv/statistics/wtv_statistic_context_account.bs</url>
+			<is_enabled>1</is_enabled>
+			<auto_calc>0</auto_calc>
+			<last_calculate_date>2023-08-15T16:02:56+00:00</last_calculate_date>
+			<calc_period>0</calc_period>
+			<context_calc>1</context_calc>
+			<ready_to_analytics>0</ready_to_analytics>
+			<period_calc_type>none</period_calc_type>
+			<graph_color>#649446</graph_color>
+			<informer>
+				<auto_use>0</auto_use>
+			</informer>
+			<launch_settings>
+				<trigger_type>never</trigger_type>
+				<period>1</period>
+				<start_time>00:00</start_time>
+				<finish_time>24:00</finish_time>
+				<all_day>1</all_day>
+				<start_day>1</start_day>
+				<start_week_day>1</start_week_day>
+			</launch_settings>
+			<is_std>1</is_std>
+		</statistic_rec>
+	</statistic_recs>
+</data>

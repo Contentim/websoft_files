@@ -1,0 +1,115 @@
+﻿function getParam(_oFormFields, _sName)
+{
+    result = "";
+    try
+    {
+        _tmpFld = ArrayOptFind(_oFormFields, "This.name=='" + _sName + "'");
+        result = _tmpFld != undefined ? String(_tmpFld.value) : PARAMETERS.GetOptProperty(_sName);
+    }
+    catch (_err)
+    {
+        result = "";
+        return result;
+    }
+    return result;
+}
+
+function getFormMessage(_sMessage)
+{
+    var oForm;
+    oForm = {
+        command: "alert",
+        msg: _sMessage,
+        confirm_result: {
+            command: "reload_page"
+        }
+    }
+
+    return oForm;
+}
+
+
+arrFormFields = [];
+try
+{
+	arrFormFields = ParseJson( form_fields );
+}
+catch (e){}
+
+
+arrObjectIDs = [];
+try
+{
+    arrObjectIDs = tools_web.parse_multiple_parameter(SELECTED_OBJECT_IDS);
+}
+catch (e){}
+
+var iCurObject;
+if(ArrayOptFirstElem(arrObjectIDs) == undefined)
+{
+	try
+	{
+		iCurObject = Int(OBJECT_ID);
+		arrObjectIDs.push(iCurObject)
+	}
+	catch (e){}
+}
+
+if (ArrayOptFirstElem(arrObjectIDs) == undefined)
+{
+	try
+	{
+		iCurObject = Int(curObjectID);
+		arrObjectIDs.push(iCurObject)
+	}
+	catch (e){}
+}
+
+var bConfirm = tools_web.is_true( getParam( arrFormFields, "confirm" ) );
+
+if ( !bConfirm )
+{
+    if ( ArrayCount( arrObjectIDs ) > 1 )
+        Msg = "Вы хотите удалить заявки?";
+    else
+        Msg = "Вы хотите удалить заявку?";
+
+    RESULT = {
+        command: "confirm",
+        msg: Msg,
+        confirm_result: {
+            command: "eval", 
+            form_fields: [{'name': 'confirm', 'value': 'true', type: "hidden"}]
+        }
+    };    
+}
+else
+{
+    iCountAll = ArrayCount( arrObjectIDs );
+
+    oRes = tools.call_code_library_method("libMain", "RequestDelete", [ arrObjectIDs ]);
+
+    if ( oRes.error != 0 )
+    {
+        RESULT = getFormMessage(oRes.errorText);
+    }
+    else
+    {
+        if ( oRes.count == iCountAll )
+        {
+            Msg = "Заявки удалены";
+        }
+        else
+        {
+            Msg = "Удалено " + oRes.count + " заявок из " + iCountAll + ".";
+        }
+        RESULT = {
+            command: "close_form",
+            msg: Msg,
+            confirm_result: {
+                command: "reload_page"
+            }
+        }
+    }
+}
+

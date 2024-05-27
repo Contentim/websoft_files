@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>9pim37rsdc</id>
+		<create_date>2022-11-09T15:50:04+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DBF</id>
+			<code>app_competence_profile_std</code>
+			<name VALUE="##'Профиль компетенции'##"/>
+			<form_name>app_competence_profile_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_competence_profile_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DBC</id>
+			<code>app_competence_std</code>
+			<name VALUE="##'Компетенции'##"/>
+			<form_name>app_competence_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_competence_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DBD</id>
+			<code>app_indicator_std</code>
+			<name VALUE="##'Индикатор'##"/>
+			<form_name>app_indicator_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_indicator_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DBE</id>
+			<code>app_competence_block_std</code>
+			<name VALUE="##'Блок компетенций'##"/>
+			<form_name>app_competence_block_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_competence_block_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DC0</id>
+			<code>app_competence_profile_family_std</code>
+			<name VALUE="##'Семейство профилей'##"/>
+			<form_name>app_competence_profile_family_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_competence_profile_family_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

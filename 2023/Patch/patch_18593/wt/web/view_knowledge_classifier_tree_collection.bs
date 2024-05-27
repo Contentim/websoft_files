@@ -1,0 +1,65 @@
+result_array = new Array();
+upd = '';
+knowledge_classifier_id = OptInt( knowledge_classifier_id );
+try
+{
+	function get_node_kps( _node_id, _kc_id, cnt )
+	{
+		if( cnt > 100 )
+			return false;
+		
+		for ( _kp in ArrayDirect( XQuery( "for $i in knowledge_parts where $i/knowledge_classifier_id = " + _kc_id + " " + ( _node_id == null ? ' and $i/parent_object_id = null() ' : ' and $i/parent_object_id = ' + _node_id ) + " order by $i/code return $i" ) ) )
+		{
+			_objkp = new Object();
+			_objkp.id = _kp.id.Value;
+			_objkp.parent_id = _node_id != null ? _node_id : _kc_id;
+			_objkp.name = _kp.name.Value;
+			_objkp.isExpanded = false;
+			_objkp.on_click = "SET=KnowledgeClassifierID," + _kp.knowledge_classifier_id.Value + ";SET=KnowledgePartID," + _kp.id.Value + ";" + upd ;
+			if( OptInt( cur_object_id ) != undefined && OptInt( cur_object_id ) == _kp.id.Value )
+			{
+				exp = _kp.parent_object_id.OptForeignElem;
+				while( exp != undefined )
+				{
+					tmp = ArrayOptFind( result_array, "This.id == " + exp.id );
+					if( tmp != undefined )
+					{
+						tmp.isExpanded = true;
+					}
+					exp = exp.parent_object_id.OptForeignElem;
+				}
+				tmp = ArrayOptFind( result_array, "This.id == " + _kp.knowledge_classifier_id );
+				if( tmp != undefined )
+				{
+					tmp.isExpanded = true;
+				}
+			}	
+			result_array[ArrayCount(result_array)] = _objkp;
+			get_node_kps(  _kp.id.Value, _kc_id, cnt++ );
+		}
+	}
+
+	searchKnowlPartsByObject = Array();
+	searchObjects = Array();
+	//alert("for $i in knowledge_classifiers " + ( knowledge_classifier_id != undefined ? " where $i/id = " + knowledge_classifier_id : "" ) + " return $i")
+	for ( _kc in  ArraySort( XQuery( "for $i in knowledge_classifiers " + ( knowledge_classifier_id != undefined ? " where $i/id = " + knowledge_classifier_id : "" ) + " return $i" ), "name", "+" ) )
+	{
+		if ( !tools_web.check_access( OpenDoc( UrlFromDocID ( _kc.id ), 'form=x-local://wtv/wtv_form_doc_access.xmd;ignore-top-elem-name=1' ).TopElem , curUserID, curUser, Request.Session ) )
+			continue;
+		_obj = new Object();
+		_obj.id = _kc.id.Value;
+		_obj.parent_id = "";
+		_obj.name = _kc.name.Value;
+		_obj.isExpanded = false;
+		_obj.on_click = "SET=KnowledgeClassifierID," + _kc.id.Value + ";SET=KnowledgePartID,;" + upd;
+		result_array[ArrayCount(result_array)] = _obj;
+			
+		get_node_kps( null, _kc.id.Value, 0 );
+	}
+}
+catch(err)
+{
+	alert("HOH " + err)
+}
+	
+RESULT = result_array;

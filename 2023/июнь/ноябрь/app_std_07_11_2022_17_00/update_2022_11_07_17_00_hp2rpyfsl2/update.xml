@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>hp2rpyfsl2</id>
+		<create_date>2022-11-07T17:00:42+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<custom_admin_templates>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DA8</id>
+			<code>app_working_condition_std</code>
+			<name VALUE="##'Карточка условий работы(труда)'##"/>
+			<form_name>app_working_condition_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_working_condition_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DAB</id>
+			<code>app_working_condition_type_std</code>
+			<name VALUE="##'Карточка типа условий работы(труда)'##"/>
+			<form_name>app_working_condition_type_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_working_condition_type_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DAC</id>
+			<code>app_salary_payment_type_std</code>
+			<name VALUE="##'Тип графика выплаты зарплаты'##"/>
+			<form_name>app_salary_payment_type_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_salary_payment_type_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DAD</id>
+			<code>app_work_schedule_type_std</code>
+			<name VALUE="##'Тип графика работы'##"/>
+			<form_name>app_work_schedule_type_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_work_schedule_type_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+		<custom_admin_template>
+			<id>0x630F21C54DD83DAE</id>
+			<code>app_work_form_std</code>
+			<name VALUE="##'Формы работы'##"/>
+			<form_name>app_work_form_std</form_name>
+			<exec_code>
+				<code_url>x-local://wtv/ui_forms/app_work_form_std.xms</code_url>
+			</exec_code>
+			<is_std>1</is_std>
+		</custom_admin_template>
+	</custom_admin_templates>
+</data>

@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<USE FORM="//wtv/wtv_general.xmd"/>
+
+
+<view_course_integral_efficiency_report>
+
+	<report_name TYPE="string" DEFAULT="course_integral_efficiency_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+
+	<param_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<param_additional_panel_open TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+
+	<courses>
+		<course PRIMARY-KEY="id" MULTIPLE="1">
+			<id TYPE="integer" FOREIGN-ARRAY="courses"/>
+		</course>
+	</courses>
+	<response_type_id TYPE="integer" FOREIGN-ARRAY="response_types"/>
+	<response_type_fields>
+		<response_type_field MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="string"/>
+			<name TYPE="string"/>
+			<type TYPE="string" FOREIGN-ARRAY="common.template_field_types" DEFAULT="string"/>
+		</response_type_field>
+	</response_type_fields>
+	
+	<selected_fields>
+		<selected_field MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="string"/>
+			<name TYPE="string"/>
+			<type TYPE="string" FOREIGN-ARRAY="common.template_field_types" DEFAULT="string"/>
+		</selected_field>
+	</selected_fields>
+	
+	<formula_column_value TYPE="string"/>
+	<formula_column_title TYPE="string"/>
+	
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<start_date TYPE="date"/>
+	<finish_date TYPE="date"/>
+	<disp_learning_type TYPE="string" NOT-NULL="1" DEFAULT="learnings"/>
+	<disp_learning_prog TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<education_program_id TYPE="integer" FOREIGN-ARRAY="education_program"/>
+	<is_web_client TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<show_alert TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<graph_type TYPE="string" NOT-NULL="1" DEFAULT="Column"/>
+	
+	<INHERIT TYPE="view_columns_base"/>
+	
+	<INHERIT TYPE="table_data_base_extended"/>
+	
+	<add_text_to_edit PROPERTY="1" PARAM="oScreenParam" PARAM="sTextParam" EXPR="
+			TopElem = Child(0).Parent;
+			oItemEdit = oScreenParam.FindItem( 'FormulaColumnValueBodyField' );
+
+			sText = oItemEdit.Text;
+			iSelStartPos = oItemEdit.SelStartPos;
+			sText = oItemEdit.Text;
+			iSelStartPos = oItemEdit.SelStartPos;
+			bCodeFlag = false;
+			for ( ; iSelStartPos &gt; 0; iSelStartPos-- )
+			{
+				if ( sText.charAt( iSelStartPos ) == '\'' )
+				{
+					if ( sText.charAt( iSelStartPos - 1 ) == '{' )
+					{
+						bCodeFlag = true;
+						break;
+					}
+					else if ( sText.charAt( iSelStartPos + 1 ) == '}' )
+					{
+						break;
+					}
+				}
+			}
+			if ( bCodeFlag )
+			{
+				iIndex = 0;
+				iLastIndex = 0;
+				sRes = '';
+				while ( iIndex != 0-1 )
+				{
+					iIndex = sTextParam.indexOf( '\'}\r\n{\'', iIndex );
+					iEndIndex = iIndex;
+					if ( iIndex != 0-1 )
+					{
+						iIndex = sTextParam.indexOf( '\'}\r\n{\'', iIndex );
+						if ( iIndex != 0-1 )
+						{
+							sRes += StrRangePos( sTextParam, iLastIndex, iEndIndex );
+							iIndex += 9;
+							iLastIndex = iIndex;
+						}
+					}
+				}
+				if ( sRes != '' )
+					sTextParam = sRes + StrRightRangePos( sTextParam, iLastIndex );
+			}
+				
+			oItemEdit.InsertText( sTextParam );
+			oItemEdit.SetSourceValue( sTextParam )
+			TopElem.Doc.SetChanged( true );
+	"/>
+
+	
+</view_course_integral_efficiency_report>
+
+
+<OnInit PROPERTY="1" EXPR="
+
+	curUser = tools.get_cur_user();
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		if ( oProperty.name == 'courses' || oProperty.name == 'selected_fields' )
+		{
+			sChildName = StrLeftRange( oProperty.name, StrCharCount( oProperty.name ) - 1 );
+	
+			if(IsArray(oProperty.value.GetOptProperty( sChildName )))
+			{
+				for ( elem in oProperty.value.GetOptProperty( sChildName ) )
+				{
+					_child = TopElem.Child( oProperty.name ).Add();
+					for ( i = 0; i < _child.ChildNum; i++ )
+					{
+						_child[ i ].Value = elem.GetOptProperty( _child[ i ].Name );
+					}
+				}
+			}
+
+			
+		}
+		else
+		{
+			try
+			{
+				TopElem.Child( oProperty.name ).Value = oProperty.value;
+			}
+			catch( e )
+			{
+				//alert( 'err ' + e );
+			}
+		}
+	}
+
+	try
+	{
+		if ( local_settings.ChildExists('view_course_integral_efficiency_report'))
+		{
+			TopElem.AssignElem(local_settings.view_course_integral_efficiency_report)
+		}
+	}
+	catch ( err )
+	{
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>

@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<basic>
+		<id>plf5uqm31m</id>
+		<create_date>2022-11-02T14:13:08+00:00</create_date>
+		<server_version>2022.2.3.448 (2022-07-08)</server_version>
+	</basic>
+	<remote_actions>
+		<remote_action>
+			<id>0x630F21C54DD83D9E</id>
+			<code>DeleteResource</code>
+			<name VALUE="##'Удалить ресурс'##"/>
+			<type>eval</type>
+			<catalog_name>resource</catalog_name>
+			<link_name>resource</link_name>
+			<show_in_list>1</show_in_list>
+			<show_in_form>1</show_in_form>
+			<exec_code>
+				<code_url>x-local://wtv/remote_actions/DeleteResource.bs</code_url>
+			</exec_code>
+			<url>x-local://wtv/remote_actions/DeleteResource.bs</url>
+			<default_disp_evaluate>0</default_disp_evaluate>
+			<access>
+				<access_level>0</access_level>
+			</access>
+			<is_std>1</is_std>
+		</remote_action>
+	</remote_actions>
+</data>

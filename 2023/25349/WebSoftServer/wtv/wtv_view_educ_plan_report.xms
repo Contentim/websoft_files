@@ -1,0 +1,1597 @@
+ml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_educ_plan_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<!--
+		<IF EXPR="Ps.group_type=='education_plan'">
+			<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT="1" VERT-SCROLL="1">
+				<COLUMNS>
+					<COL WIDTH="30zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="10zr"/>
+				</COLUMNS>
+				<ROW HEADER="1">
+					<COL WIDTH="40zr" TITLE-EXPR="ms_tools.get_const('c_edu_method')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_type')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vcpb_plan')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vkb_fact')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('twazd2xpgg')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('erpg3hrusa')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('v9tvo47ndz')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('myf358awjr')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_status')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_score')"/>
+					<COL WIDTH="7zr" TITLE="%"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_cost')"/>
+				</ROW>
+
+				<LOOP EXPR="Ps.educ_plans" VAR="ListElem">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( ListElem.id ) )">
+						<LABEL TITLE-EXPR="ListElem.person_fullname" FLAT="1"/>
+						<LABEL TITLE-EXPR="ListElem.person_code" FLAT="1"/>
+						<LABEL TITLE-EXPR="''" FLAT="1"/>
+						<LABEL TITLE-EXPR="''" FLAT="1"/>
+						<LABEL TITLE-EXPR="ListElem.person_position_name" FLAT="1"/>
+						<LABEL TITLE-EXPR="ListElem.person_subdivision_name" FLAT="1"/>
+						<LABEL TITLE-EXPR="ListElem.name" FLAT="1"/>
+						<LABEL TITLE-EXPR="''" FLAT="1"/>
+						<LABEL TITLE-EXPR="''" FLAT="1"/>
+						<LABEL TITLE-EXPR="''" FLAT="1"/>
+						<LABEL TITLE-EXPR="
+							TopElem.calc_with_unplanned_elem ? ( ArrayCount( ListElem.programs ) !=0 ?  StrReal(100*(Real(ListElem.fact_count))/(Real(ArrayCount( ListElem.programs ))),0) : '0' ) : ( ListElem.plan_count!=0 ? StrReal(100*(Real(ListElem.fact_count))/(Real(ListElem.plan_count)),0) : '0' )
+						" FLAT="1"/>
+						<ROW>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+							<LABEL TITLE-EXPR="lorem" FLAT="1"/>
+						</ROW>
+
+						<IF EXPR="
+							if (System.IsWebClient)
+								return true
+							else
+								return (ListElem.flag_expanded || Ps.expanded_all)">
+							<LOOP EXPR=" ListElem.programs " VAR="_program">
+								<IF EXPR=" ( ( Ps.plan_start_date.HasValue &amp;&amp; _program.plan_start_date.HasValue ) ? Ps.plan_start_date<_program.plan_start_date : true ) &amp;&amp; ( ( Ps.plan_finish_date.HasValue &amp;&amp; _program.plan_finish_date.HasValue ) ? Ps.plan_finish_date>_program.plan_finish_date : true ) &amp;&amp; ( ( Ps.fact_start_date.HasValue &amp;&amp; _program.fact_start_date.HasValue ) ? Ps.fact_start_date<_program.fact_start_date : true ) &amp;&amp; ( ( Ps.fact_finish_date.HasValue &amp;&amp; _program.fact_finish_date.HasValue ) ? Ps.fact_finish_date>_program.fact_finish_date : true )">
+									<IF EXPR="Ps.disp_unplanned_elem || _program.plan">
+										<ROW IMAGE-URL-EXPR="
+											switch ( _program.type )
+											{
+												case 'folder':	return 'ico/folder.ico';
+												case 'assessment':	return 'ico/assessment.ico';
+												case 'course':	return 'ico/course.ico';
+												case 'education_method':	return 'ico/education_method.ico';
+												default:		return 'ico/desc.ico';
+											}
+										" OPEN-ACTION="
+													if (_program.education_method_id.HasValue)
+													{
+														ObtainDocScreen( UrlFromDocID( _program.education_method_id ) )
+													}
+													else if (_program.object_id.HasValue)
+													{
+														ObtainDocScreen( UrlFromDocID( _program.object_id ) )
+													}
+													" DELETE-ACTION=" " HIER-LEVEL-EXPR="1">
+											<LABEL TITLE-EXPR="_program.name" FLAT="1"/>
+											<LABEL TITLE-EXPR="
+												switch ( _program.type )
+												{
+													case 'folder':	return StrNonTitleCase( ms_tools.get_const('c_phase') );
+													case 'assessment':	return StrNonTitleCase( ms_tools.get_const('c_test') );
+													case 'course':	return StrNonTitleCase( ms_tools.get_const('21rwflhgsh') );
+													case 'education_method':	return StrNonTitleCase( ms_tools.get_const('nsyhg8lnvg') );
+													default:		return StrNonTitleCase( ms_tools.get_const('neopredeleno'));
+												}
+												" FLAT="1"/>
+											<LABEL TITLE-EXPR="_program.plan ? '+' : '-'" FLAT="1"/>
+											<LABEL TITLE-EXPR="_program.fact ? '+' : '-'" FLAT="1"/>
+
+											<LABEL TITLE-EXPR="_program.plan_start_date"/>
+											<LABEL TITLE-EXPR="_program.plan_finish_date"/>
+											<LABEL TITLE-EXPR="_program.fact_start_date"/>
+											<LABEL TITLE-EXPR="_program.fact_finish_date"/>
+
+											<LABEL TITLE-EXPR="common.learning_states.GetChildByKey( _program.state_id ).name"/>
+											<LABEL TITLE-EXPR="_program.score"/>
+											<LABEL TITLE-EXPR="''"/>
+											<LABEL TITLE-EXPR="if (_program.cost!=null)
+											{
+												currency=''
+												try
+												{
+													currency=' ('+_program.currency.ForeignElem.name+')'
+												}
+												catch(ex)
+												{
+												}
+												return _program.cost+ currency;
+											}
+											else return''"/>
+										</ROW>
+									</IF>
+								</IF>
+							</LOOP>
+						</IF>
+
+
+					</ROW>
+				</LOOP>
+			</GRID>
+		</IF>
+
+		-->
+
+		<IF EXPR="Ps.group_type=='education_plan'">
+			<LIST SUNKEN="1" NAME="ViewGrid" HIER="1">
+				<COLUMNS>
+					<COL WIDTH="40zr" TITLE-EXPR="ms_tools.get_const('c_edu_method')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_type')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vcpb_plan')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vkb_fact')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('twazd2xpgg')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('erpg3hrusa')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('v9tvo47ndz')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('myf358awjr')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_status')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_score')"/>
+					<COL WIDTH="7zr" TITLE="%"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_cost')"/>
+				</COLUMNS>
+				<LOOP EXPR=" Ps.educ_plans" VAR="_educ_plan">
+					<ROW IMAGE-URL-EXPR="'ico/education_plan.ico'" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _educ_plan.id ) )" DELETE-ACTION=" " BK-COLOR-EXPR="AppUi.themeColors.list_accepted_bg" HIER-LEVEL-EXPR="0" HAS-HIER-CHILDREN-EXPR="!System.IsWebClient" EXPANDED-EXPR="System.IsWebClient?true:_educ_plan.flag_expanded" SET-EXPANDED-ACTION="_educ_plan.flag_expanded = (!_educ_plan.flag_expanded);">
+						<COL TITLE-EXPR="_educ_plan.person_fullname"/>
+						<COL TITLE-EXPR="_educ_plan.person_code"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="_educ_plan.person_position_name"/>
+						<COL TITLE-EXPR="_educ_plan.person_subdivision_name"/>
+						<COL TITLE-EXPR="_educ_plan.name"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="
+							TopElem.calc_with_unplanned_elem ? ( ArrayCount( _educ_plan.programs ) !=0 ?  StrReal(100*(Real(_educ_plan.fact_count))/(Real(ArrayCount( _educ_plan.programs ))),0) : '0' ) : ( _educ_plan.plan_count!=0 ? StrReal(100*(Real(_educ_plan.fact_count))/(Real(_educ_plan.plan_count)),0) : '0' )
+						"/>
+						<COL TITLE-EXPR="''"/>
+					</ROW>
+
+						<LOOP EXPR=" _educ_plan.programs" VAR="_program">
+							<ROW IMAGE-URL-EXPR="
+									switch ( _program.type )
+									{
+										case 'folder':	return 'ico/folder.ico';
+										case 'assessment':	return 'ico/assessment.ico';
+										case 'course':	return 'ico/course.ico';
+										case 'education_method':	return 'ico/education_method.ico';
+										default:		return 'ico/desc.ico';
+									}
+								" OPEN-ACTION="
+									if (_program.education_method_id.HasValue)
+									{
+										ObtainDocScreen( UrlFromDocID( _program.education_method_id ) )
+									}
+									else if (_program.object_id.HasValue)
+									{
+										ObtainDocScreen( UrlFromDocID( _program.object_id ) )
+									}
+									" DELETE-ACTION=" " HIER-LEVEL-EXPR="1">
+								<COL TITLE-EXPR="_program.name" FLAT="1"/>
+								<COL TITLE-EXPR="
+									switch ( _program.type )
+									{
+										case 'folder':	return StrNonTitleCase( ms_tools.get_const('c_phase') );
+										case 'assessment':	return StrNonTitleCase( ms_tools.get_const('c_test') );
+										case 'course':	return StrNonTitleCase( ms_tools.get_const('21rwflhgsh') );
+										case 'education_method':	return StrNonTitleCase( ms_tools.get_const('nsyhg8lnvg') );
+										default:		return StrNonTitleCase( ms_tools.get_const('neopredeleno'));
+									}
+									" FLAT="1"/>
+								<COL TITLE-EXPR="_program.plan ? '+' : '-'" FLAT="1"/>
+								<COL TITLE-EXPR="_program.fact ? '+' : '-'" FLAT="1"/>
+
+								<COL TITLE-EXPR="_program.plan_start_date"/>
+								<COL TITLE-EXPR="_program.plan_finish_date"/>
+								<COL TITLE-EXPR="_program.fact_start_date"/>
+								<COL TITLE-EXPR="_program.fact_finish_date"/>
+
+								<COL TITLE-EXPR="common.learning_states.GetChildByKey( _program.state_id ).name"/>
+								<COL TITLE-EXPR="_program.score"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="if (_program.cost!=null)
+									{
+										currency=''
+										try
+										{
+											currency=' ('+_program.currency.ForeignElem.name+')'
+										}
+										catch(ex)
+										{
+										}
+										return _program.cost+ currency;
+									}
+									else return''"/>
+							</ROW>
+						</LOOP>
+
+					<!--
+					<IF EXPR="
+						if (System.IsWebClient)
+							return true
+						else
+							return (_educ_plan.flag_expanded || Ps.expanded_all)">
+						<LOOP EXPR=" _educ_plan.programs " VAR="_program">
+									<ROW IMAGE-URL-EXPR="
+										switch ( _program.type )
+										{
+											case 'folder':	return 'ico/folder.ico';
+											case 'assessment':	return 'ico/assessment.ico';
+											case 'course':	return 'ico/course.ico';
+											case 'education_method':	return 'ico/education_method.ico';
+											default:		return 'ico/desc.ico';
+										}
+									" OPEN-ACTION="
+												if (_program.education_method_id.HasValue)
+												{
+													ObtainDocScreen( UrlFromDocID( _program.education_method_id ) )
+												}
+												else if (_program.object_id.HasValue)
+												{
+													ObtainDocScreen( UrlFromDocID( _program.object_id ) )
+												}
+												" DELETE-ACTION=" " HIER-LEVEL-EXPR="1">
+										<COL TITLE-EXPR="_program.name" FLAT="1"/>
+										<COL TITLE-EXPR="
+											switch ( _program.type )
+											{
+												case 'folder':	return StrNonTitleCase( ms_tools.get_const('c_phase') );
+												case 'assessment':	return StrNonTitleCase( ms_tools.get_const('c_test') );
+												case 'course':	return StrNonTitleCase( ms_tools.get_const('21rwflhgsh') );
+												case 'education_method':	return StrNonTitleCase( ms_tools.get_const('nsyhg8lnvg') );
+												default:		return StrNonTitleCase( ms_tools.get_const('neopredeleno'));
+											}
+											" FLAT="1"/>
+										<COL TITLE-EXPR="_program.plan ? '+' : '-'" FLAT="1"/>
+										<COL TITLE-EXPR="_program.fact ? '+' : '-'" FLAT="1"/>
+
+										<COL TITLE-EXPR="_program.plan_start_date"/>
+										<COL TITLE-EXPR="_program.plan_finish_date"/>
+										<COL TITLE-EXPR="_program.fact_start_date"/>
+										<COL TITLE-EXPR="_program.fact_finish_date"/>
+
+										<COL TITLE-EXPR="common.learning_states.GetChildByKey( _program.state_id ).name"/>
+										<COL TITLE-EXPR="_program.score"/>
+										<COL TITLE-EXPR="''"/>
+										<COL TITLE-EXPR="if (_program.cost!=null)
+										{
+											currency=''
+											try
+											{
+												currency=' ('+_program.currency.ForeignElem.name+')'
+											}
+											catch(ex)
+											{
+											}
+											return _program.cost+ currency;
+										}
+										else return''"/>
+									</ROW>
+							<IF EXPR="Ps.disp_unplanned_elem || _program.plan">
+								<IF EXPR=" ( ( Ps.plan_start_date.HasValue &amp;&amp; _program.plan_start_date.HasValue ) ? Ps.plan_start_date<_program.plan_start_date : true ) &amp;&amp; ( ( Ps.plan_finish_date.HasValue &amp;&amp; _program.plan_finish_date.HasValue ) ? Ps.plan_finish_date>_program.plan_finish_date : true ) &amp;&amp; ( ( Ps.fact_start_date.HasValue &amp;&amp; _program.fact_start_date.HasValue ) ? Ps.fact_start_date<_program.fact_start_date : true ) &amp;&amp; ( ( Ps.fact_finish_date.HasValue &amp;&amp; _program.fact_finish_date.HasValue ) ? Ps.fact_finish_date>_program.fact_finish_date : true )">
+								</IF>
+							</IF>
+						</LOOP>
+					</IF>
+					-->
+				</LOOP>
+
+				<MENU>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('c_open') + '&#09;Enter'" CMD="OpenSel"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('otkrytkartochku_3')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if ((iSelRowElem.Env._program.education_method_id.HasValue||iSelRowElem.Env._program.object_id.HasValue)&&iSelRowElem.Env._program.type == 'education_method'&&iSelRowElem.Env._program.result_object_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="OpenEvent"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vmpb_create_event')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								iID=OptInt((iSelRowElem.Env._program.education_method_id.HasValue?iSelRowElem.Env._program.education_method_id:iSelRowElem.Env._program.object_id),null)
+								if (iID!=null&&iSelRowElem.Env._program.type == 'education_method'&&iSelRowElem.Env._program.plan==false)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="CreateEvent"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('lz5ins4lr7')" ENABLE-EXPR="arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								iID=OptInt((iSelRowElem.Env._program.education_method_id.HasValue?iSelRowElem.Env._program.education_method_id:iSelRowElem.Env._program.object_id),null)
+								if (iID!=null&&iSelRowElem.Env._program.type == 'education_method'&&iSelRowElem.Env._program.plan==false)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="AddToEvent"/>
+						<MENU-ENTRY SEPARATOR="1"/>
+						<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vscb_submit')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if (iSelRowElem.Env._program.object_id.HasValue&&(iSelRowElem.Env._program.type == 'course')&&!iSelRowElem.Env._program.active_learning_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="ActivateCourse"/>
+						<MENU-ENTRY SEPARATOR="1"/>
+						<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vmpb_create_active_ass')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if (iSelRowElem.Env._program.object_id.HasValue&&(iSelRowElem.Env._program.type == 'assessment')&&!iSelRowElem.Env._program.active_learning_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						//alert(iSelRowElem.Env._program.type+' '+counter+'=='+SelRowCount)
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						" CMD="ActivateTest"/>
+					</MENU>
+			</LIST>
+		</IF>
+		<ELSE>
+			<LIST SUNKEN="1" NAME="ViewGrid" HIER="1">
+				<COLUMNS>
+					<COL WIDTH="40zr" TITLE-EXPR="ms_tools.get_const('c_edu_method')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vtmb_coll_num')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_type')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vcpb_plan')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('vkb_fact')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('twazd2xpgg')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('erpg3hrusa')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('v9tvo47ndz')"/>
+					<COL WIDTH="20zr" TITLE-EXPR="ms_tools.get_const('myf358awjr')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_status')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_score')"/>
+					<COL WIDTH="10zr" TITLE-EXPR="ms_tools.get_const('c_cost')"/>
+				</COLUMNS>
+				<LOOP EXPR=" Ps.education_methods" VAR="_education_method">
+					<ROW IMAGE-URL-EXPR="
+					switch ( _education_method.type )
+					{
+						case 'folder':	return 'ico/folder.ico';
+						case 'assessment':	return 'ico/assessment.ico';
+						case 'course':	return 'ico/course.ico';
+						case 'education_method':	return 'ico/education_method.ico';
+						default:		return 'ico/desc.ico';
+					}
+				" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _education_method.id ) )" DELETE-ACTION=" " BK-COLOR-EXPR="AppUi.themeColors.list_accepted_bg" HIER-LEVEL-EXPR="0" HAS-HIER-CHILDREN-EXPR="!System.IsWebClient" EXPANDED-EXPR="System.IsWebClient?true:_education_method.flag_expanded" SET-EXPANDED-ACTION="_education_method.flag_expanded = (!_education_method.flag_expanded);">
+						<COL TITLE-EXPR="_education_method.name"/>
+						<COL TITLE-EXPR="ArrayCount(_education_method.persons)"/>
+						<COL TITLE-EXPR="switch ( _education_method.type )
+							{
+								case 'folder':	return StrNonTitleCase( ms_tools.get_const('c_phase') );
+								case 'assessment':	return StrNonTitleCase( ms_tools.get_const('c_test') );
+								case 'course':	return StrNonTitleCase( ms_tools.get_const('21rwflhgsh') );
+								case 'education_method':	return StrNonTitleCase( ms_tools.get_const('nsyhg8lnvg') );
+								default:		return StrNonTitleCase( ms_tools.get_const('neopredeleno'));
+							}
+						"/>
+
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="''"/>
+						<COL TITLE-EXPR="if (_education_method.cost!=null)
+							{
+								currency = ''
+								try
+								{
+									currency = ' ('+_education_method.currency.ForeignElem.name+')'
+								}
+								catch(ex)
+								{
+								}
+								return _education_method.cost + currency;
+							}
+							else return''"/>
+					</ROW>
+					<IF EXPR="
+						if (System.IsWebClient)
+							return true
+						else
+							return (_education_method.flag_expanded || Ps.expanded_all)">
+						<LOOP EXPR="return  ArraySort(_education_method.persons,'person_fullname', '+' ) " VAR="_person">
+							<ROW IMAGE-URL-EXPR="'ico/collaborator.ico'" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _person.person_id ) )" DELETE-ACTION=" " HIER-LEVEL-EXPR="1" BK-COLOR="192,255,62" HAS-HIER-CHILDREN-EXPR="!System.IsWebClient" EXPANDED-EXPR="_person.flag_expanded" SET-EXPANDED-ACTION="_person.flag_expanded = (!_person.flag_expanded);">
+								<COL TITLE-EXPR="_person.person_fullname" FLAT="1"/>
+								<COL TITLE-EXPR="_person.person_code"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="_person.person_position_name" FLAT="1"/>
+								<COL TITLE-EXPR="_person.person_subdivision_name" FLAT="1"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+								<COL TITLE-EXPR="''"/>
+							</ROW>
+							<IF EXPR="
+								if (System.IsWebClient)
+									return true
+								else
+									return (_person.flag_expanded || Ps.expanded_all)">
+								<LOOP EXPR=" _person.reasons " VAR="_reason">
+									<IF EXPR=" ( ( Ps.plan_start_date.HasValue &amp;&amp; _reason.plan_start_date.HasValue ) ? Ps.plan_start_date<_reason.plan_start_date : true ) &amp;&amp; ( ( Ps.plan_finish_date.HasValue &amp;&amp; _reason.plan_finish_date.HasValue ) ? Ps.plan_finish_date>_reason.plan_finish_date : true ) &amp;&amp; ( ( Ps.fact_start_date.HasValue &amp;&amp; _reason.fact_start_date.HasValue ) ? Ps.fact_start_date<_reason.fact_start_date : true ) &amp;&amp; ( ( Ps.fact_finish_date.HasValue &amp;&amp; _reason.fact_finish_date.HasValue ) ? Ps.fact_finish_date>_reason.fact_finish_date : true )">
+										<IF EXPR="Ps.disp_unplanned_elem || _reason.plan">
+											<ROW IMAGE-URL-EXPR="'ico/'+_reason.reason_object_type+'.ico'" OPEN-ACTION="ObtainDocScreen( UrlFromDocID( _reason.reason_object_id ) )" DELETE-ACTION=" " HIER-LEVEL-EXPR="2">
+												<COL TITLE-EXPR="_reason.name" FLAT="1"/>
+												<COL TITLE-EXPR="''"/>
+												<COL TITLE-EXPR="''"/>
+												<COL TITLE-EXPR="_reason.plan ? '+' : '-'" FLAT="1"/>
+												<COL TITLE-EXPR="_reason.fact ? '+' : '-'" FLAT="1"/>
+
+												<COL TITLE-EXPR="_reason.plan_start_date"/>
+												<COL TITLE-EXPR="_reason.plan_finish_date"/>
+
+												<COL TITLE-EXPR="_reason.fact_start_date"/>
+												<COL TITLE-EXPR="_reason.fact_finish_date"/>
+
+												<COL TITLE-EXPR="common.learning_states.GetChildByKey( _reason.state_id ).name"/>
+												<COL TITLE-EXPR="_reason.score"/>
+												<COL TITLE-EXPR="''"/>
+											</ROW>
+										</IF>
+									</IF>
+								</LOOP>
+							</IF>
+						</LOOP>
+					</IF>
+				</LOOP>
+				<MENU>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('c_open') + '&#09;Enter'" CMD="OpenSel"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('otkrytkartochku_3')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if ((iSelRowElem.Env._reason.education_method_id.HasValue||iSelRowElem.Env._reason.object_id.HasValue)&&iSelRowElem.Env._reason.type == 'education_method'&&iSelRowElem.Env._reason.result_object_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="OpenEvent"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vmpb_create_event')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								//if (iSelRowElem.Env._reason.education_method_id.HasValue&&!iSelRowElem.Env._reason.plan&&iSelRowElem.Env._reason.type == 'event'&&!iSelRowElem.Env._reason.object_id.HasValue)
+								iID=OptInt((iSelRowElem.Env._reason.education_method_id.HasValue?iSelRowElem.Env._reason.education_method_id:iSelRowElem.Env._reason.object_id),null)
+								if (iID!=null&&iSelRowElem.Env._reason.type == 'education_method'&&iSelRowElem.Env._reason.plan==false)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="CreateEvent"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('lz5ins4lr7')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								//if (iSelRowElem.Env._reason.education_method_id.HasValue&&!iSelRowElem.Env._reason.plan&&iSelRowElem.Env._reason.type == 'event'&&!iSelRowElem.Env._reason.object_id.HasValue)
+
+								iID=OptInt((iSelRowElem.Env._reason.education_method_id.HasValue?iSelRowElem.Env._reason.education_method_id:iSelRowElem.Env._reason.object_id),null)
+								if (iID!=null&&iSelRowElem.Env._reason.type == 'education_method'&&iSelRowElem.Env._reason.plan==false)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="AddToEvent"/>
+					<MENU-ENTRY SEPARATOR="1"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vscb_submit')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if (iSelRowElem.Env._reason.object_id.HasValue&&(iSelRowElem.Env._reason.type == 'course')&&!iSelRowElem.Env._reason.active_learning_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="ActivateCourse"/>
+					<MENU-ENTRY SEPARATOR="1"/>
+					<MENU-ENTRY TITLE-EXPR="ms_tools.get_const('vmpb_create_active_ass')" ENABLE-EXPR="
+						arrSelRows=List.SelRows
+						SelRowCount=ArrayCount(arrSelRows)
+						counter=0
+						for (iSelRowElem in arrSelRows)
+						{
+							try
+							{
+								if (iSelRowElem.Env._reason.object_id.HasValue&&(iSelRowElem.Env._reason.type == 'assessment')&&!iSelRowElem.Env._reason.active_learning_id.HasValue)
+								{
+									counter++
+								}
+							}
+							catch(ex)
+							{
+							}
+						}
+						if (counter==SelRowCount)
+						{
+							return true;
+						}
+						else
+						{
+							return false;
+						}
+						//SelRowCount(List.SelRow.Env._program.education_method_id.HasValue
+						"
+						CMD="ActivateTest"/>
+				</MENU>
+			</LIST>
+		</ELSE>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+
+				<LINE HORIZ-SPACING="16vpx">
+					<RADIO-BUTTON SOURCE="Ps.type" TITLE-EXPR="ms_tools.get_const('xuyjv4zxsr')" SWITCH-VALUE="subdivision"/>
+					<RADIO-BUTTON SOURCE="Ps.type" TITLE-EXPR="ms_tools.get_const('3guftw4p5t')" SWITCH-VALUE="group"/>
+				</LINE>
+
+				<IF EXPR="Ps.type == 'subdivision'">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}
+									case 'hr':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrSubdivisionIDs = oModelRoles.subdivision_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrSubdivisionIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+				</IF>
+				<ELSE>
+					<ITEM TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id" xqueryQualExpr="
+						curUser = tools.get_cur_user();
+						var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+						if( sApplicationID != '' )
+						{
+							task = new BackgroundTask;
+							task.RunOnServer = true;
+							task.ShowProgress = true;
+
+							oModelRoles = task.CallMethod( 'tools_report', 'model_roles', [ curUser.id.Value, sApplicationID ] );
+
+							if(oModelRoles.type != '')
+							{
+								switch( oModelRoles.type )
+								{
+									case 'admin':
+									case 'manager':
+									case 'expert':
+									{
+										return '';
+									}
+									case 'hr':
+									{
+										arrGroupIDs = oModelRoles.group_ids.hr;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'observer':
+									{
+										arrGroupIDs = oModelRoles.group_ids.observer;
+										return 'MatchSome($elem/id, (' + ArrayMerge(arrGroupIDs, 'This', ',') + '))';
+									}
+									case 'reject':
+									{
+										return '$elem/id = 0';
+									}
+									default:
+									{
+										return '$elem/id = 0';
+									}
+								}
+							}
+						} else {
+							return '';
+						}
+					"/>
+				</ELSE>
+
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.budget_period_id" catalogExpr="'budget_period'"/>
+
+				<LINE HORIZ-SPACING="16vpx">
+					<RADIO-BUTTON SOURCE="Ps.group_type" TITLE-EXPR="ms_tools.get_const('gruppirovatpoi')" SWITCH-VALUE="education_plan"/>
+				</LINE>
+
+				<LINE HORIZ-SPACING="16vpx">
+					<RADIO-BUTTON SOURCE="Ps.group_type" TITLE-EXPR="ms_tools.get_const('gruppirovatpou')" SWITCH-VALUE="education_method"/>
+				</LINE>
+
+				<CHECK SOURCE="Ps.disp_unplanned_elem" TITLE-EXPR="ms_tools.get_const('l4fyzyxl2u')" />
+				<IF EXPR="Ps.group_type == 'education_plan'">
+					<LINE>
+						<CHECK SOURCE="Ps.calc_with_unplanned_elem" TITLE-EXPR="ms_tools.get_const('g32bw7ankx')" />
+					</LINE>
+				</IF>
+				<ELSE>
+					<PANEL VERT-SPACING="4vpx">
+						<RADIO-BUTTON SOURCE="Ps.reason_type" TITLE-EXPR="ms_tools.get_const('uchityvatindivi')" SWITCH-VALUE="education_plan" WIDTH="100%"/>
+						<RADIO-BUTTON SOURCE="Ps.reason_type" TITLE-EXPR="ms_tools.get_const('uchityvatzayavki')" SWITCH-VALUE="request" WIDTH="100%"/>
+						<RADIO-BUTTON SOURCE="Ps.reason_type" TITLE-EXPR="ms_tools.get_const('uchityvatzayavki_1')" SWITCH-VALUE="all" WIDTH="100%"/>
+					</PANEL>
+					<IF EXPR="Ps.reason_type != 'education_plan'&&Ps.group_type != 'education_plan'">
+						<ITEM TYPE="ms_object_selector" SOURCE="Ps.request_type_id" catalogExpr="'request_type'" titleExpr="ms_tools.get_const('5rrpn7n7gm')"  xqueryQualExpr="'$elem/object_type=\'education_method\''"/>
+					</IF>
+				</ELSE>
+
+				<LINE HORIZ-SPACING="16vpx">
+					<LINE>
+						<DateLabel SOURCE="Ps.plan_start_date" TITLE-EXPR="'Интервал(план) с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+						<DateLabel SOURCE="Ps.plan_finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+					</LINE>
+				</LINE>
+
+				<LINE HORIZ-SPACING="16vpx">
+					<LINE>
+						<DateLabel SOURCE="Ps.fact_start_date" TITLE-EXPR="'Интервал(факт) с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+						<DateLabel SOURCE="Ps.fact_finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+					</LINE>
+				</LINE>
+
+				<IF EXPR="!System.IsWebClient">
+					<CHECK SOURCE="Ps.expanded_all" TITLE-EXPR="ms_tools.get_const('hymlns2vxp')" />
+				</IF>
+
+			</PANEL>
+		</IF>
+
+	</PANEL>
+
+</LINE>
+
+<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( Ps.type == 'subdivision' &amp;&amp; ! Ps.parent_object_id.HasValue &amp;&amp; ! Ps.org_id.HasValue)
+	{
+		Screen.MsgBox( ms_tools.get_const('yihs9pjdmh'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+	else if ( Ps.type == 'group' &amp;&amp; ! Ps.group_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const('xlkfurrfrh'), ms_tools.get_const('c_error'), 'error', 'ok' );
+		Cancel();
+	}
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	var curUserID = tools.cur_user_id;
+	var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+	oRes = task.CallMethod( 'tools_report', 'educ_plan_report', [ Ps ] );
+
+	//CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ oRes ]]);
+
+
+	if( Ps.group_type=='education_plan' )
+	{
+		Ps.educ_plans.Clear();
+		for ( oEducPlan in oRes.educ_plans )
+		{
+			_educ_plan = Ps.educ_plans.AddChild();
+
+			_educ_plan.id = oEducPlan.id;
+			_educ_plan.name = oEducPlan.name;
+			_educ_plan.person_code = oEducPlan.person_code;
+			_educ_plan.person_id = oEducPlan.person_id;
+			_educ_plan.person_fullname = oEducPlan.person_fullname;
+			_educ_plan.person_subdivision_name = oEducPlan.person_subdivision_name;
+			_educ_plan.person_position_name = oEducPlan.person_position_name;
+
+			for( oProgram in oEducPlan.programs )
+			{
+				_program = _educ_plan.programs.AddChild();
+				_program.id = oProgram.id;
+				_program.name = oProgram.name;
+				_program.education_method_id = oProgram.education_method_id;
+				_program.type = oProgram.type;
+				_program.object_id = oProgram.object_id;
+				_program.result_object_id = oProgram.result_object_id;
+				_program.result_type = oProgram.result_type;
+				_program.event_result_id = oProgram.event_result_id;
+				_program.active_learning_id = oProgram.active_learning_id;
+				_program.learning_id = oProgram.learning_id;
+				_program.plan = oProgram.plan;
+				_program.fact = oProgram.fact;
+				_program.plan_start_date = oProgram.plan_start_date;
+				_program.plan_finish_date = oProgram.plan_finish_date;
+				_program.fact_start_date = oProgram.fact_start_date;
+				_program.fact_finish_date = oProgram.fact_finish_date;
+				_program.state_id = oProgram.state_id;
+				_program.score = oProgram.score;
+				_program.cost = oProgram.cost;
+				_program.currency = oProgram.currency;
+			}
+		}
+	}
+
+	if( Ps.group_type=='education_method' )
+	{
+		Ps.education_methods.Clear();
+		for ( oEducMethod in oRes.education_methods )
+		{
+			_education_method = Ps.education_methods.AddChild();
+
+			_education_method.id = oEducMethod.id;
+			_education_method.name = oEducMethod.name;
+
+			for( oPerson in oEducMethod.persons )
+			{
+				_person = _education_method.persons.AddChild();
+
+				_person.person_id = oPerson.person_id;
+				_person.person_fullname = oPerson.person_fullname;
+				_person.person_code = oPerson.person_code;
+				_person.person_position_name = oPerson.person_position_name;
+				_person.person_subdivision_name = oPerson.person_subdivision_name;
+				_person.flag_expanded = oPerson.flag_expanded;
+
+				for( oReason in oPerson.reasons )
+				{
+					_reason = _person.reasons.AddChild();
+
+					_reason.id = oReason.id;
+					_reason.name = oReason.name;
+					_reason.reason_object_type = oReason.reason_object_type;
+					_reason.reason_object_id = oReason.reason_object_id;
+					_reason.education_method_id = oReason.education_method_id;
+					_reason.object_id = oReason.object_id;
+					_reason.result_object_id = oReason.result_object_id;
+					_reason.result_type = oReason.result_type;
+					_reason.event_result_id = oReason.event_result_id;
+					_reason.active_learning_id = oReason.active_learning_id;
+					_reason.learning_id = oReason.learning_id;
+					_reason.plan = oReason.plan;
+					_reason.fact = oReason.fact;
+					_reason.plan_start_date = oReason.plan_start_date;
+					_reason.plan_finish_date = oReason.plan_finish_date;
+					_reason.fact_start_date = oReason.fact_start_date;
+					_reason.fact_finish_date = oReason.fact_finish_date;
+					_reason.state_id = oReason.state_id;
+					_reason.score = oReason.score;
+				}
+			}
+
+		}
+	}
+
+"/>
+
+<!--
+<COMMAND-HANDLER CMD="ExportToExcel" ACTION="
+	_str = EvalCodePageUrl( 'x-local://templates/educ_plan_report.html' );
+	_filemname = ObtainTempFile( '.xls' );
+
+	PutUrlText( _filemname, _str );
+	ShellExecute( 'open', _filemname );
+"/>
+-->
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+//CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ Ps ]]);
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+
+	//_str = EvalCodePageUrl( 'x-local://templates/educ_plan_report.html' );
+	_str = EvalCodePageUrl( 'x-local://templates/educ_plan_report.html' );
+
+	if(Ps.group_type == 'education_plan')
+	{
+		sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps.educ_plans ] );
+	}
+
+	if(Ps.group_type == 'education_method')
+	{
+		sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps.education_methods ] );
+	}
+
+
+
+
+    if ( ! System.IsWebClient )
+    {
+        sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+        CopyUrl( sReportUrl, sReportFilePath );
+        sReportFilePath = UrlToFilePath( sReportUrl );
+    }
+    ShellExecute( 'open', sReportFilePath );
+
+"/>
+
+
+<COMMAND-HANDLER CMD="OpenEvent" ACTION="
+
+try
+{
+	List = Screen.FindItem( 'ViewGrid' );
+}
+catch ( ex )
+{
+	return false;
+}
+arrSelRows=List.SelRows;
+path_str=''
+if  (Ps.group_type=='education_plan')
+{
+	path_str='_program.result_object_id'
+}
+else if (Ps.group_type=='education_method')
+{
+	path_str='_reason.result_object_id'
+}
+
+for (iSelRowElem in arrSelRows)
+{
+	try
+	{
+		ObtainDocScreen( UrlFromDocID(iSelRowElem.Env.EvalPath(path_str) ) )
+	}
+	catch(ex)
+	{
+		Screen.MsgBox( ex, ms_tools.get_const('c_error'), 'error', 'ok' );
+	}
+}
+
+
+" PASSIVE="1"/>
+
+<COMMAND-HANDLER CMD="CreateEvent" ACTION="
+
+try
+{
+	List = Screen.FindItem( 'ViewGrid' );
+}
+catch ( ex )
+{
+	return false;
+}
+
+
+
+arrSelRows=List.SelRows;
+
+curCount=0;
+arrProgramForEvents=Array()
+for (iSelRowElem in arrSelRows)
+{
+	if  (Ps.group_type=='education_plan')
+	{
+		program_id=OptInt((iSelRowElem.Env._program.education_method_id.HasValue?iSelRowElem.Env._program.education_method_id:iSelRowElem.Env._program.object_id),null)
+		person_id=iSelRowElem.Env._program.Parent.Parent.person_id;
+		plan_id=iSelRowElem.Env._program.Parent.Parent.id;
+	}
+	else if (Ps.group_type=='education_method')
+	{
+		program_id=OptInt((iSelRowElem.Env._reason.education_method_id.HasValue?iSelRowElem.Env._reason.education_method_id:iSelRowElem.Env._reason.object_id),null)
+		person_id=iSelRowElem.Env._reason.Parent.Parent.person_id;
+		plan_id=iSelRowElem.Env._reason.reason_object_id;
+	}
+
+
+	try
+	{
+		curWantedProg= ArrayOptFind(arrProgramForEvents, 'This.program_id=='+program_id);
+	}
+	catch(ex)
+	{
+		curWantedProg = undefined;
+	}
+	if (curWantedProg == undefined)
+	{
+		newProg= new Object;
+		newProg.program_id=program_id;
+		newProg.arrPersons=Array();
+		curCount=ArrayCount(arrProgramForEvents)
+		arrProgramForEvents[curCount]=newProg;
+		curWantedProg=arrProgramForEvents[curCount]
+		curCount++
+	}
+
+
+	Elem =  new Object
+	Elem.person_id=person_id;
+	Elem.plan_id=plan_id;
+	//Elem.person_fullname= person_id.ForeignElem.fullname;
+	tempArr=Array();
+	tempArr[0]=Elem
+	curWantedProg.arrPersons=ArrayUnion(curWantedProg.arrPersons,tempArr)
+}
+
+
+SelRowCount=ArrayCount(arrProgramForEvents)
+
+counter_act = 0;
+
+if ( SelRowCount &gt; 10 )
+	StartModalTask( ms_tools.get_const('sozdaniemeropr')  );
+
+
+for (iProgramForEventElem in arrProgramForEvents)
+{
+	ModalTaskMsg( 'Event ' + ( counter_act + 1 ) + ' of ' + SelRowCount );
+	try
+	{
+		docEvent = OpenNewDoc( '//wtv/wtv_event.xmd' );
+		docEvent.BindToDb( DefaultDb );
+		docEvent.TopElem.type_id = 'education_method';
+		docEvent.TopElem.education_method_id = iProgramForEventElem.program_id
+		tools.common_filling( 'education_method', docEvent.TopElem, docEvent.TopElem.education_method_id );
+		//CreateDocScreen( docEvent );
+		docEvent.Save();
+		counter_act++;
+		for (iPersonElem in	iProgramForEventElem.arrPersons)
+		{
+			if  (Ps.group_type=='education_plan')
+			{//------------education_plan
+				try
+				{
+					curPlan=ArrayOptFind(TopElem.educ_plans,'id=='+iPersonElem.plan_id);
+					if (curPlan!=undefined)
+					{
+						curPlanProg=ArrayOptFind(curPlan.programs,'object_id=='+iProgramForEventElem.program_id);
+						if (curPlanProg==undefined)
+						{
+							curPlanProg=ArrayOptFind(curPlan.programs,'education_method_id=='+iProgramForEventElem.program_id);
+						}
+						if (curPlanProg!=undefined)
+						{
+							docEduPlan = OpenDoc( UrlFromDocID( iPersonElem.plan_id ) )
+							curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+iProgramForEventElem.program_id);
+							if (curProgram==undefined)
+							{
+								curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+iProgramForEventElem.program_id);
+							}
+
+							if (curProgram!=undefined)
+							{
+								//curProgram.object_id = docEvent.DocID;
+								//tools.object_filling( 'event', curProgram, docEvent.DocID, docEvent.TopElem );
+
+								curProgram.state_id = ( docEvent.TopElem.status_id == 'close' || docEvent.TopElem.status_id == 'cancel' ? 2 : ( docEvent.TopElem.status_id == 'active' ? 1 : 0 ) );
+
+								if ( tools.add_person_to_event( iPersonElem.person_id, docEvent.DocID, null, docEvent ) != null )
+								{
+									curPlanProg.plan=true;
+									curPlanProg.result_object_id=docEvent.DocID;
+									curPlan.plan_count++;
+								}
+								docEduPlan.Save();
+
+								try
+								{
+
+									curPlanProg.plan_start_date = docEvent.TopElem.start_date;
+									if ( docEvent.TopElem.finish_date.HasValue )
+										curPlanProg.plan_finish_date = eventDoc.finish_date;
+								}
+								catch (err)
+								{
+
+								}
+							}
+						}
+					}
+				}
+				catch(ex)
+				{
+					//alert(ex)
+				}
+			}//------------education_plan end
+			else if (Ps.group_type=='education_method')
+			{//------------education_method
+				try
+				{
+					curEduMethod=ArrayOptFind(TopElem.education_methods,'id=='+iProgramForEventElem.program_id);
+					if (curEduMethod!=undefined)
+					{
+						curPerson=ArrayOptFind(curEduMethod.persons,'This.person_id=='+iPersonElem.person_id);
+						if (curPerson!=undefined)
+						{
+							curReason=ArrayOptFind(curPerson.reasons,'reason_object_id=='+iPersonElem.plan_id);
+							if (curReason!=undefined)
+							{
+								curReason.object_id=docEvent.DocID;
+
+								if (curReason.reason_object_type=='education_plan')
+								{
+									docEduPlan = OpenDoc( UrlFromDocID( iPersonElem.plan_id ) )
+									curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+iProgramForEventElem.program_id);
+									if (curProgram==undefined)
+									{
+										curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+iProgramForEventElem.program_id);
+									}
+
+									if (curProgram!=undefined)
+									{
+										//curProgram.object_id = docEvent.DocID;
+										//tools.object_filling( 'event', curProgram, docEvent.DocID, docEvent.TopElem );
+
+										curProgram.state_id = ( docEvent.TopElem.status_id == 'close' || docEvent.TopElem.status_id == 'cancel' ? 2 : ( docEvent.TopElem.status_id == 'active' ? 1 : 0 ) );
+
+										if ( tools.add_person_to_event( iPersonElem.person_id, docEvent.DocID, null, docEvent ) != null )
+										{
+											curReason.plan=true;
+											curReason.result_object_id=docEvent.DocID;
+										}
+										docEduPlan.Save();
+
+										try
+										{
+
+											curReason.plan_start_date = docEvent.TopElem.start_date;
+											if ( docEvent.TopElem.finish_date.HasValue )
+												curReason.plan_finish_date = eventDoc.finish_date;
+										}
+										catch (err)
+										{
+
+										}
+									}
+								}
+								else if (curReason.reason_object_type=='request')
+								{
+
+									if ( tools.add_person_to_event( iPersonElem.person_id, docEvent.DocID, null, docEvent ) != null )
+									{
+										curReason.plan=true;
+										curReason.result_object_id=docEvent.DocID;
+									}
+
+									try
+									{
+
+										curReason.plan_start_date = docEvent.TopElem.start_date;
+										if ( docEvent.TopElem.finish_date.HasValue )
+											curReason.plan_finish_date = eventDoc.finish_date;
+									}
+									catch (err)
+									{
+
+									}
+								}
+							}
+						}
+					}
+				}
+				catch(ex)
+				{
+					//alert(ex)
+				}
+			}//------------education_method end
+
+		}
+
+	}
+	catch(ex)
+	{
+		//alert(ex)
+	}
+}
+
+FinishModalTask();
+Screen.MsgBox( StrReplace( StrReplace( ms_tools.get_const('meropriyatiyasoz'), '{PARAM1}', counter_act ), '{PARAM2}', SelRowCount ), ms_tools.get_const('c_info'), 'info', 'ok' );
+Screen.Update();
+" PASSIVE="1"/>
+
+<COMMAND-HANDLER CMD="AddToEvent" ACTION="
+
+try
+{
+	List = Screen.FindItem( 'ViewGrid' );
+}
+catch ( ex )
+{
+	return false;
+}
+arrSelRows=List.SelRows;
+
+curCount=0;
+arrProgramForEvents=Array()
+for (iSelRowElem in arrSelRows)
+{
+	strName=''
+	if  (Ps.group_type=='education_plan')
+	{
+		program_id=OptInt((iSelRowElem.Env._program.education_method_id.HasValue?iSelRowElem.Env._program.education_method_id:iSelRowElem.Env._program.object_id),null)
+		person_id=iSelRowElem.Env._program.Parent.Parent.person_id;
+		plan_id=iSelRowElem.Env._program.Parent.Parent.id;
+		strName=iSelRowElem.Env._program.name
+	}
+	else if (Ps.group_type=='education_method')
+	{
+		program_id=OptInt((iSelRowElem.Env._reason.education_method_id.HasValue?iSelRowElem.Env._reason.education_method_id:iSelRowElem.Env._reason.object_id),null)
+		person_id=iSelRowElem.Env._reason.Parent.Parent.person_id;
+		plan_id=iSelRowElem.Env._reason.reason_object_id;
+		strName=iSelRowElem.Env._reason.Parent.Parent.Parent.Parent.name
+	}
+
+	try
+	{
+		curWantedProg= ArrayOptFind(arrProgramForEvents, 'This.program_id=='+program_id);
+	}
+	catch(ex)
+	{
+		curWantedProg = undefined;
+	}
+	if (curWantedProg == undefined)
+	{
+		newProg= new Object;
+		newProg.program_id=program_id;
+		newProg.program_name=strName;
+		newProg.arrPersons=Array();
+		curCount=ArrayCount(arrProgramForEvents)
+		arrProgramForEvents[curCount]=newProg;
+		curWantedProg=arrProgramForEvents[curCount]
+		curCount++
+	}
+
+
+	Elem =  new Object
+	Elem.person_id=person_id;
+	Elem.plan_id=plan_id;
+	//Elem.person_fullname= person_id.ForeignElem.fullname;
+	tempArr=Array();
+	tempArr[0]=Elem
+	curWantedProg.arrPersons=ArrayUnion(curWantedProg.arrPersons,tempArr)
+}
+
+SelRowCount=ArrayCount(arrProgramForEvents)
+
+
+flag_continue=true
+
+if (SelRowCount>5)
+{
+	flag_continue=Screen.MsgBox( ms_tools.get_const('kolichestvovybr_1'), ms_tools.get_const('c_question'), 'question', 'yes,no' );
+}
+
+if (flag_continue)
+{
+
+	for (iProgramForEventElem in arrProgramForEvents)
+	{
+		eventArray = XQuery('for $elem in events where $elem/education_method_id='+iProgramForEventElem.program_id+' return $elem');
+
+		if (ArrayOptFirstElem(eventArray)==undefined)
+		{
+			Screen.MsgBox( StrReplace( ms_tools.get_const('pouchebnoyprogr_1'), '{PARAM1}', iProgramForEventElem.program_name ), ms_tools.get_const('7ey6j94yku'), 'warning', 'ok' );
+			continue;
+		}
+
+		Screen.MsgBox( StrReplace( ms_tools.get_const('vyberitemeropr'), '{PARAM1}', iProgramForEventElem.program_name ), ms_tools.get_const('c_info'), 'info', 'ok');
+
+		dlgDoc = OpenDoc( 'x-local://wtv/ms_dlg_object_select.xml' );
+		dlgDoc.TopElem.catalog_name = 'event';
+		dlgDoc.TopElem.multi_select = false;
+		dlgDoc.TopElem.xquery_qual='$elem/education_method_id = ' + iProgramForEventElem.program_id
+
+		try
+		{
+			Screen.ModalDlg( dlgDoc );
+		}
+		catch ( err )
+		{
+			if ( IsCancelError( err ) )
+				break;
+			else
+				throw err;
+		}
+
+		event_id=dlgDoc.TopElem.object_id;
+
+		try
+		{
+
+			PerCount=ArrayCount(iProgramForEventElem.arrPersons)
+			if ( PerCount &gt; 10 )
+				StartModalTask();
+
+			docEvent = OpenDoc( UrlFromDocID( Int(event_id) ) );
+			counter_act = 0;
+
+			for (iPersonElem in	iProgramForEventElem.arrPersons)
+			{
+				ModalTaskMsg( 'Adding to event ' + ( counter_act + 1 ) + ' of ' + PerCount );
+				if  (Ps.group_type=='education_plan')
+				{//------------education_plan
+					try
+					{
+						curPlan=ArrayOptFind(TopElem.educ_plans,'id=='+iPersonElem.plan_id);
+						if (curPlan!=undefined)
+						{
+							curPlanProg=ArrayOptFind(curPlan.programs,'education_method_id=='+iProgramForEventElem.program_id);
+							if (curPlanProg==undefined)
+							{
+								curPlanProg=ArrayOptFind(curPlan.programs,'object_id=='+iProgramForEventElem.program_id);
+							}
+							if (curPlanProg!=undefined)
+							{
+								curPlanProg.object_id=docEvent.DocID;
+
+								docEduPlan = OpenDoc( UrlFromDocID( iPersonElem.plan_id ) )
+								curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+iProgramForEventElem.program_id);
+								if (curProgram==undefined)
+								{
+									curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+iProgramForEventElem.program_id);
+								}
+
+								if (curProgram!=undefined)
+								{
+									//curProgram.object_id = docEvent.DocID;
+									//tools.object_filling( 'event', curProgram, docEvent.DocID, docEvent.TopElem );
+
+									curProgram.state_id = ( docEvent.TopElem.status_id == 'close' || docEvent.TopElem.status_id == 'cancel' ? 2 : ( docEvent.TopElem.status_id == 'active' ? 1 : 0 ) );
+
+									if ( tools.add_person_to_event( iPersonElem.person_id, docEvent.DocID, null, docEvent ) != null )
+									{
+										curPlanProg.plan=true;
+										curPlan.plan_count++;
+										curPlan.result_object_id=docEvent.DocID;
+										counter_act++;
+									}
+									docEduPlan.Save();
+									try
+									{
+
+										curPlanProg.plan_start_date = docEvent.TopElem.start_date;
+										if ( docEvent.TopElem.finish_date.HasValue )
+											curPlanProg.plan_finish_date = eventDoc.finish_date;
+									}
+									catch (err)
+									{
+
+									}
+								}
+							}
+						}
+					}
+					catch(ex)
+					{
+						//alert(ex)
+					}
+				}//------------education_plan end
+				else if (Ps.group_type=='education_method')
+				{//------------education_method
+					try
+					{
+						curEduMethod=ArrayOptFind(TopElem.education_methods,'id=='+iProgramForEventElem.program_id);
+						if (curEduMethod!=undefined)
+						{
+							curPerson=ArrayOptFind(curEduMethod.persons,'This.person_id=='+iPersonElem.person_id);
+							if (curPerson!=undefined)
+							{
+								curReason=ArrayOptFind(curPerson.reasons,'reason_object_id=='+iPersonElem.plan_id);
+								if (curReason!=undefined)
+								{
+									curReason.object_id=docEvent.DocID;
+
+									if (curReason.reason_object_type=='education_plan')
+									{
+										docEduPlan = OpenDoc( UrlFromDocID( iPersonElem.plan_id ) )
+										curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'education_method_id=='+iProgramForEventElem.program_id);
+										if (curProgram==undefined)
+										{
+											curProgram=ArrayOptFind(docEduPlan.TopElem.programs,'object_id=='+iProgramForEventElem.program_id);
+										}
+										if (curProgram!=undefined)
+										{
+											//curProgram.object_id = docEvent.DocID;
+											//tools.object_filling( 'event', curProgram, docEvent.DocID, docEvent.TopElem );
+
+											curProgram.state_id = ( docEvent.TopElem.status_id == 'close' || docEvent.TopElem.status_id == 'cancel' ? 2 : ( docEvent.TopElem.status_id == 'active' ? 1 : 0 ) );
+
+											docEduPlan.Save();
+										}
+									}
+
+									if ( tools.add_person_to_event( iPersonElem.person_id, docEvent.DocID, null, docEvent ) != null )
+									{
+										curReason.plan=true;
+										curReason.result_object_id=docEvent.DocID;
+										counter_act++;
+									}
+
+									try
+									{
+
+										curReason.plan_start_date = docEvent.TopElem.start_date;
+										if ( docEvent.TopElem.finish_date.HasValue )
+											curReason.plan_finish_date = eventDoc.finish_date;
+									}
+									catch (err)
+									{
+
+									}
+
+								}
+							}
+						}
+					}
+					catch(ex)
+					{
+						//alert(ex)
+					}
+				}//------------education_method end
+
+			}
+			FinishModalTask();
+			Screen.MsgBox( StrReplace( StrReplace( StrReplace( ms_tools.get_const('vmeropriyatiepa'), '{PARAM1}', counter_act ), '{PARAM2}', PerCount ),'{PARAM3}',docEvent.TopElem.name), ms_tools.get_const('c_info'), 'info', 'ok' );
+
+		}
+		catch(ex)
+		{
+			//alert(ex)
+		}
+	}
+
+
+	Screen.Update();
+}
+
+" PASSIVE="1"/>
+
+<!--
+<COMMAND-HANDLER CMD="ActivateCourse" ACTION="Ps.fnActivateCourseTest()" PASSIVE="1"/>
+
+<COMMAND-HANDLER CMD="ActivateTest" ACTION="Ps.fnActivateCourseTest()" PASSIVE="1"/>
+-->
+</SPXML-SCREEN>

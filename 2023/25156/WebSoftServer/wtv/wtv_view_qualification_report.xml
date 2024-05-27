@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-INLINE-FORM>
+
+<view_qualification_report>
+
+	<report_name TYPE="string" DEFAULT="qualification_report"/>
+	<is_minimized TYPE="bool" DEFAULT="false"/>
+	<export_type TYPE="string" NOT-NULL="1" DEFAULT="xlsx" TEMP="1"/>
+
+	<qualification_id TYPE="integer" FOREIGN-ARRAY="qualifications"/>
+	<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+	<group_id TYPE="integer" FOREIGN-ARRAY="groups"/>
+	<parent_object_id TYPE="integer" FOREIGN-ARRAY="subdivisions"/>
+	<org_id TYPE="integer" FOREIGN-ARRAY="orgs"/>
+	<hier_sub_select TYPE="bool" NOT-NULL="1" DEFAULT="true"/>
+	<disp_person_list_staff TYPE="bool" NOT-NULL="1" DEFAULT="false"/>
+	<status TYPE="string" FOREIGN-ARRAY="common.qualification_assignment_states"/>
+	<catalog_name TYPE="string" NOT-NULL="1" DEFAULT="collaborator"/>
+	
+	<assignment_date_start_date TYPE="date"/>
+	<assignment_date_finish_date TYPE="date"/>
+	
+	<expiration_date_start_date TYPE="date"/>
+	<expiration_date_finish_date TYPE="date"/>
+
+	<sort_type_id TYPE="string" NOT-NULL="1" DEFAULT="person_fullname"/>
+	
+	<qualifications>
+		<qualification MULTIPLE="1" PRIMARY-KEY="id">
+			<id TYPE="integer"/>
+		
+			<assignment_date TYPE="date"/>
+			<expiration_date TYPE="date"/>
+
+			<status TYPE="string" FOREIGN-ARRAY="common.qualification_assignment_states" NOT-NULL="1" DEFAULT="assigned" TITLE="const=c_status"/>
+			<qualification_id TYPE="integer" FOREIGN-ARRAY="qualifications"/>
+			
+			<person_id TYPE="integer" FOREIGN-ARRAY="collaborators"/>
+			<person_fullname TYPE="string"/>
+			<code TYPE="string"/>
+			<person_position_name TYPE="string"/>
+			<person_subdivision_name TYPE="string"/>
+			<person_list_staff TYPE="string"/>
+		</qualification>
+	</qualifications>
+	
+	<list_array TYPE="variant"/>
+	
+	<count_sel TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	<count_arr TYPE="integer" NOT-NULL="1" DEFAULT="0"/>
+	
+	<rows TYPE="variant"/>
+	<row_disp_elem TYPE="string" DEFAULT="fullname"/>
+	<row_list_field TYPE="string" DEFAULT=".Env.ListElem"/>
+	<row_key_field TYPE="string" DEFAULT=".PrimaryKey"/>
+	<start_action PROPERTY="1" PARAM="sTypeParam" EXPR="
+			rows = Screen.FindItem( 'ViewGrid' ).SelRows;
+			row_list_field.Clear();
+			row_key_field = '.id';				
+			rowsArray = Array();
+			rowsArrayCounter = 0;
+			for ( _row in rows.Object )
+			{
+					rowsArray[ rowsArrayCounter ] = _row.Env.ListElem.person_id;
+					rowsArrayCounter++;
+			}
+			rows = ArraySelectDistinct( QueryCatalogByKeys( 'collaborators', 'id', rowsArray ), 'id')	;
+			_num = ArrayCount( rows.Object );
+			
+			if ( _num &gt; 10 &amp;&amp; ! Screen.MsgBox( ms_tools.get_const('8rklpbv2ro'), ms_tools.get_const('c_question'), 'question', 'yes,no,cancel' ) )
+				Cancel();
+				
+			if ( _num == 0 )
+			{   
+				Screen.MsgBox( ms_tools.get_const('u0mnmz31kn'), ms_tools.get_const('7ey6j94yku'), 'warning');
+				Cancel();
+			}
+			
+			return _num;
+	"/>
+</view_qualification_report>
+
+<OnInit PROPERTY="1" EXPR="
+
+	// local_settings.custom_datas.DeleteChildByKey( TopElem.report_name );
+
+	for ( oProperty in tools_report.read_report_settings( TopElem.report_name, TopElem, [] ) )
+	{
+		if ( ! local_settings.view.remember_last_reports_settings && oProperty.name != 'is_minimized' )
+			continue;
+
+		try
+		{
+			TopElem.Child( oProperty.name ).Value = oProperty.value;
+		}
+		catch( e )
+		{
+		}
+	}
+
+"/>
+
+</SPXML-INLINE-FORM>
