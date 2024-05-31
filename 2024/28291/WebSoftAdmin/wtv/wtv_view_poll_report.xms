@@ -1,0 +1,461 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SPXML-SCREEN SOURCE="view_poll_report">
+
+<USE FORM="//wtv/ms_general.xms"/>
+<USE FORM="//wtv/ui_reports.xms"/>
+
+<LINE>
+
+	<PANEL SUNKEN="1" BORDER="0" WIDTH-EXPR="TopElem.is_minimized ? '100%' : '-320vpx'">
+
+		<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%">
+			<ITEM TYPE="standard_report_actions_panel" />
+		</PANEL>
+
+		<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+		<!-- <IF EXPR="Ps.poll.name != ''">
+			<PANEL STD-MARGINS="0" HEIGHT="48px" WIDTH="100%" BK-COLOR-EXPR="'230,255,230'">
+				<LABEL TITLE-EXPR="Ps.poll.name" ALIGN="center" VERT-ALIGN="center" WIDTH="100%" PADDING="12px" FONT-CLASS="bold"/>
+			</PANEL>
+		</IF> -->
+
+		<IF EXPR="Ps.disp_answers">
+
+			<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT__="1" VERT-SCROLL="1">
+				<COLUMNS>
+					<COL WIDTH="30zr" PROHIBIT-SORT="1"/>
+					<COL WIDTH="10zr" PROHIBIT-SORT="1"/>
+					<COL WIDTH="25zr" PROHIBIT-SORT="1"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<IF EXPR="ArrayCount(questElem.entries) &gt; 0">
+							<COL WIDTH="20zr" PROHIBIT-SORT="1"/>
+							<WITH VAR="entriesRange" EXPR="
+								return ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+							">
+								<LOOP EXPR="entriesRange" VAR="entryElem">
+									<COL WIDTH="20zr" PROHIBIT-SORT="1"/>
+								</LOOP>
+							</WITH>
+						</IF>
+						<ELSE>
+							<COL WIDTH="20zr" PROHIBIT-SORT="1"/>
+						</ELSE>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<COL WIDTH="20zr" PROHIBIT-SORT="1"/>
+						</IF>
+					</LOOP>
+				</COLUMNS>
+				<ROW HEADER="1">
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_coll')" ALIGN="center" VSPAN="2" VERT-ALIGN="middle"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center" VSPAN="2"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('vdb_aim_date')" ALIGN="center" VSPAN="2"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<IF EXPR="ArrayCount(questElem.entries) &gt; 0 && questElem.type != 'order'">
+							<LABEL TITLE-EXPR="questElem.title" ALIGN="center" HSPAN-EXPR="ArrayCount(questElem.entries)"/>
+						</IF>
+						<ELSE>
+							<IF EXPR="questElem.type == 'bool'">
+								<LABEL TITLE-EXPR="questElem.title" ALIGN="center" HSPAN="2"/>
+							</IF>
+
+							<IF EXPR="questElem.type != 'bool'">
+								<LABEL TITLE-EXPR="questElem.title" ALIGN="center"/>
+							</IF>
+						</ELSE>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_comment')" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+				<ROW HEADER="1">
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						
+						<IF EXPR="ArrayCount(questElem.entries) &gt; 0 && questElem.type != 'order' &&  questElem.type != 'bool'">
+							<WITH VAR="firstElemValue" EXPR="
+								_tmp = ArrayOptFirstElem(questElem.entries);
+ 								return _tmp.value
+							">
+								<LABEL TITLE-EXPR="firstElemValue " ALIGN="center"/>
+							</WITH>
+							<WITH VAR="entriesRange" EXPR="
+								return ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+							">
+								<LOOP EXPR="entriesRange" VAR="entryElem">
+									<LABEL TITLE-EXPR="entryElem.value" ALIGN="center"/>
+								</LOOP>
+							</WITH>
+						</IF>
+						<ELSE>
+							<IF EXPR="questElem.type != 'bool'">
+								<LABEL TITLE="" ALIGN="center"/>
+							</IF>
+						</ELSE>
+
+						<IF EXPR="questElem.type == 'bool'">
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_yes')" ALIGN="center"/>
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_no')" ALIGN="center"/>
+						</IF>
+
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE="" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+
+				<LOOP EXPR="Ps.poll_results" VAR="resultElem">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( resultElem.id ) )">
+						<LABEL TITLE-EXPR="resultElem.person_fullname"/>
+						<LABEL TITLE-EXPR="resultElem.person_code" ALIGN="center"/>
+						<LABEL TITLE-EXPR="resultElem.start_date" ALIGN="center"/>
+
+						<LOOP EXPR="resultElem.answers" VAR="answerElem">
+							
+							<!-- единственный выбор: radiobox, select -->
+							<IF EXPR="answerElem.type == 'combo' || answerElem.type == 'choice'">
+								<LOOP EXPR="answerElem.entries" VAR="entryElem">
+									<IF EXPR="entryElem.value == 'true'">
+										<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+									</IF>
+									<ELSE>
+										<LABEL TITLE="" ALIGN="center"/>
+									</ELSE>
+								</LOOP>
+							</IF>
+
+							<!-- множественный выбор: select -->
+							<IF EXPR="answerElem.type == 'select'">
+								<LOOP EXPR="answerElem.entries" VAR="entryElem">
+									<IF EXPR="entryElem.value == 'true'">
+										<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+									</IF>
+									<ELSE>
+										<LABEL TITLE="" ALIGN="center"/>
+									</ELSE>
+								</LOOP>
+							</IF>
+
+							<!-- многострочный текст, строки, даты, числа -->
+							<IF EXPR="answerElem.type == 'text' || answerElem.type == 'string' || answerElem.type == 'number' || answerElem.type == 'date' || answerElem.type == 'link_to_database_object' || answerElem.type == 'file'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+								<WITH VAR="__TMP" EXPR="
+									//CallServerMethod( 'tools', 'call_code_library_method', ['libMain', 'Developer', [ answerElem, '_alert' ]]);
+									//EnableLog('DEVELOPER_REPORT', true );
+									//LogEvent('DEVELOPER_REPORT', tools.object_to_text(questElem,'json'))
+									//LogEvent('', tools.object_to_text(answerElem,'json'))
+								"/>
+							</IF>
+
+							<!-- Упорядочивание -->
+							<IF EXPR="answerElem.type == 'order'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+							</IF>
+
+							<!-- Флаг: да/нет -->
+							<IF EXPR="answerElem.type == 'bool'">
+								<LOOP EXPR="answerElem.entries" VAR="entryElem">
+									<IF EXPR="entryElem.value == 'true'">
+										<LABEL TITLE="V" ALIGN="center" BK-COLOR-EXPR="'230,255,230'" FLAT="1"/>
+									</IF>
+									<IF EXPR="entryElem.value == ''">
+											<LABEL TITLE="" ALIGN="center"/>
+									</IF>
+								</LOOP>
+							</IF>
+
+							<IF EXPR="Ps.show_comments_in_report">
+								<LABEL TITLE-EXPR="answerElem.comment.Value" ALIGN="center" BK-COLOR-EXPR="'247,248,254'" FLAT="1"/>
+							</IF>
+
+						</LOOP>
+					</ROW>
+				</LOOP>
+			</GRID>
+		</IF>
+		<ELSE>
+			
+			<GRID NAME="ViewGrid" HEIGHT="100%" SOLID-ROWS="1" ROW-AUTO-HEIGHT__="1" VERT-SCROLL="1">
+				<COLUMNS>
+					<COL WIDTH="30zr"/>
+					<COL WIDTH="10zr"/>
+					<COL WIDTH="25zr"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<COL WIDTH="20zr"/>
+						<IF EXPR="Ps.show_comments_in_report">
+							<COL WIDTH="20zr"/>
+						</IF>
+					</LOOP>
+				</COLUMNS>
+				<ROW HEADER="1">
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_coll')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('c_code')" ALIGN="center"/>
+					<LABEL TITLE-EXPR="ms_tools.get_const('vdb_aim_date')" ALIGN="center"/>
+
+					<LOOP EXPR="Ps.poll.questions" VAR="questElem">
+						<LABEL TITLE-EXPR="questElem.title" ALIGN="center"/>
+						<IF EXPR="Ps.show_comments_in_report">
+							<LABEL TITLE-EXPR="ms_tools.get_const('c_comment')" ALIGN="center"/>
+						</IF>
+					</LOOP>
+				</ROW>
+				
+				<LOOP EXPR="Ps.poll_results" VAR="resultElem">
+					<ROW OPEN-ACTION="ObtainDocScreen( UrlFromDocID( resultElem.id ) )">
+						<LABEL TITLE-EXPR="resultElem.person_fullname"/>
+						<LABEL TITLE-EXPR="resultElem.person_code" ALIGN="center"/>
+						<LABEL TITLE-EXPR="resultElem.start_date" ALIGN="center"/>
+
+						<LOOP EXPR="resultElem.answers" VAR="answerElem">
+							
+							<!-- единственный выбор: radiobox, select -->
+							<IF EXPR="answerElem.type == 'combo' || answerElem.type == 'choice'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+							</IF>
+
+							<!-- множественный выбор: select -->
+							<IF EXPR="answerElem.type == 'select'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+							</IF>
+
+							<!-- многострочный текст, строки, даты, числа -->
+							<IF EXPR="answerElem.type == 'text' || answerElem.type == 'string' || answerElem.type == 'number' || answerElem.type == 'date' || answerElem.type == 'link_to_database_object' || answerElem.type == 'file'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+							</IF>
+
+							<!-- Упорядочивание -->
+							<IF EXPR="answerElem.type == 'order'">
+								<LABEL TITLE-EXPR="answerElem.value" ALIGN="center"/>
+							</IF>
+
+							<!-- Флаг: да/нет -->
+							<IF EXPR="answerElem.type == 'bool'">
+								<IF EXPR="answerElem.value == 'true'">
+									<LABEL TITLE-EXPR="ms_tools.get_const('c_yes')" ALIGN="center"/>
+								</IF>
+								
+								<IF EXPR="answerElem.value == 'false'">
+									<LABEL TITLE-EXPR="ms_tools.get_const('c_no')" ALIGN="center"/>
+								</IF>
+
+								<IF EXPR="answerElem.value == ''">
+									<LABEL TITLE="" ALIGN="center"/>
+								</IF>
+							</IF>
+
+							<IF EXPR="Ps.show_comments_in_report">
+								<LABEL TITLE-EXPR="answerElem.comment.Value" ALIGN="center" BK-COLOR-EXPR="'247,248,254'" FLAT="1"/>
+							</IF>
+
+						</LOOP>
+
+					</ROW>
+				</LOOP>
+
+			</GRID>
+
+		</ELSE>
+
+	</PANEL>
+
+	<SPLIT FIXED="1" BK-COLOR-EXPR="AppUi.themeColors.separator"/>
+
+	<PANEL HEIGHT="100%" WIDTH-EXPR="TopElem.is_minimized ? '0' : '320vpx'">
+
+		<IF EXPR="! TopElem.is_minimized">
+			<PANEL SUNKEN="1" STD-MARGINS="1" VERT-ALIGN="top" VERT-SCROLL="1" _HORIZ-SCROLL="1" PADDING="16vpx 16vpx 16vpx 16vpx" HEIGHT="100%" WIDTH="100%">
+				
+				<ITEM TYPE="ms_object_selector" SOURCE="Ps.poll_id"  requireExpr="true" catalogExpr="'poll'" doFillingExpr="true" afterSelectAction="
+					try
+					{
+						TopElem.show_comments_in_report = OpenDoc( UrlFromDocID( TopElem.poll_id ) ).TopElem.show_comments_in_report;
+					}
+					catch(ex)
+					{}
+				"/>
+				
+				<IF EXPR="! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="ms_object_selector" WIDTH="100%" catalogExpr="'collaborator'" SOURCE="Ps.person_id"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.group_id.HasValue">
+					<ITEM TYPE="SelectOrgSubLabel" orgWidthExpr="'100%'" subWidthExpr="'90%'" isAdaptiveExpr="1" SOURCE="Ps.parent_object_id"/>
+					<CHECK SOURCE="Ps.hier_sub_select" TITLE-EXPR="ms_tools.get_const('0ee33c4ctr')" MULTILINE="1"/>
+				</IF>
+
+				<IF EXPR="! Ps.person_id.HasValue && ! Ps.parent_object_id.HasValue && ! Ps.org_id.HasValue">
+					<ITEM VERT-ALIGN="top" TYPE="ms_object_selector" catalogExpr="'group'" SOURCE="Ps.group_id"/>
+				</IF>
+
+				<TitleLabel VERT-ALIGN="top" ALIGN="left" TITLE="##ms_tools.get_const('xpbpsanwaw')##" >
+					<COMBO WIDTH="316vpx" SOURCE="Ps.poll_result_status">
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('f0j4vfoxrb')" VALUE="all"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('rgni7sf3i4')" VALUE="active"/>
+						<COMBO-ENTRY TITLE-EXPR="ms_tools.get_const('eyyo8z5j57')" VALUE="completed"/>
+					</COMBO>
+				</TitleLabel>
+
+				<CHECK SOURCE="Ps.show_comments_in_report" TITLE-EXPR="ms_tools.get_const('vyvoditkomment')" MULTILINE="1"/>
+
+				<ComboLabelEntry SOURCE="TopElem.disp_answers" WIDTH="100%" TITLE-EXPR="'Тип отображения ответов'" entriesExpr="
+					[
+						{ title: ms_tools.get_const('eahmiz4li4'), value: true },
+						{ title: ms_tools.get_const('b2fluvjurb'), value: false }
+					]
+				" afterSelectAction="
+					Ps.is_switched = true;
+				"/>
+
+				<LINE>
+					<DateLabel SOURCE="Ps.start_date" TITLE-EXPR="'Интервал с'" WIDTH="50%" TIME="0" ALLOW-NULL="1"/>
+					<DateLabel SOURCE="Ps.finish_date" TITLE-EXPR="ms_tools.get_const( 'mkly6lmeds' )" WIDTH="100%" TIME="0" ALLOW-NULL="1"/>
+				</LINE>
+
+			</PANEL>
+		</IF>
+	
+	</PANEL>
+
+</LINE>
+
+<COMMAND-HANDLER CMD="Run" ACTION="
+
+	if ( ! Ps.poll_id.HasValue )
+	{
+		Screen.MsgBox( ms_tools.get_const( '8r6y39m5tl' ), ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+	if ( Ps.poll_id.HasValue )
+	{
+		task = new BackgroundTask;
+		task.RunOnServer = true;
+		task.ShowProgress = true;
+
+		var curUserID = tools.cur_user_id;
+		var sApplicationID = ( tools_app.get_cur_application() == null ? '' : tools_app.get_cur_application().id.Value );
+		
+		oRes = task.CallMethod( 'tools_report', 'poll_report', [ Ps, curUserID, sApplicationID ] );
+
+		if ( oRes != null || oRes.error != 1 )
+		{
+			TopElem.count_arr = ArrayCount( oRes.poll_results );
+			iMaxReportVisibleRows = tools_report.MaxReportVisibleRows();
+
+			TopElem.count_arr = ArrayCount( oRes.poll_results );
+			TopElem.exported_file_link = oRes.exported_file_link;
+
+			Ps.poll.Clear();
+
+			Ps.poll.id = oRes.poll.id;
+			Ps.poll.code = oRes.poll.code;
+			Ps.poll.name = oRes.poll.name;
+	
+
+			Ps.poll.questions.Clear();
+			for(oQuestion in oRes.poll.questions)
+			{
+				_item = Ps.poll.questions.AddChild();
+				_item.question_id = oQuestion.question_id;
+				_item.type = oQuestion.type;
+				_item.title = oQuestion.title;
+
+				if(oQuestion.HasProperty('entries'))
+				{	
+					for(oEntry in oQuestion.entries)
+					{
+						_entry = _item.entries.AddChild();
+						_entry.id = oEntry.id;
+						_entry.value = oEntry.value;
+					}
+				}
+			}
+
+			Ps.poll_results.Clear();
+			for(oPollResult in oRes.poll_results)
+			{
+				_item = Ps.poll_results.AddChild();
+
+				_item.id = oPollResult.id;
+				_item.name = oPollResult.name;
+				_item.start_date = oPollResult.start_date;
+				_item.person_id = oPollResult.person_id;
+				_item.person_fullname = oPollResult.person_fullname;
+				_item.person_code = oPollResult.person_code;
+
+				for(oAnswer in oPollResult.answers)
+				{
+					_answer = _item.answers.AddChild();
+
+					_answer.id = oAnswer.id;
+					_answer.question_id = oAnswer.question_id;
+					_answer.title = oAnswer.title;
+					_answer.type = oAnswer.type;
+					_answer.value = oAnswer.value;
+					_answer.comment = oAnswer.comment;
+
+					for(oEntry in oAnswer.entries)
+					{
+						_entry = _answer.entries.AddChild();
+						_entry.id = oEntry.id;
+						_entry.value = oEntry.value;
+					}
+				}
+			}
+
+			if ( iMaxReportVisibleRows != 0 && TopElem.count_arr >= iMaxReportVisibleRows )
+			{
+				
+				if ( ! Screen.MsgBox( StrReplace( StrReplace( 'Количество записей в отчете {PARAM1}. Оно превышает установленный лимит строк: {PARAM2}. Открыть отчет сейчас? При нажатии на &quot;Нет&quot; отчет будет выгружен в Excel.', '{PARAM1}', TopElem.count_arr ), '{PARAM2}', iMaxReportVisibleRows ), ms_tools.get_const('c_question'), 'question', 'yes,no' ) )
+				{
+					_str = EvalCodePageUrl( 'x-local://templates/poll_report.html' );
+					sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps ] );
+
+					if ( ! System.IsWebClient )
+					{
+						sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+						CopyUrl( sReportUrl, sReportFilePath );
+						sReportFilePath = UrlToFilePath( sReportUrl );
+					}
+
+					ShellExecute( 'open', sReportFilePath );
+
+				}
+			}
+		}
+
+	} else {
+		Screen.MsgBox( 'Не выбран опрос', ms_tools.get_const( 'c_error' ), 'error', 'ok' );
+		Cancel();
+	}
+
+"/>
+
+<COMMAND-HANDLER CMD="Export" ACTION="
+
+	task = new BackgroundTask;
+	task.RunOnServer = true;
+	task.ShowProgress = true;
+	
+	_str = EvalCodePageUrl( 'x-local://templates/poll_report.html' );
+
+	sReportFilePath = task.CallMethod( 'tools_report', 'save_report_to_file', [ _str, TopElem.report_name, TopElem.export_type, '', System.IsWebClient, Ps ] );
+
+	if ( ! System.IsWebClient )
+	{
+		sReportUrl = ObtainSessionTempFile( UrlPathSuffix( sReportFilePath ) );
+		CopyUrl( sReportUrl, sReportFilePath );
+		sReportFilePath = UrlToFilePath( sReportUrl );
+	}
+
+	ShellExecute( 'open', sReportFilePath );
+"/>
+
+<INHERIT TYPE="person_actions_base"/>
+
+</SPXML-SCREEN>

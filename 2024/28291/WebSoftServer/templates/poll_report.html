@@ -1,0 +1,236 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/tr/REC-html40">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="ProgId" content="Excel.Sheet"/>
+	<meta name="Generator" content="Microsoft Excel 11"/>
+</head>
+
+<body>
+	
+	<% if (Ps.disp_answers){ %>
+		<h1>Опрос: <%=Ps.poll.name%></h1>
+	<% } %>
+
+	<%
+		if (Ps.disp_answers)
+		{
+	%>
+		
+		<table border="1" cellpadding="2" cellspacing="0">
+			
+			<tr>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+
+				<% for(questElem in Ps.poll.questions){%>
+
+					<% if(ArrayCount(questElem.entries) > 0 && questElem.type != 'order'){%>
+						<td align="center" colspan="<%=ArrayCount(questElem.entries)%>"><%=questElem.title%></td>
+					<%} else {%>
+						<% if(questElem.type == 'bool'){%>
+							<td align="center" colspan="2"><%=questElem.title%></td>
+						<%}%>
+
+						<% if(questElem.type != 'bool'){%>
+						<td align="center"><%=questElem.title%></td>
+						<%}%>
+					<%}%>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td style="background-color: #e4e4e7;"><%=ms_tools.get_const('c_comment')%></td>
+					<%}%>
+				<%}%>
+
+			</tr>
+
+			<tr>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_coll')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+
+				<% for(questElem in Ps.poll.questions){%>
+					<% if(ArrayCount(questElem.entries) > 0 && questElem.type != 'order' && questElem.type != 'bool'){ %>
+						<% 
+							_tmp = ArrayOptFirstElem(questElem.entries); 
+							firstElemValue = _tmp.value;
+						%>
+						<td align="center"><%=firstElemValue%></td>
+
+						<%
+							entriesRange = ArrayRange(questElem.entries, 1, ArrayCount(questElem.entries));
+						%>
+
+						<% for(entryElem in entriesRange){%>
+							<td align="center"><%=entryElem.value%></td>
+						<%}%>
+					<%} else {%>
+						<% if(questElem.type != 'bool'){%>
+							<td>&nbsp;</td>
+						<%}%>
+					<%}%>
+
+					<% if(questElem.type == 'bool'){%>
+						<td align="center"><%=ms_tools.get_const('c_yes')%></td>
+						<td align="center"><%=ms_tools.get_const('c_no')%></td>
+					<%}%>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td style="background-color: #e4e4e7;">&nbsp;</td>
+					<%}%>
+				<%}%>
+
+			</tr>
+
+			<tbody>
+
+				<% for(resultElem in Ps.poll_results){%>
+					<tr>
+						<td><%=resultElem.person_fullname%></td>
+						<td><%=resultElem.person_code%></td>
+						<td><%=resultElem.start_date%></td>
+
+						<% for(answerElem in resultElem.answers){ %>
+							
+							<!-- единственный выбор: radiobox, choice -->
+							<% if(answerElem.type == 'combo' || answerElem.type == 'choice'){%>
+								<% for(entryElem in answerElem.entries){ %>
+									<% if(entryElem.value == 'true'){%>
+										<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+									<% } else { %>
+										<td align="center">&nbsp;</td>
+									<%}%>
+								<%}%>
+							<%}%><!-- END единственный выбор -->
+
+							<!-- множественный выбор: select -->
+							<% if(answerElem.type == 'select'){%>
+								<% for(entryElem in answerElem.entries){ %>
+									<% if(entryElem.value == 'true'){%>
+										<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+									<% } else { %>
+										<td align="center">&nbsp;</td>
+									<%}%>
+								<%}%>
+							<%}%><!-- END множественный выбор -->
+							
+							<!-- многострочный текст, строки, даты, числа -->
+							<% if(answerElem.type == 'text' || answerElem.type == 'string' || answerElem.type == 'number' || answerElem.type == 'date' || answerElem.type == 'link_to_database_object' || answerElem.type == 'file'){%>
+								<td align="center"><%=answerElem.value%></td>
+							<%}%><!-- END  многострочный текст, строки, даты, числа -->
+							
+							<!-- Упорядочивание -->
+							<% if(answerElem.type == 'order'){%>
+								<td align="center"><%=answerElem.value%></td>
+							<%}%><!-- END Упорядочивание -->
+							
+							<!-- Флаг: да/нет -->
+							<% if(answerElem.type == 'bool'){%>
+								<% for(entryElem in answerElem.entries){ %>
+									<% if(entryElem.value == 'true'){%>
+										<td align="center" style="background-color: rgb(230, 255, 230)">V</td>
+									<% } %>
+									<% if(entryElem.value == ''){%>
+										<td align="center">&nbsp;</td>
+									<%}%>
+								<%}%>
+							<%}%><!-- END Флаг -->
+
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<% if(Ps.show_comments_in_report){%>
+								<td align="center" style="background-color: #e4e4e7;"><%=answerElem.comment.Value%></td>
+							<%}%><!-- END комментарии к вопросам в отчет по опросу -->
+							
+						<%}%>
+					</tr>
+				<%}%>
+
+			</tbody>
+
+		</table>
+	<%
+	}
+	else
+	{
+	%>
+		<table border="1" cellpadding="2" cellspacing="0">
+
+			<tr>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_coll')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('c_code')%></b></td>
+				<td align="center" bgcolor="#FFCC99"><b><%=ms_tools.get_const('vdb_aim_date')%></b></td>
+
+				<% for(questElem in Ps.poll.questions){%>
+					<td><%=questElem.title%></td>
+
+					<% if(Ps.show_comments_in_report){%>
+						<td style="background-color: #e4e4e7;"><%=ms_tools.get_const('c_comment')%></td>
+					<%}%>
+				<%}%>
+			</tr>
+
+			<tbody>
+
+				<% for(resultElem in Ps.poll_results){%>
+					<tr>
+						<td><%=resultElem.person_fullname%></td>
+						<td><%=resultElem.person_code%></td>
+						<td><%=resultElem.start_date%></td>
+
+						<% for(answerElem in resultElem.answers){ %>
+							
+							<!-- единственный выбор: radiobox, select -->
+							<% if(answerElem.type == 'combo' || answerElem.type == 'choice'){%>
+								<td><%=answerElem.value%></td>
+							<%}%>
+
+							<!-- множественный выбор: select -->
+							<% if(answerElem.type == 'select'){%>
+								<td><%=answerElem.value%></td>
+							<%}%>
+
+							<!-- многострочный текст, строки, даты, числа -->
+							<% if(answerElem.type == 'text' || answerElem.type == 'string' || answerElem.type == 'number' || answerElem.type == 'date' || answerElem.type == 'link_to_database_object' || answerElem.type == 'file'){%>
+								<td><%=answerElem.value%></td>
+							<%}%>
+
+							<!-- Упорядочивание -->
+							<% if(answerElem.type == 'order'){%>
+								<td><%=answerElem.value%></td>
+							<%}%>
+
+							<!-- Флаг: да/нет -->
+							<% if(answerElem.type == 'bool'){%>
+								<% if(answerElem.value == 'true'){%>
+									<td align="center"><%=ms_tools.get_const('c_yes')%></td>
+								<%}%>
+
+								<% if(answerElem.value == 'false'){%>
+									<td align="center"><%=ms_tools.get_const('c_no')%></td>
+								<%}%>
+
+								<% if(answerElem.value == ''){%>
+									<td align="center">&nbsp;</td>
+								<%}%>
+							<%}%>
+
+							<!-- Выводить комментарии к вопросам в отчет по опросу -->
+							<% if(Ps.show_comments_in_report){%>
+								<td align="center" style="background-color: #e4e4e7;"><%=answerElem.comment.Value%></td>
+							<%}%><!-- END комментарии к вопросам в отчет по опросу -->
+
+						<%}%>
+
+						
+					</tr>
+				<%}%>
+
+			</tbody>
+
+		</table>
+	<%
+	}
+	%>
+</body>
+</html>
